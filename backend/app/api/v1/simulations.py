@@ -1,0 +1,113 @@
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
+from backend.app.core.database import get_db
+from backend.app.models.user import User
+from backend.app.models.watershed import Watershed
+from backend.app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
+from backend.app.schemas.simulation import (
+    SimulationRunCreate,
+    SimulationRunResponse,
+    SimulationResultResponse,
+    ClimateScenarioResponse,
+    WatershedResponse
+)
+from backend.app.api.deps import get_current_active_user, require_roles
+from backend.app.services.twin_coupling_engine import TwinCouplingEngine
+
+router = APIRouter(prefix="/simulations", tags=["Simulaciones SWAT & Clima"])
+
+@router.get("/scenarios/all", response_model=List[ClimateScenarioResponse])
+async def list_climate_scenarios(
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user)
+):
+    stmt = select(ClimateScenario)
+    res = await db.execute(stmt)
+    return res.scalars().all()
+
+@router.get("/watersheds/all", response_model=List[WatershedResponse])
+async def list_watersheds(
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user)
+):
+    stmt = select(Watershed)
+    res = await db.execute(stmt)
+    return res.scalars().all()
+
+@router.get("", response_model=List[SimulationRunResponse])
+async def list_simulations(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user)
+):
+    stmt = select(SimulationRun).order_by(desc(SimulationRun.created_at)).offset(skip).limit(limit)
+    res = await db.execute(stmt)
+    return res.scalars().all()
+
+@router.post("", response_model=SimulationRunResponse, status_code=status.HTTP_201_CREATED)
+async def create_and_run_simulation(
+    sim_in: SimulationRunCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO"))
+):
+    # Validar cuenca
+    w_stmt = select(Watershed).where(Watershed.id == sim_in.watershed_id)
+    w_res = await db.execute(w_stmt)
+    if not w_res.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Cuenca hidrográfica no encontrada")
+
+    # Validar escenario
+    scen_stmt = select(ClimateScenario).where(ClimateScenario.id == sim_in.scenario_id)
+    scen_res = await db.execute(scen_stmt)
+    if not scen_res.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Escenario climático no encontrado")
+
+    # Crear simulación
+    new_sim = SimulationRun(
+        user_id=current_user.id,
+        watershed_id=sim_in.watershed_id,
+        scenario_id=sim_in.scenario_id,
+        name=sim_in.name,
+        status="PENDING",
+        duration_days=sim_in.duration_days,
+        irrigation_efficiency=sim_in.irrigation_efficiency,
+        parameters=sim_in.parameters or {}
+    )
+    db.add(new_sim)
+    await db.flush()
+
+    # Ejecutar acoplamiento biofísico multiescala
+    completed_sim = await TwinCouplingEngine.execute_simulation_run(db, new_sim.id)
+    return completed_sim
+
+@router.get("/{sim_id}", response_model=SimulationRunResponse)
+async def get_simulation_detail(
+    sim_id: str,
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user)
+):
+    stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
+    res = await db.execute(stmt)
+    sim = res.scalar_one_or_none()
+    if not sim:
+        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+    return sim
+
+@router.get("/{sim_id}/results", response_model=List[SimulationResultResponse])
+async def get_simulation_results(
+    sim_id: str,
+    limit: int = Query(365, ge=1, le=1000),
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user)
+):
+    stmt = (
+        select(SimulationResult)
+        .where(SimulationResult.simulation_run_id == sim_id)
+        .order_by(SimulationResult.day_index)
+        .limit(limit)
+    )
+    res = await db.execute(stmt)
+    return res.scalars().all()

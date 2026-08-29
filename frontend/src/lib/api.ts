@@ -9,6 +9,12 @@ import {
   ProfileUpdatePayload,
   PasswordChangePayload
 } from "../types/auth";
+import {
+  ClimateScenario,
+  Watershed,
+  SimulationRun,
+  SimulationResult
+} from "../types/simulation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -113,6 +119,41 @@ class ApiService {
     return this.request<{ message: string }>("/profile/change-password", {
       method: "PUT",
       body: JSON.stringify(payload),
+    });
+  }
+
+  // --- Simulations & Scientific Engine ---
+  async getClimateScenarios(): Promise<ClimateScenario[]> {
+    return this.request<ClimateScenario[]>("/simulations/scenarios/all");
+  }
+
+  async getWatersheds(): Promise<Watershed[]> {
+    return this.request<Watershed[]>("/simulations/watersheds/all");
+  }
+
+  async getSimulations(): Promise<SimulationRun[]> {
+    return this.request<SimulationRun[]>("/simulations");
+  }
+
+  async getSimulation(id: string): Promise<SimulationRun> {
+    return this.request<SimulationRun>(`/simulations/${id}`);
+  }
+
+  async getSimulationResults(id: string, limit = 365): Promise<SimulationResult[]> {
+    return this.request<SimulationResult[]>(`/simulations/${id}/results?limit=${limit}`);
+  }
+
+  async createSimulation(data: {
+    name: string;
+    watershed_id: string;
+    scenario_id: string;
+    duration_days: number;
+    irrigation_efficiency: number;
+    parameters?: any;
+  }): Promise<SimulationRun> {
+    return this.request<SimulationRun>("/simulations", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 }
