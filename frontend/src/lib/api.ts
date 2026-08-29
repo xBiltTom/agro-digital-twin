@@ -156,6 +156,45 @@ class ApiService {
       body: JSON.stringify(data),
     });
   }
+
+  // --- Reports (PDF, Word, Excel) ---
+  async downloadReport(simulationId: string, format: "pdf" | "docx" | "xlsx"): Promise<void> {
+    const token = this.getToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${API_BASE}/reports/download/${simulationId}/${format}`, {
+      headers,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Error descargando reporte ${format.toUpperCase()}: ${res.statusText}`);
+    }
+
+    // Extraer nombre del archivo del Content-Disposition si está disponible
+    let filename = `reporte_simulacion.${format}`;
+    const disposition = res.headers.get("content-disposition");
+    if (disposition && disposition.includes("filename=")) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(downloadUrl);
+    a.remove();
+  }
+
+  async getReportsHistory(): Promise<any[]> {
+    return this.request<any[]>("/reports/history");
+  }
 }
 
 export const api = new ApiService();
