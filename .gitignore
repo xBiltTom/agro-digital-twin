@@ -1,0 +1,15 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.sublime-workspace
+*.swp
+*.swo
+
+# Logs
+*.log
+
+digitaltwin.db
