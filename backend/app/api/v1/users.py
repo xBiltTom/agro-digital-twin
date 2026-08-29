@@ -2,10 +2,10 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from backend.app.core.database import get_db
-from backend.app.models.user import User, Role
-from backend.app.schemas.user import UserResponse, UserUpdate
-from backend.app.api.deps import require_roles
+from app.core.database import get_db
+from app.models.user import User, Role
+from app.schemas.user import UserResponse, UserUpdate
+from app.api.deps import require_roles
 
 router = APIRouter(prefix="/users", tags=["Gestión de Usuarios"])
 

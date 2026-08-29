@@ -1,9 +1,9 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
-from backend.app.main import app
-from backend.app.services.climate_engine import DownscaledClimateEngine
-from backend.app.services.plant_model import IndividualPlantPhysiologyModel
-from backend.app.services.swat_hydrology import SWATHydrologyEngine
+from app.main import app
+from app.services.climate_engine import DownscaledClimateEngine
+from app.services.plant_model import IndividualPlantPhysiologyModel
+from app.services.swat_hydrology import SWATHydrologyEngine
 
 def test_climate_engine_downscaling():
     engine = DownscaledClimateEngine(seed=123)

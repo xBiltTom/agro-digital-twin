@@ -1,9 +1,9 @@
 from sqlalchemy import String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from backend.app.core.database import Base
-from backend.app.models.base import TimestampMixin
-from backend.app.models.user import User
-from backend.app.models.simulation import SimulationRun
+from app.core.database import Base
+from app.models.base import TimestampMixin
+from app.models.user import User
+from app.models.simulation import SimulationRun
 
 class GeneratedReport(Base, TimestampMixin):
     __tablename__ = "generated_reports"

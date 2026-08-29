@@ -1,6 +1,14 @@
+import sys
+from pathlib import Path
+
+# Garantizar que el directorio backend esté en sys.path
+backend_dir = Path(__file__).resolve().parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
 import pytest_asyncio
-from backend.app.core.database import engine, Base, AsyncSessionLocal
-from backend.app.services.seed_service import seed_initial_data
+from app.core.database import engine, Base, AsyncSessionLocal
+from app.services.seed_service import seed_initial_data
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def init_test_database():

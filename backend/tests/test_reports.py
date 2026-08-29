@@ -1,8 +1,8 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
-from backend.app.main import app
-from backend.app.services.report_service import ReportGeneratorService
-from backend.app.models.simulation import SimulationRun, SimulationResult, ClimateScenario
+from app.main import app
+from app.services.report_service import ReportGeneratorService
+from app.models.simulation import SimulationRun, SimulationResult, ClimateScenario
 
 def create_mock_simulation_and_results():
     scenario = ClimateScenario(

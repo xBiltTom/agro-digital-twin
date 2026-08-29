@@ -191,7 +191,7 @@ from-plant-to-watershed/
    ```
 3. Inicia el servidor de desarrollo:
    ```bash
-   PYTHONPATH=. uvicorn backend.app.main:app --reload --port 8000
+   uvicorn app.main:app --reload --port 8000
    ```
    - **Servidor activo en**: `http://localhost:8000`
    - **Documentación Swagger UI**: `http://localhost:8000/api/v1/docs`

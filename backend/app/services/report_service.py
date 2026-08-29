@@ -15,7 +15,7 @@ from docx.oxml.ns import nsdecls
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from backend.app.models.simulation import SimulationRun, SimulationResult
+from app.models.simulation import SimulationRun, SimulationResult
 
 class ReportGeneratorService:
     """Servicio de generación de reportes técnicos multiformato (PDF, Word, Excel)."""

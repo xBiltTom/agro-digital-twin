@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Union
 import bcrypt
 import jwt
-from backend.app.core.config import settings
+from app.core.config import settings
 
 def hash_password(password: str) -> str:
     """Hashes a plain text password using bcrypt."""

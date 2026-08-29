@@ -1,8 +1,8 @@
 from typing import List, Optional
 from sqlalchemy import String, Boolean, ForeignKey, Table, Column, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from backend.app.core.database import Base
-from backend.app.models.base import TimestampMixin
+from app.core.database import Base
+from app.models.base import TimestampMixin
 
 # Tabla asociativa M2M entre Usuarios y Roles
 user_roles = Table(

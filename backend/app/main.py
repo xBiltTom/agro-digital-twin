@@ -2,10 +2,10 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.core.config import settings
-from backend.app.core.database import engine, Base, AsyncSessionLocal
-from backend.app.api.v1.router import api_router
-from backend.app.services.seed_service import seed_initial_data
+from app.core.config import settings
+from app.core.database import engine, Base, AsyncSessionLocal
+from app.api.v1.router import api_router
+from app.services.seed_service import seed_initial_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

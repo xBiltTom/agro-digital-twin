@@ -2,10 +2,10 @@ from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from backend.app.core.database import get_db
-from backend.app.models.user import Role, Permission, User
-from backend.app.schemas.user import RoleResponse, PermissionResponse
-from backend.app.api.deps import require_roles
+from app.core.database import get_db
+from app.models.user import Role, Permission, User
+from app.schemas.user import RoleResponse, PermissionResponse
+from app.api.deps import require_roles
 
 router = APIRouter(prefix="/roles", tags=["Roles y Permisos"])
 

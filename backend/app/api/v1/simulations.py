@@ -2,19 +2,19 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-from backend.app.core.database import get_db
-from backend.app.models.user import User
-from backend.app.models.watershed import Watershed
-from backend.app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
-from backend.app.schemas.simulation import (
+from app.core.database import get_db
+from app.models.user import User
+from app.models.watershed import Watershed
+from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
+from app.schemas.simulation import (
     SimulationRunCreate,
     SimulationRunResponse,
     SimulationResultResponse,
     ClimateScenarioResponse,
     WatershedResponse
 )
-from backend.app.api.deps import get_current_active_user, require_roles
-from backend.app.services.twin_coupling_engine import TwinCouplingEngine
+from app.api.deps import get_current_active_user, require_roles
+from app.services.twin_coupling_engine import TwinCouplingEngine
 
 router = APIRouter(prefix="/simulations", tags=["Simulaciones SWAT & Clima"])
 

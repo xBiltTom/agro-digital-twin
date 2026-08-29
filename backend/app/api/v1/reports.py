@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-from backend.app.core.database import get_db
-from backend.app.models.user import User
-from backend.app.models.simulation import SimulationRun, SimulationResult
-from backend.app.models.report import GeneratedReport
-from backend.app.services.report_service import ReportGeneratorService
-from backend.app.api.deps import get_current_active_user
+from app.core.database import get_db
+from app.models.user import User
+from app.models.simulation import SimulationRun, SimulationResult
+from app.models.report import GeneratedReport
+from app.services.report_service import ReportGeneratorService
+from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/reports", tags=["Reportes Multiformato"])
 

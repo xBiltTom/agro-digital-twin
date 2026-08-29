@@ -3,8 +3,8 @@ import json
 import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
-from backend.app.core.database import AsyncSessionLocal
-from backend.app.models.simulation import SimulationResult
+from app.core.database import AsyncSessionLocal
+from app.models.simulation import SimulationResult
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/twin", tags=["Gemelo Digital WebSocket"])

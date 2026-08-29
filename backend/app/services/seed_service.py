@@ -1,11 +1,11 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from backend.app.core.security import hash_password
-from backend.app.models.user import User, Role, Permission, UserProfile
-from backend.app.models.watershed import Watershed, Subbasin, HRU, PlantSpecies
-from backend.app.models.simulation import ClimateScenario, SimulationRun
-from backend.app.services.twin_coupling_engine import TwinCouplingEngine
+from app.core.security import hash_password
+from app.models.user import User, Role, Permission, UserProfile
+from app.models.watershed import Watershed, Subbasin, HRU, PlantSpecies
+from app.models.simulation import ClimateScenario, SimulationRun
+from app.services.twin_coupling_engine import TwinCouplingEngine
 
 logger = logging.getLogger(__name__)
 

@@ -1,11 +1,11 @@
 from fastapi import APIRouter
-from backend.app.api.v1.auth import router as auth_router
-from backend.app.api.v1.users import router as users_router
-from backend.app.api.v1.roles import router as roles_router
-from backend.app.api.v1.profile import router as profile_router
-from backend.app.api.v1.simulations import router as simulations_router
-from backend.app.api.v1.twin_ws import router as twin_ws_router
-from backend.app.api.v1.reports import router as reports_router
+from app.api.v1.auth import router as auth_router
+from app.api.v1.users import router as users_router
+from app.api.v1.roles import router as roles_router
+from app.api.v1.profile import router as profile_router
+from app.api.v1.simulations import router as simulations_router
+from app.api.v1.twin_ws import router as twin_ws_router
+from app.api.v1.reports import router as reports_router
 
 api_router = APIRouter()
 

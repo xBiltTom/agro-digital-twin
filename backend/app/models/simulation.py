@@ -1,8 +1,8 @@
 from typing import List, Optional
 from sqlalchemy import String, Float, Integer, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from backend.app.core.database import Base
-from backend.app.models.base import TimestampMixin
+from app.core.database import Base
+from app.models.base import TimestampMixin
 
 class ClimateScenario(Base, TimestampMixin):
     __tablename__ = "climate_scenarios"
