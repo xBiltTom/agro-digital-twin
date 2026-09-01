@@ -92,6 +92,7 @@ async def list_reports_history(
         {
             "id": r.id,
             "filename": r.filename,
+            "format": r.report_format,
             "report_format": r.report_format,
             "file_size_bytes": r.file_size_bytes,
             "simulation_id": r.simulation_id,

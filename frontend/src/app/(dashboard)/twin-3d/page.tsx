@@ -90,17 +90,17 @@ export default function Twin3DPage() {
       {/* Header Bar */}
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
             <Box className="w-4 h-4" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+            <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
               Gemelo Digital 3D Multiescala
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                 WebGL Activo
               </span>
             </h1>
-            <span className="text-[11px] text-zinc-400">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
               Acoplamiento Fisiológico Vegetal (Micro) ⇄ Parcela (Meso) ⇄ Cuenca SWAT (Macro)
             </span>
           </div>
@@ -109,7 +109,7 @@ export default function Twin3DPage() {
         {/* Scenario Selector */}
         {simulations.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-zinc-400 hidden sm:inline">Simulación:</span>
+            <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 hidden sm:inline">Simulación:</span>
             <select
               value={selectedSim?.id}
               onChange={async (e) => {
@@ -121,7 +121,7 @@ export default function Twin3DPage() {
                   setCurrentDay(1);
                 }
               }}
-              className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs focus:outline-none focus:border-cyan-500/80 font-mono"
+              className="px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs focus:outline-none focus:border-cyan-500/80 font-mono shadow-sm"
             >
               {simulations.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -134,7 +134,7 @@ export default function Twin3DPage() {
       </div>
 
       {/* 3D Canvas Area with Overlay HUD */}
-      <div className="flex-1 relative rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl">
+      <div className="flex-1 relative rounded-2xl overflow-hidden border border-zinc-300/80 dark:border-zinc-800 shadow-xl dark:shadow-2xl">
         {isLoading ? (
           <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-3 text-zinc-400 text-xs">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
