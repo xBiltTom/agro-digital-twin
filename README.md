@@ -22,6 +22,17 @@ A diferencia de los modelos agronómicos o hidrológicos aislados, esta platafor
 
 ---
 
+## 📚 Documentación Técnica y Científica
+
+Para una explicación profunda del funcionamiento interno, modelos y variables, consulta la carpeta [`docs/`](docs/):
+
+- 🏛️ **[01. Arquitectura y Funcionamiento](docs/01_ARQUITECTURA_Y_FUNCIONAMIENTO.md)**: Flujo de datos, acoplamiento multiescala y comunicación WebSockets.
+- 📊 **[02. Guía de Variables y Métricas](docs/02_GUIA_DE_VARIABLES_Y_METRICAS.md)**: **Diccionario completo de valores** ($Q$, $\theta$, $CWSI$, $Tr$, $ET_0$, savia, rangos y unidades).
+- 📐 **[03. Modelos Científicos y Fórmulas](docs/03_MODELOS_CIENTIFICOS_Y_FORMULAS.md)**: Ecuaciones de SWAT, Curva Número SCS, Feddes ($\alpha$) y CMIP6.
+- 📖 **[04. Guía de Usuario y Módulos](docs/04_GUIA_DE_USUARIO_Y_MODULOS.md)**: Manual operativo de simulaciones, visor 3D y reportes.
+
+---
+
 ## ✨ Funcionalidades Principales
 
 ### 1. 🌐 Gemelo Digital 3D Multiescala (Three.js / React Three Fiber / WebGL)
