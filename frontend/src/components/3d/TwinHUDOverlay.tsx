@@ -256,6 +256,18 @@ export default function TwinHUDOverlay({
               </div>
             </div>
           </div>
+
+          {cwsiStress >= 0.25 && (
+            <div className="mt-2.5 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-between text-[11px] animate-fade-in">
+              <span className="flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Asistente AgroTwin-AI:
+              </span>
+              <span className="font-bold font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                Riego Sugerido: +{(Math.max(0, (32 - soilMoistureVol) * 0.18 * 8 * cwsiStress) / 0.85).toFixed(1)} mm/d
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Barra de Control y Reproductor Temporal */}
