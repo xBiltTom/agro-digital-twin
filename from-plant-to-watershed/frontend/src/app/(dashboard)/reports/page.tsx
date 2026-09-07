@@ -87,7 +87,7 @@ export default function ReportsPage() {
             </h1>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-            Exportación automatizada de balances hidrológicos SWAT, dinámica biofísica de planta y forzamientos climáticos CMIP6.
+            Exportación de resultados DEMO con clima sintético y modelos simplificados; sin validación observacional.
           </p>
         </div>
 
@@ -173,12 +173,12 @@ export default function ReportsPage() {
               Informe Técnico Ejecutivo (PDF)
             </h3>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
-              Documento formal de ingeniería con membrete institucional, tablas estilizadas de balance hídrico SWAT,
+              Documento técnico con provenance explícita y tablas del balance hídrico simplificado,
               resumen de indicadores biofísicos y recomendaciones de gestión de cuenca para tomadores de decisiones.
             </p>
 
             <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/80 text-[11px] text-zinc-500 flex flex-col gap-1">
-              <span>• Portada con metadatos del CMIP6</span>
+              <span>• Portada con clasificación y semilla reproducible</span>
               <span>• Tablas de balance de masa en suelo</span>
               <span>• Muestra diaria de los 10 primeros días</span>
             </div>
@@ -256,12 +256,12 @@ export default function ReportsPage() {
             </h3>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
               Libro de cálculo multihoja para investigadores de datos. Incluye la serie temporal diaria completa de 365 días
-              de precipitación, caudal SWAT, evapotranspiración, escorrentía, humedad y fisiología vegetal.
+              de precipitación sintética, caudal conceptual, evapotranspiración, escorrentía y humedad.
             </p>
 
             <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/80 text-[11px] text-zinc-500 flex flex-col gap-1">
               <span>• Pestaña 1: Resumen y Metadatos</span>
-              <span>• Pestaña 2: Hidrología Diaria SWAT</span>
+              <span>• Pestaña 2: Hidrología simplificada diaria</span>
               <span>• Pestaña 3: Fisiología de Planta Individual</span>
             </div>
           </div>

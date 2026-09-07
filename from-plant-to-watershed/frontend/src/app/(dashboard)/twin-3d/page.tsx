@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { api } from "../../../lib/api";
 import { SimulationRun, SimulationResult } from "../../../types/simulation";
 import MultiScaleViewer3D, { ScaleMode } from "../../../components/3d/MultiScaleViewer3D";
 import TwinHUDOverlay from "../../../components/3d/TwinHUDOverlay";
-import { Box, Layers, Loader2, Sparkles } from "lucide-react";
+import { Box, Loader2 } from "lucide-react";
 
 export default function Twin3DPage() {
   const [scaleMode, setScaleMode] = useState<ScaleMode>("MACRO");
@@ -13,14 +13,11 @@ export default function Twin3DPage() {
   const [selectedSim, setSelectedSim] = useState<SimulationRun | null>(null);
   const [results, setResults] = useState<SimulationResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Timeline & Playback
   const [currentDay, setCurrentDay] = useState(1);
   const [isPlaying, setIsPlaying] = useState(true);
-
-  // Shock Modifiers (Overrides temporales de usuario)
-  const [rainShock, setRainShock] = useState(0);
-  const [heatShock, setHeatShock] = useState(0);
 
   // Cargar simulaciones y resultados
   useEffect(() => {
@@ -35,6 +32,7 @@ export default function Twin3DPage() {
         }
       } catch (err) {
         console.error("Error al cargar simulación 3D:", err);
+        setLoadError("No se pudieron cargar resultados de simulación desde el backend.");
       } finally {
         setIsLoading(false);
       }
@@ -53,37 +51,7 @@ export default function Twin3DPage() {
     return () => clearInterval(interval);
   }, [isPlaying, results.length]);
 
-  // Datos del día actual interpolados con forzamientos de choque si existen
-  const currentData = results[currentDay - 1] || {
-    precip_mm: 12.0,
-    streamflow_m3s: 8.5,
-    soil_moisture_vol: 28.0,
-    plant_transpiration_mm: 3.2,
-    cwsi_stress_index: 0.18,
-    sap_flow_velocity_cmh: 12.0,
-  };
-
-  const activePrecip = currentData.precip_mm + rainShock;
-  const activeStreamflow = Math.max(0.8, currentData.streamflow_m3s + (rainShock > 0 ? 18.5 : 0));
-  const activeSoilMoisture = Math.min(42.0, Math.max(8.0, currentData.soil_moisture_vol + (rainShock > 0 ? 8.0 : 0) - (heatShock > 0 ? 5.0 : 0)));
-  const activeCwsi = Math.min(1.0, Math.max(0.0, currentData.cwsi_stress_index + (heatShock > 0 ? 0.35 : 0) - (rainShock > 0 ? 0.15 : 0)));
-  const activeTranspiration = Math.max(0.5, currentData.plant_transpiration_mm + (heatShock > 0 ? 1.5 : 0));
-  const activeSapFlow = Math.max(2.0, currentData.sap_flow_velocity_cmh + (heatShock > 0 ? 6.0 : 0));
-
-  const handleInjectRain = () => {
-    setRainShock(45.0);
-    setHeatShock(0);
-  };
-
-  const handleInjectHeatwave = () => {
-    setHeatShock(4.0);
-    setRainShock(0);
-  };
-
-  const handleResetWeather = () => {
-    setRainShock(0);
-    setHeatShock(0);
-  };
+  const currentData = results[currentDay - 1];
 
   return (
     <div className="flex flex-col gap-4 max-w-7xl mx-auto h-[calc(100vh-8.5rem)] min-h-[640px]">
@@ -101,7 +69,7 @@ export default function Twin3DPage() {
               </span>
             </h1>
             <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Acoplamiento Fisiológico Vegetal (Micro) ⇄ Parcela (Meso) ⇄ Cuenca SWAT (Macro)
+              Visualización procedural ilustrativa de resultados simplificados persistidos
             </span>
           </div>
         </div>
@@ -115,10 +83,17 @@ export default function Twin3DPage() {
               onChange={async (e) => {
                 const sim = simulations.find((s) => s.id === e.target.value);
                 if (sim) {
-                  setSelectedSim(sim);
-                  const dailyRes = await api.getSimulationResults(sim.id, sim.duration_days);
-                  setResults(dailyRes);
-                  setCurrentDay(1);
+                  try {
+                    const dailyRes = await api.getSimulationResults(sim.id, sim.duration_days);
+                    setSelectedSim(sim);
+                    setResults(dailyRes);
+                    setCurrentDay(1);
+                    setLoadError(null);
+                  } catch (err) {
+                    console.error("Error al cambiar la simulación 3D:", err);
+                    setResults([]);
+                    setLoadError("No se pudieron cargar los resultados seleccionados.");
+                  }
                 }
               }}
               className="px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs focus:outline-none focus:border-cyan-500/80 font-mono shadow-sm"
@@ -138,40 +113,43 @@ export default function Twin3DPage() {
         {isLoading ? (
           <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-3 text-zinc-400 text-xs">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-            <span>Inicializando motor 3D y cargando malla topográfica DEM...</span>
+            <span>Cargando visualización procedural y resultados persistidos...</span>
           </div>
-        ) : (
+        ) : currentData ? (
           <>
             <MultiScaleViewer3D
               scaleMode={scaleMode}
               onChangeScale={setScaleMode}
-              streamflowM3s={activeStreamflow}
-              precipMm={activePrecip}
-              soilMoistureVol={activeSoilMoisture}
-              transpirationMm={activeTranspiration}
-              cwsiStress={activeCwsi}
-              sapFlowVelocityCmh={activeSapFlow}
+              streamflowM3s={currentData.streamflow_m3s}
+              precipMm={currentData.precip_mm}
+              soilMoistureVol={currentData.soil_moisture_vol}
+              transpirationMm={currentData.plant_transpiration_mm}
+              cwsiStress={currentData.cwsi_stress_index}
+              sapFlowVelocityCmh={currentData.sap_flow_velocity_cmh}
             />
 
             <TwinHUDOverlay
               scaleMode={scaleMode}
               onChangeScale={setScaleMode}
-              streamflowM3s={activeStreamflow}
-              precipMm={activePrecip}
-              soilMoistureVol={activeSoilMoisture}
-              transpirationMm={activeTranspiration}
-              cwsiStress={activeCwsi}
-              sapFlowVelocityCmh={activeSapFlow}
+              streamflowM3s={currentData.streamflow_m3s}
+              precipMm={currentData.precip_mm}
+              soilMoistureVol={currentData.soil_moisture_vol}
+              transpirationMm={currentData.plant_transpiration_mm}
+              cwsiStress={currentData.cwsi_stress_index}
+              sapFlowVelocityCmh={currentData.sap_flow_velocity_cmh}
               isPlaying={isPlaying}
               onTogglePlay={() => setIsPlaying(!isPlaying)}
               currentDay={currentDay}
-              totalDays={results.length || 365}
+              totalDays={results.length}
               onSeekDay={setCurrentDay}
-              onInjectRain={handleInjectRain}
-              onInjectHeatwave={handleInjectHeatwave}
-              onResetWeather={handleResetWeather}
             />
           </>
+        ) : (
+          <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-2 text-center p-6">
+            <Box className="w-8 h-8 text-zinc-500" />
+            <span className="text-sm font-semibold text-zinc-300">NO SIMULATION RESULTS</span>
+            <span className="text-xs text-zinc-500 max-w-md">{loadError || "No hay resultados persistidos disponibles para el visor 3D."}</span>
+          </div>
         )}
       </div>
     </div>

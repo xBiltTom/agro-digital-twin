@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # --- Climate Scenarios ---
 class ClimateScenarioResponse(BaseModel):
@@ -12,6 +12,7 @@ class ClimateScenarioResponse(BaseModel):
     temp_anomaly_c: float
     precip_factor: float
     co2_ppm: float
+    source_type: str
     model_config = ConfigDict(from_attributes=True)
 
 # --- Plant Species ---
@@ -61,12 +62,20 @@ class WatershedResponse(BaseModel):
 
 # --- Simulation Run ---
 class SimulationRunCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=150)
     watershed_id: str
     scenario_id: str
-    duration_days: int = 365
-    irrigation_efficiency: float = 0.85
+    duration_days: int = Field(default=365, ge=1, le=3650)
+    seed: int = Field(default=42, ge=0, le=2**32 - 1)
+    irrigation_efficiency: Optional[float] = None
     parameters: Optional[Dict[str, Any]] = None
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def reject_unsupported_irrigation_efficiency(self):
+        if self.irrigation_efficiency is not None:
+            raise ValueError("irrigation_efficiency is not implemented; use irrigation_mm_per_day in parameters")
+        return self
 
 class SimulationResultResponse(BaseModel):
     day_index: int
@@ -84,6 +93,7 @@ class SimulationResultResponse(BaseModel):
     root_water_uptake_mm: float
     cwsi_stress_index: float
     sap_flow_velocity_cmh: float
+    water_balance_residual_mm: float
     model_config = ConfigDict(from_attributes=True)
 
 class SimulationRunResponse(BaseModel):
@@ -94,7 +104,14 @@ class SimulationRunResponse(BaseModel):
     name: str
     status: str
     duration_days: int
-    irrigation_efficiency: float
+    irrigation_efficiency: Optional[float]
+    seed: int
+    requested_config: Optional[Dict[str, Any]] = None
+    effective_config: Optional[Dict[str, Any]] = None
+    provenance: Optional[Dict[str, Any]] = None
+    error: Optional[Dict[str, Any]] = None
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
     scenario: Optional[ClimateScenarioResponse] = None
     summary_metrics: Optional[Dict[str, Any]] = None
     created_at: datetime

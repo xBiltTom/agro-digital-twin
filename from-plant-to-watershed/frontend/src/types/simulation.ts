@@ -7,6 +7,7 @@ export interface ClimateScenario {
   temp_anomaly_c: number;
   precip_factor: number;
   co2_ppm: number;
+  source_type: "SYNTHETIC";
 }
 
 export interface PlantSpecies {
@@ -68,6 +69,7 @@ export interface SimulationResult {
   root_water_uptake_mm: number;
   cwsi_stress_index: number;
   sap_flow_velocity_cmh: number;
+  water_balance_residual_mm: number;
 }
 
 export interface SimulationRun {
@@ -78,7 +80,12 @@ export interface SimulationRun {
   name: string;
   status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
   duration_days: number;
-  irrigation_efficiency: number;
+  irrigation_efficiency: number | null;
+  seed: number;
+  requested_config?: Record<string, unknown>;
+  effective_config?: Record<string, unknown>;
+  provenance?: Record<string, unknown>;
+  error?: { type: string; message: string } | null;
   scenario?: ClimateScenario;
   summary_metrics?: {
     total_precip_mm: number;
@@ -87,13 +94,14 @@ export interface SimulationRun {
     total_discharge_hm3: number;
     peak_streamflow_m3s: number;
     mean_cwsi: number;
-    drought_stress_status: string;
+    cumulative_water_balance_residual_mm: number;
+    interpretation_status: "NOT_VALIDATED";
   };
   created_at: string;
 }
 
 export interface TwinWebSocketTick {
-  type: "TWIN_STATE_TICK" | "ERROR";
+  type: "SIMULATION_PLAYBACK_TICK" | "ERROR";
   day_index: number;
   date: string;
   weather: {

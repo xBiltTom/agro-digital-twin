@@ -77,7 +77,7 @@ export default function PlantModel3D({
     }
   }, [cwsiStress]);
 
-  // Animaciones en tiempo real: flujo de savia veloz, vapor de transpiración y marchitez
+  // Animaciones procedurales a partir de resultados persistidos.
   useFrame((state, delta) => {
     const time = state.clock.getElapsedTime();
 
@@ -298,16 +298,16 @@ export default function PlantModel3D({
         />
       </group>
 
-      {/* Etiqueta 3D Flotante con Fisiología Vegetal en Vivo */}
+      {/* Etiqueta 3D con resultados del modelo simplificado */}
       <Html position={[0, 4.2, 0]} center distanceFactor={14} className="pointer-events-none select-none">
         <div className="bg-zinc-950/90 backdrop-blur-md border border-emerald-500/50 px-3 py-1.5 rounded-xl shadow-2xl text-[10px] font-mono text-zinc-200 flex flex-col items-center gap-0.5 whitespace-nowrap">
           <span className="font-bold text-emerald-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            Fisiología: Palto Hass (Micro AP-3)
+            Planta representativa simplificada
           </span>
           <div className="flex items-center gap-2 text-[9px] text-zinc-400">
             <span>
-              Tr: <b className="text-emerald-300">{transpirationMm.toFixed(2)} mm/d</b>
+              Tr modelada: <b className="text-emerald-300">{transpirationMm.toFixed(2)} mm/d</b>
             </span>
             <span>•</span>
             <span>

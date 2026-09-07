@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../../../context/AuthContext";
-import { Sprout, ArrowRight, Loader2, KeyRound } from "lucide-react";
+import { Sprout, ArrowRight, Loader2 } from "lucide-react";
 import ThemeToggle from "../../../components/layout/ThemeToggle";
 
 export default function LoginPage() {
@@ -30,11 +30,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-200">
       {/* Botón flotante para cambiar tema */}
@@ -57,7 +52,7 @@ export default function LoginPage() {
             Gemelo Digital Multiescala (AP-3)
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs">
-            From Plant to Watershed: Acoplamiento Fisiológico, Hidrología SWAT y CMIP6
+            Base demostrativa: planta e hidrología simplificadas con clima sintético
           </p>
         </div>
 
@@ -111,58 +106,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
-        {/* Demo Quick Access */}
-        <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800/80 flex flex-col gap-2.5">
-          <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
-            <KeyRound className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-            <span>Acceso Rápido de Prueba (Demo Roles):</span>
-          </div>
-
-          <div className="grid grid-cols-1 gap-1.5 text-xs">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("admin@digitaltwin.org", "Admin123!")}
-              className="px-2.5 py-1.5 rounded-md bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-800/90 border border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700 text-zinc-800 dark:text-zinc-300 flex items-center justify-between text-left transition group shadow-xs"
-            >
-              <div className="flex flex-col">
-                <span className="font-medium group-hover:text-rose-600 dark:group-hover:text-rose-300">Dr. Valdivia (Superadmin)</span>
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Acceso total y gestión RBAC</span>
-              </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 font-medium">
-                SUPERADMIN
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("investigador@digitaltwin.org", "Investiga123!")}
-              className="px-2.5 py-1.5 rounded-md bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-800/90 border border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700 text-zinc-800 dark:text-zinc-300 flex items-center justify-between text-left transition group shadow-xs"
-            >
-              <div className="flex flex-col">
-                <span className="font-medium group-hover:text-cyan-600 dark:group-hover:text-cyan-300">Dra. Ramos (SWAT & Clima)</span>
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Simulaciones y reportes hidrológicos</span>
-              </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/30 font-medium">
-                INVESTIGADOR
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("operador@digitaltwin.org", "Operador123!")}
-              className="px-2.5 py-1.5 rounded-md bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-800/90 border border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700 text-zinc-800 dark:text-zinc-300 flex items-center justify-between text-left transition group shadow-xs"
-            >
-              <div className="flex flex-col">
-                <span className="font-medium group-hover:text-amber-600 dark:group-hover:text-amber-300">Ing. Morales (Operador)</span>
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Monitoreo de planta y sensores</span>
-              </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 font-medium">
-                OPERADOR
-              </span>
-            </button>
-          </div>
-        </div>
 
         <div className="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
           ¿No tienes una cuenta aún?{" "}

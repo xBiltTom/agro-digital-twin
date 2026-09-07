@@ -24,7 +24,7 @@ export default function WatershedMesh3D({
   const terrainMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
   const runoffStreamsRef = useRef<THREE.LineSegments>(null);
 
-  // 1. Generar malla topográfica 3D (DEM)
+  // 1. Generar terreno procedural ilustrativo (no DEM medido)
   const { geometry, riverPoints, runoffGeo } = useMemo(() => {
     const width = 64;
     const depth = 64;
@@ -149,7 +149,7 @@ export default function WatershedMesh3D({
   // Posición de la Parcela Agrícola en la terraza del valle
   const parcelPosition: [number, number, number] = [-6.5, 2.4, 4.0];
 
-  // Animación en tiempo real: Flujo del agua, lluvia y brillo de humedad
+  // Animación procedural a partir de resultados persistidos.
   useFrame((state, delta) => {
     const time = state.clock.getElapsedTime();
 
@@ -198,7 +198,7 @@ export default function WatershedMesh3D({
 
   return (
     <group>
-      {/* Terreno DEM 3D con Hipsometría y Brillo de Humedad */}
+      {/* Terreno procedural ilustrativo con color por humedad */}
       <mesh
         geometry={geometry}
         receiveShadow
@@ -241,7 +241,7 @@ export default function WatershedMesh3D({
         <lineBasicMaterial color="#67e8f9" transparent opacity={0.6} linewidth={2} />
       </lineSegments>
 
-      {/* Marcador 3D Interactivo de la Parcela HRU sobre la terraza del valle */}
+      {/* Marcador de parcela procedural; no representa una HRU real. */}
       <group
         position={parcelPosition}
         onClick={(e) => {
@@ -266,8 +266,8 @@ export default function WatershedMesh3D({
         {/* Etiqueta HTML 3D Flotante */}
         <Html position={[0, 1.4, 0]} center distanceFactor={25} className="pointer-events-none select-none">
           <div className="flex flex-col items-center bg-zinc-950/90 backdrop-blur-md border border-emerald-500/60 px-2.5 py-1 rounded-xl shadow-2xl text-[11px] font-sans text-emerald-300 font-bold whitespace-nowrap animate-bounce cursor-pointer">
-            <span>📍 Parcela AP-3 (Palto Hass)</span>
-            <span className="text-[9px] text-zinc-400 font-normal">Haz clic para zoom a Parcela</span>
+            <span>📍 Parcela procedural (LEGACY DEMO)</span>
+            <span className="text-[9px] text-zinc-400 font-normal">Haz clic para vista ilustrativa</span>
           </div>
         </Html>
       </group>

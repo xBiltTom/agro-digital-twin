@@ -1,4 +1,8 @@
-# 03. Modelos Científicos y Fórmulas Matemáticas
+# 03. Modelos y Fórmulas (documento legado)
+
+> **Advertencia:** este texto antecede al refactor de integridad y atribuye al
+> demo nombres de modelos externos que no ejecuta. No debe citarse como método
+> vigente. Consulte `methodology/current-models.md`.
 
 Este documento contiene las ecuaciones diferenciales y empíricas que gobiernan el motor biofísico del gemelo digital, implementadas en [`plant_model.py`](file:///home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESI%C3%93N-O1/gemelos-digitales/from-plant-to-watershed/backend/app/services/plant_model.py), [`swat_hydrology.py`](file:///home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESI%C3%93N-O1/gemelos-digitales/from-plant-to-watershed/backend/app/services/swat_hydrology.py) y [`climate_engine.py`](file:///home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESI%C3%93N-O1/gemelos-digitales/from-plant-to-watershed/backend/app/services/climate_engine.py).
 

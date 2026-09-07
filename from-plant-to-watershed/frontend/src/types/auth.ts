@@ -63,7 +63,6 @@ export interface RegisterPayload {
   email: string;
   password: string;
   full_name: string;
-  role_names?: string[];
   institution?: string;
   scientific_specialty?: string;
 }

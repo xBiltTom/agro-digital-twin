@@ -61,11 +61,10 @@ export default function SimulationsPage() {
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // New Simulation Form State
-  const [formName, setFormName] = useState("Escenario Futuro CMIP6 SSP2-4.5");
+  const [formName, setFormName] = useState("Experimento con clima sintético");
   const [formWatershedId, setFormWatershedId] = useState("");
   const [formScenarioId, setFormScenarioId] = useState("");
   const [formDuration, setFormDuration] = useState(365);
-  const [formIrrigationEff, setFormIrrigationEff] = useState(0.85);
 
   // Live WebSocket State
   const [isWsConnected, setIsWsConnected] = useState(false);
@@ -136,8 +135,8 @@ export default function SimulationsPage() {
         watershed_id: formWatershedId,
         scenario_id: formScenarioId,
         duration_days: Number(formDuration),
-        irrigation_efficiency: Number(formIrrigationEff),
-        parameters: { crop: "Palto Hass", system: "Goteo Automatizado" }
+        seed: 42,
+        parameters: {}
       });
       setSimulations([newSim, ...simulations]);
       setIsModalOpen(false);
@@ -158,7 +157,9 @@ export default function SimulationsPage() {
       setLiveTick(null);
     } else {
       if (!selectedSim) return;
-      const wsUrl = `ws://localhost:8000/api/v1/twin/ws/${selectedSim.id}`;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const token = localStorage.getItem("digitaltwin_token") || "";
+      const wsUrl = `${apiUrl.replace(/^http/, "ws")}/twin/ws/${selectedSim.id}?token=${encodeURIComponent(token)}`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -169,7 +170,7 @@ export default function SimulationsPage() {
       ws.onmessage = (evt) => {
         try {
           const data = JSON.parse(evt.data);
-          if (data.type === "TWIN_STATE_TICK") {
+          if (data.type === "SIMULATION_PLAYBACK_TICK") {
             setLiveTick(data);
           }
         } catch (e) {
@@ -204,11 +205,11 @@ export default function SimulationsPage() {
           <div className="flex items-center gap-2">
             <Sliders className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-              Estudio de Modelado SWAT & Proyecciones Climáticas
+              Modelos simplificados y clima sintético
             </h1>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-            Simulación biofísica acoplada: Fisiología de Planta (Micro) ⇄ Parcela (Meso) ⇄ Cuenca SWAT (Macro) bajo CMIP6.
+            Pipeline demostrativo reproducible. No ejecuta SWAT+, FSPM ni NEX-GDDP-CMIP6.
           </p>
         </div>
 
@@ -218,7 +219,7 @@ export default function SimulationsPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-zinc-950 text-xs font-semibold shadow-md shadow-emerald-500/20 transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Nueva Simulación Acoplada</span>
+            <span>Nueva simulación demo</span>
           </button>
         )}
       </div>
@@ -275,7 +276,7 @@ export default function SimulationsPage() {
                       {sim.name}
                     </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800/50 shrink-0 font-medium">
-                      {sim.scenario?.code || "CMIP6"}
+                      {sim.scenario?.source_type || "SYNTHETIC"}
                     </span>
                   </div>
 
@@ -319,7 +320,7 @@ export default function SimulationsPage() {
         <div className="lg:col-span-8 flex flex-col gap-6">
           {selectedSim ? (
             <>
-              {/* Selected Simulation Card & Live WebSocket Stream Bar */}
+              {/* Selected simulation card and persisted-result WebSocket playback */}
               <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-4 shadow-sm dark:shadow-xl">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800/80">
                   <div className="flex flex-col">
@@ -334,7 +335,7 @@ export default function SimulationsPage() {
                     </span>
                   </div>
 
-                  {/* WebSocket Toggle & Live Controls */}
+                  {/* WebSocket playback controls; this is not live telemetry. */}
                   <div className="flex items-center gap-2">
                     <button
                       onClick={toggleWebSocket}
@@ -345,7 +346,7 @@ export default function SimulationsPage() {
                       }`}
                     >
                       <Radio className={`w-3.5 h-3.5 ${isWsConnected ? "animate-pulse text-rose-400" : ""}`} />
-                      <span>{isWsConnected ? "Detener Transmisión" : "Sincronizar Gemelo WS"}</span>
+                      <span>{isWsConnected ? "Detener reproducción WS" : "Iniciar reproducción WS"}</span>
                     </button>
 
                     {isWsConnected && (
@@ -373,9 +374,12 @@ export default function SimulationsPage() {
                   </div>
                 </div>
 
-                {/* Live WebSocket Telemetry Ticker (if active) */}
+                {/* WebSocket playback ticker of persisted results (if active). */}
                 {isWsConnected && liveTick && (
                   <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 via-white to-cyan-50 dark:from-emerald-950/40 dark:via-zinc-950 dark:to-cyan-950/40 border border-emerald-300 dark:border-emerald-500/40 grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fadeIn shadow-sm">
+                    <div className="col-span-full text-[10px] font-mono text-zinc-500 dark:text-zinc-400">
+                      Reproducción de resultados persistidos DEMO; no telemetría en tiempo real.
+                    </div>
                     <div className="flex flex-col">
                       <span className="text-[10px] uppercase font-mono text-zinc-500 dark:text-zinc-400">Día / Fecha</span>
                       <span className="text-xs font-mono font-bold text-zinc-900 dark:text-zinc-100">
@@ -407,7 +411,7 @@ export default function SimulationsPage() {
                     </div>
 
                     <div className="flex flex-col">
-                      <span className="text-[10px] uppercase font-mono text-teal-700 dark:text-teal-400 font-semibold">Macro (SWAT)</span>
+                      <span className="text-[10px] uppercase font-mono text-teal-700 dark:text-teal-400 font-semibold">Hidrología simplificada</span>
                       <span className="text-xs font-mono font-bold text-teal-700 dark:text-teal-300">
                         Q: {liveTick.macro_watershed.streamflow_m3s} m³/s
                       </span>
@@ -445,21 +449,21 @@ export default function SimulationsPage() {
                     </span>
                   </div>
                   <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
-                    <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 block">Estrés de Sequía</span>
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1.5 block truncate">
-                      {selectedSim.summary_metrics?.drought_stress_status ?? "Normal"}
+                    <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 block">Interpretación científica</span>
+                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-1.5 block truncate">
+                      {selectedSim.summary_metrics?.interpretation_status ?? "NOT_VALIDATED"}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Chart 1: Hidrograma de Cuenca SWAT (Caudal vs Lluvia) */}
+              {/* Hidrograma conceptual (caudal y lluvia sintéticos) */}
               <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-xl flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Mountain className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                     <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
-                      Hidrograma de Cuenca SWAT: Caudal Fluvial (m³/s) y Precipitación (mm)
+                      Hidrograma conceptual: caudal simulado (m³/s) y precipitación sintética (mm)
                     </h3>
                   </div>
                   <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400">Escala Macro</span>
@@ -468,7 +472,7 @@ export default function SimulationsPage() {
                 {isLoadingResults ? (
                   <div className="h-64 flex items-center justify-center text-zinc-400 text-xs">
                     <Loader2 className="w-5 h-5 animate-spin mr-2 text-emerald-400" />
-                    Cargando hidrograma SWAT...
+                    Cargando resultados simplificados...
                   </div>
                 ) : (
                   <div className="h-64 w-full">
@@ -592,7 +596,7 @@ export default function SimulationsPage() {
               <div className="flex items-center gap-2">
                 <Sliders className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                  Configurar Nuevo Experimento Biofísico SWAT
+                  Configurar experimento simplificado
                 </h3>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer">
@@ -618,7 +622,7 @@ export default function SimulationsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                    Cuenca Hidrográfica SWAT
+                    Cuenca representativa
                   </label>
                   <select
                     value={formWatershedId}
@@ -635,7 +639,7 @@ export default function SimulationsPage() {
 
                 <div>
                   <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                    Escenario Climático CMIP6
+                    Control de clima sintético
                   </label>
                   <select
                     value={formScenarioId}
@@ -668,29 +672,14 @@ export default function SimulationsPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                    Eficiencia de Riego: {(formIrrigationEff * 100).toFixed(0)}%
-                  </label>
-                  <input
-                    type="range"
-                    min={0.6}
-                    max={0.95}
-                    step={0.05}
-                    value={formIrrigationEff}
-                    onChange={(e) => setFormIrrigationEff(Number(e.target.value))}
-                    className="w-full mt-2 accent-emerald-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-zinc-500">
-                    <span>60% (Gravedad)</span>
-                    <span>95% (Goteo Alta Precisión)</span>
-                  </div>
+                <div className="p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
+                  El control de eficiencia de riego está deshabilitado: el modelo no implementa planes de manejo.
                 </div>
               </div>
 
               <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 flex flex-col gap-1">
-                <span className="font-semibold text-zinc-800 dark:text-zinc-300">Cultivo acoplado: Palto Hass (Persea americana)</span>
-                <span>Dinámica radicular calculada mediante función de reducción de Feddes a 120 cm de profundidad.</span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-300">Modelo de planta representativa simplificado</span>
+                <span>No representa órganos, población de campo ni un FSPM completo.</span>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
@@ -709,7 +698,7 @@ export default function SimulationsPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Ejecutando Modelos SWAT...</span>
+                      <span>Ejecutando modelos simplificados...</span>
                     </>
                   ) : (
                     <>

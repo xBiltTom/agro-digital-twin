@@ -68,11 +68,16 @@ async def register(
     # Hashear contraseña
     hashed_pwd = hash_password(user_in.password)
 
-    # Asignar roles (por defecto OPERADOR_AGROPECUARIO si no se especifica)
-    target_roles = user_in.role_names or ["OPERADOR_AGROPECUARIO"]
+    # Public registration is deliberately restricted to the least-privileged role.
+    target_roles = ["OPERADOR_AGROPECUARIO"]
     roles_stmt = select(Role).where(Role.name.in_(target_roles))
     roles_res = await db.execute(roles_stmt)
     assigned_roles = list(roles_res.scalars().all())
+    if len(assigned_roles) != len(target_roles):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="El catálogo RBAC no está inicializado; no se puede completar el registro."
+        )
 
     new_user = User(
         email=user_in.email,

@@ -40,7 +40,7 @@ export default function Navbar() {
         </div>
         <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400">
           <Activity className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
-          <span>Fisiología ⇄ SWAT Hidrología</span>
+          <span>Modelos simplificados · DEMO</span>
         </div>
       </div>
 

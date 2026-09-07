@@ -8,8 +8,6 @@ import {
   Sprout,
   Play,
   Pause,
-  RotateCcw,
-  Sun,
   CloudRain,
   Activity,
   Droplets,
@@ -32,9 +30,6 @@ interface TwinHUDOverlayProps {
   currentDay: number;
   totalDays: number;
   onSeekDay: (day: number) => void;
-  onInjectRain: () => void;
-  onInjectHeatwave: () => void;
-  onResetWeather: () => void;
 }
 
 export default function TwinHUDOverlay({
@@ -51,9 +46,6 @@ export default function TwinHUDOverlay({
   currentDay,
   totalDays,
   onSeekDay,
-  onInjectRain,
-  onInjectHeatwave,
-  onResetWeather,
 }: TwinHUDOverlayProps) {
   const getStressBadge = (stress: number) => {
     if (stress < 0.25) {
@@ -88,7 +80,7 @@ export default function TwinHUDOverlay({
 
   return (
     <div className="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between z-20 select-none transition-colors duration-200">
-      {/* Barra Superior: Selector de Escalas y Forzamiento de Choque */}
+      {/* Barra superior: selector de escala */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pointer-events-auto">
         {/* Selector de Escala Macro / Meso / Micro */}
         <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border border-zinc-200/90 dark:border-zinc-800/80 shadow-lg dark:shadow-2xl">
@@ -101,7 +93,7 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Mountain className="w-3.5 h-3.5" />
-            <span>Macro: Cuenca SWAT</span>
+            <span>Macro: Cuenca ilustrativa</span>
           </button>
 
           <button
@@ -113,7 +105,7 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Grid className="w-3.5 h-3.5" />
-            <span>Meso: Parcela HRU</span>
+            <span>Meso: Parcela procedural</span>
           </button>
 
           <button
@@ -125,39 +117,10 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Sprout className="w-3.5 h-3.5" />
-            <span>Micro: Planta 3D</span>
+            <span>Micro: Planta ilustrativa</span>
           </button>
         </div>
 
-        {/* Moduladores de Forzamiento Meteorológico */}
-        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border border-zinc-200/90 dark:border-zinc-800/80 text-xs shadow-lg dark:shadow-2xl">
-          <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 uppercase hidden md:inline px-1">
-            Choque Climático:
-          </span>
-          <button
-            onClick={onInjectRain}
-            title="Generar tormenta súbita (+40mm)"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-50 dark:bg-cyan-950/70 hover:bg-cyan-100 dark:hover:bg-cyan-900/80 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60 transition-all cursor-pointer text-[11px] shadow-sm"
-          >
-            <CloudRain className="w-3.5 h-3.5" />
-            <span>Lluvia +40mm</span>
-          </button>
-          <button
-            onClick={onInjectHeatwave}
-            title="Generar ola de calor (+4°C)"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/70 hover:bg-amber-100 dark:hover:bg-amber-900/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 transition-all cursor-pointer text-[11px] shadow-sm"
-          >
-            <Sun className="w-3.5 h-3.5" />
-            <span>Calor +4°C</span>
-          </button>
-          <button
-            onClick={onResetWeather}
-            title="Restablecer condiciones base"
-            className="p-1.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 rounded-lg transition-all cursor-pointer"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
-        </div>
       </div>
 
       {/* Alerta de Lluvia Activa */}
@@ -168,23 +131,23 @@ export default function TwinHUDOverlay({
         </div>
       )}
 
-      {/* Parte Inferior: Panel de Telemetría Flotante y Barra de Tiempo */}
+      {/* Parte inferior: panel de resultados y barra de tiempo */}
       <div className="flex flex-col gap-3 pointer-events-auto">
-        {/* Tarjeta de Telemetría Multiescala con Barras de Nivel */}
+        {/* Tarjeta de resultados persistidos con barras de nivel */}
         <div className="p-4 rounded-2xl bg-white/95 dark:bg-zinc-950/90 backdrop-blur-2xl border border-zinc-200/90 dark:border-zinc-800/90 shadow-xl dark:shadow-2xl max-w-xl self-start">
           <div className="flex items-center justify-between mb-3 border-b border-zinc-200 dark:border-zinc-800/80 pb-2">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-100 uppercase tracking-wider">
-                Telemetría Biofísica del Gemelo
+                Playback de resultados simplificados
               </span>
             </div>
             <div>{getStressBadge(cwsiStress)}</div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-            {/* Caudal SWAT */}
+            {/* Caudal del modelo hidrológico simplificado */}
             <div className="flex flex-col gap-1 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/50">
               <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400">
                 <span className="flex items-center gap-1">
@@ -257,17 +220,9 @@ export default function TwinHUDOverlay({
             </div>
           </div>
 
-          {cwsiStress >= 0.25 && (
-            <div className="mt-2.5 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-between text-[11px] animate-fade-in">
-              <span className="flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Asistente AgroTwin-AI:
-              </span>
-              <span className="font-bold font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                Riego Sugerido: +{(Math.max(0, (32 - soilMoistureVol) * 0.18 * 8 * cwsiStress) / 0.85).toFixed(1)} mm/d
-              </span>
-            </div>
-          )}
+          <div className="mt-2.5 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80 text-[10px] text-zinc-500">
+            Geometría procedural ilustrativa; no es arquitectura vegetal medida ni recomendación agronómica.
+          </div>
         </div>
 
         {/* Barra de Control y Reproductor Temporal */}
@@ -283,7 +238,7 @@ export default function TwinHUDOverlay({
             <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500 dark:text-zinc-400">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-                Línea Temporal de Simulación Continua
+                Reproductor de resultados persistidos
               </span>
               <span className="text-zinc-800 dark:text-zinc-200 font-bold bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
                 Día {currentDay} de {totalDays}

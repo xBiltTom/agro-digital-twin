@@ -4,8 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base, AsyncSessionLocal
+from app.core.migrations import apply_pending_migrations
 from app.api.v1.router import api_router
-from app.services.seed_service import seed_initial_data
+from app.services.seed_service import bootstrap_system_reference_data, seed_legacy_demo_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,15 +14,20 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Iniciando AP-3 Digital Twin Platform...")
+    settings.validate_runtime_security()
     
     # 1. Crear tablas si no existen
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    await apply_pending_migrations(engine)
     logger.info("Tablas de base de datos verificadas/creadas.")
 
-    # 2. Ejecutar seed de datos iniciales
+    # 2. RBAC is structural data; only legacy fixtures are opt-in.
     async with AsyncSessionLocal() as session:
-        await seed_initial_data(session)
+        await bootstrap_system_reference_data(session)
+    if settings.ENABLE_DEMO_SEED:
+        async with AsyncSessionLocal() as session:
+            await seed_legacy_demo_data(session)
 
     yield
 
@@ -32,8 +38,8 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description=(
-        "Plataforma de Gemelo Digital 3D Multiescala (AP-3) que acopla modelos fisiológicos "
-        "individuales de planta con la hidrología de cuencas SWAT y proyecciones climáticas downscaled."
+        "Base demostrativa reproducible con modelos simplificados de planta e hidrología y clima sintético. "
+        "No ejecuta SWAT+, FSPM ni NEX-GDDP-CMIP6."
     ),
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
@@ -44,7 +50,7 @@ app = FastAPI(
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permite desarrollo ágil local
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

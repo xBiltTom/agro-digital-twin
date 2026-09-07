@@ -5,19 +5,31 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.models.simulation import SimulationResult
+from app.models.user import User
+from app.core.security import decode_access_token
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/twin", tags=["Gemelo Digital WebSocket"])
+router = APIRouter(prefix="/twin", tags=["Playback de simulación WebSocket"])
 
 @router.websocket("/ws/{simulation_id}")
 async def digital_twin_websocket(websocket: WebSocket, simulation_id: str):
     """
-    Canal WebSocket bidireccional para el Gemelo Digital Multiescala:
-    - Transmite en tiempo real el estado acoplado (Planta ⇄ Suelo ⇄ Cuenca).
-    - Recibe comandos de control (play, pause, step, velocidad, perturbaciones meteorológicas).
+    Reproduce resultados persistidos; no es telemetría IoT ni ejecución en tiempo real.
+    Requiere un access token en el parámetro de consulta ``token``.
     """
+    token = websocket.query_params.get("token")
+    payload = decode_access_token(token) if token else None
+    user_id = payload.get("sub") if payload else None
+    if not user_id:
+        await websocket.close(code=1008, reason="Authentication required")
+        return
+    async with AsyncSessionLocal() as auth_session:
+        user = await auth_session.scalar(select(User).where(User.id == user_id, User.is_active.is_(True)))
+    if not user:
+        await websocket.close(code=1008, reason="Authentication required")
+        return
     await websocket.accept()
-    logger.info(f"Cliente conectado a Gemelo Digital WS para simulación: {simulation_id}")
+    logger.info("Cliente conectado al playback WS para simulación %s", simulation_id)
 
     # Cargar los resultados de la simulación desde la base de datos
     results = []
@@ -75,7 +87,8 @@ async def digital_twin_websocket(websocket: WebSocket, simulation_id: str):
             if is_playing and current_index < len(results):
                 item = results[current_index]
                 payload = {
-                    "type": "TWIN_STATE_TICK",
+                    "type": "SIMULATION_PLAYBACK_TICK",
+                    "evidence_type": "DEMO",
                     "day_index": item.day_index,
                     "date": item.date_str,
                     "weather": {

@@ -1,11 +1,17 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import select
 from app.main import app
+from app.core.database import AsyncSessionLocal
+from app.models.simulation import ClimateScenario, SimulationRun
+from app.models.user import User
+from app.models.watershed import Watershed
 from app.services.climate_engine import DownscaledClimateEngine
 from app.services.plant_model import IndividualPlantPhysiologyModel
 from app.services.swat_hydrology import SWATHydrologyEngine
+from app.services.twin_coupling_engine import TwinCouplingEngine
 
-def test_climate_engine_downscaling():
+def test_synthetic_climate_provider():
     engine = DownscaledClimateEngine(seed=123)
     weather = engine.generate_daily_weather(
         duration_days=365,
@@ -54,7 +60,7 @@ def test_plant_model_feddes_reduction():
     assert 0.0 <= step["cwsi_stress_index"] <= 1.0
     assert step["sap_flow_velocity_cmh"] > 0.0
 
-def test_swat_hydrology_water_balance():
+def test_simplified_hydrology_water_balance():
     swat = SWATHydrologyEngine(
         watershed_area_km2=420.5,
         curve_number=74.0,
@@ -70,6 +76,7 @@ def test_swat_hydrology_water_balance():
     assert step_rain["surface_runoff_mm"] > 0.0
     assert step_rain["streamflow_m3s"] > 1.0
     assert step_rain["soil_moisture_vol"] > 25.0
+    assert abs(step_rain["water_balance_residual_mm"]) < 1e-9
 
     # 2. Día seco posterior (0 mm lluvia)
     step_dry = swat.calculate_daily_step(
@@ -81,6 +88,7 @@ def test_swat_hydrology_water_balance():
     assert step_dry["actual_et_mm"] > 0.0
     # Humedad debe descender debido a la evapotranspiración
     assert step_dry["soil_moisture_vol"] <= step_rain["soil_moisture_vol"]
+    assert abs(step_dry["water_balance_residual_mm"]) < 1e-9
 
 @pytest.mark.asyncio
 async def test_api_simulation_workflow():
@@ -113,13 +121,18 @@ async def test_api_simulation_workflow():
             "watershed_id": watershed_id,
             "scenario_id": scenario_id,
             "duration_days": 90,
-            "irrigation_efficiency": 0.90
+            "seed": 1234,
+            "parameters": {}
         })
         assert create_res.status_code == 201
         sim_data = create_res.json()
         assert sim_data["status"] == "COMPLETED"
         assert "total_precip_mm" in sim_data["summary_metrics"]
         assert sim_data["duration_days"] == 90
+        assert sim_data["seed"] == 1234
+        assert sim_data["effective_config"]["seed"] == 1234
+        assert sim_data["provenance"]["climate"]["evidence_type"] == "SYNTHETIC"
+        assert sim_data["provenance"]["hydrology"]["model"] == "SimplifiedHydrologyModel"
         sim_id = sim_data["id"]
 
         # 5. Consultar resultados diarios
@@ -129,3 +142,46 @@ async def test_api_simulation_workflow():
         assert len(results) == 90
         assert results[0]["streamflow_m3s"] >= 0.0
         assert results[0]["plant_transpiration_mm"] >= 0.0
+        assert abs(results[0]["water_balance_residual_mm"]) < 1e-9
+
+        rejected = await ac.post("/api/v1/simulations", headers=headers, json={
+            "name": "Parámetro inerte", "watershed_id": watershed_id,
+            "scenario_id": scenario_id, "duration_days": 5, "seed": 1,
+            "parameters": {"crop": "Palto Hass"},
+        })
+        assert rejected.status_code == 422
+
+        lai_rejected = await ac.post("/api/v1/simulations", headers=headers, json={
+            "name": "LAI no implementado", "watershed_id": watershed_id,
+            "scenario_id": scenario_id, "duration_days": 5, "seed": 1,
+            "parameters": {"lai": 3},
+        })
+        assert lai_rejected.status_code == 422
+
+        irrigation_efficiency_rejected = await ac.post("/api/v1/simulations", headers=headers, json={
+            "name": "Eficiencia no implementada", "watershed_id": watershed_id,
+            "scenario_id": scenario_id, "duration_days": 5, "seed": 1,
+            "irrigation_efficiency": 0.85,
+        })
+        assert irrigation_efficiency_rejected.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_failed_run_is_persisted_as_failed():
+    async with AsyncSessionLocal() as db:
+        user_id = await db.scalar(select(User.id).limit(1))
+        watershed_id = await db.scalar(select(Watershed.id).limit(1))
+        scenario_id = await db.scalar(select(ClimateScenario.id).limit(1))
+        run = SimulationRun(
+            user_id=user_id, watershed_id=watershed_id, scenario_id=scenario_id,
+            name="Intentional failure", duration_days=3, seed=4,
+            parameters={"unsupported": 1}, requested_config={"parameters": {"unsupported": 1}},
+        )
+        db.add(run)
+        await db.commit()
+        run_id = run.id
+        with pytest.raises(ValueError, match="Unsupported"):
+            await TwinCouplingEngine.execute_simulation_run(db, run_id)
+        await db.refresh(run)
+        assert run.status == "FAILED"
+        assert run.error["type"] == "ValueError"

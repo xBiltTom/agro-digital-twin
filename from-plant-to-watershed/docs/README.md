@@ -1,4 +1,10 @@
-# 📚 Documentación Oficial del Sistema: Gemelo Digital AP-3
+# 📚 Documentación del Sistema: Gemelo Digital AP-3
+
+> Estado actual: base DEMO reproducible con modelos simplificados y clima
+> sintético. La descripción canónica está en
+> [`methodology/current-models.md`](methodology/current-models.md). Los documentos
+> numerados restantes son referencia legada y no prueban SWAT+, FSPM, CMIP6 ni
+> validación observacional.
 ## *From Plant to Watershed: A Multi-Scale Digital Twin Framework*
 
 Bienvenido a la documentación técnica y científica de la plataforma de **Gemelo Digital 3D Multiescala**. Este compendio está diseñado para explicar en detalle la arquitectura del sistema, el significado de cada variable mostrada, las fórmulas biofísicas empleadas y la guía de uso de cada módulo.

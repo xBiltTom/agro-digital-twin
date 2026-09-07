@@ -115,3 +115,12 @@ async def test_register_new_user_and_profile_update():
         profile_data = update_profile_res.json()
         assert profile_data["bio"] == "Investigador en ecohidrología cuantitativa"
         assert profile_data["preferred_theme"] == "dark"
+
+@pytest.mark.asyncio
+async def test_public_registration_cannot_escalate_role():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post("/api/v1/auth/register", json={
+            "email": "attempted_admin@example.org", "password": "Password123!",
+            "full_name": "Least Privilege", "role_names": ["SUPERADMIN"],
+        })
+        assert response.status_code == 422

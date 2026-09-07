@@ -30,7 +30,6 @@ export default function RegisterPage() {
         full_name: fullName,
         institution,
         scientific_specialty: specialty,
-        role_names: ["OPERADOR_AGROPECUARIO"]
       });
       router.push("/");
     } catch (err: any) {

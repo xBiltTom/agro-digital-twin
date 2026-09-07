@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AP-3 Gemelo Digital: From Plant to Watershed",
-  description: "Plataforma de Gemelo Digital 3D Multiescala acoplando Fisiología de Planta con Hidrología SWAT y Proyecciones Climáticas CMIP6",
+  description: "Base demostrativa con modelos científicos simplificados, clima sintético y visualización ilustrativa",
 };
 
 export default function RootLayout({

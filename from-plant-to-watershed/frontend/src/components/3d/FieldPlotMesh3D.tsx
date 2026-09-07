@@ -16,12 +16,11 @@ export default function FieldPlotMesh3D({
   cwsiStress,
   onSelectPlant,
 }: FieldPlotMesh3DProps) {
-  const signalGlowRef = useRef<THREE.PointLight>(null);
+  const markerGlowRef = useRef<THREE.PointLight>(null);
   const canopyGroupRef = useRef<THREE.Group>(null);
   const soilMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
-  const dripDropsRef = useRef<THREE.Points>(null);
 
-  // Filas de cultivo de palto Hass en la parcela agrícola
+  // Vegetación procedural ilustrativa; no representa una población simulada.
   const plantsGrid = useMemo(() => {
     const items: {
       x: number;
@@ -53,30 +52,6 @@ export default function FieldPlotMesh3D({
     return items;
   }, []);
 
-  // Partículas animadas de gotas de riego por goteo
-  const { dripDropsGeo, dropOffsets } = useMemo(() => {
-    const count = 48;
-    const geom = new THREE.BufferGeometry();
-    const positions = new Float32Array(count * 3);
-    const offs = new Float32Array(count);
-
-    let idx = 0;
-    [-12, -8, -4, 0, 4, 8, 12].forEach((zPos) => {
-      for (let x = -10; x <= 10; x += 3.5) {
-        if (idx < count) {
-          positions[idx * 3] = x;
-          positions[idx * 3 + 1] = 0.3 + Math.random() * 0.3;
-          positions[idx * 3 + 2] = zPos;
-          offs[idx] = Math.random();
-          idx++;
-        }
-      }
-    });
-
-    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    return { dripDropsGeo: geom, dropOffsets: offs };
-  }, []);
-
   // Color de follaje según estrés hídrico CWSI
   const currentCanopyColor = useMemo(() => {
     const lush = new THREE.Color("#16a34a");
@@ -95,31 +70,18 @@ export default function FieldPlotMesh3D({
     }
   }, [cwsiStress]);
 
-  // Animaciones en tiempo real: marchitez de hojas, gotas de riego y pulso de suelo
-  useFrame((state, delta) => {
+  // Animaciones procedurales impulsadas por resultados persistidos.
+  useFrame((state) => {
     const time = state.clock.getElapsedTime();
 
-    // 1. Gotas de riego por goteo cayendo al suelo
-    if (dripDropsRef.current) {
-      const pos = dripDropsRef.current.geometry.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        let y = pos.getY(i) - delta * 1.5;
-        if (y < 0.05) {
-          y = 0.35;
-        }
-        pos.setY(i, y);
-      }
-      pos.needsUpdate = true;
-    }
-
-    // 2. Marchitez física de árboles cuando hay sequía (sagging vertical)
+    // 1. Respuesta visual procedural al CWSI persistido.
     if (canopyGroupRef.current) {
       const sagFactor = 1.0 - cwsiStress * 0.28;
       const breeze = Math.sin(time * 1.8) * 0.015;
       canopyGroupRef.current.scale.set(1.0 + breeze, sagFactor, 1.0 + breeze);
     }
 
-    // 3. Color y humedad del suelo
+    // 2. Color procedural del suelo a partir de la humedad persistida.
     if (soilMaterialRef.current) {
       const moisture = Math.max(10, Math.min(40, soilMoistureVol));
       const factor = (moisture - 10) / 30.0;
@@ -129,9 +91,9 @@ export default function FieldPlotMesh3D({
       soilMaterialRef.current.roughness = 0.95 - factor * 0.3;
     }
 
-    // 4. Pulso de señal IoT
-    if (signalGlowRef.current) {
-      signalGlowRef.current.intensity = 1.2 + Math.sin(time * 4.0) * 0.8;
+    // 3. Pulso de un marcador visual, no de un sensor.
+    if (markerGlowRef.current) {
+      markerGlowRef.current.intensity = 1.2 + Math.sin(time * 4.0) * 0.8;
     }
   });
 
@@ -143,7 +105,7 @@ export default function FieldPlotMesh3D({
         <meshStandardMaterial ref={soilMaterialRef} color="#3d2719" roughness={0.92} />
       </mesh>
 
-      {/* Surcos y Camellones de Riego */}
+      {/* Surcos ilustrativos */}
       {[-12, -8, -4, 0, 4, 8, 12].map((zPos) => (
         <group key={zPos} position={[0, 0.28, zPos]}>
           <mesh receiveShadow>
@@ -156,11 +118,6 @@ export default function FieldPlotMesh3D({
           </mesh>
         </group>
       ))}
-
-      {/* Gotas de Riego por Goteo Animadas */}
-      <points ref={dripDropsRef} geometry={dripDropsGeo}>
-        <pointsMaterial color="#38bdf8" size={0.08} transparent opacity={0.85} />
-      </points>
 
       {/* Perfil Estratificado Subterráneo (Corte de Suelo en el Borde Frontal) */}
       <group position={[0, -2.25, 17.05]}>
@@ -228,7 +185,7 @@ export default function FieldPlotMesh3D({
         ))}
       </group>
 
-      {/* Estación de Telemetría IoT en Parcela con Etiqueta 3D */}
+      {/* Marcador procedural con etiqueta explícita */}
       <group position={[3.8, 0.25, 2.0]}>
         <mesh position={[0, 1.0, 0]} castShadow>
           <cylinderGeometry args={[0.035, 0.045, 2.0, 8]} />
@@ -246,16 +203,16 @@ export default function FieldPlotMesh3D({
           <sphereGeometry args={[0.09, 12, 12]} />
           <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={1.8} />
         </mesh>
-        <pointLight ref={signalGlowRef} position={[0, 2.05, 0]} color="#38bdf8" intensity={1.5} distance={5} />
+        <pointLight ref={markerGlowRef} position={[0, 2.05, 0]} color="#38bdf8" intensity={1.5} distance={5} />
 
-        {/* Etiqueta HTML 3D Flotante con Telemetría en Vivo */}
+        {/* Etiqueta HTML 3D: no representa telemetría IoT */}
         <Html position={[0, 2.4, 0]} center distanceFactor={18} className="pointer-events-none select-none">
           <div className="bg-zinc-950/90 backdrop-blur-md border border-cyan-500/50 px-2.5 py-1 rounded-xl shadow-xl text-[10px] font-mono text-cyan-300 flex flex-col items-center whitespace-nowrap">
             <span className="font-bold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" /> Sonda IoT #01
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" /> Marcador procedural
             </span>
             <span className="text-[9px] text-zinc-300">
-              θ: <b className="text-cyan-400">{soilMoistureVol.toFixed(1)}%</b> | CWSI: <b className="text-emerald-400">{cwsiStress.toFixed(2)}</b>
+              Resultados simplificados; no sensor real
             </span>
           </div>
         </Html>
@@ -289,7 +246,7 @@ export default function FieldPlotMesh3D({
             }}
             className="bg-zinc-950/90 backdrop-blur-md border border-emerald-500/60 px-3 py-1.5 rounded-xl shadow-2xl text-[11px] font-sans text-emerald-300 font-bold whitespace-nowrap animate-bounce cursor-pointer pointer-events-auto"
           >
-            <span>🔬 Planta Individual AP-3</span>
+            <span>🔬 Planta procedural ilustrativa</span>
             <span className="block text-[9px] text-zinc-400 font-normal">Haz clic para zoom Micro</span>
           </div>
         </Html>

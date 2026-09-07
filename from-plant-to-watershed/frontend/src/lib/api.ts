@@ -148,8 +148,8 @@ class ApiService {
     watershed_id: string;
     scenario_id: string;
     duration_days: number;
-    irrigation_efficiency: number;
-    parameters?: any;
+    seed: number;
+    parameters?: Record<string, number>;
   }): Promise<SimulationRun> {
     return this.request<SimulationRun>("/simulations", {
       method: "POST",

@@ -55,9 +55,9 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    role_names: Optional[List[str]] = ["OPERADOR_AGROPECUARIO"]
     institution: Optional[str] = None
     scientific_specialty: Optional[str] = None
+    model_config = ConfigDict(extra="forbid")
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None

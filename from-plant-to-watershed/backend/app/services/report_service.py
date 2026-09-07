@@ -86,8 +86,8 @@ class ReportGeneratorService:
         # Encabezado Institucional
         story.append(Paragraph("CENTRO DE MODELADO HIDROLÓGICO Y GEMELOS DIGITALES (AP-3)", subtitle_style))
         story.append(Spacer(1, 4))
-        story.append(Paragraph("INFORME TÉCNICO DE SIMULACIÓN BIOFÍSICA MULTIESCALA", title_style))
-        story.append(Paragraph("Acoplamiento: Planta Individual ⇄ Suelo ⇄ Cuenca SWAT ⇄ CMIP6", subtitle_style))
+        story.append(Paragraph("INFORME DE SIMULACIÓN SIMPLIFICADA", title_style))
+        story.append(Paragraph("Clima sintético · planta representativa · hidrología conceptual", subtitle_style))
         story.append(Spacer(1, 8))
         story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#14b8a6"), spaceBefore=2, spaceAfter=10))
 
@@ -98,7 +98,9 @@ class ReportGeneratorService:
             [Paragraph("Escenario Climático:", body_bold), Paragraph(f"{sim_run.scenario.code} - {sim_run.scenario.name}", body_style)],
             [Paragraph("Trayectoria de Emisiones:", body_bold), Paragraph(sim_run.scenario.pathway, body_style)],
             [Paragraph("Horizonte Temporal:", body_bold), Paragraph(f"{sim_run.duration_days} días (Paso diario)", body_style)],
-            [Paragraph("Eficiencia de Riego:", body_bold), Paragraph(f"{int(sim_run.irrigation_efficiency * 100)}% (Tecnificado)", body_style)],
+            [Paragraph("Clasificación:", body_bold), Paragraph("DEMO / SYNTHETIC / SIMPLIFIED", body_style)],
+            [Paragraph("Implementaciones:", body_bold), Paragraph("SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel", body_style)],
+            [Paragraph("Semilla RNG:", body_bold), Paragraph("No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else str(sim_run.seed), body_style)],
             [Paragraph("Fecha de Emisión:", body_bold), Paragraph(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), body_style)],
         ]
         t_meta = Table(meta_data, colWidths=[140, 400])
@@ -118,8 +120,8 @@ class ReportGeneratorService:
         kpi_data = [
             ["Indicador Biofísico / Hidrológico", "Valor Obtenido", "Unidad", "Estado"],
             ["Precipitación Total Acumulada", f"{metrics.get('total_precip_mm', 0):.1f}", "mm", "Forzamiento"],
-            ["Escorrentía Superficial (Q_surf)", f"{metrics.get('total_surface_runoff_mm', 0):.1f}", "mm", "SWAT SCS-CN"],
-            ["Evapotranspiración Real (E_a)", f"{metrics.get('total_actual_et_mm', 0):.1f}", "mm", "Penman-Feddes"],
+            ["Escorrentía Superficial (Q_surf)", f"{metrics.get('total_surface_runoff_mm', 0):.1f}", "mm", "Modelo simplificado SCS-CN"],
+            ["Evapotranspiración Real (E_a)", f"{metrics.get('total_actual_et_mm', 0):.1f}", "mm", "Modelo simplificado"],
             ["Volumen Total en Exutorio", f"{metrics.get('total_discharge_hm3', 0):.2f}", "hm³", "Río Cuenca"],
             ["Caudal Máximo Pico", f"{metrics.get('peak_streamflow_m3s', 0):.2f}", "m³/s", "Crecida"],
             ["Estrés Hídrico Medio (CWSI)", f"{metrics.get('mean_cwsi', 0):.3f}", "0 a 1", metrics.get('drought_stress_status', 'Normal')],
@@ -171,14 +173,13 @@ class ReportGeneratorService:
         story.append(t_sample)
         story.append(Spacer(1, 12))
 
-        # 4. Conclusiones y Recomendaciones
-        story.append(Paragraph("4. Conclusiones Técnicas y Recomendaciones", h1_style))
+        # 4. Alcance e interpretación
+        story.append(Paragraph("4. Alcance e interpretación", h1_style))
         conclusions = (
-            f"Bajo el forzamiento climático <b>{sim_run.scenario.name}</b>, la cuenca hidrológica experimenta "
-            f"un volumen descargado acumulado de <b>{metrics.get('total_discharge_hm3', 0):.2f} hm³</b> con una precipitación anual de "
-            f"<b>{metrics.get('total_precip_mm', 0):.1f} mm</b>. El índice de estrés hídrico de cultivo (CWSI) se mantuvo en un promedio de "
-            f"<b>{metrics.get('mean_cwsi', 0):.3f}</b> ({metrics.get('drought_stress_status', 'Normal')}), evidenciando que el esquema de riego "
-            f"tecnificado al {int(sim_run.irrigation_efficiency * 100)}% amortigua eficazmente los picos de déficit hídrico calculados por la función de Feddes."
+            "Estos resultados proceden de <b>SyntheticClimateProvider</b>, <b>SimplifiedPlantModel</b> y "
+            "<b>SimplifiedHydrologyModel</b>. No constituyen una corrida SWAT+, datos CMIP6, validación contra observaciones ni evidencia "
+            "sobre eficacia de riego, resiliencia climática o H1. "
+            f"Residual acumulado de balance numérico: <b>{metrics.get('cumulative_water_balance_residual_mm', 0):.3e} mm</b>."
         )
         story.append(Paragraph(conclusions, body_style))
 
@@ -194,14 +195,14 @@ class ReportGeneratorService:
 
         # Título y Subtítulo
         title_p = doc.add_paragraph()
-        title_run = title_p.add_run("INFORME TÉCNICO DE SIMULACIÓN BIOFÍSICA MULTIESCALA (AP-3)")
+        title_run = title_p.add_run("INFORME DE SIMULACIÓN SIMPLIFICADA (AP-3)")
         title_run.bold = True
         title_run.font.size = Pt(16)
         title_run.font.color.rgb = RGBColor(15, 23, 42)
         title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         sub_p = doc.add_paragraph()
-        sub_run = sub_p.add_run("Acoplamiento: Fisiología de Planta ⇄ Suelo ⇄ Cuenca SWAT ⇄ CMIP6")
+        sub_run = sub_p.add_run("Clima sintético · planta representativa · hidrología conceptual")
         sub_run.italic = True
         sub_run.font.size = Pt(11)
         sub_run.font.color.rgb = RGBColor(2, 132, 199)
@@ -213,15 +214,16 @@ class ReportGeneratorService:
         h1 = doc.add_heading("1. Metadatos de la Simulación", level=1)
         h1.style.font.color.rgb = RGBColor(15, 118, 110)
 
-        meta_table = doc.add_table(rows=5, cols=2)
-        meta_table.alignment = WD_TABLE_ALIGNMENT.CENTER
         meta_data = [
             ("Nombre de la Simulación", sim_run.name),
-            ("Escenario Climático CMIP6", f"{sim_run.scenario.code}: {sim_run.scenario.name} ({sim_run.scenario.pathway})"),
+            ("Control climático sintético", f"{sim_run.scenario.code}: {sim_run.scenario.name}"),
             ("Horizonte de Modelado", f"{sim_run.duration_days} días diarios"),
-            ("Eficiencia de Riego", f"{int(sim_run.irrigation_efficiency * 100)}%"),
+            ("Semilla RNG", "No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else str(sim_run.seed)),
+            ("Implementaciones", "SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel"),
             ("Fecha de Generación", datetime.now().strftime("%d/%m/%Y %H:%M")),
         ]
+        meta_table = doc.add_table(rows=len(meta_data), cols=2)
+        meta_table.alignment = WD_TABLE_ALIGNMENT.CENTER
         for idx, (label, val) in enumerate(meta_data):
             row = meta_table.rows[idx]
             row.cells[0].text = label
@@ -241,8 +243,8 @@ class ReportGeneratorService:
         kpi_table.alignment = WD_TABLE_ALIGNMENT.CENTER
         kpis = [
             ("Precipitación Total", f"{metrics.get('total_precip_mm', 0):.1f}", "mm", "Forzamiento"),
-            ("Escorrentía Superficial", f"{metrics.get('total_surface_runoff_mm', 0):.1f}", "mm", "SWAT SCS-CN"),
-            ("Evapotranspiración Real", f"{metrics.get('total_actual_et_mm', 0):.1f}", "mm", "Penman-Feddes"),
+            ("Escorrentía Superficial", f"{metrics.get('total_surface_runoff_mm', 0):.1f}", "mm", "Modelo simplificado SCS-CN"),
+            ("Evapotranspiración Real", f"{metrics.get('total_actual_et_mm', 0):.1f}", "mm", "SimplifiedPlantModel"),
             ("Descarga Acumulada Río", f"{metrics.get('total_discharge_hm3', 0):.2f}", "hm³", "Volumen Cuenca"),
             ("Caudal Máximo Pico", f"{metrics.get('peak_streamflow_m3s', 0):.2f}", "m³/s", "Crecida"),
             ("Estrés Hídrico Medio (CWSI)", f"{metrics.get('mean_cwsi', 0):.3f}", "0 - 1", metrics.get('drought_stress_status', 'Normal')),
@@ -268,13 +270,12 @@ class ReportGeneratorService:
         doc.add_paragraph().paragraph_format.space_after = Pt(14)
 
         # 3. Conclusiones
-        h3 = doc.add_heading("3. Conclusiones y Análisis Técnico", level=1)
+        h3 = doc.add_heading("3. Alcance e interpretación", level=1)
         h3.style.font.color.rgb = RGBColor(15, 118, 110)
         p_conc = doc.add_paragraph(
-            f"El acoplamiento biofísico multiescala evidencia una alta resiliencia del dosel del cultivo "
-            f"bajo el escenario {sim_run.scenario.name}. La integración del modelo de absorción radicular de Feddes "
-            f"con las ecuaciones de balance de agua en el suelo de SWAT garantiza la conservación estricta de masa hidrológica, "
-            f"arrojando una descarga de {metrics.get('total_discharge_hm3', 0):.2f} hm³ y un caudal pico de {metrics.get('peak_streamflow_m3s', 0):.2f} m³/s."
+            "Resultados DEMO obtenidos con SyntheticClimateProvider, SimplifiedPlantModel y SimplifiedHydrologyModel. No son una ejecución SWAT+, "
+            "un FSPM, una proyección CMIP6 ni una validación científica. H1 permanece sin demostrar. "
+            f"El residual acumulado del balance numérico fue {metrics.get('cumulative_water_balance_residual_mm', 0):.3e} mm."
         )
         p_conc.paragraph_format.space_after = Pt(10)
 
@@ -318,10 +319,11 @@ class ReportGeneratorService:
         # Metadatos
         meta_items = [
             ("ID Simulación", sim_run.id),
-            ("Escenario CMIP6", f"{sim_run.scenario.code} - {sim_run.scenario.name}"),
+            ("Control sintético", f"{sim_run.scenario.code} - {sim_run.scenario.name}"),
             ("Trayectoria", sim_run.scenario.pathway),
             ("Duración", f"{sim_run.duration_days} días"),
-            ("Eficiencia de Riego", f"{int(sim_run.irrigation_efficiency * 100)}%"),
+            ("Semilla RNG", "No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else sim_run.seed),
+            ("Implementaciones", "SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel"),
             ("Fecha de Ejecución", (sim_run.created_at.strftime("%Y-%m-%d %H:%M") if sim_run.created_at else datetime.now().strftime("%Y-%m-%d %H:%M"))),
         ]
         for idx, (k, v) in enumerate(meta_items, start=4):
@@ -342,7 +344,7 @@ class ReportGeneratorService:
 
         kpis = [
             ("Precipitación Total Acumulada", metrics.get("total_precip_mm", 0), "mm"),
-            ("Escorrentía Superficial SWAT", metrics.get("total_surface_runoff_mm", 0), "mm"),
+            ("Escorrentía superficial (modelo simplificado)", metrics.get("total_surface_runoff_mm", 0), "mm"),
             ("Evapotranspiración Real Acumulada", metrics.get("total_actual_et_mm", 0), "mm"),
             ("Volumen Descargado en Río", metrics.get("total_discharge_hm3", 0), "hm³"),
             ("Caudal Máximo Pico", metrics.get("peak_streamflow_m3s", 0), "m³/s"),
@@ -357,10 +359,17 @@ class ReportGeneratorService:
             ws_resumen[f"C{idx}"] = u
             ws_resumen[f"C{idx}"].font = regular_font
 
+        ws_resumen["A20"] = "ALCANCE"
+        ws_resumen["A20"].font = header_font
+        ws_resumen["A20"].fill = header_fill
+        ws_resumen.merge_cells("B20:C20")
+        ws_resumen["B20"] = "DEMO sintética y simplificada; no SWAT+, CMIP6, FSPM ni validación observacional."
+        ws_resumen["B20"].font = regular_font
+
         # -------------------------------------------------------------
-        # Pestaña 2: Series Diarias SWAT
+        # Pestaña 2: balance diario del modelo simplificado
         # -------------------------------------------------------------
-        ws_swat = wb.create_sheet(title="Balance Hidrológico SWAT")
+        ws_swat = wb.create_sheet(title="Hidrología simplificada")
         swat_headers = ["Día", "Fecha", "Precipitación (mm)", "Escorrentía Qsurf (mm)", "Evapotransp Real (mm)", "Percolación (mm)", "Caudal Río (m³/s)", "Humedad Suelo (%)"]
         ws_swat.append(swat_headers)
 

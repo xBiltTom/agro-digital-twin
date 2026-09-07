@@ -1,4 +1,9 @@
-# 01. Arquitectura y Funcionamiento General del Sistema
+# 01. Arquitectura y Funcionamiento General (documento legado)
+
+> **Advertencia:** describe la demostración anterior y conserva nombres que ya
+> no son contratos científicos válidos. La implementación actual usa clima
+> sintético y modelos simplificados; no ejecuta SWAT+, FSPM ni CMIP6. Consulte
+> `methodology/current-models.md` como fuente vigente.
 
 Este documento describe la estructura técnica y el flujo de datos que permiten al software funcionar como un **Gemelo Digital 3D en tiempo real**.
 

@@ -1,5 +1,6 @@
 from typing import List, Optional
-from sqlalchemy import String, Float, Integer, ForeignKey, JSON
+from datetime import datetime
+from sqlalchemy import String, Float, Integer, ForeignKey, JSON, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.models.base import TimestampMixin
@@ -14,6 +15,7 @@ class ClimateScenario(Base, TimestampMixin):
     temp_anomaly_c: Mapped[float] = mapped_column(Float, default=0.0) # Incremento medio proyectado en °C
     precip_factor: Mapped[float] = mapped_column(Float, default=1.0) # Factor multiplicador (1.0 = 100%, 0.85 = -15%)
     co2_ppm: Mapped[float] = mapped_column(Float, default=415.0)
+    source_type: Mapped[str] = mapped_column(String(30), default="SYNTHETIC", nullable=False)
 
 class SimulationRun(Base, TimestampMixin):
     __tablename__ = "simulation_runs"
@@ -22,11 +24,18 @@ class SimulationRun(Base, TimestampMixin):
     watershed_id: Mapped[str] = mapped_column(String(36), ForeignKey("watersheds.id", ondelete="CASCADE"), nullable=False)
     scenario_id: Mapped[str] = mapped_column(String(36), ForeignKey("climate_scenarios.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
-    status: Mapped[str] = mapped_column(String(30), default="COMPLETED") # "PENDING", "RUNNING", "COMPLETED", "FAILED"
+    status: Mapped[str] = mapped_column(String(30), default="PENDING")
     duration_days: Mapped[int] = mapped_column(Integer, default=365) # Simulación típica anual o plurianual
-    irrigation_efficiency: Mapped[float] = mapped_column(Float, default=0.85) # Eficiencia de riego (goteo/aspersión)
+    irrigation_efficiency: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # legacy, unsupported
     parameters: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     summary_metrics: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    seed: Mapped[int] = mapped_column(Integer, default=42, nullable=False)
+    requested_config: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    effective_config: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    provenance: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    error: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     scenario: Mapped[ClimateScenario] = relationship("ClimateScenario", lazy="selectin")
     results: Mapped[List["SimulationResult"]] = relationship(
@@ -49,7 +58,7 @@ class SimulationResult(Base, TimestampMixin):
     temp_c: Mapped[float] = mapped_column(Float, nullable=False)
     solar_rad_mj: Mapped[float] = mapped_column(Float, default=18.5)
     
-    # Componentes Hidrológicos SWAT
+    # Componentes del modelo hidrológico simplificado
     potential_et_mm: Mapped[float] = mapped_column(Float, nullable=False)
     actual_et_mm: Mapped[float] = mapped_column(Float, nullable=False)
     surface_runoff_mm: Mapped[float] = mapped_column(Float, nullable=False)
@@ -65,5 +74,6 @@ class SimulationResult(Base, TimestampMixin):
     root_water_uptake_mm: Mapped[float] = mapped_column(Float, nullable=False) # Feddes RWU
     cwsi_stress_index: Mapped[float] = mapped_column(Float, default=0.15) # 0.0 (Sin estrés) a 1.0 (Estrés severo)
     sap_flow_velocity_cmh: Mapped[float] = mapped_column(Float, default=12.4) # Flujo de savia en cm/h
+    water_balance_residual_mm: Mapped[float] = mapped_column(Float, default=0.0)
 
     simulation_run: Mapped[SimulationRun] = relationship("SimulationRun", back_populates="results")

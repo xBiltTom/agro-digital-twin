@@ -1,294 +1,149 @@
-# AP-3: From Plant to Watershed — Multi-Scale Digital Twin Framework
+# From Plant to Watershed
 
-> **Plataforma de Gemelo Digital 3D Multiescala que acopla modelos fisiológicos individuales de planta con la hidrología de cuencas SWAT y proyecciones climáticas downscaled (CMIP6).**
+Base de software científico reproducible para el proyecto de investigación
+**“From Plant to Watershed: A Multi-Scale Digital Twin Framework Coupling
+Individual Plant Models with SWAT Hydrology and Downscaled Climate
+Projections”**.
 
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-000000?style=flat&logo=next.js&logoColor=white)](https://nextjs.org)
-[![Three.js](https://img.shields.io/badge/3D%20Engine-Three.js%20%2F%20R3F-black?style=flat&logo=three.js&logoColor=white)](https://threejs.org)
-[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%20%2F%20SQLite-336791?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![Tests](https://img.shields.io/badge/Tests-14%2F14%20Passed-success?style=flat&logo=pytest&logoColor=white)](#-pruebas-automatizadas)
+## Estado actual: demostración reproducible
 
----
+La implementación actual ejecuta un pipeline diario persistente compuesto por:
 
-## 📌 Descripción del Proyecto
+- `SyntheticClimateProvider`: forzamiento meteorológico estacional y pseudoaleatorio con seed; **no** contiene observaciones ni NEX-GDDP-CMIP6.
+- `SimplifiedPlantModel`: planta representativa algebraica; **no** es un FSPM ni representa órganos, fenología o población.
+- `SimplifiedHydrologyModel`: balance conceptual agregado SCS-CN con diagnóstico de residual; **no** ejecuta SWAT+.
 
-El proyecto **AP-3 (From Plant to Watershed)** implementa un framework integral de **Gemelo Digital 3D en tiempo real** diseñado para la investigación ecohidrológica avanzada, la gestión sostenible de recursos hídricos en cuencas hidrográficas y la evaluación del impacto del cambio climático en la agricultura.
+Cada corrida guarda seed, configuración solicitada y efectiva, provenance, estado,
+errores y balance hídrico. El visor WebGL reproduce resultados persistidos y sus
+geometrías de campo, cuenca y planta son **procedurales e ilustrativas**.
 
-A diferencia de los modelos agronómicos o hidrológicos aislados, esta plataforma establece un **acoplamiento biofísico bidireccional multiescala**:
-1. **Escala Micro (Planta Individual)**: Modela la demanda evaporativa, la resistencia estomática, la absorción radicular mediante la función de reducción de **Feddes**, el índice de estrés hídrico de cultivo (**CWSI**) y la velocidad de flujo de savia xilemática ($cm/h$).
-2. **Escala Meso (Parcela Agrícola / HRU - Hydrological Response Unit)**: Simula el balance hídrico en un perfil de suelo estratificado (horizontes $0-30\text{ cm}$, $30-60\text{ cm}$ y $60-100\text{ cm}$) con sensores IoT de humedad volumétrica ($\theta$) y eficiencia de riego por goteo.
-3. **Escala Macro (Cuenca Hidrográfica SWAT)**: Modela la cuenca mediante las ecuaciones de balance de masa de **SWAT (Soil & Water Assessment Tool)**, calculando la escorrentía superficial con el método de la **Curva Número SCS**, la percolación profunda, la recarga de acuífero y el tránsito fluvial del caudal hacia el exutorio ($m^3/s$).
-4. **Forzamiento Climático Downscaled (CMIP6)**: Permite forzar el sistema con proyecciones climáticas normalizadas bajo escenarios **SSP1-2.6**, **SSP2-4.5** y **SSP5-8.5**, evaluando la resiliencia hídrica ante sequías u olas de calor extremas.
+No están implementados ni demostrados:
 
----
+- SWAT+ real, FSPM completo o CMIP6/NEX-GDDP-CMIP6 real;
+- observaciones USGS, USDA NASS, CHIRPS, SoilGrids o Landsat;
+- población de campo, Planta → Campo o Campo → HRU;
+- calibración, validación formal, Sobol, KS, Wilcoxon, bootstrap o la hipótesis H0/H1.
 
-## 📚 Documentación Técnica y Científica
+El catálogo Palto/Santa Eulalia/Rímac, si se habilita, es un **LEGACY DEMO** para
+desarrollo local. No representa el dominio científico objetivo ni una cuenca
+verificada.
 
-Para una explicación profunda del funcionamiento interno, modelos y variables, consulta la carpeta [`docs/`](docs/):
+## Arquitectura objetivo (futura)
 
-- 🏛️ **[01. Arquitectura y Funcionamiento](docs/01_ARQUITECTURA_Y_FUNCIONAMIENTO.md)**: Flujo de datos, acoplamiento multiescala y comunicación WebSockets.
-- 📊 **[02. Guía de Variables y Métricas](docs/02_GUIA_DE_VARIABLES_Y_METRICAS.md)**: **Diccionario completo de valores** ($Q$, $\theta$, $CWSI$, $Tr$, $ET_0$, savia, rangos y unidades).
-- 📐 **[03. Modelos Científicos y Fórmulas](docs/03_MODELOS_CIENTIFICOS_Y_FORMULAS.md)**: Ecuaciones de SWAT, Curva Número SCS, Feddes ($\alpha$) y CMIP6.
-- 📖 **[04. Guía de Usuario y Módulos](docs/04_GUIA_DE_USUARIO_Y_MODULOS.md)**: Manual operativo de simulaciones, visor 3D y reportes.
-
----
-
-## ✨ Funcionalidades Principales
-
-### 1. 🌐 Gemelo Digital 3D Multiescala (Three.js / React Three Fiber / WebGL)
-- **Vista Macro (Cuenca SWAT 3D)**:
-  - Malla topográfica 3D (DEM) generada proceduralmente con relieve montañoso andino (cotas de $850\text{ m}$ a $4350\text{ m}$).
-  - Cauce fluvial 3D reactivo cuyo diámetro y luminosidad responden al caudal instantáneo $Q$ ($m^3/s$).
-  - Sistema de partículas dinámico para precipitación y mapa de calor de terreno sensible a la humedad del suelo.
-- **Vista Meso (Parcela Agrícola HRU 3D)**:
-  - Cuadrícula de cultivo con surcos de riego por goteo y cuadrícula de árboles frutales (Palto Hass).
-  - Perfil subterráneo estratificado mostrando los 3 horizontes edáficos.
-  - Sonda IoT con antena y baliza LED pulsante de telemetría.
-- **Vista Micro (Planta Individual 3D)**:
-  - Estructura botánica completa: tronco, xilema central y racimos de follaje foliar.
-  - **Coloración dinámica de follaje**: modulada en vivo por el índice **CWSI** (verde esmeralda saludable $\to$ lima $\to$ amarillo marchito bajo sequía).
-  - **Partículas de flujo de savia**: partículas ascendentes dentro del tronco que viajan a la velocidad física calculada ($cm/h$).
-  - Sistema radicular ramificado subterráneo con halo de absorción radicular de Feddes.
-- **Transiciones Cinemáticas y Choques Climáticos en Vivo**:
-  - Interpolación vectorial suave entre escalas de cámara (Macro $42\text{ m}$, Meso $18\text{ m}$, Micro $5.5\text{ m}$).
-  - Botones de choque interactivo: *"Lluvia +40mm"*, *"Calor +4°C"* y *"Restablecer"*.
-
-### 2. ⚡ Estudio de Modelado SWAT & Proyecciones Climáticas
-- **Simulador Interactivo**: Creación de experimentos configurando cuenca, escenario CMIP6, horizonte temporal (30, 90, 180, 365 días) y eficiencia de riego.
-- **Gráficos Analíticos con Recharts**:
-  - *Hidrograma SWAT*: Precipitaciones diarias ($mm$) vs Caudal del Río ($m^3/s$).
-  - *Fisiología Vegetal*: Transpiración real vs Demanda evaporativa ($ET_0$) y velocidad de savia.
-  - *Humedad de Suelo*: Dinámica de humedad volumétrica $\theta$ (%) y curva de estrés CWSI.
-- **Transmisión WebSocket en Tiempo Real**: Endpoint nativo en `/api/v1/twin/ws/{simulation_id}` con control de velocidad ($1x - 20x$) y comandos `play`, `pause`, `step`.
-
-### 3. 📑 Generador de Reportes Multiformato
-- **Reporte PDF Formal Institucional (ReportLab)**: Documento de ingeniería con membrete, metadatos del escenario CMIP6, matriz de KPIs, serie diaria de muestra y conclusiones técnicas para tomadores de decisiones.
-- **Documento Técnico Word (.docx) (`python-docx`)**: Informe técnico editable con estilos jerárquicos, tablas estilizadas con sombreado de celdas y narrativa de impacto climático.
-- **Libro Analítico Excel (.xlsx) (`openpyxl`)**: Libro con 3 pestañas estructuradas (`Resumen Ejecutivo`, `Series Diarias SWAT`, `Fisiología Vegetal Micro`), formatos numéricos de precisión (`0.00`) y anchos de columna autoajustados.
-- **Centro de Descargas y Auditoría**: Registro de descargas previas con timestamp y tamaño de archivo.
-
-### 4. 🔐 Seguridad, Roles y Perfiles (RBAC)
-- **Autenticación Segura**: Tokens JWT Bearer con expiración y hashing de contraseñas con `bcrypt`.
-- **5 Roles Preconfigurados**:
-  - `SUPERADMIN`: Control total del sistema, gestión de usuarios, roles y auditoría.
-  - `ADMIN_CIENTIFICO`: Calibración de cuencas, escenarios climáticos y especies.
-  - `INVESTIGADOR_HIDROLOGO`: Ejecución de simulaciones, análisis 3D y descarga de reportes.
-  - `OPERADOR_AGROPECUARIO`: Monitoreo en tiempo real del gemelo digital de parcela y planta.
-  - `LECTOR_AUDITOR`: Lectura de dashboard e informes.
-- **13 Permisos Granulares de Dominio**: Control de acceso a simulaciones, visor 3D, exportaciones y gestión de usuarios.
-- **Gestión de Perfil Científico**: Actualización de institución, laboratorio, especialidad científica, biografía y cambio de contraseña.
-
----
-
-## 🛠️ Stack Tecnológico
-
-| Capa | Tecnologías |
-| :--- | :--- |
-| **Backend** | Python 3.12+, FastAPI, Uvicorn, SQLAlchemy 2.0 (Async), Pydantic v2, WebSockets |
-| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Lucide Icons |
-| **Motor 3D** | Three.js, `@react-three/fiber` (v9), `@react-three/drei` (v10), WebGL |
-| **Visualización de Datos** | Recharts (Hidrogramas, curvas de transpiración y perfiles de humedad) |
-| **Reportes** | ReportLab (PDF), `python-docx` (Word), `openpyxl` (Excel) |
-| **Bases de Datos** | PostgreSQL 16+ con `asyncpg` (Producción) / SQLite con `aiosqlite` (Desarrollo local inmediato) |
-| **Pruebas** | Pytest, `pytest-asyncio`, HTTPX |
-
----
-
-## 📂 Estructura del Repositorio
-
-```bash
-from-plant-to-watershed/
-├── README.md                         # Documentación principal del software
-├── backend/
-│   ├── app/
-│   │   ├── api/                      # Endpoints organizados por versión
-│   │   │   ├── deps.py               # Dependencias de autenticación y RBAC
-│   │   │   └── v1/
-│   │   │       ├── auth.py           # Autenticación JWT (login, register, me, refresh)
-│   │   │       ├── users.py          # CRUD de usuarios y asignación de roles
-│   │   │       ├── roles.py          # Catálogo de roles y permisos
-│   │   │       ├── profile.py        # Perfil del usuario y cambio de contraseña
-│   │   │       ├── simulations.py    # Motor y API de simulaciones SWAT
-│   │   │       ├── twin_ws.py        # WebSocket en tiempo real para el Gemelo 3D
-│   │   │       ├── reports.py        # Streaming de descarga de reportes PDF/Word/Excel
-│   │   │       └── router.py         # Enrutador central API v1
-│   │   ├── core/
-│   │   │   ├── config.py             # Configuración Pydantic Settings
-│   │   │   ├── database.py           # Conexión asíncrona a BD con fallback resiliente
-│   │   │   └── security.py           # Criptografía bcrypt y tokens JWT
-│   │   ├── models/                   # Modelos ORM SQLAlchemy
-│   │   │   ├── user.py               # User, Role, Permission, UserProfile
-│   │   │   ├── watershed.py          # Watershed, Subbasin, HRU, PlantSpecies
-│   │   │   ├── simulation.py         # ClimateScenario, SimulationRun, SimulationResult
-│   │   │   └── report.py             # GeneratedReport (auditoría)
-│   │   ├── schemas/                  # Esquemas de validación Pydantic v2
-│   │   │   ├── auth.py
-│   │   │   ├── user.py
-│   │   │   └── simulation.py
-│   │   ├── services/                 # Lógica científica y generadores
-│   │   │   ├── plant_model.py        # Fisiología de planta (Penman-Monteith, Feddes RWU, CWSI)
-│   │   │   ├── swat_hydrology.py     # Balance SWAT (Curva Número SCS, escorrentía, río)
-│   │   │   ├── climate_engine.py     # Forzamiento CMIP6 downscaled (SSP1/2/5)
-│   │   │   ├── twin_coupling_engine.py # Orquestador de acoplamiento multiescala
-│   │   │   ├── report_service.py     # Generador de PDF (ReportLab), Word y Excel
-│   │   │   └── seed_service.py       # Seeder automático inicial de roles, usuarios y cuenca
-│   │   └── main.py                   # Inicializador FastAPI con lifespan y CORS
-│   ├── tests/                        # Suite de pruebas automatizadas (pytest)
-│   │   ├── conftest.py
-│   │   ├── test_auth_rbac.py         # Tests de seguridad y RBAC
-│   │   ├── test_twin_simulation.py   # Tests biofísicos y de acoplamiento
-│   │   └── test_reports.py           # Tests de generación de PDF, Word y Excel
-│   ├── requirements.txt              # Dependencias Python
-│   └── .env.example                  # Plantilla de variables de entorno
-│
-└── frontend/
-    ├── src/
-    │   ├── app/                      # Rutas Next.js App Router
-    │   │   ├── (auth)/
-    │   │   │   ├── login/page.tsx    # Login con botones de acceso 1-clic por rol
-    │   │   │   └── register/page.tsx # Registro de investigadores
-    │   │   ├── (dashboard)/
-    │   │   │   ├── layout.tsx        # Shell protegido con Sidebar y Navbar
-    │   │   │   ├── page.tsx          # Dashboard principal y KPIs
-    │   │   │   ├── twin-3d/page.tsx  # Visor 3D Multiescala interactivo
-    │   │   │   ├── simulations/page.tsx # Estudio de simulación y gráficos Recharts
-    │   │   │   ├── reports/page.tsx  # Centro de reportes (PDF, Word, Excel)
-    │   │   │   ├── users/page.tsx    # Administración de usuarios y roles
-    │   │   │   └── profile/page.tsx  # Perfil de usuario y credenciales
-    │   │   ├── globals.css
-    │   │   └── layout.tsx            # Root layout con AuthProvider
-    │   ├── components/
-    │   │   ├── 3d/                   # Componentes Three.js / React Three Fiber
-    │   │   │   ├── MultiScaleViewer3D.tsx # Canvas 3D con transiciones de cámara
-    │   │   │   ├── WatershedMesh3D.tsx    # Malla topográfica DEM, río y lluvia
-    │   │   │   ├── FieldPlotMesh3D.tsx    # Parcela, horizontes de suelo y sensores
-    │   │   │   ├── PlantModel3D.tsx       # Planta 3D, partículas de savia y raíces
-    │   │   │   └── TwinHUDOverlay.tsx     # HUD interactivo con choque climático
-    │   │   └── layout/
-    │   │       ├── Navbar.tsx        # Barra superior con estado en vivo
-    │   │       └── Sidebar.tsx       # Navegación lateral con filtrado RBAC
-    │   ├── context/
-    │   │   └── AuthContext.tsx       # Estado global de autenticación
-    │   ├── lib/
-    │   │   └── api.ts                # Cliente HTTP tipado con manejo de tokens y descargas
-    │   └── types/                    # Tipos e interfaces TypeScript
-    │       ├── auth.ts
-    │       └── simulation.ts
-    ├── package.json
-    └── tailwind.config.ts
+```text
+Plant/FSPM
+  ↓
+Field population
+  ↓
+HRU mapping
+  ↓
+SWAT+
+  ↓
+CMIP6 and observed-data validation
 ```
 
----
+Las etapas futuras se implementarán sólo después de registrar fuentes, versiones,
+licencias, checksums, control de calidad y un protocolo verificable de
+watershed/gauge.
 
-## 🚀 Guía de Instalación y Puesta en Marcha
+## Instalación
 
-### Prerrequisitos
-- **Node.js**: v20 o superior
-- **pnpm**: v9 o superior (`npm install -g pnpm`)
-- **Python**: v3.12 o superior
+Requisitos: Python 3.12+ y Node.js con pnpm (el lockfile del frontend es
+`pnpm-lock.yaml`).
 
----
-
-### 1. Puesta en Marcha del Backend (FastAPI)
-
-1. Ingresa a la carpeta del backend y activa el entorno virtual:
-   ```bash
-   cd backend
-   source venv/bin/activate
-   ```
-2. Instala dependencias si fuera necesario:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Inicia el servidor de desarrollo:
-   ```bash
-   uvicorn app.main:app --reload --port 8000
-   ```
-   - **Servidor activo en**: `http://localhost:8000`
-   - **Documentación Swagger UI**: `http://localhost:8000/api/v1/docs`
-
-> **Nota sobre Base de Datos**: Por defecto, el sistema viene preconfigurado con **SQLite local** (`digitaltwin.db`) que se inicializa y puebla automáticamente al arrancar. Si deseas usar **PostgreSQL**, simplemente ejecuta en tu terminal:
-> ```bash
-> sudo -u postgres psql -c "CREATE USER digitaltwin WITH PASSWORD 'digitaltwin123'; CREATE DATABASE digitaltwin_db OWNER digitaltwin;"
-> ```
-> Y configura `DATABASE_URL=postgresql+asyncpg://digitaltwin:digitaltwin123@localhost:5432/digitaltwin_db` en tu archivo `backend/.env`.
-
----
-
-### 2. Puesta en Marcha del Frontend (Next.js)
-
-1. En una nueva terminal, ingresa a la carpeta del frontend:
-   ```bash
-   cd frontend
-   ```
-2. Instala dependencias si fuera necesario:
-   ```bash
-   pnpm install
-   ```
-3. Inicia el servidor Next.js:
-   ```bash
-   pnpm dev
-   ```
-4. Abre tu navegador web en:
-   ```
-   http://localhost:3000
-   ```
-
----
-
-## 👥 Cuentas y Credenciales de Prueba (Demo)
-
-El sistema incluye un **seeder automático** con 3 cuentas preconfiguradas con diferentes privilegios RBAC:
-
-| Rol | Correo Electrónico | Contraseña | Alcance de Funcionalidad |
-| :--- | :--- | :--- | :--- |
-| **SUPERADMIN** | `admin@digitaltwin.org` | `Admin123!` | Control total, gestión de usuarios, edición de roles y auditoría. |
-| **INVESTIGADOR_HIDROLOGO** | `investigador@digitaltwin.org` | `Investiga123!` | Ejecución de simulaciones SWAT, análisis 3D y descarga de reportes. |
-| **OPERADOR_AGROPECUARIO** | `operador@digitaltwin.org` | `Operador123!` | Monitoreo en tiempo real de telemetría de planta y parcela. |
-
-> 💡 **Tip de Usabilidad**: En la pantalla de Login (`/login`) encontrarás botones de **Acceso Rápido (1-Clic)** que rellenan automáticamente los campos para probar cada rol al instante.
-
----
-
-## 🧪 Pruebas Automatizadas
-
-El proyecto cuenta con una cobertura completa de pruebas automatizadas en el backend que validan la autenticación, las restricciones de roles, la conservación de masa SWAT, el modelo radicular de Feddes y la exportación de los 3 formatos de reportes:
+### Backend
 
 ```bash
 cd backend
-source venv/bin/activate
-PYTHONPATH=. pytest -v backend/tests/
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+cp .env.example .env
 ```
 
-Resultado de las 14 pruebas:
+`requirements.txt` contiene las dependencias de ejecución; `requirements-dev.txt`
+añade Pytest, HTTPX y soporte async de pruebas. Para uso productivo, configure
+una `SECRET_KEY` aleatoria y `ENABLE_DEMO_SEED=false`. El proceso rechaza la clave
+placeholder fuera de `APP_ENV=development|test`.
+
+Para desarrollo local con las cuentas y fixtures legacy demo, configure de forma
+explícita:
+
+```dotenv
+APP_ENV=development
+ENABLE_DEMO_SEED=true
+SECRET_KEY=una-clave-local-no-compartida
+```
+
+Los permisos y roles RBAC se inicializan siempre, incluso con
+`ENABLE_DEMO_SEED=false`. Usuarios, Palto/Santa Eulalia, escenarios sintéticos y
+simulaciones legacy sólo se crean cuando ese flag está habilitado.
+
+### Primer administrador
+
+En una instalación nueva, cree el primer administrador con credenciales elegidas
+por el operador; el comando solicita la contraseña de forma segura y no habilita
+fixtures demo:
+
 ```bash
-backend/tests/test_auth_rbac.py::test_health_check PASSED                [  7%]
-backend/tests/test_auth_rbac.py::test_login_superadmin_success PASSED    [ 14%]
-backend/tests/test_auth_rbac.py::test_login_invalid_credentials PASSED   [ 21%]
-backend/tests/test_auth_rbac.py::test_get_current_user_me PASSED         [ 28%]
-backend/tests/test_auth_rbac.py::test_rbac_access_restrictions PASSED    [ 35%]
-backend/tests/test_auth_rbac.py::test_register_new_user_and_profile_update PASSED [ 42%]
-backend/tests/test_reports.py::test_generate_pdf_structure PASSED        [ 50%]
-backend/tests/test_reports.py::test_generate_docx_structure PASSED       [ 57%]
-backend/tests/test_reports.py::test_generate_xlsx_structure PASSED       [ 64%]
-backend/tests/test_reports.py::test_api_download_reports PASSED          [ 71%]
-backend/tests/test_twin_simulation.py::test_climate_engine_downscaling PASSED [ 78%]
-backend/tests/test_twin_simulation.py::test_plant_model_feddes_reduction PASSED [ 85%]
-backend/tests/test_twin_simulation.py::test_swat_hydrology_water_balance PASSED [ 92%]
-backend/tests/test_twin_simulation.py::test_api_simulation_workflow PASSED [100%]
-
-============================== 14 passed in 7.35s ==============================
+cd backend
+python -m app.cli create-admin --email admin@example.org --full-name "Administración inicial"
 ```
 
-Para verificar la compilación y tipado del frontend:
+Inicie la API:
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+### Frontend
+
 ```bash
 cd frontend
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+## Base de datos y migraciones
+
+Una DB nueva se crea al iniciar la API. Para una DB existente, la API aplica las
+migraciones SQL versionadas de `backend/migrations/` de manera no destructiva y
+registra cada archivo en `schema_migrations`. Respaldar la base antes de una
+actualización sigue siendo una práctica obligatoria.
+
+El runner y las migraciones versionadas usan SQL común a SQLite y PostgreSQL
+(`sqlite+aiosqlite` y `postgresql+asyncpg`). Para verificar PostgreSQL se requiere
+una instancia disponible y se puede iniciar la API con, por ejemplo:
+
+```bash
+DATABASE_URL='postgresql+asyncpg://usuario:clave@host:5432/ap3' APP_ENV=production ENABLE_DEMO_SEED=false uvicorn app.main:app
+```
+
+Esta iteración no levantó una instancia PostgreSQL; la portabilidad se verificó
+por SQL común y las pruebas SQLite.
+
+La migración `001_run_manifest_and_provenance.sql` incorpora el manifiesto de
+corrida y diagnóstico de balance. No borra filas existentes: las corridas sin
+manifiesto quedan etiquetadas como `legacy` y no reproducibles retrospectivamente.
+
+## Verificación
+
+```bash
+cd backend
+pytest -q tests
+
+cd ../frontend
+pnpm lint
+pnpm exec tsc --noEmit
 pnpm build
 ```
 
----
+La suite automatizada del backend está en `backend/tests`; cubre core puro,
+determinismo, parámetros, balance, API, autenticación, WebSocket, reportes,
+migraciones y aislamiento de SQLite. No se fijan conteos de tests en este README.
 
-## 📜 Licencia y Propósito Académico
+## Documentación
 
-Desarrollado como solución para la asignatura de **Ingeniería de Software II (Ciclo VIII)** en el marco del tema de investigación:
-> *AP-3 From Plant to Watershed: A Multi-Scale Digital Twin Framework Coupling Individual Plant Models with SWAT Hydrology and Downscaled Climate Projections.*
+- [Modelos actualmente implementados](docs/methodology/current-models.md)
+- [ADR: core científico puro](docs/adr/001-pure-scientific-core.md)
+- [Documentación histórica](docs/README.md): los documentos legados están marcados y no describen el contrato científico vigente.

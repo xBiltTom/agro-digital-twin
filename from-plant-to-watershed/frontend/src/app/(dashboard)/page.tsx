@@ -25,7 +25,7 @@ export default function DashboardPage() {
     fetch("http://localhost:8000/health")
       .then((res) => res.json())
       .then((data) => setBackendHealth(data.status === "healthy" ? "Operativo (FastAPI)" : "Inestable"))
-      .catch(() => setBackendHealth("Desconectado / Local Fallback"));
+      .catch(() => setBackendHealth("Desconectado"));
   }, []);
 
   const primaryRole = user?.roles?.[0]?.name || "USUARIO";
@@ -51,9 +51,8 @@ export default function DashboardPage() {
               Bienvenido, {user?.full_name}
             </h1>
             <p className="text-xs md:text-sm text-zinc-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
-              Plataforma de Gemelo Digital 3D Multiescala (AP-3) acoplando modelos fisiológicos
-              individuales de planta con el balance hidrológico de cuenca SWAT y proyecciones
-              climáticas downscaled.
+              Base demostrativa reproducible con clima sintético, una planta representativa y un
+              balance hidrológico conceptual. SWAT+, FSPM, Campo → HRU y CMIP6 aún no están implementados.
             </p>
           </div>
 
@@ -85,10 +84,10 @@ export default function DashboardPage() {
             </div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Planta Individual (Canopia & Raíces)</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">Tr: 3.42 mm/d</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">Planta representativa simplificada</div>
+            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">SIMPLIFIED</div>
             <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>CWSI: 0.18 (Óptimo)</span>
+              <span>Sin medición en esta portada</span>
             </div>
           </div>
         </div>
@@ -102,15 +101,15 @@ export default function DashboardPage() {
             </div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Parcela / HRU (Humedad Suelo)</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">θ: 28.6 % vol</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">Población y Campo → HRU</div>
+            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">NO IMPLEMENTADO</div>
             <div className="text-[11px] text-cyan-600 dark:text-cyan-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>Profundidad: 0-100 cm</span>
+              <span>Trabajo futuro</span>
             </div>
           </div>
         </div>
 
-        {/* Macro: Cuenca SWAT */}
+        {/* Macro: modelo hidrológico simplificado */}
         <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 p-5 flex flex-col justify-between hover:border-teal-500/40 transition group shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-mono uppercase text-zinc-500 dark:text-zinc-400">Escala Macro</span>
@@ -119,27 +118,27 @@ export default function DashboardPage() {
             </div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Cuenca Hidrográfica SWAT</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">Q: 14.8 m³/s</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">Hidrología conceptual agregada</div>
+            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">SIMPLIFIED</div>
             <div className="text-[11px] text-teal-600 dark:text-teal-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>Área: 420.5 km² (DEM 3D)</span>
+              <span>No es SWAT+</span>
             </div>
           </div>
         </div>
 
-        {/* Clima: CMIP6 */}
+        {/* Clima sintético */}
         <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 p-5 flex flex-col justify-between hover:border-amber-500/40 transition group shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-mono uppercase text-zinc-500 dark:text-zinc-400">Forzamiento CMIP6</span>
+            <span className="text-xs font-mono uppercase text-zinc-500 dark:text-zinc-400">Forzamiento sintético</span>
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
               <SunMedium className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Proyección Downscaled</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">SSP2-4.5 (+1.4°C)</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">Generador estocástico con seed</div>
+            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">SYNTHETIC</div>
             <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>Precipitación: -8.2%</span>
+              <span>No es CMIP6/NEX</span>
             </div>
           </div>
         </div>

@@ -1,4 +1,8 @@
-# 02. Guía de Variables, Métricas y Valores del Sistema
+# 02. Guía de Variables y Métricas (documento legado)
+
+> **Advertencia:** los rangos e interpretaciones siguientes no son validación
+> científica. Los resultados actuales son DEMO/SYNTHETIC/SIMPLIFIED. Consulte
+> `methodology/current-models.md` para el alcance vigente.
 
 Esta guía es el **diccionario de referencia** para entender exactamente qué significa cada número, gráfico, barra y etiqueta visible en el sistema, en qué unidades se mide y cuáles son los rangos óptimos y de alerta.
 

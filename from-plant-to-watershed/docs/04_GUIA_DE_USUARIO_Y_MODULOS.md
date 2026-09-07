@@ -1,4 +1,9 @@
-# 04. Guía de Usuario y Manual de Módulos
+# 04. Guía de Usuario y Módulos (documento legado)
+
+> **Advertencia:** varias etiquetas y controles descritos aquí pertenecen a la
+> UI anterior. La aplicación vigente declara clima sintético,
+> hidrología/planta simplificadas y vistas 3D ilustrativas; el control de
+> eficiencia de riego está deshabilitado.
 
 Esta guía explica paso a paso cómo utilizar cada sección de la plataforma, cómo interactuar con el gemelo 3D, interpretar los gráficos y exportar reportes.
 

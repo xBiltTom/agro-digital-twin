@@ -2,13 +2,17 @@ import os
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+INSECURE_SECRET_VALUES = {"", "CHANGE_ME", "ap3-plant-to-watershed-super-secret-key-2026-production"}
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AP-3 Digital Twin: From Plant to Watershed"
     API_V1_STR: str = "/api/v1"
     VERSION: str = "1.0.0"
     
     # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "ap3-plant-to-watershed-super-secret-key-2026-production")
+    APP_ENV: str = "development"
+    SECRET_KEY: str = "CHANGE_ME"
+    ENABLE_DEMO_SEED: bool = False
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 horas
     
@@ -32,5 +36,13 @@ class Settings(BaseSettings):
         env_file=".env",
         extra="ignore"
     )
+
+    def validate_runtime_security(self) -> None:
+        """Reject the documented placeholder outside explicitly local environments."""
+        environment = self.APP_ENV.lower()
+        if environment not in {"development", "test", "testing"} and self.SECRET_KEY in INSECURE_SECRET_VALUES:
+            raise RuntimeError("SECRET_KEY must be a non-default secret outside development/test")
+        if environment == "production" and self.ENABLE_DEMO_SEED:
+            raise RuntimeError("ENABLE_DEMO_SEED must be false in production")
 
 settings = Settings()

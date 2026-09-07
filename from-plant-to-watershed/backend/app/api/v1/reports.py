@@ -1,3 +1,6 @@
+import re
+import unicodedata
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +19,12 @@ MIME_TYPES = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 }
+
+
+def _safe_filename_fragment(value: str) -> str:
+    """Return an ASCII-only HTTP header-safe file-name fragment."""
+    normalized = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9_-]+", "_", normalized.lower()).strip("_")[:30] or "simulacion"
 
 @router.get("/download/{simulation_id}/{report_format}")
 async def download_report(
@@ -47,7 +56,7 @@ async def download_report(
     results_res = await db.execute(results_stmt)
     results = results_res.scalars().all()
 
-    clean_name = sim_run.name.lower().replace(" ", "_").replace("/", "-")[:30]
+    clean_name = _safe_filename_fragment(sim_run.name)
     filename = f"reporte_ap3_{clean_name}.{fmt}"
 
     # Generar en memoria según formato

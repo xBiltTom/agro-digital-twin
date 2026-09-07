@@ -2,6 +2,7 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.security import hash_password
+from app.core.config import settings
 from app.models.user import User, Role, Permission, UserProfile
 from app.models.watershed import Watershed, Subbasin, HRU, PlantSpecies
 from app.models.simulation import ClimateScenario, SimulationRun
@@ -14,7 +15,7 @@ INITIAL_PERMISSIONS = [
     {"name": "users:write", "description": "Crear y actualizar usuarios"},
     {"name": "users:delete", "description": "Desactivar usuarios del sistema"},
     {"name": "roles:read", "description": "Consultar roles y permisos"},
-    {"name": "simulations:create", "description": "Crear nuevos experimentos de simulación SWAT"},
+    {"name": "simulations:create", "description": "Crear experimentos con los modelos simplificados"},
     {"name": "simulations:read", "description": "Consultar simulaciones y resultados"},
     {"name": "simulations:execute", "description": "Ejecutar acoplamiento de gemelo digital"},
     {"name": "digital_twin:view_3d", "description": "Acceso al visor 3D multiescala"},
@@ -38,7 +39,7 @@ INITIAL_ROLES = [
     },
     {
         "name": "INVESTIGADOR_HIDROLOGO",
-        "description": "Investigador enfocado en cuencas, calibración SWAT y análisis de escenarios",
+        "description": "Investigador enfocado en cuencas y análisis de escenarios sintéticos",
         "permissions": ["simulations:create", "simulations:read", "simulations:execute", "digital_twin:view_3d", "digital_twin:control", "reports:generate", "reports:download"]
     },
     {
@@ -56,45 +57,44 @@ INITIAL_ROLES = [
 CLIMATE_SCENARIOS_DATA = [
     {
         "code": "HISTORICAL",
-        "name": "Línea Base Histórica (Control)",
-        "pathway": "Observado 1985-2014",
-        "description": "Clima histórico observado de referencia pre-cambio acelerado.",
+        "name": "Control sintético (sin anomalía)",
+        "pathway": "Control sintético",
+        "description": "Forzamiento estacional sintético para desarrollo; no contiene observaciones.",
         "temp_anomaly_c": 0.0,
         "precip_factor": 1.0,
         "co2_ppm": 395.0
     },
     {
         "code": "SSP1_26",
-        "name": "CMIP6 SSP1-2.6 (Sostenibilidad)",
-        "pathway": "Bajas emisiones de GEI",
-        "description": "Escenario ambicioso de mitigación climática y transición ecológica.",
+        "name": "Perturbación sintética inspirada en SSP1-2.6",
+        "pathway": "Control de anomalía sintética",
+        "description": "Control demostrativo; no utiliza datos CMIP6.",
         "temp_anomaly_c": 0.8,
         "precip_factor": 0.96,
         "co2_ppm": 440.0
     },
     {
         "code": "SSP2_45",
-        "name": "CMIP6 SSP2-4.5 (Trayectoria Media)",
-        "pathway": "Emisiones medias estabilizadas",
-        "description": "Escenario central de adaptación con vulnerabilidades socioeconómicas moderadas.",
+        "name": "Perturbación sintética inspirada en SSP2-4.5",
+        "pathway": "Control de anomalía sintética",
+        "description": "Control demostrativo; no utiliza datos CMIP6.",
         "temp_anomaly_c": 1.5,
         "precip_factor": 0.90,
         "co2_ppm": 540.0
     },
     {
         "code": "SSP5_85",
-        "name": "CMIP6 SSP5-8.5 (Fósil Intensivo)",
-        "pathway": "Altas emisiones sin mitigación",
-        "description": "Escenario extremo de calentamiento con severo estrés hídrico y sequías recurrentes.",
+        "name": "Perturbación sintética inspirada en SSP5-8.5",
+        "pathway": "Control de anomalía sintética",
+        "description": "Control demostrativo de calentamiento y lluvia; no utiliza datos CMIP6.",
         "temp_anomaly_c": 3.2,
         "precip_factor": 0.82,
         "co2_ppm": 850.0
     }
 ]
 
-async def seed_initial_data(db: AsyncSession) -> None:
-    """Poblar permisos, roles, usuarios, cuencas, escenarios y simulación demo."""
-    # 1. Permisos
+async def bootstrap_system_reference_data(db: AsyncSession) -> None:
+    """Create the structural RBAC catalog required in every environment."""
     existing_perms_res = await db.execute(select(Permission))
     existing_perms = {p.name: p for p in existing_perms_res.scalars().all()}
 
@@ -106,26 +106,33 @@ async def seed_initial_data(db: AsyncSession) -> None:
 
     await db.flush()
 
-    # 2. Roles
     existing_roles_res = await db.execute(select(Role))
     existing_roles = {r.name: r for r in existing_roles_res.scalars().all()}
 
     for role_data in INITIAL_ROLES:
-        if role_data["name"] not in existing_roles:
-            r = Role(name=role_data["name"], description=role_data["description"])
-            role_perms = [existing_perms[pname] for pname in role_data["permissions"] if pname in existing_perms]
-            r.permissions = role_perms
-            db.add(r)
-            existing_roles[role_data["name"]] = r
+        role = existing_roles.get(role_data["name"])
+        if not role:
+            role = Role(name=role_data["name"], description=role_data["description"])
+            db.add(role)
+            existing_roles[role_data["name"]] = role
+        role.description = role_data["description"]
+        role.permissions = [existing_perms[pname] for pname in role_data["permissions"]]
 
-    await db.flush()
+    await db.commit()
+    logger.info("Bootstrap RBAC completo: permisos y roles estructurales disponibles.")
 
-    # 3. Usuarios de prueba
+
+async def seed_legacy_demo_data(db: AsyncSession) -> None:
+    """Populate opt-in legacy-demo users, geography, scenarios, and simulation data."""
+    existing_roles_res = await db.execute(select(Role))
+    existing_roles = {r.name: r for r in existing_roles_res.scalars().all()}
+
+    # Usuarios de prueba; never invoked by a non-demo startup.
     test_users = [
         {
             "email": "admin@digitaltwin.org",
             "password": "Admin123!",
-            "full_name": "Dr. Carlos Valdivia (Superadmin)",
+            "full_name": "LEGACY DEMO — Dr. Carlos Valdivia (Superadmin)",
             "role": "SUPERADMIN",
             "institution": "Centro de Modelado Hidrológico y Cambio Climático",
             "specialty": "Ecohidrología y Gemelos Digitales"
@@ -133,7 +140,7 @@ async def seed_initial_data(db: AsyncSession) -> None:
         {
             "email": "investigador@digitaltwin.org",
             "password": "Investiga123!",
-            "full_name": "Dra. Elena Ramos (Investigadora SWAT)",
+            "full_name": "LEGACY DEMO — Dra. Elena Ramos (Investigadora)",
             "role": "INVESTIGADOR_HIDROLOGO",
             "institution": "Instituto Nacional del Agua",
             "specialty": "Modelación SWAT y Proyecciones Climáticas"
@@ -141,7 +148,7 @@ async def seed_initial_data(db: AsyncSession) -> None:
         {
             "email": "operador@digitaltwin.org",
             "password": "Operador123!",
-            "full_name": "Ing. Mateo Morales (Agrónomo de Campo)",
+            "full_name": "LEGACY DEMO — Ing. Mateo Morales (Operador)",
             "role": "OPERADOR_AGROPECUARIO",
             "institution": "Distrito de Riego Cuenca Alta",
             "specialty": "Manejo Hídrico y Fisiología de Cultivos"
@@ -180,13 +187,13 @@ async def seed_initial_data(db: AsyncSession) -> None:
 
     await db.flush()
 
-    # 4. Especies de Plantas
-    crop_stmt = select(PlantSpecies).where(PlantSpecies.name == "Palto Hass")
+    # Especies de plantas legacy demo.
+    crop_stmt = select(PlantSpecies).where(PlantSpecies.name.in_(["Palto Hass", "LEGACY DEMO — Palto Hass"]))
     crop_res = await db.execute(crop_stmt)
     hass_crop = crop_res.scalar_one_or_none()
     if not hass_crop:
         hass_crop = PlantSpecies(
-            name="Palto Hass",
+            name="LEGACY DEMO — Palto Hass",
             scientific_name="Persea americana Mill.",
             crop_type="Frutal Arbóreo",
             base_kc=1.05,
@@ -196,15 +203,17 @@ async def seed_initial_data(db: AsyncSession) -> None:
         )
         db.add(hass_crop)
         await db.flush()
+    else:
+        hass_crop.name = "LEGACY DEMO — Palto Hass"
 
-    # 5. Cuenca Hidrográfica SWAT
+    # Legacy demo watershed; it is not a verified research watershed.
     w_stmt = select(Watershed).where(Watershed.code == "CUENCA-SANTA-EULALIA")
     w_res = await db.execute(w_stmt)
     watershed = w_res.scalar_one_or_none()
     if not watershed:
         watershed = Watershed(
             code="CUENCA-SANTA-EULALIA",
-            name="Cuenca Santa Eulalia - Rímac",
+            name="LEGACY DEMO — Santa Eulalia / Rímac",
             country="Perú",
             area_km2=420.5,
             elevation_min_m=850.0,
@@ -263,20 +272,28 @@ async def seed_initial_data(db: AsyncSession) -> None:
         )
         db.add(hru_agri)
         await db.flush()
+    else:
+        watershed.name = "LEGACY DEMO — Santa Eulalia / Rímac"
 
-    # 6. Escenarios Climáticos CMIP6
+    # Escenarios sintéticos legacy demo.
     existing_scenarios_res = await db.execute(select(ClimateScenario))
     existing_scenarios = {s.code: s for s in existing_scenarios_res.scalars().all()}
 
     for s_data in CLIMATE_SCENARIOS_DATA:
         if s_data["code"] not in existing_scenarios:
-            s_obj = ClimateScenario(**s_data)
+            s_obj = ClimateScenario(**s_data, source_type="SYNTHETIC")
             db.add(s_obj)
             existing_scenarios[s_data["code"]] = s_obj
+        else:
+            # Repair legacy demo labels without changing identifiers or deleting runs.
+            s_obj = existing_scenarios[s_data["code"]]
+            for key, value in s_data.items():
+                setattr(s_obj, key, value)
+            s_obj.source_type = "SYNTHETIC"
 
     await db.flush()
 
-    # 7. Simulación inicial pre-ejecutada para visualización inmediata en Dashboard
+    # Precomputed legacy-demo simulation for local UI development only.
     sim_check_stmt = select(SimulationRun).limit(1)
     sim_check = await db.execute(sim_check_stmt)
     if not sim_check.scalar_one_or_none() and first_user_id:
@@ -285,11 +302,13 @@ async def seed_initial_data(db: AsyncSession) -> None:
             user_id=first_user_id,
             watershed_id=watershed.id,
             scenario_id=target_scenario.id,
-            name="Línea Base vs Proyección SSP2-4.5 (Cultivo Palto)",
+            name="LEGACY DEMO — clima sintético / planta representativa",
             status="PENDING",
             duration_days=365,
-            irrigation_efficiency=0.88,
-            parameters={"crop": "Palto Hass", "irrigation_mode": "Goteo Tecnificado"}
+            irrigation_efficiency=None,
+            seed=42,
+            parameters={},
+            requested_config={"duration_days": 365, "seed": 42, "parameters": {}, "evidence_type": "DEMO"},
         )
         db.add(demo_sim)
         await db.flush()
@@ -298,4 +317,13 @@ async def seed_initial_data(db: AsyncSession) -> None:
         await TwinCouplingEngine.execute_simulation_run(db, demo_sim.id)
 
     await db.commit()
-    logger.info("Seed completo: Cuenca Santa Eulalia, Especies, Escenarios CMIP6 y Simulación acoplada listos.")
+    logger.info("Seed DEMO completo: catálogo y forzamientos sintéticos listos.")
+
+
+async def seed_initial_data(db: AsyncSession) -> None:
+    """Compatibility entry point: bootstrap RBAC, then optionally add legacy demo fixtures."""
+    await bootstrap_system_reference_data(db)
+    if settings.ENABLE_DEMO_SEED:
+        await seed_legacy_demo_data(db)
+    else:
+        logger.info("Legacy demo seed skipped because ENABLE_DEMO_SEED is false.")
