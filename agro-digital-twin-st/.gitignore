@@ -1,0 +1,23 @@
+# Entornos virtuales
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache y bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos comprimidos y distribución
+*.zip
+*.tar.gz
+*.whl
+dist/
+build/
+
+# IDEs y sistemas operativos
+.vscode/
+.idea/
+.DS_Store
+*.log

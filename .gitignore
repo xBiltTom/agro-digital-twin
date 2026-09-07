@@ -9,7 +9,43 @@ Thumbs.db
 *.swp
 *.swo
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Compressed archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Node modules & builds
+node_modules/
+dist/
+build/
+coverage/
+
+# Database files
+digitaltwin.db
+*.sqlite3
+*.db
+
 # Logs
 *.log
 
-digitaltwin.db
+# Backups
+*.bak
+.git.bak/
