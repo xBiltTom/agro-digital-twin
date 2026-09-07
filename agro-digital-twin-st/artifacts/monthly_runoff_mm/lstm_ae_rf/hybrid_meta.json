@@ -1,0 +1,8 @@
+{
+  "input_dim": 10,
+  "latent_dim": 6,
+  "n_estimators": 35,
+  "max_depth": 12,
+  "lr": 0.001,
+  "random_state": 42
+}

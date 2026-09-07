@@ -1,0 +1,53 @@
+{
+  "model_name": "CNN-LSTM Hybrid",
+  "model_type": "hybrid_deep",
+  "target_name": "monthly_runoff_mm",
+  "learning_mode": "direct",
+  "features": [
+    "precip_mm",
+    "temp_mean_c",
+    "solar_radiation",
+    "soil_moisture",
+    "infiltration_mm",
+    "lai",
+    "root_depth_m",
+    "transpiration_mm",
+    "water_stress",
+    "et_mm"
+  ],
+  "feature_order": [
+    "precip_mm",
+    "temp_mean_c",
+    "solar_radiation",
+    "soil_moisture",
+    "infiltration_mm",
+    "lai",
+    "root_depth_m",
+    "transpiration_mm",
+    "water_stress",
+    "et_mm"
+  ],
+  "training_date": "2026-09-06 20:52:23",
+  "dataset_version": "v1.0-synthetic-cornbelt",
+  "random_seed": 42,
+  "train_split": "Temporal Holdout Split: Training before 2026-10-01, Testing 2026-10-01+ (No temporal leakage)",
+  "validation_strategy": "temporal",
+  "metrics": {
+    "rmse": 7.1099,
+    "mae": 3.0583,
+    "r2": 0.8948,
+    "nse": 0.8948,
+    "pbias": 15.92
+  },
+  "is_champion": false,
+  "is_synthetic_training_data": true,
+  "data_provenance": "Plant-to-Watershed Multi-Scale Simulator (Zea mays / SWAT+)",
+  "library_versions": {
+    "python": "3.12.3",
+    "numpy": "2.5.2",
+    "pandas": "3.0.5",
+    "scikit_learn": "1.9.0",
+    "tensorflow": "2.21.0",
+    "xgboost": "3.4.1"
+  }
+}
