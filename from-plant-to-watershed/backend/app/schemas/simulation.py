@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from typing import List, Optional, Dict, Any, Literal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # --- Climate Scenarios ---
 class ClimateScenarioResponse(BaseModel):
@@ -137,3 +137,9 @@ class SimulationRunResponse(BaseModel):
     summary_metrics: Optional[Dict[str, Any]] = None
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("dataset_ids", mode="before")
+    @classmethod
+    def normalize_legacy_dataset_ids(cls, value):
+        """Legacy rows predate the manifest field and persist it as NULL."""
+        return [] if value is None else value

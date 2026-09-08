@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from app.schemas.simulation import SimulationRunResponse
 from app.services.external_model_bundle import ExternalModelBundleAdapter
 from scientific_core import FieldToHRUCoupler, MultiscaleSimulationOrchestrator, PlantPopulation, PlantToFieldAggregator, RunConfig, ValidationEngine
 
@@ -72,3 +73,13 @@ def test_external_bundle_schema_controls_order_and_missing_features(tmp_path: Pa
     assert adapter._ordered_features({"lai": 3, "rain": 20}) == [20, 3]
     with pytest.raises(ValueError, match="missing required"):
         adapter._ordered_features({"rain": 20})
+
+
+def test_legacy_simulation_response_normalizes_missing_dataset_manifest():
+    response = SimulationRunResponse.model_validate({
+        "id": "simulation-1", "user_id": "user-1", "watershed_id": "watershed-1",
+        "scenario_id": "scenario-1", "name": "Legacy run", "status": "COMPLETED",
+        "duration_days": 30, "irrigation_efficiency": None, "seed": 42,
+        "dataset_ids": None, "created_at": "2026-09-08T00:00:00Z",
+    })
+    assert response.dataset_ids == []
