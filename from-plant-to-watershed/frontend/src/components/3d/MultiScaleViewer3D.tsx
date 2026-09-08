@@ -34,14 +34,14 @@ function CameraController({ scaleMode }: { scaleMode: ScaleMode }) {
 
   useEffect(() => {
     if (scaleMode === "MACRO") {
-      targetPos.current.set(0, 30, 40);
-      lookAtPos.current.set(0, 2, 0);
+      targetPos.current.set(2, 27, 38);
+      lookAtPos.current.set(0, 0, 0);
     } else if (scaleMode === "MESO") {
       targetPos.current.set(0, 14, 20);
       lookAtPos.current.set(0, 1, 0);
     } else if (scaleMode === "MICRO") {
-      targetPos.current.set(0, 2.0, 5.2);
-      lookAtPos.current.set(0, 1.2, 0);
+      targetPos.current.set(4.8, 2.8, 5.8);
+      lookAtPos.current.set(0, 1.25, 0);
     }
   }, [scaleMode]);
 
