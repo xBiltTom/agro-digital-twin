@@ -5,7 +5,7 @@ import { api } from "../../../lib/api";
 import { SimulationRun, SimulationResult } from "../../../types/simulation";
 import MultiScaleViewer3D, { ScaleMode } from "../../../components/3d/MultiScaleViewer3D";
 import TwinHUDOverlay from "../../../components/3d/TwinHUDOverlay";
-import { Box, Loader2 } from "lucide-react";
+import { Box, Loader2, Sparkles } from "lucide-react";
 
 export default function Twin3DPage() {
   const [scaleMode, setScaleMode] = useState<ScaleMode>("MACRO");
@@ -14,6 +14,12 @@ export default function Twin3DPage() {
   const [results, setResults] = useState<SimulationResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Layer Toggles
+  const [showHydrologyFlow, setShowHydrologyFlow] = useState(true);
+  const [showSoilHorizons, setShowSoilHorizons] = useState(true);
+  const [showSensors, setShowSensors] = useState(true);
+  const [showScientificLabels, setShowScientificLabels] = useState(true);
 
   // Timeline & Playback
   const [currentDay, setCurrentDay] = useState(1);
@@ -58,18 +64,19 @@ export default function Twin3DPage() {
       {/* Header Bar */}
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
-            <Box className="w-4 h-4" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-emerald-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shadow-sm">
+            <Box className="w-4.5 h-4.5" />
           </div>
           <div className="flex flex-col">
             <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              Maíz → campo → HRU → cuenca
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                WebGL Activo
+              From Plant to Watershed: Digital Twin 3D
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                <Sparkles className="w-2.5 h-2.5" />
+                FSPM ↔ SWAT+ ↔ CMIP6
               </span>
             </h1>
             <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Muestra persistida de plantas y agregados de una corrida multiescala. FSPM y SWAT+ son objetivos de integración, no motores activos.
+              Nivel 1: FSPM Zea mays 3D · Nivel 2: Campo n=1000 BARC · Nivel 3: Cuenca SWAT+ HRUs · Nivel 4: CMIP6
             </span>
           </div>
         </div>
@@ -77,7 +84,7 @@ export default function Twin3DPage() {
         {/* Scenario Selector */}
         {simulations.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 hidden sm:inline">Simulación:</span>
+            <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 hidden sm:inline">Escenario CMIP6:</span>
             <select
               value={selectedSim?.id}
               onChange={async (e) => {
@@ -113,7 +120,7 @@ export default function Twin3DPage() {
         {isLoading ? (
           <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-3 text-zinc-400 text-xs">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-            <span>Cargando corrida y muestra de maíz persistida...</span>
+            <span>Cargando corrida acoplada FSPM y SWAT+...</span>
           </div>
         ) : currentData ? (
           <>
@@ -130,6 +137,10 @@ export default function Twin3DPage() {
               plantCount={selectedSim?.plant_count ?? 1000}
               fieldAggregates={selectedSim?.field_aggregates}
               hruAggregates={selectedSim?.hru_aggregates as { hrus?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }> } | undefined}
+              showHydrologyFlow={showHydrologyFlow}
+              showSoilHorizons={showSoilHorizons}
+              showSensors={showSensors}
+              showScientificLabels={showScientificLabels}
             />
 
             <TwinHUDOverlay
@@ -146,6 +157,16 @@ export default function Twin3DPage() {
               currentDay={currentDay}
               totalDays={results.length}
               onSeekDay={setCurrentDay}
+              showHydrologyFlow={showHydrologyFlow}
+              onToggleHydrologyFlow={() => setShowHydrologyFlow(!showHydrologyFlow)}
+              showSoilHorizons={showSoilHorizons}
+              onToggleSoilHorizons={() => setShowSoilHorizons(!showSoilHorizons)}
+              showSensors={showSensors}
+              onToggleSensors={() => setShowSensors(!showSensors)}
+              showScientificLabels={showScientificLabels}
+              onToggleScientificLabels={() => setShowScientificLabels(!showScientificLabels)}
+              scenarioName={selectedSim?.name}
+              scenarioPathway={selectedSim?.scenario?.pathway || "SSP2-4.5"}
             />
           </>
         ) : (
