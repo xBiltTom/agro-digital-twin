@@ -331,6 +331,26 @@ async def seed_legacy_demo_data(db: AsyncSession) -> None:
 
 async def bootstrap_mvp_data(db: AsyncSession) -> None:
     """Idempotent reference domain, scenarios, observed snapshot, and discovered ML bundle."""
+    researcher_role = await db.scalar(select(Role).where(Role.name == "INVESTIGADOR_HIDROLOGO"))
+    researcher = await db.scalar(select(User).where(User.email == "investigador@digitaltwin.org"))
+    if not researcher:
+        researcher = User(
+            email="investigador@digitaltwin.org",
+            hashed_password=hash_password("Investiga123!"),
+            full_name="Dra. Elena Ramos · Investigación hidrológica",
+            is_active=True,
+            is_verified=True,
+            roles=[researcher_role] if researcher_role else [],
+        )
+        db.add(researcher)
+        await db.flush()
+        db.add(UserProfile(user_id=researcher.id, institution="Laboratorio de Gemelos Hidrológicos",
+                           scientific_specialty="Modelación planta-cuenca", preferred_theme="scientific"))
+    else:
+        # Upgrade the old demo identity without changing its login or password.
+        researcher.full_name = "Dra. Elena Ramos · Investigación hidrológica"
+        if researcher_role and researcher_role not in researcher.roles:
+            researcher.roles.append(researcher_role)
     crop = await db.scalar(select(PlantSpecies).where(PlantSpecies.name == "Maíz simplificado MVP"))
     if not crop:
         crop = PlantSpecies(name="Maíz simplificado MVP", scientific_name="Zea mays L.", crop_type="Cereal",

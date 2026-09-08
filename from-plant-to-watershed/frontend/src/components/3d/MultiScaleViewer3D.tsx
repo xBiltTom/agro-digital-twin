@@ -7,6 +7,7 @@ import * as THREE from "three";
 import WatershedMesh3D from "./WatershedMesh3D";
 import FieldPlotMesh3D from "./FieldPlotMesh3D";
 import PlantModel3D from "./PlantModel3D";
+import { PlantSample3D } from "./FieldPlotMesh3D";
 
 export type ScaleMode = "MACRO" | "MESO" | "MICRO";
 
@@ -19,6 +20,10 @@ interface MultiScaleViewer3DProps {
   transpirationMm: number;
   cwsiStress: number;
   sapFlowVelocityCmh: number;
+  plantSample?: PlantSample3D[];
+  plantCount?: number;
+  fieldAggregates?: Record<string, unknown>;
+  hruAggregates?: { hrus?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }> };
 }
 
 // Controlador de transición cinemática suave de cámara según la escala activa
@@ -60,6 +65,10 @@ export default function MultiScaleViewer3D({
   transpirationMm,
   cwsiStress,
   sapFlowVelocityCmh,
+  plantSample = [],
+  plantCount = 1000,
+  fieldAggregates,
+  hruAggregates,
 }: MultiScaleViewer3DProps) {
   // Ajuste de sol según escala y estrés
   const sunPosition: [number, number, number] =
@@ -164,6 +173,7 @@ export default function MultiScaleViewer3D({
             streamflowM3s={streamflowM3s}
             precipMm={precipMm}
             soilMoistureVol={soilMoistureVol}
+            hruAggregates={hruAggregates}
             onSelectSubbasin={() => onChangeScale("MESO")}
           />
         )}
@@ -172,6 +182,8 @@ export default function MultiScaleViewer3D({
           <FieldPlotMesh3D
             soilMoistureVol={soilMoistureVol}
             cwsiStress={cwsiStress}
+            plantSample={plantSample}
+            plantCount={plantCount}
             onSelectPlant={() => onChangeScale("MICRO")}
           />
         )}
@@ -182,6 +194,8 @@ export default function MultiScaleViewer3D({
             cwsiStress={cwsiStress}
             sapFlowVelocityCmh={sapFlowVelocityCmh}
             soilMoistureVol={soilMoistureVol}
+            lai={Number(fieldAggregates?.mean_lai) || undefined}
+            rootDepthCm={plantSample[0]?.root_depth_cm}
           />
         )}
       </Canvas>

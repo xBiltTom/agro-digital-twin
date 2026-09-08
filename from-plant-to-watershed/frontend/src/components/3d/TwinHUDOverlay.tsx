@@ -93,7 +93,7 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Mountain className="w-3.5 h-3.5" />
-            <span>Macro: Cuenca ilustrativa</span>
+            <span>Macro: Cuenca / HRU</span>
           </button>
 
           <button
@@ -105,7 +105,7 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Grid className="w-3.5 h-3.5" />
-            <span>Meso: Parcela procedural</span>
+            <span>Meso: Campo de maíz</span>
           </button>
 
           <button
@@ -117,7 +117,7 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Sprout className="w-3.5 h-3.5" />
-            <span>Micro: Planta ilustrativa</span>
+            <span>Micro: Zea mays</span>
           </button>
         </div>
 
@@ -140,7 +140,7 @@ export default function TwinHUDOverlay({
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-100 uppercase tracking-wider">
-                Playback de resultados simplificados
+                Playback de una corrida multiescala
               </span>
             </div>
             <div>{getStressBadge(cwsiStress)}</div>
@@ -221,7 +221,7 @@ export default function TwinHUDOverlay({
           </div>
 
           <div className="mt-2.5 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80 text-[10px] text-zinc-500">
-            Geometría procedural ilustrativa; no es arquitectura vegetal medida ni recomendación agronómica.
+            La geometría ilustra una muestra y agregados persistidos; no sustituye mediciones de campo ni una ejecución FSPM/SWAT+.
           </div>
         </div>
 

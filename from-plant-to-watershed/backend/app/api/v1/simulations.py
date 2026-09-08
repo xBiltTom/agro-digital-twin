@@ -33,7 +33,9 @@ async def list_watersheds(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):
-    stmt = select(Watershed)
+    # The reference Corn Belt/USGS watershed is the active demo, while any
+    # historical seed records remain available for backwards compatibility.
+    stmt = select(Watershed).order_by(desc(Watershed.code))
     res = await db.execute(stmt)
     return res.scalars().all()
 

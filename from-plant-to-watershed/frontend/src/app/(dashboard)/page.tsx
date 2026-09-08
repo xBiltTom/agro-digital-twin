@@ -51,8 +51,8 @@ export default function DashboardPage() {
               Bienvenido, {user?.full_name}
             </h1>
             <p className="text-xs md:text-sm text-zinc-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
-              Base demostrativa reproducible con clima sintético, una planta representativa y un
-              balance hidrológico conceptual. SWAT+, FSPM, Campo → HRU y CMIP6 aún no están implementados.
+              Demo reproducible de maíz que conecta una población de plantas, agregados de campo,
+              HRU proxy y caudal de referencia USGS. Las integraciones FSPM, SWAT+ y CMIP6 se muestran con su estado real.
             </p>
           </div>
 
@@ -84,10 +84,10 @@ export default function DashboardPage() {
             </div>
           </div>
           <div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Planta representativa simplificada</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">SIMPLIFIED</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">Maíz con estado de planta simplificado</div>
+            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">ACTIVO</div>
             <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>Sin medición en esta portada</span>
+              <span>LAI, estrés y profundidad radicular</span>
             </div>
           </div>
         </div>
@@ -102,9 +102,9 @@ export default function DashboardPage() {
           </div>
           <div>
             <div className="text-xs text-zinc-500 dark:text-zinc-400">Población y Campo → HRU</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">NO IMPLEMENTADO</div>
+            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">ACTIVO</div>
             <div className="text-[11px] text-cyan-600 dark:text-cyan-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>Trabajo futuro</span>
+              <span>n=1,000 y agregación por HRU proxy</span>
             </div>
           </div>
         </div>
@@ -158,8 +158,8 @@ export default function DashboardPage() {
               Gemelo Digital 3D Multiescala
             </h2>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
-              Explora en 3D la cuenca hidrográfica, navega a la parcela agrícola e inspecciona
-              la anatomía de la planta individual con absorción radicular y flujo de savia animado.
+              Explora la cuenca agrícola, la muestra espacial del campo y la arquitectura de una
+              planta de maíz derivadas de una corrida persistida.
             </p>
           </div>
           <div className="mt-6 flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">

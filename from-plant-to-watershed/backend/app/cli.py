@@ -11,7 +11,7 @@ from app.core.database import AsyncSessionLocal, Base, engine
 from app.core.migrations import apply_pending_migrations
 from app.core.security import hash_password
 from app.models.user import Role, User
-from app.services.seed_service import bootstrap_mvp_data, bootstrap_system_reference_data, seed_legacy_demo_data
+from app.services.seed_service import bootstrap_mvp_data, bootstrap_system_reference_data
 
 
 async def create_admin(email: str, full_name: str, password: str) -> None:
@@ -56,7 +56,6 @@ def main() -> None:
                 await apply_pending_migrations(engine)
                 async with AsyncSessionLocal() as session:
                     await bootstrap_system_reference_data(session)
-                    await seed_legacy_demo_data(session)
                     await bootstrap_mvp_data(session)
             finally:
                 await engine.dispose()

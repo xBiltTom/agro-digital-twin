@@ -104,10 +104,19 @@ export interface SimulationRun {
   external_model_id?: string | null;
   field_aggregates?: Record<string, any>;
   hru_aggregates?: Record<string, any>;
-  plant_sample?: Array<Record<string, any>>;
+  plant_sample?: PlantSample[];
   monthly_outputs?: Array<Record<string, any>>;
   validation?: Record<string, any>;
   ml_result?: Record<string, any>;
+}
+
+export interface PlantSample {
+  plant_id: number;
+  x_m: number;
+  y_m: number;
+  lai: number;
+  stress: number;
+  root_depth_cm?: number;
 }
 
 export interface ExternalModelInfo {

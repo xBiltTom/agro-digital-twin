@@ -63,13 +63,13 @@ export default function Twin3DPage() {
           </div>
           <div className="flex flex-col">
             <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              Gemelo Digital 3D Multiescala
+              Maíz → campo → HRU → cuenca
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                 WebGL Activo
               </span>
             </h1>
             <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Visualización procedural ilustrativa de resultados simplificados persistidos
+              Muestra persistida de plantas y agregados de una corrida multiescala. FSPM y SWAT+ son objetivos de integración, no motores activos.
             </span>
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function Twin3DPage() {
         {isLoading ? (
           <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-3 text-zinc-400 text-xs">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-            <span>Cargando visualización procedural y resultados persistidos...</span>
+            <span>Cargando corrida y muestra de maíz persistida...</span>
           </div>
         ) : currentData ? (
           <>
@@ -126,6 +126,10 @@ export default function Twin3DPage() {
               transpirationMm={currentData.plant_transpiration_mm}
               cwsiStress={currentData.cwsi_stress_index}
               sapFlowVelocityCmh={currentData.sap_flow_velocity_cmh}
+              plantSample={selectedSim?.plant_sample ?? []}
+              plantCount={selectedSim?.plant_count ?? 1000}
+              fieldAggregates={selectedSim?.field_aggregates}
+              hruAggregates={selectedSim?.hru_aggregates as { hrus?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }> } | undefined}
             />
 
             <TwinHUDOverlay
