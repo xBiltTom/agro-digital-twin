@@ -1,6 +1,8 @@
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
+import joblib
 import pytest
 
 from app.schemas.simulation import SimulationRunResponse
@@ -28,19 +30,22 @@ def test_plant_to_field_and_field_to_hru_are_explicit():
 
 def test_multiscale_baseline_and_twin_use_identical_forcing():
     run = MultiscaleSimulationOrchestrator().execute(
-        RunConfig("mvp", 5, 35, 100, start_date=__import__("datetime").date(2020, 1, 1)), 1000
+        RunConfig("mvp", 5, 35, 100, start_date=date(2020, 1, 1), end_date=date(2020, 2, 4)), 1000
     )
     assert run.summary_metrics["plant_count"] == 1000
-    assert run.provenance["forcing_identity"].startswith("baseline and twin")
+    assert run.provenance["forcing_identity"].startswith("baseline and multiscale twin")
     assert all("baseline_streamflow_m3s" in row for row in run.results)
+    assert all(len(row["hru_contributions"]) == 3 for row in run.results)
+    assert run.hru_aggregates["hydrology"]["aggregation"].startswith("area-weighted")
     assert run.summary_metrics["yield_proxy_evidence_type"] == "DERIVED"
     assert run.summary_metrics["seasonal_crop_yield_proxy_t_ha"] >= 0
 
 
 def test_management_scenarios_change_effective_model_inputs_and_outputs():
-    base = RunConfig("management", 5, 180, 100, start_date=__import__("datetime").date(2020, 1, 1))
-    no_till = RunConfig("management", 5, 180, 100, start_date=__import__("datetime").date(2020, 1, 1), management_scenario="NO_TILL")
-    sorghum = RunConfig("management", 5, 180, 100, start_date=__import__("datetime").date(2020, 1, 1), management_scenario="MAIZE_TO_SORGHUM")
+    dates = {"start_date": date(2020, 1, 1), "end_date": date(2020, 6, 28)}
+    base = RunConfig("management", 5, 180, 100, **dates)
+    no_till = RunConfig("management", 5, 180, 100, management_scenario="NO_TILL", **dates)
+    sorghum = RunConfig("management", 5, 180, 100, management_scenario="MAIZE_TO_SORGHUM", **dates)
     baseline_run = MultiscaleSimulationOrchestrator().execute(base, 100)
     no_till_run = MultiscaleSimulationOrchestrator().execute(no_till, 100)
     sorghum_run = MultiscaleSimulationOrchestrator().execute(sorghum, 100)
@@ -68,11 +73,21 @@ def test_external_bundle_schema_controls_order_and_missing_features(tmp_path: Pa
     (tmp_path / "metadata.json").write_text(json.dumps(metadata))
     (tmp_path / "metrics.json").write_text("{}")
     (tmp_path / "model.joblib").write_bytes(b"fixture")
+    joblib.dump({"feature_names": ["rain", "lai"], "scale_features": False, "is_fitted": False, "scaler": None}, tmp_path / "preprocessing.joblib")
     adapter = ExternalModelBundleAdapter(tmp_path)
     assert adapter.validate_bundle()["status"] == "VALID"
     assert adapter._ordered_features({"lai": 3, "rain": 20}) == [20, 3]
     with pytest.raises(ValueError, match="missing required"):
         adapter._ordered_features({"rain": 20})
+
+
+def test_real_streamlit_champion_declares_hybrid_contract_without_importing_streamlit():
+    champion = Path(__file__).resolve().parents[3] / "agro-digital-twin-st" / "artifacts" / "monthly_runoff_mm" / "champion"
+    info = ExternalModelBundleAdapter(champion).validate_bundle()
+    assert info["target"] == "monthly_runoff_mm"
+    assert info["framework"] == "keras-hybrid-random-forest"
+    assert info["training_data_type"] == "SYNTHETIC"
+    assert info["requires_tensorflow"] is True
 
 
 def test_legacy_simulation_response_normalizes_missing_dataset_manifest():

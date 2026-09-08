@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import getpass
+from pathlib import Path
 
 from sqlalchemy import select
 
@@ -12,6 +13,7 @@ from app.core.migrations import apply_pending_migrations
 from app.core.security import hash_password
 from app.models.user import Role, User
 from app.services.seed_service import bootstrap_mvp_data, bootstrap_system_reference_data
+from app.services.training_export import export_training_dataset
 
 
 async def create_admin(email: str, full_name: str, password: str) -> None:
@@ -46,6 +48,9 @@ def main() -> None:
     create_admin_parser.add_argument("--email", required=True)
     create_admin_parser.add_argument("--full-name", required=True)
     subcommands.add_parser("bootstrap-mvp", help="Idempotently prepare the demonstrable MVP")
+    export_parser = subcommands.add_parser("export-training-dataset", help="Export selected runs for the independent training lab")
+    export_parser.add_argument("--run-id", action="append", required=True, dest="run_ids")
+    export_parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
 
     if args.command == "bootstrap-mvp":
@@ -64,6 +69,15 @@ def main() -> None:
         finally:
             pass
         print("MVP bootstrap complete")
+    elif args.command == "export-training-dataset":
+        async def export() -> tuple[Path, Path, int]:
+            try:
+                async with AsyncSessionLocal() as session:
+                    return await export_training_dataset(session, args.run_ids, args.output_dir)
+            finally:
+                await engine.dispose()
+        data_path, manifest_path, count = asyncio.run(export())
+        print(f"Training export complete: {count} rows\n{data_path}\n{manifest_path}")
     elif args.command == "create-admin":
         password = getpass.getpass("Administrator password: ")
         confirmation = getpass.getpass("Confirm administrator password: ")

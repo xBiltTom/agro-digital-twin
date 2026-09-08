@@ -21,6 +21,7 @@ export interface DatasetInfo {
   spatial_support: string;
   evidence_type: string;
   metadata_json: Record<string, unknown>;
+  normalized_artifact_count: number;
 }
 
 export interface PlantSpecies {
@@ -113,7 +114,7 @@ export interface SimulationRun {
     yield_proxy_evidence_type?: "DERIVED";
   };
   created_at: string;
-  mode: "DEMO_MULTISCALE" | "REAL_OBSERVATION" | "ML_ASSISTED" | "SWAT_PLUS";
+  mode: "RESEARCH_MULTISCALE" | "DEVELOPMENT_LEGACY_DEMO" | "DEMO_MULTISCALE" | "REAL_OBSERVATION" | "ML_ASSISTED" | "SWAT_PLUS";
   plant_count: number;
   hydrology_backend: "SIMPLIFIED" | "SWAT_PLUS";
   external_model_id?: string | null;
@@ -124,8 +125,12 @@ export interface SimulationRun {
   validation?: Record<string, any>;
   ml_result?: Record<string, any>;
   management_scenario: "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM";
-  climate_source: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED_HYBRID";
+  climate_source: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "OBSERVED_HYBRID";
   dataset_ids: string[];
+  dataset_roles: Record<string, "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY">;
+  station_id?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 export interface PlantSample {

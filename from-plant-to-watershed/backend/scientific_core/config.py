@@ -1,5 +1,6 @@
 from dataclasses import asdict, dataclass, field
 from datetime import date
+import re
 from typing import Any, Mapping
 
 
@@ -12,7 +13,8 @@ SUPPORTED_PARAMETERS = frozenset({
 })
 
 MANAGEMENT_SCENARIOS = frozenset({"BASELINE", "NO_TILL", "MAIZE_TO_SORGHUM"})
-CLIMATE_SOURCES = frozenset({"SYNTHETIC", "CMIP6_FILE", "OBSERVED_HYBRID"})
+CLIMATE_SOURCES = frozenset({"SYNTHETIC", "CMIP6_FILE", "OBSERVED", "OBSERVED_HYBRID"})
+DATASET_ROLES = frozenset({"FORCING", "OBSERVATION", "SOIL_INPUT", "LAND_COVER", "YIELD_OBSERVATION", "VALIDATION", "CONTEXT_ONLY"})
 
 
 @dataclass(frozen=True)
@@ -21,13 +23,17 @@ class RunConfig:
     seed: int
     duration_days: int
     watershed_area_km2: float
+    start_date: date
+    end_date: date
     temp_anomaly_c: float = 0.0
     precip_factor: float = 1.0
     co2_ppm: float = 415.0
-    start_date: date = date(2026, 1, 1)
     parameters: Mapping[str, float] = field(default_factory=dict)
     management_scenario: str = "BASELINE"
     climate_source: str = "SYNTHETIC"
+    station_id: str | None = None
+    dataset_ids: tuple[str, ...] = ()
+    dataset_roles: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         unknown = set(self.parameters) - SUPPORTED_PARAMETERS
@@ -45,6 +51,18 @@ class RunConfig:
             raise ValueError(f"Unsupported management_scenario: {self.management_scenario}")
         if self.climate_source not in CLIMATE_SOURCES:
             raise ValueError(f"Unsupported climate_source: {self.climate_source}")
+        if self.station_id is not None and not re.fullmatch(r"\d{8,15}", self.station_id):
+            raise ValueError("station_id must contain 8 to 15 digits")
+        if self.end_date < self.start_date:
+            raise ValueError("end_date must not precede start_date")
+        if (self.end_date - self.start_date).days + 1 != self.duration_days:
+            raise ValueError("duration_days must equal the inclusive start_date/end_date period")
+        unknown_role_ids = set(self.dataset_roles) - set(self.dataset_ids)
+        if unknown_role_ids:
+            raise ValueError("dataset_roles may only reference dataset_ids")
+        invalid_roles = set(self.dataset_roles.values()) - DATASET_ROLES
+        if invalid_roles:
+            raise ValueError(f"Unsupported dataset role: {', '.join(sorted(invalid_roles))}")
         ranges = {
             "base_kc": (0.1, 2.0),
             "max_root_depth_cm": (1.0, 500.0),
@@ -62,6 +80,9 @@ class RunConfig:
     def effective_dict(self) -> dict[str, Any]:
         values = asdict(self)
         values["start_date"] = self.start_date.isoformat()
+        values["end_date"] = self.end_date.isoformat()
+        values["dataset_ids"] = list(self.dataset_ids)
+        values["dataset_roles"] = dict(self.dataset_roles)
         values["parameters"] = {
             "base_kc": 1.05,
             "max_root_depth_cm": 120.0,

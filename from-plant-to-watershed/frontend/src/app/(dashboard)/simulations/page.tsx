@@ -65,16 +65,21 @@ export default function SimulationsPage() {
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // New Simulation Form State
-  const [formName, setFormName] = useState("Experimento con clima sintético");
+  const [formName, setFormName] = useState("Experimento multiescala de maíz");
   const [formWatershedId, setFormWatershedId] = useState("");
   const [formScenarioId, setFormScenarioId] = useState("");
-  const [formDuration, setFormDuration] = useState(365);
+  const [formStartDate, setFormStartDate] = useState("");
+  const [formEndDate, setFormEndDate] = useState("");
+  const [formStationId, setFormStationId] = useState("");
   const [formSeed, setFormSeed] = useState(42);
   const [formPlantCount, setFormPlantCount] = useState(1000);
-  const [formMode, setFormMode] = useState("DEMO_MULTISCALE");
+  const [formMode] = useState<"RESEARCH_MULTISCALE">("RESEARCH_MULTISCALE");
+  const [formClimateSource, setFormClimateSource] = useState<"SYNTHETIC" | "CMIP6_FILE" | "OBSERVED">("SYNTHETIC");
+  const [formHydrologyBackend, setFormHydrologyBackend] = useState<"SIMPLIFIED" | "SWAT_PLUS">("SIMPLIFIED");
   const [formExternalModel, setFormExternalModel] = useState("");
   const [formManagement, setFormManagement] = useState<"BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM">("BASELINE");
   const [formDatasetIds, setFormDatasetIds] = useState<string[]>([]);
+  const [formDatasetRoles, setFormDatasetRoles] = useState<Record<string, "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY">>({});
 
   // Live WebSocket State
   const [isWsConnected, setIsWsConnected] = useState(false);
@@ -103,7 +108,11 @@ export default function SimulationsPage() {
       setExternalModels(modelsData);
       setDatasets(datasetsData);
 
-      if (watersData.length > 0) setFormWatershedId(watersData[0].id);
+      if (watersData.length > 0) {
+        setFormWatershedId(watersData[0].id);
+        const gauge = watersData[0].dem_metadata?.gauge;
+        if (typeof gauge === "string") setFormStationId(gauge);
+      }
       if (scenData.length > 0) setFormScenarioId(scenData[0].id);
 
       if (simsData.length > 0) {
@@ -142,6 +151,13 @@ export default function SimulationsPage() {
 
   const handleCreateSimulation = async (e: React.FormEvent) => {
     e.preventDefault();
+    const durationDays = formStartDate && formEndDate
+      ? Math.floor((Date.parse(`${formEndDate}T00:00:00Z`) - Date.parse(`${formStartDate}T00:00:00Z`)) / 86_400_000) + 1
+      : 0;
+    if (durationDays < 1) {
+      setFeedbackMsg({ type: "error", text: "Selecciona un periodo inicial y final válido." });
+      return;
+    }
     setIsSubmitting(true);
     setFeedbackMsg(null);
 
@@ -150,21 +166,24 @@ export default function SimulationsPage() {
         name: formName,
         watershed_id: formWatershedId,
         scenario_id: formScenarioId,
-        duration_days: Number(formDuration),
+        duration_days: durationDays,
         seed: formSeed,
         parameters: {},
         mode: formMode,
         plant_count: formPlantCount,
-        hydrology_backend: "SIMPLIFIED",
+        hydrology_backend: formHydrologyBackend,
         external_model_id: formExternalModel || undefined,
         management_scenario: formManagement,
-        climate_source: "SYNTHETIC",
+        climate_source: formClimateSource,
         dataset_ids: formDatasetIds,
-        start_date: "2020-01-01"
+        dataset_roles: formDatasetRoles,
+        station_id: formStationId || undefined,
+        start_date: formStartDate,
+        end_date: formEndDate,
       });
       setSimulations([newSim, ...simulations]);
       setIsModalOpen(false);
-      setFeedbackMsg({ type: "success", text: `Simulación "${newSim.name}" acoplada y ejecutada exitosamente.` });
+      setFeedbackMsg({ type: "success", text: `Experimento "${newSim.name}" ejecutado y versionado.` });
       selectSimulation(newSim);
     } catch (err: any) {
       setFeedbackMsg({ type: "error", text: err.message || "Error al ejecutar simulación" });
@@ -220,6 +239,9 @@ export default function SimulationsPage() {
 
   // Reducir serie para gráficos si es muy grande
   const chartData = results.filter((_, idx) => idx % Math.max(1, Math.floor(results.length / 90)) === 0);
+  const monthlyComparisonData = selectedSim?.monthly_outputs ?? [];
+  const hasObservedForcing = datasets.some((dataset) => ["CHIRPS", "OBSERVED_CLIMATE"].includes(dataset.provider) && dataset.normalized_artifact_count > 0);
+  const hasCmip6Forcing = datasets.some((dataset) => dataset.provider === "NEX-GDDP-CMIP6" && dataset.normalized_artifact_count > 0);
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
@@ -229,11 +251,11 @@ export default function SimulationsPage() {
           <div className="flex items-center gap-2">
             <Sliders className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-              Gemelo digital multiescala — MVP científico
+              Experimento multiescala Planta → Cuenca
             </h1>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-            Plant → Field → HRU proxy → hidrología simplificada → validación USGS.
+            Clima → población de maíz → campo → HRU proxy → hidrología → observaciones USGS cuando se vinculen.
           </p>
         </div>
 
@@ -243,7 +265,7 @@ export default function SimulationsPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-zinc-950 text-xs font-semibold shadow-md shadow-emerald-500/20 transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Nueva simulación demo</span>
+            <span>Nuevo experimento</span>
           </button>
         )}
       </div>
@@ -275,7 +297,7 @@ export default function SimulationsPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
-        {[`CLIMATE · ${selectedSim?.climate_source ?? "SYNTHETIC"}`, `PLANT ×${selectedSim?.plant_count ?? 1000} · SIMPLIFIED`, "FIELD · DERIVED", "HRU · COARSE PROXY", "HYDROLOGY · SIMPLIFIED", "METRICS · DIAGNOSTIC ONLY"].map((stage, index) => (
+        {[`CLIMATE · ${selectedSim?.climate_source ?? "NOT_SELECTED"}`, `PLANT ×${selectedSim?.plant_count ?? 1000} · SIMPLIFIED`, "FIELD · DERIVED", "HRU · COARSE PROXY", `HYDROLOGY · ${selectedSim?.hydrology_backend ?? "NOT_SELECTED"}`, `USGS · ${selectedSim?.validation?.status ?? "NOT_LINKED"}`].map((stage, index) => (
           <React.Fragment key={stage}><span className="px-3 py-2 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30">{stage}</span>{index < 5 && <span>→</span>}</React.Fragment>
         ))}
       </div>
@@ -315,7 +337,7 @@ export default function SimulationsPage() {
                       {sim.name}
                     </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800/50 shrink-0 font-medium">
-                      {sim.scenario?.source_type || "SYNTHETIC"}
+                      {sim.climate_source || sim.scenario?.source_type || "NOT_DECLARED"}
                     </span>
                   </div>
 
@@ -465,12 +487,19 @@ export default function SimulationsPage() {
                 )}
 
                 {/* Summary KPIs */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 text-xs">
                   <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
                     <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 block">Precipitación Total</span>
                     <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mt-1 block">
                       {selectedSim.summary_metrics?.total_precip_mm ?? "-"} mm
                     </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 block">Rendimiento de cultivo</span>
+                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mt-1 block">
+                      {selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha?.toFixed?.(2) ?? "-"} t/ha
+                    </span>
+                    <span className="text-[9px] text-amber-700 dark:text-amber-300">DERIVED, no NASS observado</span>
                   </div>
                   <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
                     <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 block">Volumen en Río</span>
@@ -514,15 +543,50 @@ export default function SimulationsPage() {
                     <div>Meses alineados: {selectedSim.validation?.aligned_months ?? 0} · mejora {selectedSim.validation?.improvement_percent?.value?.toFixed?.(2) ?? "indefinida"}%</div>
                   </div>
                 </div>
+                <details className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 text-[11px] text-zinc-600 dark:text-zinc-400">
+                  <summary className="cursor-pointer font-mono text-zinc-800 dark:text-zinc-200">MANIFIESTO Y PROVENANCE DE LA CORRIDA</summary>
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <span>Periodo: {selectedSim.start_date ?? "LEGACY / no reejecutable"} → {selectedSim.end_date ?? "-"}</span>
+                    <span>Estación USGS: {selectedSim.station_id ?? "no vinculada"} · seed {selectedSim.seed}</span>
+                    <span>Datos: {Object.entries(selectedSim.dataset_roles ?? {}).map(([id, role]) => `${role} (${id.slice(0, 8)})`).join(", ") || "ninguno"}</span>
+                    <span>ML: {selectedSim.ml_result?.status ?? "no seleccionado"} · entrenamiento {selectedSim.ml_result?.training_data_type ?? "-"}</span>
+                  </div>
+                  <p className="mt-2 text-amber-700 dark:text-amber-300">El modelo de planta y la hidrología son SIMPLIFIED; HRU es COARSE_HRU_PROXY. H1 no se concluye en este experimento.</p>
+                </details>
               </div>
 
-              {/* Hidrograma conceptual (caudal y lluvia sintéticos) */}
+              <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-xl flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">Comparación mensual: Observado · Baseline · Twin · ML</h3>
+                    <p className="text-[10px] text-zinc-500 mt-1">Las series solo aparecen cuando su fuente/modelo existe; no se imputan observaciones ausentes.</p>
+                  </div>
+                  <span className="text-[10px] font-mono text-amber-700 dark:text-amber-300">{selectedSim.validation?.interpretation ?? "NOT_VALIDATED"}</span>
+                </div>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthlyComparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#d4d4d8" vertical={false} />
+                      <XAxis dataKey="month" stroke="#71717a" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#71717a" fontSize={10} tickLine={false} label={{ value: "m³/s", angle: -90, position: "insideLeft", fill: "#71717a", fontSize: 10 }} />
+                      <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e4e4e7", borderRadius: "8px", fontSize: "11px", color: "var(--foreground)" }} />
+                      <Legend wrapperStyle={{ fontSize: "11px" }} />
+                      <Line type="monotone" dataKey="observed_streamflow_m3s" name="OBSERVED USGS" stroke="#111827" strokeWidth={2} dot={false} connectNulls={false} />
+                      <Line type="monotone" dataKey="baseline_streamflow_m3s" name="BASELINE" stroke="#f97316" strokeWidth={1.8} dot={false} />
+                      <Line type="monotone" dataKey="twin_streamflow_m3s" name="MULTISCALE TWIN" stroke="#059669" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="ML ASSISTED" stroke="#7c3aed" strokeWidth={1.8} strokeDasharray="4 3" dot={false} connectNulls={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Hidrograma de forcing declarado y caudal del twin simplificado. */}
               <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-xl flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Mountain className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                     <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
-                      Hidrograma conceptual: caudal simulado (m³/s) y precipitación sintética (mm)
+                      Hidrograma: caudal del twin simplificado (m³/s) y precipitación de forcing (mm)
                     </h3>
                   </div>
                   <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400">Escala Macro</span>
@@ -655,7 +719,7 @@ export default function SimulationsPage() {
               <div className="flex items-center gap-2">
                 <Sliders className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                  Configurar experimento simplificado
+                  Configurar experimento multiescala
                 </h3>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer">
@@ -685,7 +749,12 @@ export default function SimulationsPage() {
                   </label>
                   <select
                     value={formWatershedId}
-                    onChange={(e) => setFormWatershedId(e.target.value)}
+                    onChange={(e) => {
+                      const watershedId = e.target.value;
+                      setFormWatershedId(watershedId);
+                      const gauge = watersheds.find((item) => item.id === watershedId)?.dem_metadata?.gauge;
+                      setFormStationId(typeof gauge === "string" ? gauge : "");
+                    }}
                     className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 focus:outline-none focus:border-emerald-500/80 shadow-sm"
                   >
                     {watersheds.map((w) => (
@@ -698,7 +767,7 @@ export default function SimulationsPage() {
 
                 <div>
                   <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                    Control de clima sintético
+                    Escenario de perturbación
                   </label>
                   <select
                     value={formScenarioId}
@@ -714,17 +783,42 @@ export default function SimulationsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Modo</label>
-                  <select value={formMode} onChange={(e) => setFormMode(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
-                    <option value="DEMO_MULTISCALE">DEMO_MULTISCALE</option>
-                    <option value="REAL_OBSERVATION">REAL_OBSERVATION</option>
-                    <option value="ML_ASSISTED">ML_ASSISTED</option>
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Fuente climática</label>
+                  <select value={formClimateSource} onChange={(e) => setFormClimateSource(e.target.value as "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED")} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    <option value="SYNTHETIC">SYNTHETIC — fallback reproducible</option>
+                    <option value="OBSERVED" disabled={!hasObservedForcing}>OBSERVED — {hasObservedForcing ? "FORCING disponible" : "NOT_AVAILABLE: falta CHIRPS normalizado"}</option>
+                    <option value="CMIP6_FILE" disabled={!hasCmip6Forcing}>CMIP6_FILE — {hasCmip6Forcing ? "FORCING disponible" : "NOT_AVAILABLE: falta NEX-GDDP normalizado"}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Seed</label>
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Backend hidrológico</label>
+                  <select value={formHydrologyBackend} onChange={(e) => setFormHydrologyBackend(e.target.value as "SIMPLIFIED" | "SWAT_PLUS")} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    <option value="SIMPLIFIED">SIMPLIFIED — por HRU proxy</option>
+                    <option value="SWAT_PLUS" disabled={capabilities.swat_plus?.status !== "ACTIVE"}>SWAT_PLUS — {capabilities.swat_plus?.status ?? "NOT_AVAILABLE"}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Estación USGS</label>
+                  <input type="text" inputMode="numeric" pattern="\d{8,15}" value={formStationId} onChange={(e) => setFormStationId(e.target.value)} placeholder="Selecciona una estación" className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                </div>
+                <div>
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Inicio</label>
+                  <input type="date" required value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                </div>
+                <div>
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Fin</label>
+                  <input type="date" required value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Seed reproducible</label>
                   <input type="number" min={0} value={formSeed} onChange={(e) => setFormSeed(Number(e.target.value))} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
                 </div>
                 <div>
@@ -744,16 +838,27 @@ export default function SimulationsPage() {
               </div>
 
               <fieldset className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
-                <legend className="px-1 font-mono uppercase text-[10px] text-zinc-600 dark:text-zinc-400">Artefactos de datos registrados (contexto)</legend>
+                <legend className="px-1 font-mono uppercase text-[10px] text-zinc-600 dark:text-zinc-400">Artefactos y rol dentro del experimento</legend>
                 {datasets.length === 0 ? (
-                  <p className="text-[11px] text-zinc-500">No hay artefactos externos registrados. La corrida usará solo forzamiento sintético.</p>
+                  <p className="text-[11px] text-zinc-500">No hay artefactos externos registrados. Solo está disponible SYNTHETIC.</p>
                 ) : datasets.map((dataset) => (
-                  <label key={dataset.id} className="flex items-center gap-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-300">
-                    <input type="checkbox" checked={formDatasetIds.includes(dataset.id)} onChange={(event) => setFormDatasetIds((current) => event.target.checked ? [...current, dataset.id] : current.filter((id) => id !== dataset.id))} />
-                    <span>{dataset.provider}: {dataset.dataset_name} · {dataset.evidence_type}</span>
-                  </label>
+                  <div key={dataset.id} className="flex items-center gap-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-300">
+                    <input type="checkbox" checked={formDatasetIds.includes(dataset.id)} onChange={(event) => {
+                      setFormDatasetIds((current) => event.target.checked ? [...current, dataset.id] : current.filter((id) => id !== dataset.id));
+                      setFormDatasetRoles((current) => {
+                        const next = { ...current };
+                        if (event.target.checked) next[dataset.id] = "CONTEXT_ONLY";
+                        else delete next[dataset.id];
+                        return next;
+                      });
+                    }} />
+                    <span className="flex-1">{dataset.provider}: {dataset.dataset_name} · {dataset.evidence_type}</span>
+                    {formDatasetIds.includes(dataset.id) && <select value={formDatasetRoles[dataset.id] ?? "CONTEXT_ONLY"} onChange={(event) => setFormDatasetRoles((current) => ({ ...current, [dataset.id]: event.target.value as "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY" }))} className="rounded border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-0.5 text-[10px]">
+                      <option value="FORCING">FORCING</option><option value="OBSERVATION">OBSERVATION</option><option value="VALIDATION">VALIDATION</option><option value="SOIL_INPUT">SOIL_INPUT</option><option value="LAND_COVER">LAND_COVER</option><option value="YIELD_OBSERVATION">YIELD_OBSERVATION</option><option value="CONTEXT_ONLY">CONTEXT_ONLY</option>
+                    </select>}
+                  </div>
                 ))}
-                <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">En este modo, los datos seleccionados se registran como CONTEXT_ONLY; no sustituyen el clima sintético.</p>
+                <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">OBSERVED y CMIP6_FILE requieren exactamente un artefacto FORCING normalizado. USGS debe ser OBSERVATION o VALIDATION.</p>
               </fieldset>
 
               <div>
@@ -764,26 +869,8 @@ export default function SimulationsPage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                    Horizonte Temporal (Días)
-                  </label>
-                  <select
-                    value={formDuration}
-                    onChange={(e) => setFormDuration(Number(e.target.value))}
-                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 focus:outline-none focus:border-emerald-500/80 shadow-sm"
-                  >
-                    <option value={30}>30 días (Mes)</option>
-                    <option value={90}>90 días (Campaña Agrícola)</option>
-                    <option value={180}>180 días (Semestre)</option>
-                    <option value={365}>365 días (Año Hidrológico Completo)</option>
-                  </select>
-                </div>
-
-                <div className="p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
-                  El control de eficiencia de riego está deshabilitado: el modelo no implementa planes de manejo.
-                </div>
+              <div className="p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
+                El periodo, la estación y los roles de datos quedan en el manifiesto. El riego sigue deshabilitado porque el modelo no implementa planes de manejo.
               </div>
 
               <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 flex flex-col gap-1">
@@ -812,7 +899,7 @@ export default function SimulationsPage() {
                   ) : (
                     <>
                       <Play className="w-3.5 h-3.5" />
-                      <span>Ejecutar gemelo digital</span>
+                      <span>Ejecutar experimento</span>
                     </>
                   )}
                 </button>

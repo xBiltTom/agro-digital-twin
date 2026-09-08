@@ -1,6 +1,6 @@
 from typing import List, Optional
-from datetime import datetime
-from sqlalchemy import String, Float, Integer, ForeignKey, JSON, DateTime
+from datetime import date, datetime
+from sqlalchemy import String, Float, Integer, ForeignKey, JSON, Date, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.models.base import TimestampMixin
@@ -36,7 +36,7 @@ class SimulationRun(Base, TimestampMixin):
     error: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    mode: Mapped[str] = mapped_column(String(40), default="DEMO_MULTISCALE", nullable=False)
+    mode: Mapped[str] = mapped_column(String(40), default="RESEARCH_MULTISCALE", nullable=False)
     plant_count: Mapped[int] = mapped_column(Integer, default=1000, nullable=False)
     hydrology_backend: Mapped[str] = mapped_column(String(40), default="SIMPLIFIED", nullable=False)
     external_model_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
@@ -49,6 +49,10 @@ class SimulationRun(Base, TimestampMixin):
     management_scenario: Mapped[str] = mapped_column(String(40), default="BASELINE", nullable=False)
     climate_source: Mapped[str] = mapped_column(String(40), default="SYNTHETIC", nullable=False)
     dataset_ids: Mapped[List[str]] = mapped_column(JSON, default=list, nullable=False)
+    dataset_roles: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    station_id: Mapped[Optional[str]] = mapped_column(String(15), nullable=True)
+    start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     scenario: Mapped[ClimateScenario] = relationship("ClimateScenario", lazy="selectin")
     results: Mapped[List["SimulationResult"]] = relationship(

@@ -410,7 +410,10 @@ async def bootstrap_mvp_data(db: AsyncSession) -> None:
                              framework=info["framework"], artifact_path=str(bundle_path),
                              version=info["metadata"].get("dataset_version"), feature_schema=adapter.schema,
                              metrics=adapter.metrics, checksum=info["checksum"], status="VALIDATED",
-                             provenance={"source": "agro-digital-twin-st ModelBundle", "training_data": "SYNTHETIC"}))
+                             bundle_contract_version=info["bundle_contract_version"], learning_mode=info["learning_mode"],
+                             training_data_type=info["training_data_type"], training_dataset_version=info["metadata"].get("dataset_version"),
+                             provenance={"source": "agro-digital-twin-st ModelBundle", "training_data": info["training_data_type"],
+                                         "requires_tensorflow": info["requires_tensorflow"]}))
         await db.commit()
 
 

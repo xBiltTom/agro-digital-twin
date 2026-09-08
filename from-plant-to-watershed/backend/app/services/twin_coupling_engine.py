@@ -1,18 +1,19 @@
 """Application adapter between SQLAlchemy persistence and the pure scientific core."""
 
 from datetime import date, datetime, timezone
+from pathlib import Path
 import subprocess
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.simulation import ClimateScenario, SimulationResult, SimulationRun
-from app.models.observation import StreamflowObservation
-from app.models.observation import Dataset
+from app.models.observation import Dataset, DatasetArtifact, StreamflowObservation
 from app.models.external_model import ExternalModel
 from app.models.watershed import Watershed
 from app.services.external_model_bundle import ExternalModelBundleAdapter
 from scientific_core import MultiscaleSimulationOrchestrator, RunConfig, SimulationOrchestrator, ValidationEngine
+from scientific_core.climate_file import NormalizedClimateFileProvider
 
 
 def _code_version() -> str | None:
@@ -28,6 +29,37 @@ class TwinCouplingEngine:
     """Compatibility name for the persistence adapter; formulas live in scientific_core."""
 
     @staticmethod
+    def _resolve_climate_forcing(sim_run: SimulationRun, datasets: list[Dataset], artifacts: list[DatasetArtifact]) -> tuple[list[dict] | None, dict | None]:
+        """Route an explicit forcing artifact without silently substituting synthetic weather."""
+        if sim_run.climate_source == "SYNTHETIC":
+            return None, None
+        forcing_ids = {dataset_id for dataset_id, role in (sim_run.dataset_roles or {}).items() if role == "FORCING"}
+        forcing_datasets = [item for item in datasets if item.id in forcing_ids]
+        if len(forcing_datasets) != 1:
+            raise RuntimeError("NOT_AVAILABLE: select exactly one FORCING dataset for the chosen climate source")
+        dataset = forcing_datasets[0]
+        if sim_run.climate_source == "CMIP6_FILE" and dataset.provider != "NEX-GDDP-CMIP6":
+            raise RuntimeError("NOT_AVAILABLE: CMIP6_FILE requires a NEX-GDDP-CMIP6 normalized artifact")
+        if sim_run.climate_source in {"OBSERVED", "OBSERVED_HYBRID"} and dataset.provider not in {"CHIRPS", "OBSERVED_CLIMATE"}:
+            raise RuntimeError("NOT_AVAILABLE: OBSERVED climate requires a CHIRPS or OBSERVED_CLIMATE normalized artifact")
+        normalized = [item for item in artifacts if item.dataset_id == dataset.id and item.artifact_kind == "NORMALIZED"]
+        if not normalized:
+            raise RuntimeError("NOT_AVAILABLE: selected FORCING dataset has no NORMALIZED local artifact")
+        artifact = sorted(normalized, key=lambda item: item.retrieved_at)[-1]
+        metadata = {**(dataset.metadata_json or {}), **(artifact.metadata_json or {})}
+        try:
+            weather, provider_metadata = NormalizedClimateFileProvider(Path(artifact.storage_path), metadata=metadata).forcing_for_period(
+                sim_run.start_date.isoformat(), sim_run.end_date.isoformat()
+            )
+        except (OSError, ValueError) as exc:
+            raise RuntimeError(f"NOT_AVAILABLE: forcing artifact cannot satisfy the requested period: {exc}") from exc
+        return weather, {
+            "provider": dataset.provider, "dataset_id": dataset.id, "artifact_id": artifact.id,
+            "artifact_kind": artifact.artifact_kind, "checksum_sha256": artifact.checksum_sha256,
+            "metadata": provider_metadata, "evidence_type": dataset.evidence_type,
+        }
+
+    @staticmethod
     async def execute_simulation_run(db: AsyncSession, simulation_run_id: str) -> SimulationRun:
         sim_run = (await db.execute(select(SimulationRun).where(SimulationRun.id == simulation_run_id))).scalar_one_or_none()
         if not sim_run:
@@ -41,23 +73,28 @@ class TwinCouplingEngine:
         sim_run.error = None
         await db.commit()
         try:
-            requested = sim_run.requested_config or {
-                "duration_days": sim_run.duration_days, "seed": sim_run.seed, "parameters": sim_run.parameters or {},
-            }
+            requested = sim_run.requested_config or {}
+            if sim_run.start_date is None or sim_run.end_date is None:
+                raise ValueError("Experiment is missing explicit start_date/end_date; legacy demo runs cannot be re-executed")
             config = RunConfig(
                 run_id=sim_run.id, seed=sim_run.seed, duration_days=sim_run.duration_days,
                 watershed_area_km2=watershed.area_km2, temp_anomaly_c=scenario.temp_anomaly_c,
                 precip_factor=scenario.precip_factor, co2_ppm=scenario.co2_ppm,
-                start_date=date.fromisoformat(requested.get("start_date", "2020-01-01")),
+                start_date=sim_run.start_date, end_date=sim_run.end_date,
                 parameters=sim_run.parameters or {},
                 management_scenario=sim_run.management_scenario,
                 climate_source=sim_run.climate_source,
+                station_id=sim_run.station_id, dataset_ids=tuple(sim_run.dataset_ids or ()),
+                dataset_roles=sim_run.dataset_roles or {},
             )
-            if sim_run.climate_source != "SYNTHETIC":
-                raise RuntimeError("Selected climate source is registered for provenance but its forcing adapter is not installed")
             if sim_run.hydrology_backend == "SWAT_PLUS" or sim_run.mode == "SWAT_PLUS":
                 raise RuntimeError("SWAT_PLUS is NOT_AVAILABLE: executable/project are not configured")
-            core_run = MultiscaleSimulationOrchestrator().execute(config, sim_run.plant_count)
+            datasets = list((await db.execute(select(Dataset).where(Dataset.id.in_(sim_run.dataset_ids or [])))).scalars().all()) if sim_run.dataset_ids else []
+            artifacts = list((await db.execute(select(DatasetArtifact).where(DatasetArtifact.dataset_id.in_([item.id for item in datasets])))).scalars().all()) if datasets else []
+            weather, climate_artifact_provenance = TwinCouplingEngine._resolve_climate_forcing(sim_run, datasets, artifacts)
+            core_run = MultiscaleSimulationOrchestrator().execute(
+                config, sim_run.plant_count, weather=weather, climate_provenance=climate_artifact_provenance
+            )
             db.add_all([
                 SimulationResult(
                     simulation_run_id=sim_run.id, day_index=row["day_index"], date_str=row["date_str"],
@@ -73,18 +110,18 @@ class TwinCouplingEngine:
             ])
             sim_run.requested_config = requested
             sim_run.effective_config = core_run.effective_config
-            dataset_snapshots = []
-            if sim_run.dataset_ids:
-                datasets = list((await db.execute(select(Dataset).where(Dataset.id.in_(sim_run.dataset_ids)))).scalars().all())
-                dataset_snapshots = [{"id": item.id, "provider": item.provider, "dataset_name": item.dataset_name,
-                                      "version": item.version, "evidence_type": item.evidence_type,
-                                      "role": "CONTEXT_ONLY"} for item in datasets]
+            dataset_snapshots = [{"id": item.id, "provider": item.provider, "dataset_name": item.dataset_name,
+                                  "version": item.version, "evidence_type": item.evidence_type,
+                                  "role": (sim_run.dataset_roles or {}).get(item.id, "CONTEXT_ONLY"),
+                                  "artifact_checksums": [artifact.checksum_sha256 for artifact in artifacts if artifact.dataset_id == item.id]}
+                                 for item in datasets]
             sim_run.provenance = {
                 **core_run.provenance,
                 "watershed_snapshot": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
-                "scenario_snapshot": {"id": scenario.id, "code": scenario.code, "evidence_type": "SYNTHETIC"},
+                "scenario_snapshot": {"id": scenario.id, "code": scenario.code, "evidence_type": scenario.source_type},
                 "code_version": _code_version(),
                 "climate_source": sim_run.climate_source,
+                "station_id": sim_run.station_id,
                 "datasets": dataset_snapshots,
             }
             sim_run.summary_metrics = core_run.summary_metrics
@@ -92,11 +129,17 @@ class TwinCouplingEngine:
             sim_run.hru_aggregates = core_run.hru_aggregates
             sim_run.plant_sample = list(core_run.plant_sample)
             monthly_outputs = [dict(row) for row in core_run.monthly_outputs]
-            station_id = requested.get("station_id", "05451210")
-            observations = (await db.execute(
-                select(StreamflowObservation).where(StreamflowObservation.station_id == station_id)
-                .order_by(StreamflowObservation.observed_on)
-            )).scalars().all()
+            observation_ids = [dataset_id for dataset_id, role in (sim_run.dataset_roles or {}).items()
+                               if role in {"OBSERVATION", "VALIDATION"}]
+            observations = []
+            if sim_run.station_id and observation_ids:
+                observations = (await db.execute(
+                    select(StreamflowObservation).where(StreamflowObservation.station_id == sim_run.station_id)
+                    .where(StreamflowObservation.dataset_id.in_(observation_ids))
+                    .where(StreamflowObservation.observed_on >= sim_run.start_date)
+                    .where(StreamflowObservation.observed_on <= sim_run.end_date)
+                    .order_by(StreamflowObservation.observed_on)
+                )).scalars().all()
             observed_by_month: dict[str, list[float]] = {}
             for observation in observations:
                 if observation.value_m3s is not None and observation.value_m3s >= 0:
@@ -113,32 +156,53 @@ class TwinCouplingEngine:
                     [row["baseline_streamflow_m3s"] for row in aligned],
                     [row["twin_streamflow_m3s"] for row in aligned],
                 )
-                sim_run.validation["observation_station_id"] = station_id
+                sim_run.validation["observation_station_id"] = sim_run.station_id
                 sim_run.validation["aligned_months"] = len(aligned)
             else:
                 sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "fewer than two aligned observed months",
-                                      "observation_station_id": station_id, "aligned_months": len(aligned),
+                                      "observation_station_id": sim_run.station_id, "aligned_months": len(aligned),
                                       "interpretation": "DEMONSTRATION_ONLY"}
             sim_run.monthly_outputs = monthly_outputs
             if sim_run.external_model_id:
                 registry_model = await db.scalar(select(ExternalModel).where(ExternalModel.id == sim_run.external_model_id))
                 if not registry_model:
                     raise ValueError("external model is not registered")
-                last = monthly_outputs[-1]
-                days = [row for row in core_run.results if row["date_str"].startswith(last["month"])]
-                payload = {
-                    "precip_mm": sum(row["precip_mm"] for row in days),
-                    "temp_mean_c": sum(row["temp_c"] for row in days) / len(days),
-                    "solar_radiation": sum(row["solar_rad_mj"] for row in days) / len(days),
-                    "soil_moisture": sum(row["soil_moisture_vol"] for row in days) / len(days),
-                    "infiltration_mm": sum(max(0.0, row["precip_mm"] - row["surface_runoff_mm"]) for row in days),
-                    "lai": core_run.field_aggregates["mean_lai"],
-                    "root_depth_m": core_run.field_aggregates["mean_root_depth_cm"] / 100,
-                    "transpiration_mm": sum(row["actual_transpiration_mm"] for row in days),
-                    "water_stress": sum(row["cwsi_stress_index"] for row in days) / len(days),
-                    "et_mm": sum(row["actual_et_mm"] for row in days),
-                }
-                sim_run.ml_result = ExternalModelBundleAdapter(registry_model.artifact_path).predict(payload)
+                adapter = ExternalModelBundleAdapter(registry_model.artifact_path)
+                try:
+                    adapter.load()
+                    monthly_payloads = []
+                    for output in monthly_outputs:
+                        days = [row for row in core_run.results if row["date_str"].startswith(output["month"])]
+                        monthly_payloads.append({
+                            "precip_mm": sum(row["precip_mm"] for row in days),
+                            "temp_mean_c": sum(row["temp_c"] for row in days) / len(days),
+                            "solar_radiation": sum(row["solar_rad_mj"] for row in days) / len(days),
+                            "soil_moisture": sum(row["soil_moisture_vol"] for row in days) / len(days),
+                            "infiltration_mm": sum(max(0.0, row["precip_mm"] - row["surface_runoff_mm"]) for row in days),
+                            "lai": core_run.field_aggregates["mean_lai"],
+                            "root_depth_m": core_run.field_aggregates["mean_root_depth_cm"] / 100,
+                            "transpiration_mm": sum(row["actual_transpiration_mm"] for row in days),
+                            "water_stress": sum(row["cwsi_stress_index"] for row in days) / len(days),
+                            "et_mm": sum(row["actual_et_mm"] for row in days),
+                        })
+                    predictions = []
+                    for index, payload in enumerate(monthly_payloads):
+                        history = monthly_payloads[max(0, index - adapter.timesteps + 1):index]
+                        prediction = adapter.predict(payload, history=history)
+                        predictions.append(prediction)
+                        if prediction["target"] == "monthly_runoff_mm":
+                            monthly_outputs[index]["ml_assisted_runoff_mm"] = prediction["value"]
+                        elif prediction["target"] == "monthly_streamflow_m3s":
+                            monthly_outputs[index]["ml_assisted_streamflow_m3s"] = prediction["value"]
+                    sim_run.ml_result = {"status": "PREDICTED", "model_id": registry_model.id,
+                                         "target": registry_model.target, "predictions": predictions,
+                                         "training_data_type": registry_model.training_data_type}
+                except (RuntimeError, ValueError) as exc:
+                    status_name = "INSUFFICIENT_HISTORY" if str(exc).startswith("INSUFFICIENT_HISTORY") else "NOT_AVAILABLE"
+                    sim_run.ml_result = {"status": status_name, "model_id": registry_model.id,
+                                         "target": registry_model.target, "reason": str(exc),
+                                         "training_data_type": registry_model.training_data_type}
+                sim_run.monthly_outputs = monthly_outputs
             sim_run.status = "COMPLETED"
             sim_run.finished_at = datetime.now(timezone.utc)
             await db.commit()

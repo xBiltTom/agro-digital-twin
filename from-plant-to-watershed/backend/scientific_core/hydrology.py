@@ -46,7 +46,8 @@ class SimplifiedHydrologyModel:
         return min(precip_mm, (precip_mm - abstraction) ** 2 / (precip_mm - abstraction + retention))
 
     def calculate_daily_step(self, precip_mm: float, plant_transpiration_mm: float,
-                             potential_et_mm: float, irrigation_mm: float = 0.0) -> dict[str, Any]:
+                             potential_et_mm: float, irrigation_mm: float = 0.0,
+                             root_depth_cm: float | None = None) -> dict[str, Any]:
         if min(precip_mm, plant_transpiration_mm, potential_et_mm, irrigation_mm) < 0:
             raise ValueError("water fluxes cannot be negative")
         soil_before, gw_before = self.soil_water_mm, self.groundwater_storage_mm
@@ -54,7 +55,8 @@ class SimplifiedHydrologyModel:
         runoff = self.calculate_scs_runoff(precip_mm, previous_theta)
         self.soil_water_mm += precip_mm - runoff + irrigation_mm
         soil_evaporation = max(0.0, potential_et_mm - plant_transpiration_mm) * .35 * min(1.0, previous_theta / self.theta_fc)
-        actual_et = min(self.soil_water_mm, plant_transpiration_mm + soil_evaporation)
+        root_access_fraction = 1.0 if root_depth_cm is None else max(0.10, min(1.0, root_depth_cm / (self.profile_depth_mm / 10.0)))
+        actual_et = min(self.soil_water_mm * root_access_fraction, plant_transpiration_mm + soil_evaporation)
         self.soil_water_mm -= actual_et
         percolation = max(0.0, self.soil_water_mm - self.fc_depth_mm) * .45
         self.soil_water_mm -= percolation
@@ -74,5 +76,5 @@ class SimplifiedHydrologyModel:
                 "groundwater_storage_mm": self.groundwater_storage_mm,
                 "soil_moisture_vol": self.soil_water_mm / self.profile_depth_mm * 100.0,
                 "streamflow_m3s": total_runoff * self.area_km2 * 1000.0 / 86400.0,
-                "water_balance_residual_mm": residual,
+                "root_access_fraction": root_access_fraction, "water_balance_residual_mm": residual,
                 "cumulative_water_balance_residual_mm": self.cumulative_balance_residual_mm}

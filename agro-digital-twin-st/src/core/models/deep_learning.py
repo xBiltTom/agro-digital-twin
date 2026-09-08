@@ -12,11 +12,13 @@ from typing import Dict, Any, Optional
 import numpy as np
 
 from .base import BaseMultiScaleModel
+from src.core.runtime import configure_tensorflow_runtime
 
 
 def _get_keras():
     """Lazy import for Keras / TensorFlow."""
     try:
+        configure_tensorflow_runtime()
         import keras
         return keras
     except ImportError as e:

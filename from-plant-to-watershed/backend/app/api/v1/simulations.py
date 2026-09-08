@@ -78,9 +78,13 @@ async def create_and_run_simulation(
             watershed_area_km2=watershed.area_km2, temp_anomaly_c=scenario.temp_anomaly_c,
             precip_factor=scenario.precip_factor, co2_ppm=scenario.co2_ppm,
             start_date=sim_in.start_date,
+            end_date=sim_in.end_date,
             parameters=sim_in.parameters or {},
             management_scenario=sim_in.management_scenario,
             climate_source=sim_in.climate_source,
+            station_id=sim_in.station_id,
+            dataset_ids=tuple(sim_in.dataset_ids),
+            dataset_roles=sim_in.dataset_roles,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -92,10 +96,8 @@ async def create_and_run_simulation(
         missing = set(sim_in.dataset_ids) - found
         if missing:
             raise HTTPException(status_code=422, detail=f"Datasets not found: {', '.join(sorted(missing))}")
-    if sim_in.climate_source != "SYNTHETIC":
-        climate_datasets = [dataset for dataset in datasets if dataset.provider in {"NEX-GDDP-CMIP6", "CHIRPS"}]
-        if not climate_datasets:
-            raise HTTPException(status_code=422, detail="Selected climate_source requires a registered climate dataset artifact")
+    if sim_in.climate_source != "SYNTHETIC" and not any(sim_in.dataset_roles.get(item.id) == "FORCING" for item in datasets):
+        raise HTTPException(status_code=422, detail="Selected climate_source requires a registered FORCING dataset")
 
     new_sim = SimulationRun(
         user_id=current_user.id,
@@ -115,6 +117,10 @@ async def create_and_run_simulation(
         management_scenario=sim_in.management_scenario,
         climate_source=sim_in.climate_source,
         dataset_ids=sim_in.dataset_ids,
+        dataset_roles=sim_in.dataset_roles,
+        station_id=sim_in.station_id,
+        start_date=sim_in.start_date,
+        end_date=sim_in.end_date,
     )
     db.add(new_sim)
     await db.flush()

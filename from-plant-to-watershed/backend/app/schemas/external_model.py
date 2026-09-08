@@ -17,6 +17,10 @@ class ExternalModelResponse(BaseModel):
     feature_schema: dict[str, Any]
     metrics: dict[str, Any]
     checksum: str
+    bundle_contract_version: str | None = None
+    learning_mode: str | None = None
+    training_data_type: str | None = None
+    training_dataset_version: str | None = None
     status: str
     provenance: dict[str, Any]
     model_config = ConfigDict(from_attributes=True)

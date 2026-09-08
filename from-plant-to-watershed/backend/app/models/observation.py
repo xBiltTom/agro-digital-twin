@@ -33,6 +33,10 @@ class Dataset(Base, TimestampMixin):
         back_populates="dataset", cascade="all, delete-orphan", lazy="selectin"
     )
 
+    @property
+    def normalized_artifact_count(self) -> int:
+        return sum(artifact.artifact_kind == "NORMALIZED" for artifact in self.artifacts)
+
 
 class DatasetArtifact(Base, TimestampMixin):
     __tablename__ = "dataset_artifacts"
@@ -62,4 +66,3 @@ class StreamflowObservation(Base, TimestampMixin):
     variable: Mapped[str] = mapped_column(String(80), nullable=False, default="streamflow")
     quality_status: Mapped[Optional[str]] = mapped_column(String(120))
     source: Mapped[str] = mapped_column(Text, nullable=False)
-

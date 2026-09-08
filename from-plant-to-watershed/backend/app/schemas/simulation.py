@@ -69,20 +69,31 @@ class SimulationRunCreate(BaseModel):
     seed: int = Field(default=42, ge=0, le=2**32 - 1)
     irrigation_efficiency: Optional[float] = None
     parameters: Optional[Dict[str, Any]] = None
-    mode: str = Field(default="DEMO_MULTISCALE", pattern="^(DEMO_MULTISCALE|REAL_OBSERVATION|ML_ASSISTED|SWAT_PLUS)$")
+    mode: str = Field(default="RESEARCH_MULTISCALE", pattern="^(RESEARCH_MULTISCALE|DEVELOPMENT_LEGACY_DEMO|DEMO_MULTISCALE|REAL_OBSERVATION|ML_ASSISTED|SWAT_PLUS)$")
     plant_count: int = Field(default=1000, ge=1, le=10000)
     hydrology_backend: str = Field(default="SIMPLIFIED", pattern="^(SIMPLIFIED|SWAT_PLUS)$")
     external_model_id: Optional[str] = None
-    start_date: date = date(2020, 1, 1)
+    station_id: Optional[str] = Field(default=None, pattern=r"^\d{8,15}$")
+    start_date: date
+    end_date: date
     management_scenario: Literal["BASELINE", "NO_TILL", "MAIZE_TO_SORGHUM"] = "BASELINE"
-    climate_source: Literal["SYNTHETIC", "CMIP6_FILE", "OBSERVED_HYBRID"] = "SYNTHETIC"
+    climate_source: Literal["SYNTHETIC", "CMIP6_FILE", "OBSERVED", "OBSERVED_HYBRID"] = "SYNTHETIC"
     dataset_ids: List[str] = Field(default_factory=list, max_length=20)
+    dataset_roles: Dict[str, Literal["FORCING", "OBSERVATION", "SOIL_INPUT", "LAND_COVER", "YIELD_OBSERVATION", "VALIDATION", "CONTEXT_ONLY"]] = Field(default_factory=dict)
     model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="after")
     def reject_unsupported_irrigation_efficiency(self):
         if self.irrigation_efficiency is not None:
             raise ValueError("irrigation_efficiency is not implemented; use irrigation_mm_per_day in parameters")
+        if self.end_date < self.start_date:
+            raise ValueError("end_date must not precede start_date")
+        if (self.end_date - self.start_date).days + 1 != self.duration_days:
+            raise ValueError("duration_days must equal the inclusive start_date/end_date period")
+        if unknown_role_ids := set(self.dataset_roles) - set(self.dataset_ids):
+            raise ValueError(f"dataset_roles reference unselected datasets: {', '.join(sorted(unknown_role_ids))}")
+        if self.climate_source != "SYNTHETIC" and "FORCING" not in self.dataset_roles.values():
+            raise ValueError("a non-synthetic climate_source requires one selected FORCING dataset")
         return self
 
 class SimulationResultResponse(BaseModel):
@@ -120,7 +131,7 @@ class SimulationRunResponse(BaseModel):
     error: Optional[Dict[str, Any]] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
-    mode: str = "DEMO_MULTISCALE"
+    mode: str = "RESEARCH_MULTISCALE"
     plant_count: int = 1000
     hydrology_backend: str = "SIMPLIFIED"
     external_model_id: Optional[str] = None
@@ -133,6 +144,10 @@ class SimulationRunResponse(BaseModel):
     management_scenario: str = "BASELINE"
     climate_source: str = "SYNTHETIC"
     dataset_ids: List[str] = Field(default_factory=list)
+    dataset_roles: Dict[str, str] = Field(default_factory=dict)
+    station_id: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     scenario: Optional[ClimateScenarioResponse] = None
     summary_metrics: Optional[Dict[str, Any]] = None
     created_at: datetime
@@ -143,3 +158,8 @@ class SimulationRunResponse(BaseModel):
     def normalize_legacy_dataset_ids(cls, value):
         """Legacy rows predate the manifest field and persist it as NULL."""
         return [] if value is None else value
+
+    @field_validator("dataset_roles", mode="before")
+    @classmethod
+    def normalize_legacy_dataset_roles(cls, value):
+        return {} if value is None else value

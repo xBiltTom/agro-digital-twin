@@ -151,14 +151,17 @@ class ApiService {
     duration_days: number;
     seed: number;
     parameters?: Record<string, number>;
-    mode?: string;
+    mode?: "RESEARCH_MULTISCALE" | "DEVELOPMENT_LEGACY_DEMO" | "ML_ASSISTED" | "SWAT_PLUS";
     plant_count?: number;
     hydrology_backend?: string;
     external_model_id?: string;
-    start_date?: string;
     management_scenario?: "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM";
-    climate_source?: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED_HYBRID";
+    climate_source?: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED";
     dataset_ids?: string[];
+    dataset_roles?: Record<string, "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY">;
+    station_id?: string;
+    start_date: string;
+    end_date: string;
   }): Promise<SimulationRun> {
     return this.request<SimulationRun>("/simulations", {
       method: "POST",

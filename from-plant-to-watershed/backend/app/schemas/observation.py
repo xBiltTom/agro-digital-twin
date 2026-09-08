@@ -27,6 +27,7 @@ class DatasetResponse(BaseModel):
     quality_control: dict[str, Any]
     metadata_json: dict[str, Any]
     retrieved_at: datetime
+    normalized_artifact_count: int = 0
     model_config = ConfigDict(from_attributes=True)
 
 

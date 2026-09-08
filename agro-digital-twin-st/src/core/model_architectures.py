@@ -3,6 +3,9 @@ Model Architectures Facade for AgroTwin-AI.
 Maintains backwards compatibility while referencing modular architectures in src.core.models.
 """
 
+from src.core.runtime import configure_tensorflow_runtime
+
+configure_tensorflow_runtime()
 import keras
 from src.core.models import (
     build_cnn_lstm_model,

@@ -40,9 +40,13 @@ async def register_model(payload: ExternalModelRegister, db: AsyncSession = Depe
     model.target, model.framework = info["target"], info["framework"]
     model.version = info["metadata"].get("dataset_version")
     model.feature_schema, model.metrics, model.checksum = adapter.schema, adapter.metrics, info["checksum"]
+    model.bundle_contract_version = info["bundle_contract_version"]
+    model.learning_mode = info["learning_mode"]
+    model.training_data_type = info["training_data_type"]
+    model.training_dataset_version = info["metadata"].get("dataset_version")
     model.status = "VALIDATED"
-    model.provenance = {"training_data": "SYNTHETIC" if info["metadata"].get("is_synthetic_training_data") else "AS_DECLARED_BY_BUNDLE",
-                        "source": "external ModelBundle; independent of Streamlit"}
+    model.provenance = {"training_data": info["training_data_type"], "source": "external ModelBundle; independent of Streamlit",
+                        "requires_tensorflow": info["requires_tensorflow"], "metadata": info["metadata"]}
     db.add(model)
     await db.commit()
     await db.refresh(model)

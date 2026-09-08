@@ -50,6 +50,30 @@ export default function Twin3DPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Fullscreen support
+  const viewerContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      viewerContainerRef.current?.requestFullscreen?.().catch((err) => {
+        console.error("Error al entrar a pantalla completa:", err);
+      });
+    } else {
+      document.exitFullscreen?.().catch((err) => {
+        console.error("Error al salir de pantalla completa:", err);
+      });
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
   // Layer Toggles
   const [showHydrologyFlow, setShowHydrologyFlow] = useState(true);
   const [showSoilHorizons, setShowSoilHorizons] = useState(true);
@@ -166,7 +190,14 @@ export default function Twin3DPage() {
       </div>
 
       {/* 1. Visor 3D Interactivo con HUD Overlay */}
-      <div className="h-[620px] lg:h-[680px] relative rounded-2xl overflow-hidden border border-zinc-300/80 dark:border-zinc-800 shadow-xl dark:shadow-2xl">
+      <div
+        ref={viewerContainerRef}
+        className={
+          isFullscreen
+            ? "fixed inset-0 z-50 w-screen h-screen bg-black"
+            : "h-[640px] lg:h-[700px] relative rounded-2xl overflow-hidden border border-zinc-300/80 dark:border-zinc-800 shadow-xl dark:shadow-2xl"
+        }
+      >
         {isLoading ? (
           <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-3 text-zinc-400 text-xs">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
@@ -215,6 +246,8 @@ export default function Twin3DPage() {
               onToggleSensors={() => setShowSensors(!showSensors)}
               showScientificLabels={showScientificLabels}
               onToggleScientificLabels={() => setShowScientificLabels(!showScientificLabels)}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={toggleFullscreen}
               scenarioName={selectedSim?.name}
               scenarioPathway={selectedSim?.scenario?.pathway || "SSP2-4.5"}
             />

@@ -112,10 +112,16 @@ class FieldToHRUCoupler:
         )
 
     def couple(self, field: dict[str, Any]) -> dict[str, Any]:
-        mapped = [{**asdict(hru), "field_inputs": {
-            "transpiration_mm_day": field["mean_transpiration_mm"],
-            "root_depth_cm": field["mean_root_depth_cm"],
-            "soil_moisture_vol": field["soil_moisture_vol"], "stress": field["mean_stress"],
-        }} for hru in self.hrus]
+        crop_factor = {"maize": 1.0, "sorghum_proxy": .92, "soy_proxy": .83, "other": .68}
+        soil_offset = {"loam": 0.0, "mixed": -1.25}
+        mapped = []
+        for hru in self.hrus:
+            modifier = crop_factor.get(hru.crop, .75)
+            mapped.append({**asdict(hru), "field_inputs": {
+                "transpiration_mm_day": field["mean_transpiration_mm"] * modifier,
+                "root_depth_cm": field["mean_root_depth_cm"] * (1.0 if hru.crop in {"maize", "sorghum_proxy"} else .82),
+                "soil_moisture_vol": max(0.0, field["soil_moisture_vol"] + soil_offset.get(hru.soil_type, 0.0)),
+                "stress": min(1.0, field["mean_stress"] + (1.0 - modifier) * .12),
+            }})
         return {"count": len(mapped), "hrus": mapped, "area_fraction_sum": sum(h.area_fraction for h in self.hrus),
                 "resolution": "daily", "evidence_type": "COARSE_HRU_PROXY"}
