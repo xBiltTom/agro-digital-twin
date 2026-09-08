@@ -654,7 +654,7 @@ export default function PlantModel3D({
           <Html position={[0, stemHeight + 0.85, 0]} center distanceFactor={8.5}>
             <div className="w-64 rounded-xl border border-emerald-400/40 bg-zinc-950/90 p-2.5 font-mono text-[10px] text-zinc-200 shadow-2xl backdrop-blur-md">
               <div className="flex items-center justify-between border-b border-emerald-500/30 pb-1">
-                <span className="font-bold text-emerald-300">Zea mays L. (FSPM Nivel 1)</span>
+                <span className="font-bold text-emerald-300">Zea mays L. · visual simplificado</span>
                 <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[9px] text-emerald-300">
                   Micro
                 </span>
@@ -685,7 +685,7 @@ export default function PlantModel3D({
           {/* SoilGrids Profile Callout */}
           <Html position={[1.8, -0.6, 0]} center distanceFactor={9}>
             <div className="w-56 rounded-lg border border-amber-500/30 bg-zinc-950/85 p-2 font-mono text-[9px] text-zinc-300 shadow-xl backdrop-blur">
-              <div className="font-bold text-amber-300">SoilGrids 2.0 · Perfil Edafológico</div>
+              <div className="font-bold text-amber-300">Perfil edafológico ilustrativo</div>
               <div className="mt-1 text-zinc-400">
                 Horizontes: Ap (0-30cm) · Bt (30-65cm) · C ({">"}65cm)
               </div>

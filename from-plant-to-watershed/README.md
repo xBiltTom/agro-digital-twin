@@ -155,6 +155,7 @@ migraciones y aislamiento de SQLite. No se fijan conteos de tests en este README
 - [Modelos actualmente implementados](docs/methodology/current-models.md)
 - [Protocolo de selección de cuencas](docs/methodology/watershed-selection-protocol.md)
 - [USGS streamflow y lineage](docs/methodology/usgs-streamflow.md)
+- [Registro de artefactos de datos del MVP](docs/MVP_DATA_ARTIFACTS.md)
 - [ADR: core científico puro](docs/adr/001-pure-scientific-core.md)
 - [Documentación histórica](docs/README.md): los documentos legados están marcados y no describen el contrato científico vigente.
 ## ¿Qué funciona hoy?

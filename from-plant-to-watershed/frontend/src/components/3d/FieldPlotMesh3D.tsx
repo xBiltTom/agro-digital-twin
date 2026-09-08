@@ -478,7 +478,7 @@ export default function FieldPlotMesh3D({
                 }}
                 className="mt-1 cursor-pointer rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-2.5 py-1 text-[9px] font-bold text-white shadow-md hover:from-emerald-500 hover:to-teal-500 transition active:scale-95"
               >
-                Analizar FSPM Individual (Micro) →
+                Ver planta simplificada (Micro) →
               </button>
             </div>
           </Html>

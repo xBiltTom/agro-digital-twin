@@ -35,6 +35,10 @@ def test_unknown_and_out_of_range_parameters_are_rejected():
         config(crop=1)
     with pytest.raises(ValueError, match="curve_number"):
         config(curve_number=100)
+    with pytest.raises(ValueError, match="management_scenario"):
+        RunConfig(run_id="bad", seed=1, duration_days=30, watershed_area_km2=10, management_scenario="MAGIC")
+    with pytest.raises(ValueError, match="climate_source"):
+        RunConfig(run_id="bad", seed=1, duration_days=30, watershed_area_km2=10, climate_source="MAGIC")
 
 
 def test_supported_parameters_have_an_effect():

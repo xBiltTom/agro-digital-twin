@@ -11,6 +11,9 @@ SUPPORTED_PARAMETERS = frozenset({
     "irrigation_mm_per_day",
 })
 
+MANAGEMENT_SCENARIOS = frozenset({"BASELINE", "NO_TILL", "MAIZE_TO_SORGHUM"})
+CLIMATE_SOURCES = frozenset({"SYNTHETIC", "CMIP6_FILE", "OBSERVED_HYBRID"})
+
 
 @dataclass(frozen=True)
 class RunConfig:
@@ -23,6 +26,8 @@ class RunConfig:
     co2_ppm: float = 415.0
     start_date: date = date(2026, 1, 1)
     parameters: Mapping[str, float] = field(default_factory=dict)
+    management_scenario: str = "BASELINE"
+    climate_source: str = "SYNTHETIC"
 
     def __post_init__(self) -> None:
         unknown = set(self.parameters) - SUPPORTED_PARAMETERS
@@ -36,6 +41,10 @@ class RunConfig:
             raise ValueError("watershed_area_km2 must be positive")
         if self.precip_factor < 0:
             raise ValueError("precip_factor cannot be negative")
+        if self.management_scenario not in MANAGEMENT_SCENARIOS:
+            raise ValueError(f"Unsupported management_scenario: {self.management_scenario}")
+        if self.climate_source not in CLIMATE_SOURCES:
+            raise ValueError(f"Unsupported climate_source: {self.climate_source}")
         ranges = {
             "base_kc": (0.1, 2.0),
             "max_root_depth_cm": (1.0, 500.0),
@@ -62,3 +71,28 @@ class RunConfig:
             **{key: float(value) for key, value in self.parameters.items()},
         }
         return values
+
+    def management_effects(self) -> dict[str, Any]:
+        """Declared, small-scope management adjustments for the academic MVP."""
+        effective = self.effective_dict()["parameters"]
+        if self.management_scenario == "NO_TILL":
+            effective["curve_number"] = max(30.0, effective["curve_number"] - 4.0)
+            return {
+                "scenario": "NO_TILL", "crop": "maize",
+                "curve_number_adjustment": -4.0,
+                "statement": "MVP conservation-tillage proxy; not a calibrated SWAT+ management operation.",
+                "parameters": effective,
+            }
+        if self.management_scenario == "MAIZE_TO_SORGHUM":
+            effective["base_kc"] = min(effective["base_kc"], 0.92)
+            effective["max_root_depth_cm"] = max(effective["max_root_depth_cm"], 145.0)
+            return {
+                "scenario": "MAIZE_TO_SORGHUM", "crop": "sorghum_proxy",
+                "curve_number_adjustment": 0.0,
+                "statement": "MVP crop-substitution proxy; it is not a calibrated sorghum crop model.",
+                "parameters": effective,
+            }
+        return {
+            "scenario": "BASELINE", "crop": "maize", "curve_number_adjustment": 0.0,
+            "statement": "Baseline maize management.", "parameters": effective,
+        }

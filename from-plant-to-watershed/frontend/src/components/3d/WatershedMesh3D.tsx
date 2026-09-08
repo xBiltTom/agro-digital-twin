@@ -266,13 +266,13 @@ function UsgsGaugingStation({
         <div className="flex flex-col items-center rounded-xl border border-cyan-400/50 bg-slate-950/92 p-2.5 font-mono text-[10px] text-cyan-200 shadow-2xl backdrop-blur-md whitespace-nowrap">
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
-            <span className="font-bold text-cyan-300">USGS Gage #05451210</span>
+            <span className="font-bold text-cyan-300">Marcador de referencia #05451210</span>
           </div>
           <div className="mt-1 text-slate-300 text-[9px]">
-            Caudal Q: <span className="font-bold text-teal-300">{streamflowM3s.toFixed(2)} m³/s</span>
+            Q simulado: <span className="font-bold text-teal-300">{streamflowM3s.toFixed(2)} m³/s</span>
           </div>
           <div className="text-slate-400 text-[8px]">
-            Validación SWAT+: NSE=0.81 · PBIAS=-2.4%
+            Serie USGS registrada por separado · sin validación formal
           </div>
         </div>
       </Html>
@@ -459,14 +459,14 @@ export default function WatershedMesh3D({
           <Html position={[-20, 3.8, 14]} distanceFactor={18}>
             <div className="w-72 rounded-xl border border-cyan-400/40 bg-zinc-950/90 p-3 font-mono text-[10px] text-zinc-200 shadow-2xl backdrop-blur-md">
               <div className="flex items-center justify-between border-b border-cyan-500/30 pb-1">
-                <span className="font-bold text-cyan-300">Cuenca Hidrológica (Macro Nivel 3)</span>
+                <span className="font-bold text-cyan-300">Cuenca procedural (Macro)</span>
                 <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 text-[9px] text-cyan-300">
-                  SWAT+
+                  ILLUSTRATIVE
                 </span>
               </div>
               <div className="mt-1.5 space-y-1 text-[9px]">
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Precipitación (CHIRPS):</span>
+                  <span className="text-zinc-400">Precipitación simulada:</span>
                   <span className="font-bold text-sky-300">{precipMm.toFixed(1)} mm/d</span>
                 </div>
                 <div className="flex justify-between">
@@ -474,11 +474,11 @@ export default function WatershedMesh3D({
                   <span className="font-bold text-teal-300">{soilMoistureVol.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Descarga aforada (Q):</span>
+                  <span className="text-zinc-400">Descarga simulada (Q):</span>
                   <span className="font-bold text-cyan-300">{streamflowM3s.toFixed(2)} m³/s</span>
                 </div>
                 <div className="mt-1 border-t border-zinc-800 pt-1 text-emerald-400">
-                  💡 Haz clic en la parcela HRU 1 (verde) para bajar a escala Meso (Campo).
+                  💡 Haz clic en la parcela verde para bajar a la vista de campo ilustrativa.
                 </div>
               </div>
             </div>
@@ -494,10 +494,10 @@ export default function WatershedMesh3D({
               className="cursor-pointer rounded-lg border border-emerald-400/50 bg-slate-950/88 px-2.5 py-1.5 font-mono text-[9px] text-emerald-300 shadow-xl backdrop-blur transition hover:scale-105 hover:border-emerald-300"
             >
               <div className="font-bold flex items-center gap-1">
-                <span>HRU 1: Maíz (62% área)</span>
+                <span>Región proxy: maíz</span>
                 <span className="text-emerald-400">→</span>
               </div>
-              <div className="text-[8px] text-zinc-400">Clic para explorar 1000 plantas</div>
+              <div className="text-[8px] text-zinc-400">Clic para explorar la muestra de 1000 plantas</div>
             </div>
           </Html>
         </>

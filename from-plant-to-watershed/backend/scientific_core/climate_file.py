@@ -7,7 +7,7 @@ from typing import Any
 
 
 class Cmip6FileProvider:
-    REQUIRED_METADATA = {"scenario", "gcm", "member", "period", "variables", "units", "calendar", "source"}
+    REQUIRED_METADATA = {"scenario", "gcm", "member", "period", "variables", "units", "calendar", "source", "bias_correction"}
 
     def __init__(self, csv_path: str | Path, metadata_path: str | Path):
         self.csv_path, self.metadata_path = Path(csv_path), Path(metadata_path)

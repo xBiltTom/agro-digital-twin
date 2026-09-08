@@ -136,7 +136,7 @@ def render():
         "swat_baseline_streamflow_m3s": swat_flow
     }
 
-    if st.button("🧪 Ejecutar Inferencia Biofísica", type="primary", use_container_width=True):
+    if st.button("🧪 Ejecutar Inferencia Biofísica", type="primary", use_container_width=True, help="Calcula la respuesta hidrológica y fenológica combinando los parámetros climáticos, edáficos y de planta"):
         if bundle_dir and os.path.exists(bundle_dir):
             try:
                 bundle = load_model_bundle(bundle_dir)
@@ -164,7 +164,10 @@ def render():
         else:
             st.error("No hay un modelo disponible para inferencia. Por favor entrena un modelo en la Pestaña 3.")
 
+    st.caption("ℹ️ **¿Qué hace este botón?** Ejecuta la inferencia biofísica alimentando la red neuronal o ensamble con los 12 forzantes definidos en los sliders y calcula la escorrentía o rendimiento corregido.")
+
     if st.session_state.get("current_prediction"):
         pred = st.session_state.current_prediction
-        st.subheader("📋 Resultado del Diagnóstico Biofísico")
+        st.subheader("📋 Resultado del Diagnóstico Biofísico (Lab Ticket)")
+        st.caption("Este ticket compara la predicción del modelo híbrido acoplado con la línea base de SWAT+ estándar y evalúa el nivel de estrés foliar.")
         render_lab_ticket(pred)

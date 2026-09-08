@@ -1,12 +1,12 @@
 # Auditoria del estado actual
 
-Fecha de auditoria: 2026-09-07. Alcance: inspeccion estatica de `/backend`, `/frontend` y el prototipo local bajo `/prototypes/from-plant-to-watershed_-multi-scale-digital-twin`. La ruta solicitada `/prototypes/ai-studio-mvp` no existe en este checkout. El prototipo esta sin versionar (`git status`: `?? prototypes/`); no debe confundirse con una implementacion incluida en `HEAD`.
+Fecha de auditoria: 2026-09-07. Alcance original: inspeccion estatica de `/backend`, `/frontend` y del prototipo local bajo `/prototypes/from-plant-to-watershed_-multi-scale-digital-twin`. La ruta solicitada `/prototypes/ai-studio-mvp` no existia en ese checkout. El 2026-09-08 se retiro el prototipo tras migrar sus ideas visuales relevantes; no debe confundirse con una implementacion productiva.
 
 ## Dictamen
 
 El repositorio contiene un backend FastAPI y frontend Next.js funcionales para una demostracion persistente, pero no una plataforma cientifica multiescala validada. El flujo actual calcula un modelo ecohidrologico conceptual con clima sintetico; no ejecuta SWAT+, no adquiere NEX-GDDP-CMIP6 y no implementa la cadena Planta -> Campo -> HRU -> SWAT+.
 
-El prototipo AI Studio es una referencia visual y de interaccion. Sus datos, trabajos, conectores, WebSocket, Celery, Redis, resultados de validacion y arquitectura backend son simulados o literales de TypeScript. No se deben migrar como evidencia ni como implementacion de produccion.
+El prototipo AI Studio retirado era una referencia visual y de interaccion. Sus datos, trabajos, conectores, WebSocket, Celery, Redis, resultados de validacion y arquitectura backend eran simulados o literales de TypeScript. No debe restaurarse como evidencia ni como implementacion de produccion.
 
 ## Respuestas a las verificaciones requeridas
 
@@ -50,7 +50,7 @@ No se identifico un componente cientifico `REAL_INTEGRATION` para SWAT+, NEX-GDD
 7. **P1: clima sintetico etiquetado como historico/SSP.** No hay GCM, miembro, periodo, bias correction ni control de calendario. No comparar hipotesis H0/H1 con este forcing.
 8. **P1: validacion demo y estadistica no apta para evidencia.** AI Studio tiene arrays sin provenance, Sobol fijo, KS incorrecto, bootstrap sin semilla y reportes con metricas fijas. No migrar calculos cientificos a TypeScript.
 9. **P1: leakage y comparacion no reproducible.** No hay separacion temporal/espacial de calibracion y validacion; observaciones y simulaciones demo coexisten como literales.
-10. **P1: identificadores geograficos no verificados.** El prototipo asocia `USGS-05464500` a Walnut Creek/Ames, pero el identificador corresponde a Cedar River at Cedar Rapids. HUC, gauge y geometria requieren fuente y version independientes.
+10. **P1: identificadores geograficos no verificados.** El prototipo retirado asociaba `USGS-05464500` a Walnut Creek/Ames, pero el identificador corresponde a Cedar River at Cedar Rapids. HUC, gauge y geometria requieren fuente y version independientes.
 11. **P2: informes con afirmaciones no condicionales.** Los reportes declaran eficacia de riego, resiliencia o conservacion de masa sin evidencia almacenada.
 12. **P2: operacion y seguridad.** Registro publico puede solicitar roles privilegiados; tests hacen `drop_all` sobre la DB configurada; WS no autentica; ejecuciones pueden permanecer `RUNNING` al fallar.
 
@@ -72,7 +72,7 @@ El sistema actual conserva UUID, usuario, fechas de creacion, referencias mutabl
 
 El manifiesto minimo futuro por corrida debe incluir: identificadores, configuracion solicitada y efectiva, snapshots de dominio, datasets/checksums, seed, versiones, calendario/timestep, logs/errores, outputs/checksum, metricas y estado de validacion.
 
-## Frontend existente frente a prototipo
+## Frontend existente frente al prototipo retirado
 
 El frontend actual ya tiene autenticacion, catalogos, creacion/listado de simulaciones, resultados REST, playback WS, escena 3D, graficas y descarga de reportes. No debe sustituirse masivamente por la SPA Vite.
 
@@ -149,8 +149,6 @@ frontend/
     features/                  # simulations, validation, datasets, gis si crecen
     lib/api.ts
     types/
-prototypes/
-  ai-studio-mvp/               # referencia aislada, fixtures declarados demo
 docs/
   methodology/                 # protocolos, unidades, fuentes, seleccion de cuencas
   adr/                         # decisiones de arquitectura y contratos
@@ -163,6 +161,6 @@ docs/
 - Modelos: `backend/app/services/plant_model.py`, `swat_hydrology.py`, `climate_engine.py`, `twin_coupling_engine.py`.
 - Dominio/API: `backend/app/models/{watershed,simulation}.py`, `backend/app/api/v1/{simulations,twin_ws,reports}.py`.
 - UI actual: `frontend/src/app/(dashboard)/{simulations,twin-3d,reports}/page.tsx`, `frontend/src/components/3d/`.
-- Prototipo: `prototypes/from-plant-to-watershed_-multi-scale-digital-twin/src/{components,services,data}/`.
+- Prototipo: retirado el 2026-09-08; su contenido mock no forma parte del producto.
 
 La auditoria no ejecuta SWAT+, descarga de datasets, ni validacion externa. La ausencia se refiere al codigo y artefactos inspeccionados.

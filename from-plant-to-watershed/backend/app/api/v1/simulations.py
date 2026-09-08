@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.watershed import Watershed
 from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
+from app.models.observation import Dataset
 from app.schemas.simulation import (
     SimulationRunCreate,
     SimulationRunResponse,
@@ -78,9 +79,23 @@ async def create_and_run_simulation(
             precip_factor=scenario.precip_factor, co2_ppm=scenario.co2_ppm,
             start_date=sim_in.start_date,
             parameters=sim_in.parameters or {},
+            management_scenario=sim_in.management_scenario,
+            climate_source=sim_in.climate_source,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    datasets = []
+    if sim_in.dataset_ids:
+        datasets = list((await db.execute(select(Dataset).where(Dataset.id.in_(sim_in.dataset_ids)))).scalars().all())
+        found = {dataset.id for dataset in datasets}
+        missing = set(sim_in.dataset_ids) - found
+        if missing:
+            raise HTTPException(status_code=422, detail=f"Datasets not found: {', '.join(sorted(missing))}")
+    if sim_in.climate_source != "SYNTHETIC":
+        climate_datasets = [dataset for dataset in datasets if dataset.provider in {"NEX-GDDP-CMIP6", "CHIRPS"}]
+        if not climate_datasets:
+            raise HTTPException(status_code=422, detail="Selected climate_source requires a registered climate dataset artifact")
 
     new_sim = SimulationRun(
         user_id=current_user.id,
@@ -97,6 +112,9 @@ async def create_and_run_simulation(
         plant_count=sim_in.plant_count,
         hydrology_backend=sim_in.hydrology_backend,
         external_model_id=sim_in.external_model_id,
+        management_scenario=sim_in.management_scenario,
+        climate_source=sim_in.climate_source,
+        dataset_ids=sim_in.dataset_ids,
     )
     db.add(new_sim)
     await db.flush()

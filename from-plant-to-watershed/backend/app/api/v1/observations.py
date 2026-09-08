@@ -6,9 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_active_user, require_roles
 from app.core.database import get_db
-from app.models.observation import Dataset, StreamflowObservation
+from app.models.observation import Dataset, DatasetArtifact, StreamflowObservation
 from app.models.user import User
-from app.schemas.observation import DatasetResponse, StreamflowObservationResponse, UsgsIngestRequest
+from app.schemas.observation import DatasetArtifactRegister, DatasetArtifactResponse, DatasetResponse, StreamflowObservationResponse, UsgsIngestRequest
+from app.core.config import settings
+from app.services.dataset_artifacts import register_dataset_artifact
 from app.services.observational_registry import register_usgs_streamflow
 from app.services.usgs_streamflow import UsgsStreamflowProvider
 
@@ -23,14 +25,22 @@ async def list_datasets(
     return (await db.execute(select(Dataset).order_by(Dataset.retrieved_at.desc()))).scalars().all()
 
 
-@router.get("/{dataset_id}", response_model=DatasetResponse)
-async def get_dataset(
+@router.get("/{dataset_id}/artifacts", response_model=list[DatasetArtifactResponse])
+async def list_dataset_artifacts(
     dataset_id: str, db: AsyncSession = Depends(get_db), _user: User = Depends(get_current_active_user),
 ):
-    dataset = await db.scalar(select(Dataset).where(Dataset.id == dataset_id))
-    if not dataset:
-        raise HTTPException(status_code=404, detail="Dataset no encontrado")
-    return dataset
+    return (await db.execute(select(DatasetArtifact).where(DatasetArtifact.dataset_id == dataset_id))).scalars().all()
+
+
+@router.post("/register-artifact", response_model=DatasetResponse, status_code=status.HTTP_201_CREATED)
+async def register_artifact(
+    payload: DatasetArtifactRegister, db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_roles("SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO")),
+):
+    try:
+        return await register_dataset_artifact(db, payload, root=settings.DATA_ARTIFACT_ROOT)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/usgs/ingest", response_model=DatasetResponse, status_code=status.HTTP_201_CREATED)
@@ -62,3 +72,14 @@ async def list_streamflow_observations(
     if end_date:
         statement = statement.where(StreamflowObservation.observed_on <= end_date)
     return (await db.execute(statement.order_by(StreamflowObservation.observed_on))).scalars().all()
+
+
+# Keep this catch-all route last so /register-artifact and /streamflow/... remain reachable.
+@router.get("/{dataset_id}", response_model=DatasetResponse)
+async def get_dataset(
+    dataset_id: str, db: AsyncSession = Depends(get_db), _user: User = Depends(get_current_active_user),
+):
+    dataset = await db.scalar(select(Dataset).where(Dataset.id == dataset_id))
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset no encontrado")
+    return dataset

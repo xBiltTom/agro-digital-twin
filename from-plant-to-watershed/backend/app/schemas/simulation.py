@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # --- Climate Scenarios ---
@@ -74,6 +74,9 @@ class SimulationRunCreate(BaseModel):
     hydrology_backend: str = Field(default="SIMPLIFIED", pattern="^(SIMPLIFIED|SWAT_PLUS)$")
     external_model_id: Optional[str] = None
     start_date: date = date(2020, 1, 1)
+    management_scenario: Literal["BASELINE", "NO_TILL", "MAIZE_TO_SORGHUM"] = "BASELINE"
+    climate_source: Literal["SYNTHETIC", "CMIP6_FILE", "OBSERVED_HYBRID"] = "SYNTHETIC"
+    dataset_ids: List[str] = Field(default_factory=list, max_length=20)
     model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="after")
@@ -127,6 +130,9 @@ class SimulationRunResponse(BaseModel):
     monthly_outputs: Optional[List[Dict[str, Any]]] = None
     validation: Optional[Dict[str, Any]] = None
     ml_result: Optional[Dict[str, Any]] = None
+    management_scenario: str = "BASELINE"
+    climate_source: str = "SYNTHETIC"
+    dataset_ids: List[str] = Field(default_factory=list)
     scenario: Optional[ClimateScenarioResponse] = None
     summary_metrics: Optional[Dict[str, Any]] = None
     created_at: datetime

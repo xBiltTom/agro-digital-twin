@@ -14,7 +14,7 @@ import {
   Watershed,
   SimulationRun,
   SimulationResult
-  , ExternalModelInfo
+  , ExternalModelInfo, DatasetInfo
 } from "../types/simulation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -156,6 +156,9 @@ class ApiService {
     hydrology_backend?: string;
     external_model_id?: string;
     start_date?: string;
+    management_scenario?: "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM";
+    climate_source?: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED_HYBRID";
+    dataset_ids?: string[];
   }): Promise<SimulationRun> {
     return this.request<SimulationRun>("/simulations", {
       method: "POST",
@@ -169,6 +172,10 @@ class ApiService {
 
   async getExternalModels(): Promise<ExternalModelInfo[]> {
     return this.request<ExternalModelInfo[]>("/models");
+  }
+
+  async getDatasets(): Promise<DatasetInfo[]> {
+    return this.request<DatasetInfo[]>("/datasets");
   }
 
   // --- Reports (PDF, Word, Excel) ---

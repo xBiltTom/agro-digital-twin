@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.simulation import ClimateScenario, SimulationResult, SimulationRun
 from app.models.observation import StreamflowObservation
+from app.models.observation import Dataset
 from app.models.external_model import ExternalModel
 from app.models.watershed import Watershed
 from app.services.external_model_bundle import ExternalModelBundleAdapter
@@ -49,7 +50,11 @@ class TwinCouplingEngine:
                 precip_factor=scenario.precip_factor, co2_ppm=scenario.co2_ppm,
                 start_date=date.fromisoformat(requested.get("start_date", "2020-01-01")),
                 parameters=sim_run.parameters or {},
+                management_scenario=sim_run.management_scenario,
+                climate_source=sim_run.climate_source,
             )
+            if sim_run.climate_source != "SYNTHETIC":
+                raise RuntimeError("Selected climate source is registered for provenance but its forcing adapter is not installed")
             if sim_run.hydrology_backend == "SWAT_PLUS" or sim_run.mode == "SWAT_PLUS":
                 raise RuntimeError("SWAT_PLUS is NOT_AVAILABLE: executable/project are not configured")
             core_run = MultiscaleSimulationOrchestrator().execute(config, sim_run.plant_count)
@@ -68,11 +73,19 @@ class TwinCouplingEngine:
             ])
             sim_run.requested_config = requested
             sim_run.effective_config = core_run.effective_config
+            dataset_snapshots = []
+            if sim_run.dataset_ids:
+                datasets = list((await db.execute(select(Dataset).where(Dataset.id.in_(sim_run.dataset_ids)))).scalars().all())
+                dataset_snapshots = [{"id": item.id, "provider": item.provider, "dataset_name": item.dataset_name,
+                                      "version": item.version, "evidence_type": item.evidence_type,
+                                      "role": "CONTEXT_ONLY"} for item in datasets]
             sim_run.provenance = {
                 **core_run.provenance,
                 "watershed_snapshot": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
                 "scenario_snapshot": {"id": scenario.id, "code": scenario.code, "evidence_type": "SYNTHETIC"},
                 "code_version": _code_version(),
+                "climate_source": sim_run.climate_source,
+                "datasets": dataset_snapshots,
             }
             sim_run.summary_metrics = core_run.summary_metrics
             sim_run.field_aggregates = core_run.field_aggregates

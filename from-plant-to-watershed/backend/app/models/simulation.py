@@ -46,6 +46,9 @@ class SimulationRun(Base, TimestampMixin):
     monthly_outputs: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     validation: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     ml_result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    management_scenario: Mapped[str] = mapped_column(String(40), default="BASELINE", nullable=False)
+    climate_source: Mapped[str] = mapped_column(String(40), default="SYNTHETIC", nullable=False)
+    dataset_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
 
     scenario: Mapped[ClimateScenario] = relationship("ClimateScenario", lazy="selectin")
     results: Mapped[List["SimulationResult"]] = relationship(

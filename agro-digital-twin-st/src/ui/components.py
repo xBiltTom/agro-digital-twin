@@ -13,12 +13,13 @@ from src.core.statistics_core import load_training_history
 
 def render_synthetic_data_badge():
     """Renders prominent disclaimer badge for synthetic data."""
-    st.markdown(f"""
-    <div class="synthetic-badge">
-        <span>⚠️</span>
-        <span><b>MODO: {DATASET_SOURCE_LABEL}</b> — Datos generados para desarrollo de arquitectura y pruebas de gemelo digital. No representan observaciones reales USGS/USDA/CMIP6.</span>
-    </div>
-    """, unsafe_allow_html=True)
+    # st.markdown(f"""
+    # <div class="synthetic-badge">
+    #     <span>⚠️</span>
+    #     <span><b>MODO: {DATASET_SOURCE_LABEL}</b> — Datos generados para desarrollo de arquitectura y pruebas de gemelo digital. No representan observaciones reales USGS/USDA/CMIP6.</span>
+    # </div>
+    # """, unsafe_allow_html=True)
+    pass
 
 
 def render_auth_widget():

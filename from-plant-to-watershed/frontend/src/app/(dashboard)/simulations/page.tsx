@@ -9,7 +9,7 @@ import {
   ClimateScenario,
   Watershed,
   TwinWebSocketTick
-  , ExternalModelInfo
+  , ExternalModelInfo, DatasetInfo
 } from "../../../types/simulation";
 import {
   Sliders,
@@ -56,6 +56,7 @@ export default function SimulationsPage() {
   const [watersheds, setWatersheds] = useState<Watershed[]>([]);
   const [capabilities, setCapabilities] = useState<Record<string, { status: string; evidence_type?: string }>>({});
   const [externalModels, setExternalModels] = useState<ExternalModelInfo[]>([]);
+  const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
@@ -72,6 +73,8 @@ export default function SimulationsPage() {
   const [formPlantCount, setFormPlantCount] = useState(1000);
   const [formMode, setFormMode] = useState("DEMO_MULTISCALE");
   const [formExternalModel, setFormExternalModel] = useState("");
+  const [formManagement, setFormManagement] = useState<"BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM">("BASELINE");
+  const [formDatasetIds, setFormDatasetIds] = useState<string[]>([]);
 
   // Live WebSocket State
   const [isWsConnected, setIsWsConnected] = useState(false);
@@ -85,18 +88,20 @@ export default function SimulationsPage() {
   const loadInitialData = async () => {
     setIsLoading(true);
     try {
-      const [simsData, scenData, watersData, capabilityData, modelsData] = await Promise.all([
+      const [simsData, scenData, watersData, capabilityData, modelsData, datasetsData] = await Promise.all([
         api.getSimulations(),
         api.getClimateScenarios(),
         api.getWatersheds(),
         api.getCapabilities(),
         api.getExternalModels(),
+        api.getDatasets(),
       ]);
       setSimulations(simsData);
       setScenarios(scenData);
       setWatersheds(watersData);
       setCapabilities(capabilityData);
       setExternalModels(modelsData);
+      setDatasets(datasetsData);
 
       if (watersData.length > 0) setFormWatershedId(watersData[0].id);
       if (scenData.length > 0) setFormScenarioId(scenData[0].id);
@@ -152,6 +157,9 @@ export default function SimulationsPage() {
         plant_count: formPlantCount,
         hydrology_backend: "SIMPLIFIED",
         external_model_id: formExternalModel || undefined,
+        management_scenario: formManagement,
+        climate_source: "SYNTHETIC",
+        dataset_ids: formDatasetIds,
         start_date: "2020-01-01"
       });
       setSimulations([newSim, ...simulations]);
@@ -267,7 +275,7 @@ export default function SimulationsPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
-        {["CLIMATE · SYNTHETIC", `PLANT ×${selectedSim?.plant_count ?? 1000} · SIMPLIFIED`, "FIELD · DERIVED", "HRU · COARSE PROXY", "HYDROLOGY · SIMPLIFIED", "VALIDATION · REAL COMPUTATION"].map((stage, index) => (
+        {[`CLIMATE · ${selectedSim?.climate_source ?? "SYNTHETIC"}`, `PLANT ×${selectedSim?.plant_count ?? 1000} · SIMPLIFIED`, "FIELD · DERIVED", "HRU · COARSE PROXY", "HYDROLOGY · SIMPLIFIED", "METRICS · DIAGNOSTIC ONLY"].map((stage, index) => (
           <React.Fragment key={stage}><span className="px-3 py-2 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30">{stage}</span>{index < 5 && <span>→</span>}</React.Fragment>
         ))}
       </div>
@@ -363,6 +371,9 @@ export default function SimulationsPage() {
                     </div>
                     <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                       Escenario: {selectedSim.scenario?.name} ({selectedSim.scenario?.pathway})
+                    </span>
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                      Manejo: {selectedSim.management_scenario} · Fuente climática: {selectedSim.climate_source} · Datos: {selectedSim.dataset_ids?.length ?? 0} artefacto(s)
                     </span>
                   </div>
 
@@ -721,6 +732,29 @@ export default function SimulationsPage() {
                   <input type="number" min={1} max={10000} value={formPlantCount} onChange={(e) => setFormPlantCount(Number(e.target.value))} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
                 </div>
               </div>
+
+              <div>
+                <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Manejo agrícola MVP</label>
+                <select value={formManagement} onChange={(e) => setFormManagement(e.target.value as "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM")} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                  <option value="BASELINE">BASELINE — maíz</option>
+                  <option value="NO_TILL">NO_TILL — proxy CN −4</option>
+                  <option value="MAIZE_TO_SORGHUM">MAIZE_TO_SORGHUM — proxy de sustitución</option>
+                </select>
+                <p className="mt-1 text-[10px] text-zinc-500">Los ajustes son proxies reproducibles del MVP; no operaciones calibradas de SWAT+.</p>
+              </div>
+
+              <fieldset className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
+                <legend className="px-1 font-mono uppercase text-[10px] text-zinc-600 dark:text-zinc-400">Artefactos de datos registrados (contexto)</legend>
+                {datasets.length === 0 ? (
+                  <p className="text-[11px] text-zinc-500">No hay artefactos externos registrados. La corrida usará solo forzamiento sintético.</p>
+                ) : datasets.map((dataset) => (
+                  <label key={dataset.id} className="flex items-center gap-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-300">
+                    <input type="checkbox" checked={formDatasetIds.includes(dataset.id)} onChange={(event) => setFormDatasetIds((current) => event.target.checked ? [...current, dataset.id] : current.filter((id) => id !== dataset.id))} />
+                    <span>{dataset.provider}: {dataset.dataset_name} · {dataset.evidence_type}</span>
+                  </label>
+                ))}
+                <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">En este modo, los datos seleccionados se registran como CONTEXT_ONLY; no sustituyen el clima sintético.</p>
+              </fieldset>
 
               <div>
                 <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">ModelBundle externo opcional</label>

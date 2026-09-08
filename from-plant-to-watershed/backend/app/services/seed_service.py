@@ -313,11 +313,12 @@ async def seed_legacy_demo_data(db: AsyncSession) -> None:
             scenario_id=target_scenario.id,
             name="LEGACY DEMO — clima sintético / planta representativa",
             status="PENDING",
-            duration_days=365,
+            duration_days=60,
             irrigation_efficiency=None,
             seed=42,
             parameters={},
-            requested_config={"duration_days": 365, "seed": 42, "parameters": {}, "evidence_type": "DEMO"},
+            plant_count=100,
+            requested_config={"duration_days": 60, "seed": 42, "parameters": {}, "evidence_type": "DEMO"},
         )
         db.add(demo_sim)
         await db.flush()
@@ -359,11 +360,13 @@ async def bootstrap_mvp_data(db: AsyncSession) -> None:
         await db.flush()
     watershed = await db.scalar(select(Watershed).where(Watershed.code == "USGS-05451210-PARTIAL"))
     if not watershed:
-        watershed = Watershed(code="USGS-05451210-PARTIAL", name="REFERENCE — South Fork Iowa River / gauge 05451210",
+        watershed = Watershed(code="USGS-05451210-PARTIAL", name="REFERENCE_RESEARCH_DOMAIN — South Fork Iowa River / gauge 05451210",
                               country="United States", area_km2=580.1576, elevation_min_m=0, elevation_max_m=0,
                               outlet_lat=42.31530556, outlet_lon=-93.1521944,
                               dem_metadata={"verification_status": "PARTIAL", "geometry": "NOT_VERIFIED",
-                                            "gauge": "05451210", "evidence_type": "REFERENCE_RESEARCH_DOMAIN"})
+                                            "agricultural_fraction": "NOT_VERIFIED", "dam_screen": "NOT_VERIFIED",
+                                            "gauge": "05451210", "evidence_type": "REFERENCE_RESEARCH_DOMAIN",
+                                            "statement": "Technical MVP pilot; not an eligible frozen research watershed."})
         db.add(watershed)
         await db.flush()
         sub = Subbasin(watershed_id=watershed.id, subbasin_number=1, name="Coarse reference basin proxy",
@@ -373,6 +376,12 @@ async def bootstrap_mvp_data(db: AsyncSession) -> None:
         db.add_all([HRU(subbasin_id=sub.id, hru_number=i + 1, land_use=land, soil_type="UNVERIFIED_PROXY",
                         curve_number_ii=cn, area_fraction=fraction, plant_species_id=crop.id if i == 0 else None)
                     for i, (land, cn, fraction) in enumerate((("MAIZE_PROXY", 74, .60), ("SOY_PROXY", 72, .25), ("OTHER_PROXY", 70, .15)))])
+    else:
+        watershed.name = "REFERENCE_RESEARCH_DOMAIN — South Fork Iowa River / gauge 05451210"
+        watershed.dem_metadata = {**(watershed.dem_metadata or {}), "verification_status": "PARTIAL",
+                                  "geometry": "NOT_VERIFIED", "agricultural_fraction": "NOT_VERIFIED",
+                                  "dam_screen": "NOT_VERIFIED", "evidence_type": "REFERENCE_RESEARCH_DOMAIN",
+                                  "statement": "Technical MVP pilot; not an eligible frozen research watershed."}
     scenarios = (
         ("MVP_CONTROL", "Control sintético MVP", 0.0, 1.0),
         ("MVP_PLUS_2C", "+2 °C explícito", 2.0, 1.0),
@@ -380,7 +389,7 @@ async def bootstrap_mvp_data(db: AsyncSession) -> None:
     )
     for code, name, temperature, precipitation in scenarios:
         if not await db.scalar(select(ClimateScenario).where(ClimateScenario.code == code)):
-            db.add(ClimateScenario(code=code, name=name, pathway="MVP perturbation", description="Synthetic forcing control",
+            db.add(ClimateScenario(code=code, name=name, pathway="MVP synthetic perturbation", description="Synthetic forcing control; not CMIP6.",
                                    temp_anomaly_c=temperature, precip_factor=precipitation, co2_ppm=415, source_type="SYNTHETIC"))
     await db.commit()
 

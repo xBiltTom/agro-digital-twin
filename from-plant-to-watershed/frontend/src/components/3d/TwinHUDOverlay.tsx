@@ -71,8 +71,8 @@ export default function TwinHUDOverlay({
   onToggleSensors,
   showScientificLabels = true,
   onToggleScientificLabels,
-  scenarioName = "SSP2-4.5 (Línea Base)",
-  scenarioPathway = "SSP2-4.5",
+  scenarioName = "Escenario MVP",
+  scenarioPathway = "SYNTHETIC",
 }: TwinHUDOverlayProps) {
   const [showScientificModal, setShowScientificModal] = useState(false);
 
@@ -122,7 +122,7 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Mountain className="w-3.5 h-3.5" />
-            <span>Macro: Cuenca SWAT+</span>
+            <span>Macro: Cuenca proxy</span>
           </button>
 
           <button
@@ -134,7 +134,7 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Grid className="w-3.5 h-3.5" />
-            <span>Meso: Campo BARC (n=1000)</span>
+            <span>Meso: Campo simulado (n=1000)</span>
           </button>
 
           <button
@@ -146,7 +146,7 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Sprout className="w-3.5 h-3.5" />
-            <span>Micro: FSPM Zea mays</span>
+            <span>Micro: Maíz simplificado</span>
           </button>
         </div>
 
@@ -171,7 +171,7 @@ export default function TwinHUDOverlay({
             {onToggleSoilHorizons && (
               <button
                 onClick={onToggleSoilHorizons}
-                title="Alternar Capas SoilGrids 2.0 / Parcelas HRU"
+                title="Alternar perfil ilustrativo / parcelas proxy"
                 className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
                   showSoilHorizons
                     ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
@@ -185,7 +185,7 @@ export default function TwinHUDOverlay({
             {onToggleSensors && (
               <button
                 onClick={onToggleSensors}
-                title="Alternar Instrumentación (Torre Eddy Covariance / Sondas / USGS)"
+                title="Alternar marcadores ilustrativos del visor"
                 className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
                   showSensors
                     ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
@@ -217,7 +217,7 @@ export default function TwinHUDOverlay({
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500/15 to-teal-500/15 hover:from-emerald-500/25 hover:to-teal-500/25 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 text-xs font-mono font-semibold backdrop-blur-xl shadow-md cursor-pointer transition active:scale-95"
           >
             <Compass className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Marco Científico (H1)</span>
+            <span className="hidden sm:inline">Alcance científico</span>
           </button>
         </div>
       </div>
@@ -226,7 +226,7 @@ export default function TwinHUDOverlay({
       {precipMm > 10 && (
         <div className="self-center p-2 px-4 rounded-full bg-cyan-50 dark:bg-cyan-950/85 border border-cyan-300 dark:border-cyan-500/40 text-cyan-800 dark:text-cyan-300 text-xs font-mono flex items-center gap-2 shadow-lg pointer-events-auto backdrop-blur-md">
           <CloudRain className="w-4 h-4 animate-bounce text-cyan-400" />
-          <span>Precipitación Activa (CHIRPS): {precipMm.toFixed(1)} mm/día</span>
+          <span>Precipitación simulada: {precipMm.toFixed(1)} mm/día</span>
         </div>
       )}
 
@@ -238,7 +238,7 @@ export default function TwinHUDOverlay({
               <div className="flex items-center gap-2">
                 <Compass className="w-5 h-5 text-emerald-400" />
                 <h3 className="font-bold text-sm text-zinc-100">
-                  From Plant to Watershed: Framework Científico Multi-Escala
+                  From Plant to Watershed: alcance del MVP
                 </h3>
               </div>
               <button
@@ -255,8 +255,8 @@ export default function TwinHUDOverlay({
                 DAG Causal del Acoplamiento:
               </div>
               <div className="text-zinc-300 text-[10px] leading-relaxed">
-                CO₂ + Temperatura + Precipitación → Crecimiento FSPM Zea mays → ET + Infiltración →
-                Escorrentía SWAT+ → Disponibilidad Hídrica de Cuenca. (Manejo agrícola modula cada flecha).
+                CO₂ + Temperatura + Precipitación → planta simplificada de maíz → ET + infiltración proxy →
+                hidrología conceptual de cuenca. El DAG completo FSPM → SWAT+ es un objetivo futuro.
               </div>
             </div>
 
@@ -265,7 +265,7 @@ export default function TwinHUDOverlay({
               <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
                 <div className="font-bold text-amber-400 text-[11px] mb-1">Hipótesis H0:</div>
                 <div className="text-zinc-400 text-[10px]">
-                  El acoplamiento planta-cuenca no mejora la predicción de escorrentía vs. SWAT+ con parámetros promedio tabulados.
+                  El acoplamiento planta-cuenca no mejora la predicción de escorrentía vs. SWAT+ con parámetros promedio tabulados. No se evalúa en esta demostración.
                 </div>
               </div>
               <div className="bg-emerald-950/30 p-3 rounded-xl border border-emerald-500/30">
@@ -274,29 +274,26 @@ export default function TwinHUDOverlay({
                   Hipótesis H1 (Objetivo):
                 </div>
                 <div className="text-emerald-200 text-[10px]">
-                  El twin multi-escala reduce el RMSE de escorrentía mensual en ≥15% (Wilcoxon signed-rank p &lt; 0.01) con representación espacial n=1000 BARC.
+                  El twin multi-escala debería reducir el RMSE mensual ≥15%. Es una hipótesis futura; esta UI no la confirma.
                 </div>
               </div>
             </div>
 
             {/* Pruebas Estadísticas */}
             <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 space-y-1.5">
-              <div className="font-bold text-cyan-400 text-[11px]">Pruebas Estadísticas Validadas:</div>
+              <div className="font-bold text-cyan-400 text-[11px]">Estado de evaluación:</div>
               <ul className="list-disc pl-4 space-y-0.5 text-zinc-300 text-[10px]">
-                <li><span className="font-bold text-zinc-100">Kolmogorov-Smirnov (KS):</span> Valida distribución de escorrentía simulada vs. observada (USGS #05451210).</li>
-                <li><span className="font-bold text-zinc-100">Wilcoxon signed-rank:</span> Comparación pareada del RMSE mensual (Twin vs SWAT+ estándar).</li>
-                <li><span className="font-bold text-zinc-100">Método de Sobol:</span> Sensibilidad global (Transpiración Tr 0.42, Zmax 0.31, LAI 0.18).</li>
-                <li><span className="font-bold text-zinc-100">Métricas:</span> NSE ≥ 0.78, PBIAS &lt; ±10%, R² ≥ 0.84.</li>
+                <li><span className="font-bold text-zinc-100">RMSE, NSE, PBIAS y R²:</span> diagnóstico solo para meses observados alineados.</li>
+                <li><span className="font-bold text-zinc-100">KS, Wilcoxon, Sobol y bootstrap:</span> pendientes del protocolo de validación formal.</li>
+                <li><span className="font-bold text-zinc-100">H1:</span> permanece sin demostrar.</li>
               </ul>
             </div>
 
             {/* Datasets */}
             <div className="text-[10px] text-zinc-400 flex flex-wrap gap-2 pt-1 border-t border-zinc-800">
-              <span className="bg-zinc-800 px-2 py-0.5 rounded">USDA NASS</span>
-              <span className="bg-zinc-800 px-2 py-0.5 rounded">SoilGrids 2.0</span>
-              <span className="bg-zinc-800 px-2 py-0.5 rounded">CHIRPS</span>
-              <span className="bg-zinc-800 px-2 py-0.5 rounded">Landsat (USGS)</span>
-              <span className="bg-zinc-800 px-2 py-0.5 rounded">CMIP6 (NASA NEX-GDDP)</span>
+              <span className="bg-zinc-800 px-2 py-0.5 rounded">USGS: registro disponible</span>
+              <span className="bg-zinc-800 px-2 py-0.5 rounded">NASS/CHIRPS/SoilGrids/Landsat: artefactos registrables</span>
+              <span className="bg-zinc-800 px-2 py-0.5 rounded">CMIP6: proveedor de archivo preparado</span>
             </div>
           </div>
         </div>
@@ -311,14 +308,14 @@ export default function TwinHUDOverlay({
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-100 uppercase tracking-wider">
-                Corrida Multiescala · {scenarioPathway}
+                Corrida MVP simplificada · {scenarioPathway}
               </span>
             </div>
             <div>{getStressBadge(cwsiStress)}</div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-            {/* Caudal SWAT+ */}
+            {/* Caudal de hidrología conceptual */}
             <div className="flex flex-col gap-1 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/50">
               <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400">
                 <span className="flex items-center gap-1">
@@ -336,7 +333,7 @@ export default function TwinHUDOverlay({
               </div>
             </div>
 
-            {/* Humedad del Suelo (SoilGrids 2.0) */}
+            {/* Humedad del suelo simulada */}
             <div className="flex flex-col gap-1 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/50">
               <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400">
                 <span className="flex items-center gap-1">
@@ -354,7 +351,7 @@ export default function TwinHUDOverlay({
               </div>
             </div>
 
-            {/* Transpiración FSPM */}
+            {/* Transpiración simplificada */}
             <div className="flex flex-col gap-1 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/50">
               <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400">
                 <span className="flex items-center gap-1">
@@ -392,8 +389,8 @@ export default function TwinHUDOverlay({
           </div>
 
           <div className="mt-2.5 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80 text-[10px] text-zinc-500 flex justify-between">
-            <span>FSPM (Nivel 1) → BARC (Nivel 2) → SWAT+ HRU (Nivel 3) → CMIP6</span>
-            <span className="text-emerald-400 font-bold">H1: ΔRMSE ≥ 15%</span>
+            <span>Planta simplificada → campo derivado → HRU proxy → hidrología conceptual</span>
+            <span className="text-amber-400 font-bold">H1: pendiente</span>
           </div>
         </div>
 

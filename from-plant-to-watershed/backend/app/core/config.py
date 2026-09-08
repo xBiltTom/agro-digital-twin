@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     SWAT_PLUS_EXECUTABLE: str = ""
     SWAT_PLUS_PROJECT_DIR: str = ""
     CMIP6_ARTIFACT_DIR: str = "data/climate/cmip6"
+    DATA_ARTIFACT_ROOT: str = "data"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 horas
     

@@ -4,7 +4,7 @@
 
 Este plan no asume que H1 sea verdadera. La comparacion futura entre baseline SWAT+ y gemelo acoplado debe usar mismo forcing, periodo, unidades, watershed/gauge, protocolo de calibracion y particion de evaluacion.
 
-Los modelos actuales simplificados pueden seguir sirviendo para desarrollo, demostracion offline y CI, pero deben declararse por tipo y no llamarse SWAT+, FSPM o CMIP6 reales. AI Studio se usa solamente como referencia de UI/UX; no es fuente cientifica ni backend.
+Los modelos actuales simplificados pueden seguir sirviendo para desarrollo, demostracion offline y CI, pero deben declararse por tipo y no llamarse SWAT+, FSPM o CMIP6 reales. El prototipo AI Studio fue retirado el 2026-09-08 tras la migracion de las ideas visuales necesarias; no es fuente cientifica ni backend.
 
 ## Que conservar, refactorizar y retirar despues
 
@@ -13,7 +13,7 @@ Los modelos actuales simplificados pueden seguir sirviendo para desarrollo, demo
 | Frontend Next.js | Layout, auth, cliente API, formularios, Recharts, React Three Fiber, escenas por escala, descargas | Etiquetas de evidencia, URLs REST/WS, accesibilidad, estados de error, contratos tipados/runtime, unificar resultados | Fallbacks que aparentan datos, shocks locales no persistidos y KPIs hardcodeados |
 | Backend FastAPI | ORM, auth/RBAC tras corregir seguridad, catalogos, resultados, exportacion, OpenAPI | Ejecutor desacoplado del ORM, lifecycle, validacion de input, manifests, WS autenticado | Seed y narrativas que se presenten como observadas/validadas |
 | Modelos simplificados | Clima, planta e hidrologia para CI/offline | Renombrar, documentar unidades, cerrar balances, semilla explicita, contratos puros | Uso publico de nombres SWAT+/CMIP6/FSPM si no se implementan |
-| Prototipo AI Studio | Tarjetas, tabs, inspector de HRU, estructura visual de validacion/ingesta/progreso, ideas de Three.js | Client-only WebGL, mapa GIS, componentes de reportes y contratos | Timers, `mockScientificData`, ApiExplorer, ArchitectureViewer como codigo, roles/tokens mock, cifras y conclusiones fijas |
+| Prototipo AI Studio retirado | Ningun artefacto ejecutable | Las ideas visuales relevantes ya se reimplementaron en Next.js | Timers, `mockScientificData`, ApiExplorer, ArchitectureViewer como codigo, roles/tokens mock, cifras y conclusiones fijas |
 
 ## Contratos cientificos objetivo
 
@@ -47,11 +47,11 @@ Dependencia: ninguna. Objetivo: impedir afirmaciones cientificas o de seguridad 
 
 Criterio de salida: ninguna pantalla o reporte presenta datos sinteticos, modelo simplificado o fixture como observacion, integracion externa o resultado validado.
 
-### Fase A: integracion selectiva de UI AI Studio en Next.js
+### Fase A: consolidacion de UI en Next.js
 
-Dependencia: Fase 0. Objetivo: elevar UX sin duplicar aplicaciones ni copiar logica falsa.
+Dependencia: Fase 0. Objetivo: elevar UX sin duplicar aplicaciones ni reconstruir logica falsa del prototipo retirado.
 
-1. Portar patrones visuales de tarjetas, progreso, inspector y tabs a componentes Next.js.
+1. Consolidar patrones visuales de tarjetas, progreso, inspector y tabs directamente en componentes Next.js.
 2. Mantener la fuente de datos en `frontend/src/lib/api.ts`; no importar `mockScientificData.ts` en rutas productivas.
 3. Adaptar visualizador de planta como client-only y declarar si su geometria es ilustrativa.
 4. Conservar React Three Fiber actual como renderer canonico; no introducir un segundo stack Three.js salvo una justificacion concreta.

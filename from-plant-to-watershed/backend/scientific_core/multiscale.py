@@ -29,10 +29,12 @@ class PlantPopulation:
 
     VERSION = "1.0"
 
-    def __init__(self, count: int = 1000, seed: int = 42):
+    def __init__(self, count: int = 1000, seed: int = 42, *, base_kc: float = 1.05,
+                 max_root_depth_cm: float = 120.0, crop: str = "maize"):
         if not 1 <= count <= 10_000:
             raise ValueError("plant_count must be between 1 and 10000")
-        self.count, self.seed = count, seed
+        self.count, self.seed, self.crop = count, seed, crop
+        self._base_kc, self._max_root_depth_cm = base_kc, max_root_depth_cm
         rng = random.Random(seed)
         columns = max(1, math.ceil(math.sqrt(count)))
         self.plants = tuple(
@@ -40,14 +42,15 @@ class PlantPopulation:
                 plant_id=f"maize-{index + 1:05d}",
                 x_m=round((index % columns) * 0.75 + rng.uniform(-0.05, 0.05), 4),
                 y_m=round((index // columns) * 0.20 + rng.uniform(-0.02, 0.02), 4),
-                base_kc=max(0.75, min(1.30, rng.gauss(1.05, 0.08))),
-                root_depth_cm=max(70.0, min(160.0, rng.gauss(120.0, 14.0))),
+                base_kc=max(0.55, min(1.30, rng.gauss(base_kc, 0.08))),
+                root_depth_cm=max(50.0, min(220.0, rng.gauss(max_root_depth_cm, 14.0))),
                 soil_moisture_offset=max(-3.0, min(3.0, rng.gauss(0.0, 1.1))),
             ) for index in range(count)
         )
 
     def step(self, day_index: int, forcing: dict[str, float], soil_moisture_vol: float) -> tuple[PlantState, ...]:
         season = max(0.0, math.sin(math.pi * min(180, max(0, day_index - 20)) / 180.0))
+        peak_lai = 4.2 if self.crop == "sorghum_proxy" else 5.2
         states = []
         for plant in self.plants:
             model = SimplifiedPlantModel(plant.base_kc, plant.root_depth_cm)
@@ -55,7 +58,7 @@ class PlantPopulation:
             result = model.compute_daily_plant_step(
                 forcing["temp_c"], forcing["solar_rad_mj"], forcing["rh_percent"], moisture, forcing["co2_ppm"]
             )
-            lai = max(0.05, min(7.0, 5.2 * season * (1.0 - 0.55 * result["cwsi_stress_index"])))
+            lai = max(0.05, min(7.0, peak_lai * season * (1.0 - 0.55 * result["cwsi_stress_index"])))
             states.append(PlantState(
                 **{key: getattr(plant, key) for key in ("plant_id", "x_m", "y_m", "base_kc", "root_depth_cm", "soil_moisture_offset")},
                 lai=round(lai, 6), transpiration_mm=result["actual_transpiration_mm"],
@@ -101,11 +104,11 @@ class HRUProxy:
 class FieldToHRUCoupler:
     """Explicit area-weighted mapping; these are not SWAT+ HRUs."""
 
-    def __init__(self, watershed_area_km2: float):
+    def __init__(self, watershed_area_km2: float, *, curve_number_delta: float = 0.0, crop: str = "maize"):
         self.hrus = (
-            HRUProxy("proxy-corn", watershed_area_km2 * .60, .60, "maize", "loam", 74.0),
-            HRUProxy("proxy-soy", watershed_area_km2 * .25, .25, "soy_proxy", "loam", 72.0),
-            HRUProxy("proxy-other", watershed_area_km2 * .15, .15, "other", "mixed", 70.0),
+            HRUProxy("proxy-crop", watershed_area_km2 * .60, .60, crop, "loam", 74.0 + curve_number_delta),
+            HRUProxy("proxy-soy", watershed_area_km2 * .25, .25, "soy_proxy", "loam", 72.0 + curve_number_delta),
+            HRUProxy("proxy-other", watershed_area_km2 * .15, .15, "other", "mixed", 70.0 + curve_number_delta),
         )
 
     def couple(self, field: dict[str, Any]) -> dict[str, Any]:

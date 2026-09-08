@@ -17,6 +17,14 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from app.models.simulation import SimulationRun, SimulationResult
 
+
+def _provenance_text(sim_run: SimulationRun) -> str:
+    """Compact provenance suitable for PDF, DOCX and XLSX cells."""
+    sources = (sim_run.provenance or {}).get("datasets") or []
+    if not sources:
+        return "Sin artefactos externos usados por esta corrida."
+    return "; ".join(f"{item.get('provider', 'dataset')} ({item.get('role', 'CONTEXT_ONLY')})" for item in sources)
+
 class ReportGeneratorService:
     """Servicio de generación de reportes técnicos multiformato (PDF, Word, Excel)."""
 
@@ -86,8 +94,8 @@ class ReportGeneratorService:
         # Encabezado Institucional
         story.append(Paragraph("CENTRO DE MODELADO HIDROLÓGICO Y GEMELOS DIGITALES (AP-3)", subtitle_style))
         story.append(Spacer(1, 4))
-        story.append(Paragraph("INFORME DE SIMULACIÓN SIMPLIFICADA", title_style))
-        story.append(Paragraph("Clima sintético · planta representativa · hidrología conceptual", subtitle_style))
+        story.append(Paragraph("INFORME MVP MAÍZ–CUENCA", title_style))
+        story.append(Paragraph("Modelo simplificado · evidencia y procedencia explícitas", subtitle_style))
         story.append(Spacer(1, 8))
         story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#14b8a6"), spaceBefore=2, spaceAfter=10))
 
@@ -100,6 +108,9 @@ class ReportGeneratorService:
             [Paragraph("Horizonte Temporal:", body_bold), Paragraph(f"{sim_run.duration_days} días (Paso diario)", body_style)],
             [Paragraph("Clasificación:", body_bold), Paragraph("DEMO / SYNTHETIC / SIMPLIFIED", body_style)],
             [Paragraph("Implementaciones:", body_bold), Paragraph("SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel", body_style)],
+            [Paragraph("Manejo:", body_bold), Paragraph(sim_run.management_scenario, body_style)],
+            [Paragraph("Fuente climática:", body_bold), Paragraph(sim_run.climate_source, body_style)],
+            [Paragraph("Artefactos de datos:", body_bold), Paragraph(_provenance_text(sim_run), body_style)],
             [Paragraph("Semilla RNG:", body_bold), Paragraph("No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else str(sim_run.seed), body_style)],
             [Paragraph("Fecha de Emisión:", body_bold), Paragraph(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), body_style)],
         ]
@@ -125,6 +136,7 @@ class ReportGeneratorService:
             ["Volumen Total en Exutorio", f"{metrics.get('total_discharge_hm3', 0):.2f}", "hm³", "Río Cuenca"],
             ["Caudal Máximo Pico", f"{metrics.get('peak_streamflow_m3s', 0):.2f}", "m³/s", "Crecida"],
             ["Estrés Hídrico Medio (CWSI)", f"{metrics.get('mean_cwsi', 0):.3f}", "0 a 1", metrics.get('drought_stress_status', 'Normal')],
+            ["Rendimiento estacional proxy", f"{metrics.get('seasonal_crop_yield_proxy_t_ha', 0):.2f}", "t/ha", "DERIVED; no NASS observado"],
         ]
         t_kpi = Table(kpi_data, colWidths=[190, 110, 80, 160])
         t_kpi.setStyle(TableStyle([
@@ -178,7 +190,8 @@ class ReportGeneratorService:
         conclusions = (
             "Estos resultados proceden de <b>SyntheticClimateProvider</b>, <b>SimplifiedPlantModel</b> y "
             "<b>SimplifiedHydrologyModel</b>. No constituyen una corrida SWAT+, datos CMIP6, validación contra observaciones ni evidencia "
-            "sobre eficacia de riego, resiliencia climática o H1. "
+            "sobre eficacia de riego, resiliencia climática o H1. Los artefactos registrados pueden ser contexto y no se usan como forcing "
+            "salvo que el manifiesto lo indique. "
             f"Residual acumulado de balance numérico: <b>{metrics.get('cumulative_water_balance_residual_mm', 0):.3e} mm</b>."
         )
         story.append(Paragraph(conclusions, body_style))
@@ -195,14 +208,14 @@ class ReportGeneratorService:
 
         # Título y Subtítulo
         title_p = doc.add_paragraph()
-        title_run = title_p.add_run("INFORME DE SIMULACIÓN SIMPLIFICADA (AP-3)")
+        title_run = title_p.add_run("INFORME MVP MAÍZ–CUENCA (AP-3)")
         title_run.bold = True
         title_run.font.size = Pt(16)
         title_run.font.color.rgb = RGBColor(15, 23, 42)
         title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         sub_p = doc.add_paragraph()
-        sub_run = sub_p.add_run("Clima sintético · planta representativa · hidrología conceptual")
+        sub_run = sub_p.add_run("Modelo simplificado · procedencia científica explícita")
         sub_run.italic = True
         sub_run.font.size = Pt(11)
         sub_run.font.color.rgb = RGBColor(2, 132, 199)
@@ -220,6 +233,9 @@ class ReportGeneratorService:
             ("Horizonte de Modelado", f"{sim_run.duration_days} días diarios"),
             ("Semilla RNG", "No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else str(sim_run.seed)),
             ("Implementaciones", "SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel"),
+            ("Manejo", sim_run.management_scenario),
+            ("Fuente climática", sim_run.climate_source),
+            ("Artefactos de datos", _provenance_text(sim_run)),
             ("Fecha de Generación", datetime.now().strftime("%d/%m/%Y %H:%M")),
         ]
         meta_table = doc.add_table(rows=len(meta_data), cols=2)
@@ -239,7 +255,7 @@ class ReportGeneratorService:
         h2 = doc.add_heading("2. Indicadores Clave de Rendimiento (KPIs)", level=1)
         h2.style.font.color.rgb = RGBColor(15, 118, 110)
 
-        kpi_table = doc.add_table(rows=7, cols=4)
+        kpi_table = doc.add_table(rows=8, cols=4)
         kpi_table.alignment = WD_TABLE_ALIGNMENT.CENTER
         kpis = [
             ("Precipitación Total", f"{metrics.get('total_precip_mm', 0):.1f}", "mm", "Forzamiento"),
@@ -248,6 +264,7 @@ class ReportGeneratorService:
             ("Descarga Acumulada Río", f"{metrics.get('total_discharge_hm3', 0):.2f}", "hm³", "Volumen Cuenca"),
             ("Caudal Máximo Pico", f"{metrics.get('peak_streamflow_m3s', 0):.2f}", "m³/s", "Crecida"),
             ("Estrés Hídrico Medio (CWSI)", f"{metrics.get('mean_cwsi', 0):.3f}", "0 - 1", metrics.get('drought_stress_status', 'Normal')),
+            ("Rendimiento estacional proxy", f"{metrics.get('seasonal_crop_yield_proxy_t_ha', 0):.2f}", "t/ha", "DERIVED; no NASS observado"),
         ]
         # Encabezados
         headers = ["Indicador", "Valor", "Unidad", "Componente"]
@@ -275,6 +292,7 @@ class ReportGeneratorService:
         p_conc = doc.add_paragraph(
             "Resultados DEMO obtenidos con SyntheticClimateProvider, SimplifiedPlantModel y SimplifiedHydrologyModel. No son una ejecución SWAT+, "
             "un FSPM, una proyección CMIP6 ni una validación científica. H1 permanece sin demostrar. "
+            f"Artefactos registrados: {_provenance_text(sim_run)}. "
             f"El residual acumulado del balance numérico fue {metrics.get('cumulative_water_balance_residual_mm', 0):.3e} mm."
         )
         p_conc.paragraph_format.space_after = Pt(10)
@@ -311,7 +329,7 @@ class ReportGeneratorService:
         ws_resumen.title = "Resumen Ejecutivo"
         ws_resumen.views.sheetView[0].showGridLines = True
 
-        ws_resumen["A1"] = "GEMELO DIGITAL AP-3: FROM PLANT TO WATERSHED"
+        ws_resumen["A1"] = "GEMELO DIGITAL AP-3: MVP MAÍZ–CUENCA"
         ws_resumen["A1"].font = Font(name="Calibri", size=14, bold=True, color="0F766E")
         ws_resumen["A2"] = f"Reporte de Simulación: {sim_run.name}"
         ws_resumen["A2"].font = Font(name="Calibri", size=11, italic=True, color="475569")
@@ -324,6 +342,9 @@ class ReportGeneratorService:
             ("Duración", f"{sim_run.duration_days} días"),
             ("Semilla RNG", "No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else sim_run.seed),
             ("Implementaciones", "SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel"),
+            ("Manejo", sim_run.management_scenario),
+            ("Fuente climática", sim_run.climate_source),
+            ("Artefactos de datos", _provenance_text(sim_run)),
             ("Fecha de Ejecución", (sim_run.created_at.strftime("%Y-%m-%d %H:%M") if sim_run.created_at else datetime.now().strftime("%Y-%m-%d %H:%M"))),
         ]
         for idx, (k, v) in enumerate(meta_items, start=4):
@@ -349,6 +370,7 @@ class ReportGeneratorService:
             ("Volumen Descargado en Río", metrics.get("total_discharge_hm3", 0), "hm³"),
             ("Caudal Máximo Pico", metrics.get("peak_streamflow_m3s", 0), "m³/s"),
             ("Estrés Hídrico Medio (CWSI)", metrics.get("mean_cwsi", 0), "0 a 1"),
+            ("Rendimiento estacional proxy (DERIVED)", metrics.get("seasonal_crop_yield_proxy_t_ha", 0), "t/ha"),
         ]
         for idx, (k, v, u) in enumerate(kpis, start=13):
             ws_resumen[f"A{idx}"] = k
@@ -359,12 +381,12 @@ class ReportGeneratorService:
             ws_resumen[f"C{idx}"] = u
             ws_resumen[f"C{idx}"].font = regular_font
 
-        ws_resumen["A20"] = "ALCANCE"
-        ws_resumen["A20"].font = header_font
-        ws_resumen["A20"].fill = header_fill
-        ws_resumen.merge_cells("B20:C20")
-        ws_resumen["B20"] = "DEMO sintética y simplificada; no SWAT+, CMIP6, FSPM ni validación observacional."
-        ws_resumen["B20"].font = regular_font
+        ws_resumen["A22"] = "ALCANCE"
+        ws_resumen["A22"].font = header_font
+        ws_resumen["A22"].fill = header_fill
+        ws_resumen.merge_cells("B22:C22")
+        ws_resumen["B22"] = "MVP simplificado: no SWAT+, FSPM, CMIP6 ejecutado ni validación formal. H1 permanece sin demostrar."
+        ws_resumen["B22"].font = regular_font
 
         # -------------------------------------------------------------
         # Pestaña 2: balance diario del modelo simplificado

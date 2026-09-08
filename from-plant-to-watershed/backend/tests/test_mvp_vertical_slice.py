@@ -32,6 +32,21 @@ def test_multiscale_baseline_and_twin_use_identical_forcing():
     assert run.summary_metrics["plant_count"] == 1000
     assert run.provenance["forcing_identity"].startswith("baseline and twin")
     assert all("baseline_streamflow_m3s" in row for row in run.results)
+    assert run.summary_metrics["yield_proxy_evidence_type"] == "DERIVED"
+    assert run.summary_metrics["seasonal_crop_yield_proxy_t_ha"] >= 0
+
+
+def test_management_scenarios_change_effective_model_inputs_and_outputs():
+    base = RunConfig("management", 5, 180, 100, start_date=__import__("datetime").date(2020, 1, 1))
+    no_till = RunConfig("management", 5, 180, 100, start_date=__import__("datetime").date(2020, 1, 1), management_scenario="NO_TILL")
+    sorghum = RunConfig("management", 5, 180, 100, start_date=__import__("datetime").date(2020, 1, 1), management_scenario="MAIZE_TO_SORGHUM")
+    baseline_run = MultiscaleSimulationOrchestrator().execute(base, 100)
+    no_till_run = MultiscaleSimulationOrchestrator().execute(no_till, 100)
+    sorghum_run = MultiscaleSimulationOrchestrator().execute(sorghum, 100)
+    assert no_till_run.effective_config["management"]["curve_number_adjustment"] == -4
+    assert no_till_run.summary_metrics["total_surface_runoff_mm"] != baseline_run.summary_metrics["total_surface_runoff_mm"]
+    assert sorghum_run.effective_config["management"]["crop"] == "sorghum_proxy"
+    assert sorghum_run.summary_metrics["seasonal_crop_yield_proxy_t_ha"] != baseline_run.summary_metrics["seasonal_crop_yield_proxy_t_ha"]
 
 
 def test_validation_metrics_and_undefined_states():

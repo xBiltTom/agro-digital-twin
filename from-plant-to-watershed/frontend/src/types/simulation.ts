@@ -7,7 +7,20 @@ export interface ClimateScenario {
   temp_anomaly_c: number;
   precip_factor: number;
   co2_ppm: number;
-  source_type: "SYNTHETIC";
+  source_type: string;
+}
+
+export interface DatasetInfo {
+  id: string;
+  provider: string;
+  dataset_name: string;
+  version?: string | null;
+  variable: string;
+  unit: string;
+  temporal_resolution: string;
+  spatial_support: string;
+  evidence_type: string;
+  metadata_json: Record<string, unknown>;
 }
 
 export interface PlantSpecies {
@@ -95,7 +108,9 @@ export interface SimulationRun {
     peak_streamflow_m3s: number;
     mean_cwsi: number;
     cumulative_water_balance_residual_mm: number;
-    interpretation_status: "NOT_VALIDATED";
+    interpretation_status: string;
+    seasonal_crop_yield_proxy_t_ha?: number;
+    yield_proxy_evidence_type?: "DERIVED";
   };
   created_at: string;
   mode: "DEMO_MULTISCALE" | "REAL_OBSERVATION" | "ML_ASSISTED" | "SWAT_PLUS";
@@ -108,6 +123,9 @@ export interface SimulationRun {
   monthly_outputs?: Array<Record<string, any>>;
   validation?: Record<string, any>;
   ml_result?: Record<string, any>;
+  management_scenario: "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM";
+  climate_source: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED_HYBRID";
+  dataset_ids: string[];
 }
 
 export interface PlantSample {
