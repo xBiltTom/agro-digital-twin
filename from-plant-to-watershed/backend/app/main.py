@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.migrations import apply_pending_migrations
 from app.api.v1.router import api_router
-from app.services.seed_service import bootstrap_system_reference_data, seed_legacy_demo_data
+from app.services.seed_service import bootstrap_mvp_data, bootstrap_system_reference_data, seed_legacy_demo_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,6 +28,10 @@ async def lifespan(app: FastAPI):
     if settings.ENABLE_DEMO_SEED:
         async with AsyncSessionLocal() as session:
             await seed_legacy_demo_data(session)
+    # MVP fixtures include a local demo user; keep non-demo startup structural only.
+    if settings.ENABLE_MVP_BOOTSTRAP and settings.ENABLE_DEMO_SEED:
+        async with AsyncSessionLocal() as session:
+            await bootstrap_mvp_data(session)
 
     yield
 

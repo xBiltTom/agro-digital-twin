@@ -157,3 +157,48 @@ migraciones y aislamiento de SQLite. No se fijan conteos de tests en este README
 - [USGS streamflow y lineage](docs/methodology/usgs-streamflow.md)
 - [ADR: core científico puro](docs/adr/001-pure-scientific-core.md)
 - [Documentación histórica](docs/README.md): los documentos legados están marcados y no describen el contrato científico vigente.
+## ¿Qué funciona hoy?
+
+| Componente | Estado | Implementación |
+|---|---|---|
+| PostgreSQL | REAL | Runtime local canónico; SQLite sólo para tests rápidos |
+| FastAPI + Next.js | ACTIVE | API async y dashboard ejecutable |
+| USGS observations | OBSERVED | Snapshot 05451210 con RAW, SHA-256, QC y normalización m³/s |
+| Plant population | SIMPLIFIED | 1000 plantas de maíz deterministas con variabilidad acotada |
+| Plant → Field | DERIVED | Media, desviación, percentiles y `n_plants` |
+| Field → HRU | COARSE_HRU_PROXY | Tres unidades ponderadas por área; no son HRU SWAT+ |
+| Hydrology | SIMPLIFIED | SCS-CN/two-store con balance hídrico |
+| Baseline vs Twin | DEMONSTRATION_COMPARISON | Forcing idéntico y resultados mensuales separados |
+| Validation | REAL COMPUTATION | RMSE, NSE, PBIAS y R² con estados indefinidos explícitos |
+| External ML | ML_MODEL | ModelBundle por path; bundle RF vecino detectado, target `monthly_runoff_mm` |
+| SWAT+ | NOT AVAILABLE | Adapter listo; requiere ejecutable y proyecto configurados |
+| CMIP6 | READY_FOR_ARTIFACT | Provider CSV normalizado; demo usa clima sintético |
+
+## Ejecutar el MVP mañana (local)
+
+```bash
+cd backend
+bash scripts/start_local_postgres.sh
+python -m app.cli bootstrap-mvp
+uvicorn app.main:app --reload --port 8000
+```
+
+En otra terminal:
+
+```bash
+cd frontend
+pnpm dev
+```
+
+Abrir `http://localhost:3000`, iniciar sesión con
+`investigador@digitaltwin.org` / `Investiga123!`, entrar a **MVP multiescala**,
+crear la corrida y pulsar **Ejecutar gemelo digital**. El bootstrap aplica tablas,
+migraciones, RBAC, dominio de referencia, snapshot USGS y registra el ModelBundle
+vecino cuando `../agro-digital-twin-st/artifacts` está disponible.
+
+`docker compose up --build` queda como alternativa de despliegue; no es necesario
+para el flujo local.
+
+Para instalar otro bundle, copiarlo a `models/external/<bundle_name>/` y llamar
+`POST /api/v1/models/register` con su path dentro del runtime. El binario no se
+almacena en PostgreSQL.

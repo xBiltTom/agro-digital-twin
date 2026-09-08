@@ -34,7 +34,7 @@ export default function Sidebar() {
       badge: "3D",
     },
     {
-      name: "Modelado simplificado",
+      name: "MVP multiescala",
       href: "/simulations",
       icon: Sliders,
       roles: ["SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO"],
@@ -136,7 +136,7 @@ export default function Sidebar() {
           <span className="font-mono text-zinc-700 dark:text-zinc-300">Escalas: Micro ⇄ Meso ⇄ Macro</span>
         </div>
         <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-          Demo reproducible: clima sintético y modelos simplificados.
+          Vertical slice honesto: Plant → Field → HRU → Watershed.
         </p>
       </div>
     </aside>

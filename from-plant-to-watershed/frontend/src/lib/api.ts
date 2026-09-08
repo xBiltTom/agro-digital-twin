@@ -14,6 +14,7 @@ import {
   Watershed,
   SimulationRun,
   SimulationResult
+  , ExternalModelInfo
 } from "../types/simulation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -150,11 +151,24 @@ class ApiService {
     duration_days: number;
     seed: number;
     parameters?: Record<string, number>;
+    mode?: string;
+    plant_count?: number;
+    hydrology_backend?: string;
+    external_model_id?: string;
+    start_date?: string;
   }): Promise<SimulationRun> {
     return this.request<SimulationRun>("/simulations", {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  async getCapabilities(): Promise<Record<string, { status: string; evidence_type?: string }>> {
+    return this.request("/system/capabilities");
+  }
+
+  async getExternalModels(): Promise<ExternalModelInfo[]> {
+    return this.request<ExternalModelInfo[]>("/models");
   }
 
   // --- Reports (PDF, Word, Excel) ---

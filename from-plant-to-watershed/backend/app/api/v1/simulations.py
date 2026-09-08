@@ -68,12 +68,13 @@ async def create_and_run_simulation(
     if not scenario:
         raise HTTPException(status_code=404, detail="Escenario climático no encontrado")
 
-    requested_config = sim_in.model_dump(exclude_none=True)
+    requested_config = sim_in.model_dump(exclude_none=True, mode="json")
     try:
         RunConfig(
             run_id="validation", seed=sim_in.seed, duration_days=sim_in.duration_days,
             watershed_area_km2=watershed.area_km2, temp_anomaly_c=scenario.temp_anomaly_c,
             precip_factor=scenario.precip_factor, co2_ppm=scenario.co2_ppm,
+            start_date=sim_in.start_date,
             parameters=sim_in.parameters or {},
         )
     except ValueError as exc:
@@ -90,6 +91,10 @@ async def create_and_run_simulation(
         parameters=sim_in.parameters or {},
         seed=sim_in.seed,
         requested_config=requested_config,
+        mode=sim_in.mode,
+        plant_count=sim_in.plant_count,
+        hydrology_backend=sim_in.hydrology_backend,
+        external_model_id=sim_in.external_model_id,
     )
     db.add(new_sim)
     await db.flush()

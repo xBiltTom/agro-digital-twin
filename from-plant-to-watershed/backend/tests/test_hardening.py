@@ -108,7 +108,7 @@ async def test_legacy_database_migration_is_idempotent(tmp_path: Path):
         assert {"source_type"} <= columns["climate_scenarios"]
         assert {"seed", "requested_config", "effective_config", "provenance", "error", "started_at", "finished_at"} <= columns["simulation_runs"]
         assert {"water_balance_residual_mm"} <= columns["simulation_results"]
-        assert versions == ["001_run_manifest_and_provenance.sql", "002_observational_registry.sql"]
+        assert versions == ["001_run_manifest_and_provenance.sql", "002_observational_registry.sql", "003_mvp_vertical_slice.sql"]
         assert legacy_values[0] == "legacy-run"
         assert '"legacy":true' in legacy_values[1]
     finally:

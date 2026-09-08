@@ -1,4 +1,8 @@
+import hashlib
 import logging
+import os
+from datetime import date
+from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.security import hash_password
@@ -7,6 +11,11 @@ from app.models.user import User, Role, Permission, UserProfile
 from app.models.watershed import Watershed, Subbasin, HRU, PlantSpecies
 from app.models.simulation import ClimateScenario, SimulationRun
 from app.services.twin_coupling_engine import TwinCouplingEngine
+from app.models.observation import Dataset
+from app.models.external_model import ExternalModel
+from app.services.external_model_bundle import ExternalModelBundleAdapter
+from app.services.observational_registry import register_usgs_streamflow
+from app.services.usgs_streamflow import UsgsStreamflowProvider
 
 logger = logging.getLogger(__name__)
 
@@ -318,6 +327,62 @@ async def seed_legacy_demo_data(db: AsyncSession) -> None:
 
     await db.commit()
     logger.info("Seed DEMO completo: catálogo y forzamientos sintéticos listos.")
+
+
+async def bootstrap_mvp_data(db: AsyncSession) -> None:
+    """Idempotent reference domain, scenarios, observed snapshot, and discovered ML bundle."""
+    crop = await db.scalar(select(PlantSpecies).where(PlantSpecies.name == "Maíz simplificado MVP"))
+    if not crop:
+        crop = PlantSpecies(name="Maíz simplificado MVP", scientific_name="Zea mays L.", crop_type="Cereal",
+                            base_kc=1.05, max_root_depth_cm=120.0, optimal_temp_c=25.0, stomatal_conductance_max=320.0)
+        db.add(crop)
+        await db.flush()
+    watershed = await db.scalar(select(Watershed).where(Watershed.code == "USGS-05451210-PARTIAL"))
+    if not watershed:
+        watershed = Watershed(code="USGS-05451210-PARTIAL", name="REFERENCE — South Fork Iowa River / gauge 05451210",
+                              country="United States", area_km2=580.1576, elevation_min_m=0, elevation_max_m=0,
+                              outlet_lat=42.31530556, outlet_lon=-93.1521944,
+                              dem_metadata={"verification_status": "PARTIAL", "geometry": "NOT_VERIFIED",
+                                            "gauge": "05451210", "evidence_type": "REFERENCE_RESEARCH_DOMAIN"})
+        db.add(watershed)
+        await db.flush()
+        sub = Subbasin(watershed_id=watershed.id, subbasin_number=1, name="Coarse reference basin proxy",
+                       area_km2=watershed.area_km2, mean_slope_percent=0, reach_length_km=0)
+        db.add(sub)
+        await db.flush()
+        db.add_all([HRU(subbasin_id=sub.id, hru_number=i + 1, land_use=land, soil_type="UNVERIFIED_PROXY",
+                        curve_number_ii=cn, area_fraction=fraction, plant_species_id=crop.id if i == 0 else None)
+                    for i, (land, cn, fraction) in enumerate((("MAIZE_PROXY", 74, .60), ("SOY_PROXY", 72, .25), ("OTHER_PROXY", 70, .15)))])
+    scenarios = (
+        ("MVP_CONTROL", "Control sintético MVP", 0.0, 1.0),
+        ("MVP_PLUS_2C", "+2 °C explícito", 2.0, 1.0),
+        ("MVP_MINUS_15P", "-15% precipitación explícito", 0.0, .85),
+    )
+    for code, name, temperature, precipitation in scenarios:
+        if not await db.scalar(select(ClimateScenario).where(ClimateScenario.code == code)):
+            db.add(ClimateScenario(code=code, name=name, pathway="MVP perturbation", description="Synthetic forcing control",
+                                   temp_anomaly_c=temperature, precip_factor=precipitation, co2_ppm=415, source_type="SYNTHETIC"))
+    await db.commit()
+
+    snapshot = Path(settings.MVP_USGS_SNAPSHOT or "/data/raw/usgs/05451210_2000-01-01_2025-12-31.json")
+    if snapshot.is_file() and not await db.scalar(select(Dataset.id).where(Dataset.provider == "USGS")):
+        raw = snapshot.read_bytes()
+        provider = UsgsStreamflowProvider(data_root=snapshot.parents[3])
+        records = provider.parse_daily_values(raw, "05451210")
+        await register_usgs_streamflow(db, "05451210",
+            UsgsStreamflowProvider.build_daily_values_url("05451210", date(2000, 1, 1), date(2025, 12, 31)),
+            snapshot, hashlib.sha256(raw).hexdigest(), records, provider.quality_control(records))
+
+    bundle_path = Path(settings.MVP_EXTERNAL_MODEL or "/models/external/monthly_runoff_mm/random_forest")
+    if bundle_path.is_dir() and not await db.scalar(select(ExternalModel.id).where(ExternalModel.artifact_path == str(bundle_path))):
+        adapter = ExternalModelBundleAdapter(bundle_path)
+        info = adapter.validate_bundle()
+        db.add(ExternalModel(name=info["metadata"].get("model_name", bundle_path.name), target=info["target"],
+                             framework=info["framework"], artifact_path=str(bundle_path),
+                             version=info["metadata"].get("dataset_version"), feature_schema=adapter.schema,
+                             metrics=adapter.metrics, checksum=info["checksum"], status="VALIDATED",
+                             provenance={"source": "agro-digital-twin-st ModelBundle", "training_data": "SYNTHETIC"}))
+        await db.commit()
 
 
 async def seed_initial_data(db: AsyncSession) -> None:

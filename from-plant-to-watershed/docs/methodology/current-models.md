@@ -5,7 +5,8 @@
 La aplicación ejecuta un pipeline **DEMO** reproducible. Sus componentes son
 `SyntheticClimateProvider`, `SimplifiedPlantModel` y `SimplifiedHydrologyModel`.
 No ejecuta SWAT+, no descarga NEX-GDDP-CMIP6, no contiene un FSPM completo y no
-no ha sido calibrada ni validada contra observaciones. H0/H1 permanecen sin evaluar.
+ha sido calibrada. Puede calcular métricas contra observaciones alineadas, pero
+ello es `DEMONSTRATION_ONLY`, no una validación formal ni evidencia para H0/H1.
 
 ## Observaciones separadas del modelo
 
@@ -29,8 +30,11 @@ humedad volumétrica (%) y CO₂ (ppm). Flujos: mm día⁻¹. El dominio validad
 software exige umbrales de humedad ordenados, radiación no negativa y humedad
 relativa entre 0 y 100%.
 
-No modela órganos, arquitectura tridimensional, fenología, carbono, raíces por
-capa ni población. Los proxies de savia, potencial foliar y conductancia son
+No modela órganos, arquitectura tridimensional, fenología, carbono ni raíces por
+capa. `PlantPopulation` ejecuta una población determinista de hasta 10 000
+instancias del modelo simplificado con variabilidad acotada en Kc, profundidad
+radicular y humedad; no convierte el modelo en un FSPM. Los proxies de savia,
+potencial foliar y conductancia son
 salidas ilustrativas del modelo simplificado, no observaciones.
 
 ## SyntheticClimateProvider
@@ -61,7 +65,9 @@ residual diario y acumulado se exponen y se prueba con tolerancia de `1e-9 mm`.
 
 Supuestos principales: cuenca lumped, timestep diario, perfil de 1000 mm,
 capacidad de campo 32%, saturación 44%, percolación lineal 0.45 y recesión de
-baseflow 0.045. No representa HRUs, cauces, routing físico, calibración ni SWAT+.
+baseflow 0.045. `FieldToHRUCoupler` produce tres `COARSE_HRU_PROXY` ponderados
+por área y expone las entradas de campo; no representa HRUs, cauces, routing
+físico, calibración ni SWAT+.
 
 ## Configuración, unidades y provenance
 
@@ -76,20 +82,27 @@ implementaciones/versiones, clasificación, unidades, soporte espacial/temporal,
 timestamps y error estructurado. `datasets=[]` significa que no se usó ningún
 dataset, no que su provenance sea desconocida.
 
-La utilidad `litres_per_plant_day_to_mm_day` establece explícitamente que
-1 L m⁻² equivale a 1 mm y valida área/volumen. Es preparación de contrato, no una
-población de campo implementada.
+`PlantToFieldAggregator` conserva medias, desviaciones estándar y percentiles de
+la población completa y sólo persiste una muestra representativa. La utilidad
+`litres_per_plant_day_to_mm_day` establece explícitamente que 1 L m⁻² equivale a
+1 mm y valida área/volumen.
 
 ## Cadena futura
 
 ```text
-Plant (simplificado hoy)
-  ↓ PlantToField — no implementado
-Field population — no implementado
-  ↓ FieldToHRU — no implementado
-HRU
+Plant population (SIMPLIFIED)
+  ↓ PlantToField (DERIVED)
+Field aggregate
+  ↓ FieldToHRU (COARSE_HRU_PROXY)
+HRU proxy
   ↓
-SWAT+ adapter — no implementado
+SimplifiedHydrologyModel (SIMPLIFIED)
+  ↓
+ValidationEngine (DEMONSTRATION_ONLY when USGS aligns)
+
+`SwatPlusAdapter` y `Cmip6FileProvider` existen como contratos de integración;
+su capability es `NOT_AVAILABLE` o `READY_FOR_ARTIFACT` hasta recibir sus
+artefactos/configuración reales.
 ```
 
 La selección verificable completa de watershed/gauge, CMIP6, validación

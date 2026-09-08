@@ -128,7 +128,9 @@ class UsgsStreamflowProvider:
             raise ValueError("USGS response contains no daily streamflow series")
 
         matching_series = [item for item in series if item.get("sourceInfo", {}).get("siteCode", [{}])[0].get("value") == station_id]
-        source = matching_series[0] if matching_series else series[0]
+        if not matching_series:
+            raise ValueError(f"USGS response does not contain requested station {station_id}")
+        source = matching_series[0]
         variable = source.get("variable", {})
         parameter = variable.get("variableCode", [{}])[0].get("value")
         unit = variable.get("unit", {}).get("unitCode")

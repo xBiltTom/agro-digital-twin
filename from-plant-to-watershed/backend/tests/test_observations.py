@@ -35,6 +35,8 @@ def test_usgs_parser_rejects_corrupt_and_wrong_station_response():
         UsgsStreamflowProvider.parse_daily_values(b"not-json", "05451210")
     with pytest.raises(ValueError, match="station_id"):
         UsgsStreamflowProvider.build_daily_values_url("unsafe/path", date(2020, 1, 1), date(2020, 1, 2))
+    with pytest.raises(ValueError, match="requested station"):
+        UsgsStreamflowProvider.parse_daily_values(FIXTURE.read_bytes(), "05452200")
 
 
 def test_usgs_qc_detects_duplicate_negative_and_gaps():

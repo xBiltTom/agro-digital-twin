@@ -36,6 +36,16 @@ class SimulationRun(Base, TimestampMixin):
     error: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    mode: Mapped[str] = mapped_column(String(40), default="DEMO_MULTISCALE", nullable=False)
+    plant_count: Mapped[int] = mapped_column(Integer, default=1000, nullable=False)
+    hydrology_backend: Mapped[str] = mapped_column(String(40), default="SIMPLIFIED", nullable=False)
+    external_model_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    field_aggregates: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    hru_aggregates: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    plant_sample: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    monthly_outputs: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    validation: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    ml_result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     scenario: Mapped[ClimateScenario] = relationship("ClimateScenario", lazy="selectin")
     results: Mapped[List["SimulationResult"]] = relationship(

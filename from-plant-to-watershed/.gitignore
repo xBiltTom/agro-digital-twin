@@ -18,4 +18,6 @@ digitaltwin.db
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
+!data/raw/usgs/
+!data/raw/usgs/05451210_2000-01-01_2025-12-31.json
 !data/processed/.gitkeep

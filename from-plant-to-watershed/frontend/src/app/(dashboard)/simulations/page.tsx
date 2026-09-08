@@ -9,6 +9,7 @@ import {
   ClimateScenario,
   Watershed,
   TwinWebSocketTick
+  , ExternalModelInfo
 } from "../../../types/simulation";
 import {
   Sliders,
@@ -53,6 +54,8 @@ export default function SimulationsPage() {
   const [results, setResults] = useState<SimulationResult[]>([]);
   const [scenarios, setScenarios] = useState<ClimateScenario[]>([]);
   const [watersheds, setWatersheds] = useState<Watershed[]>([]);
+  const [capabilities, setCapabilities] = useState<Record<string, { status: string; evidence_type?: string }>>({});
+  const [externalModels, setExternalModels] = useState<ExternalModelInfo[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
@@ -65,6 +68,10 @@ export default function SimulationsPage() {
   const [formWatershedId, setFormWatershedId] = useState("");
   const [formScenarioId, setFormScenarioId] = useState("");
   const [formDuration, setFormDuration] = useState(365);
+  const [formSeed, setFormSeed] = useState(42);
+  const [formPlantCount, setFormPlantCount] = useState(1000);
+  const [formMode, setFormMode] = useState("DEMO_MULTISCALE");
+  const [formExternalModel, setFormExternalModel] = useState("");
 
   // Live WebSocket State
   const [isWsConnected, setIsWsConnected] = useState(false);
@@ -78,14 +85,18 @@ export default function SimulationsPage() {
   const loadInitialData = async () => {
     setIsLoading(true);
     try {
-      const [simsData, scenData, watersData] = await Promise.all([
+      const [simsData, scenData, watersData, capabilityData, modelsData] = await Promise.all([
         api.getSimulations(),
         api.getClimateScenarios(),
         api.getWatersheds(),
+        api.getCapabilities(),
+        api.getExternalModels(),
       ]);
       setSimulations(simsData);
       setScenarios(scenData);
       setWatersheds(watersData);
+      setCapabilities(capabilityData);
+      setExternalModels(modelsData);
 
       if (watersData.length > 0) setFormWatershedId(watersData[0].id);
       if (scenData.length > 0) setFormScenarioId(scenData[0].id);
@@ -135,8 +146,13 @@ export default function SimulationsPage() {
         watershed_id: formWatershedId,
         scenario_id: formScenarioId,
         duration_days: Number(formDuration),
-        seed: 42,
-        parameters: {}
+        seed: formSeed,
+        parameters: {},
+        mode: formMode,
+        plant_count: formPlantCount,
+        hydrology_backend: "SIMPLIFIED",
+        external_model_id: formExternalModel || undefined,
+        start_date: "2020-01-01"
       });
       setSimulations([newSim, ...simulations]);
       setIsModalOpen(false);
@@ -205,11 +221,11 @@ export default function SimulationsPage() {
           <div className="flex items-center gap-2">
             <Sliders className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-              Modelos simplificados y clima sintético
+              Gemelo digital multiescala — MVP científico
             </h1>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-            Pipeline demostrativo reproducible. No ejecuta SWAT+, FSPM ni NEX-GDDP-CMIP6.
+            Plant → Field → HRU proxy → hidrología simplificada → validación USGS.
           </p>
         </div>
 
@@ -240,6 +256,21 @@ export default function SimulationsPage() {
           <span>{feedbackMsg.text}</span>
         </div>
       )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+        {Object.entries(capabilities).map(([name, item]) => (
+          <div key={name} className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 bg-white dark:bg-zinc-950">
+            <div className="text-[10px] uppercase font-mono text-zinc-500">{name.replaceAll("_", " ")}</div>
+            <div className={`text-[11px] mt-1 font-bold ${item.status === "ACTIVE" ? "text-emerald-600" : "text-amber-600"}`}>{item.status}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+        {["CLIMATE · SYNTHETIC", `PLANT ×${selectedSim?.plant_count ?? 1000} · SIMPLIFIED`, "FIELD · DERIVED", "HRU · COARSE PROXY", "HYDROLOGY · SIMPLIFIED", "VALIDATION · REAL COMPUTATION"].map((stage, index) => (
+          <React.Fragment key={stage}><span className="px-3 py-2 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30">{stage}</span>{index < 5 && <span>→</span>}</React.Fragment>
+        ))}
+      </div>
 
       {/* Grid: Simulations List (Left) + Detail & Charts (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -455,6 +486,23 @@ export default function SimulationsPage() {
                     </span>
                   </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                    <div className="font-mono text-emerald-600">PLANT → FIELD</div>
+                    <div className="mt-2">{selectedSim.plant_count} plantas · LAI medio {Number(selectedSim.field_aggregates?.mean_lai ?? 0).toFixed(3)}</div>
+                    <div>Raíz {Number(selectedSim.field_aggregates?.mean_root_depth_cm ?? 0).toFixed(1)} cm · estrés {Number(selectedSim.field_aggregates?.mean_stress ?? 0).toFixed(3)}</div>
+                  </div>
+                  <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                    <div className="font-mono text-cyan-600">FIELD → HRU</div>
+                    <div className="mt-2">{selectedSim.hru_aggregates?.count ?? 0} HRUs · COARSE_HRU_PROXY</div>
+                    <div>Fracción total {Number(selectedSim.hru_aggregates?.area_fraction_sum ?? 0).toFixed(2)}</div>
+                  </div>
+                  <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                    <div className="font-mono text-amber-600">VALIDATION</div>
+                    <div className="mt-2">{selectedSim.validation?.interpretation ?? "DEMONSTRATION_ONLY"}</div>
+                    <div>Meses alineados: {selectedSim.validation?.aligned_months ?? 0} · mejora {selectedSim.validation?.improvement_percent?.value?.toFixed?.(2) ?? "indefinida"}%</div>
+                  </div>
+                </div>
               </div>
 
               {/* Hidrograma conceptual (caudal y lluvia sintéticos) */}
@@ -655,6 +703,33 @@ export default function SimulationsPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Modo</label>
+                  <select value={formMode} onChange={(e) => setFormMode(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    <option value="DEMO_MULTISCALE">DEMO_MULTISCALE</option>
+                    <option value="REAL_OBSERVATION">REAL_OBSERVATION</option>
+                    <option value="ML_ASSISTED">ML_ASSISTED</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Seed</label>
+                  <input type="number" min={0} value={formSeed} onChange={(e) => setFormSeed(Number(e.target.value))} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                </div>
+                <div>
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Plantas</label>
+                  <input type="number" min={1} max={10000} value={formPlantCount} onChange={(e) => setFormPlantCount(Number(e.target.value))} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">ModelBundle externo opcional</label>
+                <select value={formExternalModel} onChange={(e) => setFormExternalModel(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                  <option value="">No usar modelo externo</option>
+                  {externalModels.map((model) => <option key={model.id} value={model.id}>{model.name} · {model.target} · {model.framework}</option>)}
+                </select>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
@@ -678,8 +753,8 @@ export default function SimulationsPage() {
               </div>
 
               <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 flex flex-col gap-1">
-                <span className="font-semibold text-zinc-800 dark:text-zinc-300">Modelo de planta representativa simplificado</span>
-                <span>No representa órganos, población de campo ni un FSPM completo.</span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-300">Población explícita de maíz simplificada</span>
+                <span>Calcula toda la población y persiste agregados más una muestra. No es un FSPM completo; las HRU son proxies.</span>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
@@ -703,7 +778,7 @@ export default function SimulationsPage() {
                   ) : (
                     <>
                       <Play className="w-3.5 h-3.5" />
-                      <span>Ejecutar Simulación</span>
+                      <span>Ejecutar gemelo digital</span>
                     </>
                   )}
                 </button>

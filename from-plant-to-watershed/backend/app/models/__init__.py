@@ -5,6 +5,7 @@ from app.models.watershed import Watershed, Subbasin, HRU, PlantSpecies
 from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
 from app.models.report import GeneratedReport
 from app.models.observation import Dataset, DatasetArtifact, StreamflowObservation
+from app.models.external_model import ExternalModel
 
 __all__ = [
     "Base",
@@ -26,4 +27,5 @@ __all__ = [
     "Dataset",
     "DatasetArtifact",
     "StreamflowObservation",
+    "ExternalModel",
 ]

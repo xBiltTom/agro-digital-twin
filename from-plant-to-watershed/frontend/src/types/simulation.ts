@@ -98,6 +98,20 @@ export interface SimulationRun {
     interpretation_status: "NOT_VALIDATED";
   };
   created_at: string;
+  mode: "DEMO_MULTISCALE" | "REAL_OBSERVATION" | "ML_ASSISTED" | "SWAT_PLUS";
+  plant_count: number;
+  hydrology_backend: "SIMPLIFIED" | "SWAT_PLUS";
+  external_model_id?: string | null;
+  field_aggregates?: Record<string, any>;
+  hru_aggregates?: Record<string, any>;
+  plant_sample?: Array<Record<string, any>>;
+  monthly_outputs?: Array<Record<string, any>>;
+  validation?: Record<string, any>;
+  ml_result?: Record<string, any>;
+}
+
+export interface ExternalModelInfo {
+  id: string; name: string; target: string; framework: string; status: string; metrics: Record<string, number>;
 }
 
 export interface TwinWebSocketTick {

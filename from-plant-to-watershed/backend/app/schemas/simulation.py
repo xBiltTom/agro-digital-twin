@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -69,6 +69,11 @@ class SimulationRunCreate(BaseModel):
     seed: int = Field(default=42, ge=0, le=2**32 - 1)
     irrigation_efficiency: Optional[float] = None
     parameters: Optional[Dict[str, Any]] = None
+    mode: str = Field(default="DEMO_MULTISCALE", pattern="^(DEMO_MULTISCALE|REAL_OBSERVATION|ML_ASSISTED|SWAT_PLUS)$")
+    plant_count: int = Field(default=1000, ge=1, le=10000)
+    hydrology_backend: str = Field(default="SIMPLIFIED", pattern="^(SIMPLIFIED|SWAT_PLUS)$")
+    external_model_id: Optional[str] = None
+    start_date: date = date(2020, 1, 1)
     model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="after")
@@ -112,6 +117,16 @@ class SimulationRunResponse(BaseModel):
     error: Optional[Dict[str, Any]] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+    mode: str = "DEMO_MULTISCALE"
+    plant_count: int = 1000
+    hydrology_backend: str = "SIMPLIFIED"
+    external_model_id: Optional[str] = None
+    field_aggregates: Optional[Dict[str, Any]] = None
+    hru_aggregates: Optional[Dict[str, Any]] = None
+    plant_sample: Optional[List[Dict[str, Any]]] = None
+    monthly_outputs: Optional[List[Dict[str, Any]]] = None
+    validation: Optional[Dict[str, Any]] = None
+    ml_result: Optional[Dict[str, Any]] = None
     scenario: Optional[ClimateScenarioResponse] = None
     summary_metrics: Optional[Dict[str, Any]] = None
     created_at: datetime

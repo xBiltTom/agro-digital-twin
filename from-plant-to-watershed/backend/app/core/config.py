@@ -13,11 +13,18 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     SECRET_KEY: str = "CHANGE_ME"
     ENABLE_DEMO_SEED: bool = False
+    ENABLE_MVP_BOOTSTRAP: bool = False
+    MVP_USGS_SNAPSHOT: str = ""
+    MVP_EXTERNAL_MODEL: str = ""
+    EXTERNAL_MODELS_DIR: str = "models/external"
+    SWAT_PLUS_EXECUTABLE: str = ""
+    SWAT_PLUS_PROJECT_DIR: str = ""
+    CMIP6_ARTIFACT_DIR: str = "data/climate/cmip6"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 horas
     
     # Database
-    # Por defecto inicia con SQLite local listo para usar; para producción o PostgreSQL se configura en .env
+    # SQLite remains a local/test fallback. Docker Compose sets canonical PostgreSQL.
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
         "sqlite+aiosqlite:///./digitaltwin.db"

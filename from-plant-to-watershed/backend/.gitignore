@@ -49,3 +49,4 @@ ENV/
 .coverage.*
 .pytest_cache/
 htmlcov/
+.local-postgres/

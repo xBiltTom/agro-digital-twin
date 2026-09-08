@@ -1,14 +1,17 @@
 """Application adapter between SQLAlchemy persistence and the pure scientific core."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import subprocess
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.simulation import ClimateScenario, SimulationResult, SimulationRun
+from app.models.observation import StreamflowObservation
+from app.models.external_model import ExternalModel
 from app.models.watershed import Watershed
-from scientific_core import RunConfig, SimulationOrchestrator
+from app.services.external_model_bundle import ExternalModelBundleAdapter
+from scientific_core import MultiscaleSimulationOrchestrator, RunConfig, SimulationOrchestrator, ValidationEngine
 
 
 def _code_version() -> str | None:
@@ -44,9 +47,12 @@ class TwinCouplingEngine:
                 run_id=sim_run.id, seed=sim_run.seed, duration_days=sim_run.duration_days,
                 watershed_area_km2=watershed.area_km2, temp_anomaly_c=scenario.temp_anomaly_c,
                 precip_factor=scenario.precip_factor, co2_ppm=scenario.co2_ppm,
+                start_date=date.fromisoformat(requested.get("start_date", "2020-01-01")),
                 parameters=sim_run.parameters or {},
             )
-            core_run = SimulationOrchestrator().execute(config)
+            if sim_run.hydrology_backend == "SWAT_PLUS" or sim_run.mode == "SWAT_PLUS":
+                raise RuntimeError("SWAT_PLUS is NOT_AVAILABLE: executable/project are not configured")
+            core_run = MultiscaleSimulationOrchestrator().execute(config, sim_run.plant_count)
             db.add_all([
                 SimulationResult(
                     simulation_run_id=sim_run.id, day_index=row["day_index"], date_str=row["date_str"],
@@ -69,6 +75,57 @@ class TwinCouplingEngine:
                 "code_version": _code_version(),
             }
             sim_run.summary_metrics = core_run.summary_metrics
+            sim_run.field_aggregates = core_run.field_aggregates
+            sim_run.hru_aggregates = core_run.hru_aggregates
+            sim_run.plant_sample = list(core_run.plant_sample)
+            monthly_outputs = [dict(row) for row in core_run.monthly_outputs]
+            station_id = requested.get("station_id", "05451210")
+            observations = (await db.execute(
+                select(StreamflowObservation).where(StreamflowObservation.station_id == station_id)
+                .order_by(StreamflowObservation.observed_on)
+            )).scalars().all()
+            observed_by_month: dict[str, list[float]] = {}
+            for observation in observations:
+                if observation.value_m3s is not None and observation.value_m3s >= 0:
+                    observed_by_month.setdefault(observation.observed_on.strftime("%Y-%m"), []).append(observation.value_m3s)
+            aligned = []
+            for row in monthly_outputs:
+                values = observed_by_month.get(row["month"])
+                if values:
+                    row["observed_streamflow_m3s"] = sum(values) / len(values)
+                    aligned.append(row)
+            if len(aligned) >= 2:
+                sim_run.validation = ValidationEngine.compare(
+                    [row["observed_streamflow_m3s"] for row in aligned],
+                    [row["baseline_streamflow_m3s"] for row in aligned],
+                    [row["twin_streamflow_m3s"] for row in aligned],
+                )
+                sim_run.validation["observation_station_id"] = station_id
+                sim_run.validation["aligned_months"] = len(aligned)
+            else:
+                sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "fewer than two aligned observed months",
+                                      "observation_station_id": station_id, "aligned_months": len(aligned),
+                                      "interpretation": "DEMONSTRATION_ONLY"}
+            sim_run.monthly_outputs = monthly_outputs
+            if sim_run.external_model_id:
+                registry_model = await db.scalar(select(ExternalModel).where(ExternalModel.id == sim_run.external_model_id))
+                if not registry_model:
+                    raise ValueError("external model is not registered")
+                last = monthly_outputs[-1]
+                days = [row for row in core_run.results if row["date_str"].startswith(last["month"])]
+                payload = {
+                    "precip_mm": sum(row["precip_mm"] for row in days),
+                    "temp_mean_c": sum(row["temp_c"] for row in days) / len(days),
+                    "solar_radiation": sum(row["solar_rad_mj"] for row in days) / len(days),
+                    "soil_moisture": sum(row["soil_moisture_vol"] for row in days) / len(days),
+                    "infiltration_mm": sum(max(0.0, row["precip_mm"] - row["surface_runoff_mm"]) for row in days),
+                    "lai": core_run.field_aggregates["mean_lai"],
+                    "root_depth_m": core_run.field_aggregates["mean_root_depth_cm"] / 100,
+                    "transpiration_mm": sum(row["actual_transpiration_mm"] for row in days),
+                    "water_stress": sum(row["cwsi_stress_index"] for row in days) / len(days),
+                    "et_mm": sum(row["actual_et_mm"] for row in days),
+                }
+                sim_run.ml_result = ExternalModelBundleAdapter(registry_model.artifact_path).predict(payload)
             sim_run.status = "COMPLETED"
             sim_run.finished_at = datetime.now(timezone.utc)
             await db.commit()
