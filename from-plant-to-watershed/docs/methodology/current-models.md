@@ -5,7 +5,16 @@
 La aplicación ejecuta un pipeline **DEMO** reproducible. Sus componentes son
 `SyntheticClimateProvider`, `SimplifiedPlantModel` y `SimplifiedHydrologyModel`.
 No ejecuta SWAT+, no descarga NEX-GDDP-CMIP6, no contiene un FSPM completo y no
-ha sido validada contra observaciones. H0/H1 permanecen sin evaluar.
+no ha sido calibrada ni validada contra observaciones. H0/H1 permanecen sin evaluar.
+
+## Observaciones separadas del modelo
+
+Fase C incorpora `UsgsStreamflowProvider` y un registry de datos para conservar
+una serie USGS RAW, checksum SHA-256, normalización diaria en m³/s, QC y un
+producto mensual derivado. Esta infraestructura no modifica parámetros, inputs
+ni resultados de `SimplifiedHydrologyModel`; no constituye calibración ni
+validación. La matriz de candidatas permanece preliminar: no hay todavía una
+cuenca elegible congelada.
 
 ## SimplifiedPlantModel
 
@@ -83,5 +92,5 @@ HRU
 SWAT+ adapter — no implementado
 ```
 
-Las observaciones reales, selección verificable de watershed/gauge, CMIP6,
-validación estadística y evaluación de H0/H1 pertenecen a fases posteriores.
+La selección verificable completa de watershed/gauge, CMIP6, validación
+estadística y evaluación de H0/H1 pertenecen a fases posteriores.

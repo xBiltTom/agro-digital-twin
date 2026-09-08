@@ -4,6 +4,7 @@ from app.models.user import User, Role, Permission, UserProfile, user_roles, rol
 from app.models.watershed import Watershed, Subbasin, HRU, PlantSpecies
 from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
 from app.models.report import GeneratedReport
+from app.models.observation import Dataset, DatasetArtifact, StreamflowObservation
 
 __all__ = [
     "Base",
@@ -22,4 +23,7 @@ __all__ = [
     "SimulationRun",
     "SimulationResult",
     "GeneratedReport",
+    "Dataset",
+    "DatasetArtifact",
+    "StreamflowObservation",
 ]

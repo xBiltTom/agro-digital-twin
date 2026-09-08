@@ -3,7 +3,7 @@
 from pathlib import Path
 import re
 
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -32,7 +32,7 @@ def _apply_migrations_sync(connection: Connection) -> None:
             if match and match.group(2) in existing_columns.get(match.group(1), set()):
                 continue
             connection.exec_driver_sql(sql)
-        connection.exec_driver_sql("INSERT INTO schema_migrations (version) VALUES (:version)", {"version": path.name})
+        connection.execute(text("INSERT INTO schema_migrations (version) VALUES (:version)"), {"version": path.name})
 
 
 async def apply_pending_migrations(engine: AsyncEngine) -> None:

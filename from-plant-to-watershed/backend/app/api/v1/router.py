@@ -6,6 +6,7 @@ from app.api.v1.profile import router as profile_router
 from app.api.v1.simulations import router as simulations_router
 from app.api.v1.twin_ws import router as twin_ws_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.observations import router as observations_router
 
 api_router = APIRouter()
 
@@ -16,3 +17,4 @@ api_router.include_router(profile_router)
 api_router.include_router(simulations_router)
 api_router.include_router(twin_ws_router)
 api_router.include_router(reports_router)
+api_router.include_router(observations_router)

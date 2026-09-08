@@ -12,6 +12,8 @@ La implementación actual ejecuta un pipeline diario persistente compuesto por:
 - `SyntheticClimateProvider`: forzamiento meteorológico estacional y pseudoaleatorio con seed; **no** contiene observaciones ni NEX-GDDP-CMIP6.
 - `SimplifiedPlantModel`: planta representativa algebraica; **no** es un FSPM ni representa órganos, fenología o población.
 - `SimplifiedHydrologyModel`: balance conceptual agregado SCS-CN con diagnóstico de residual; **no** ejecuta SWAT+.
+- `UsgsStreamflowProvider`: infraestructura observacional separada que conserva RAW,
+  checksum, QC y caudal diario normalizado; **no** calibra ni alimenta los modelos simplificados.
 
 Cada corrida guarda seed, configuración solicitada y efectiva, provenance, estado,
 errores y balance hídrico. El visor WebGL reproduce resultados persistidos y sus
@@ -20,13 +22,19 @@ geometrías de campo, cuenca y planta son **procedurales e ilustrativas**.
 No están implementados ni demostrados:
 
 - SWAT+ real, FSPM completo o CMIP6/NEX-GDDP-CMIP6 real;
-- observaciones USGS, USDA NASS, CHIRPS, SoilGrids o Landsat;
+- USDA NASS, CHIRPS, SoilGrids o Landsat; y un dominio watershed/gauge elegible
+  y congelado para USGS;
 - población de campo, Planta → Campo o Campo → HRU;
 - calibración, validación formal, Sobol, KS, Wilcoxon, bootstrap o la hipótesis H0/H1.
 
 El catálogo Palto/Santa Eulalia/Rímac, si se habilita, es un **LEGACY DEMO** para
 desarrollo local. No representa el dominio científico objetivo ni una cuenca
 verificada.
+
+Fase C contiene una primera ingesta USGS de referencia y una matriz preliminar
+de candidatos, ambas con provenance. Ninguna candidata ha satisfecho todavía
+todos los criterios de agricultura, geometría y regulación; por ello no existe
+un dominio científico seleccionado ni un baseline SWAT+.
 
 ## Arquitectura objetivo (futura)
 
@@ -145,5 +153,7 @@ migraciones y aislamiento de SQLite. No se fijan conteos de tests en este README
 ## Documentación
 
 - [Modelos actualmente implementados](docs/methodology/current-models.md)
+- [Protocolo de selección de cuencas](docs/methodology/watershed-selection-protocol.md)
+- [USGS streamflow y lineage](docs/methodology/usgs-streamflow.md)
 - [ADR: core científico puro](docs/adr/001-pure-scientific-core.md)
 - [Documentación histórica](docs/README.md): los documentos legados están marcados y no describen el contrato científico vigente.

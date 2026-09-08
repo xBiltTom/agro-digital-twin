@@ -1,0 +1,9 @@
+{
+  "schema_version": "phase-c-1.0",
+  "status": "NO_ELIGIBLE_DOMAIN_FROZEN",
+  "protocol": "docs/methodology/watershed-selection-protocol.md",
+  "candidate_matrix": "research_domain/candidate_matrix.json",
+  "decision": "No watershed is included until agricultural fraction, gauge-specific WBD geometry/CRS comparison, and major-dam screening are verified from their required official sources.",
+  "included_watersheds": [],
+  "future_spatial_validation": "NOT_READY: zero candidates satisfy all frozen inclusion criteria."
+}

@@ -13,3 +13,9 @@ Thumbs.db
 *.log
 
 digitaltwin.db
+
+# Downloaded scientific artifacts are reproducible through registry metadata, not Git.
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
