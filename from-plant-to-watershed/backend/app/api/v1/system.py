@@ -4,6 +4,7 @@ from importlib.util import find_spec
 from fastapi import APIRouter
 
 from app.core.config import settings
+from app.services.swat_plus_adapter import SwatPlusAdapter
 
 
 router = APIRouter(prefix="/system", tags=["System"])
@@ -11,7 +12,11 @@ router = APIRouter(prefix="/system", tags=["System"])
 
 @router.get("/capabilities")
 async def capabilities():
-    swat_ready = bool(settings.SWAT_PLUS_EXECUTABLE and settings.SWAT_PLUS_PROJECT_DIR)
+    swat_capability = SwatPlusAdapter(
+        executable=settings.SWAT_PLUS_EXECUTABLE,
+        project_dir=settings.SWAT_PLUS_PROJECT_DIR,
+        working_directory=settings.SWAT_PLUS_WORKING_DIRECTORY,
+    ).capability()
     model_root = Path(settings.EXTERNAL_MODELS_DIR)
     cmip_root = Path(settings.CMIP6_ARTIFACT_DIR)
     keras_available = find_spec("tensorflow") is not None
@@ -29,7 +34,7 @@ async def capabilities():
         "ml_hybrid": {"status": "ACTIVE" if keras_available else "NOT_AVAILABLE",
                       "reason": None if keras_available else "TensorFlow/Keras is not installed"},
         "external_ml": {"status": "READY" if model_root.exists() else "NOT_INSTALLED", "path": str(model_root)},
-        "swat_plus": {"status": "ACTIVE" if swat_ready else "NOT_AVAILABLE"},
+        "swat_plus": swat_capability,
         "cmip6": {"status": "READY_FOR_ARTIFACT" if not cmip_root.exists() else "ACTIVE_FILE_PROVIDER",
                   "evidence_type": "ARTIFACT_REQUIRED"},
     }

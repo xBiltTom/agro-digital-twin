@@ -128,7 +128,10 @@ async def create_and_run_simulation(
     try:
         completed_sim = await TwinCouplingEngine.execute_simulation_run(db, new_sim.id)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail={"message": "Simulation failed", "type": type(exc).__name__}) from exc
+        raise HTTPException(status_code=500, detail={
+            "message": str(exc), "type": getattr(exc, "code", type(exc).__name__),
+            **({"details": exc.details} if hasattr(exc, "details") else {}),
+        }) from exc
     return completed_sim
 
 @router.get("/{sim_id}", response_model=SimulationRunResponse)
@@ -162,3 +165,22 @@ async def get_simulation_results(
     )
     res = await db.execute(stmt)
     return res.scalars().all()
+
+@router.get("/{sim_id}/swat-results")
+async def get_swat_results(
+    sim_id: str,
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user),
+):
+    """Return persisted normalized SWAT+ records without proxy/FSPM fields."""
+    sim = await db.scalar(select(SimulationRun).where(SimulationRun.id == sim_id))
+    if not sim:
+        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+    if (sim.provenance or {}).get("evidence_type") != "REAL_SWAT_PLUS":
+        raise HTTPException(status_code=409, detail={"type": "NOT_AVAILABLE", "message": "This run is not a completed real SWAT+ baseline"})
+    return {
+        "status": sim.status, "run_id": sim.id, "records": sim.monthly_outputs or [],
+        "hru_results": (sim.hru_aggregates or {}).get("results", []),
+        "water_balance": (sim.summary_metrics or {}).get("water_balance"),
+        "provenance": sim.provenance,
+    }

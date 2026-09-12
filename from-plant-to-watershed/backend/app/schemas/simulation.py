@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -61,6 +61,18 @@ class WatershedResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 # --- Simulation Run ---
+class SwatPlusConfiguration(BaseModel):
+    """Explicit, portable contract for one real SWAT+ baseline execution."""
+    project_path: Optional[str] = None
+    executable_path: Optional[str] = None
+    working_directory: Optional[str] = None
+    warmup_period: int = Field(default=0, ge=0, le=36500)
+    output_frequency: Literal["DAILY", "MONTHLY", "ANNUAL"] = "DAILY"
+    outlet_unit: Optional[str] = None
+    timeout_seconds: int = Field(default=3600, ge=1, le=86400)
+    run_type: Literal["SWAT_STANDARD_BASELINE"] = "SWAT_STANDARD_BASELINE"
+    model_config = ConfigDict(extra="forbid")
+
 class SimulationRunCreate(BaseModel):
     name: str = Field(min_length=1, max_length=150)
     watershed_id: str
@@ -74,18 +86,28 @@ class SimulationRunCreate(BaseModel):
     hydrology_backend: str = Field(default="SIMPLIFIED", pattern="^(SIMPLIFIED|SWAT_PLUS)$")
     external_model_id: Optional[str] = None
     station_id: Optional[str] = Field(default=None, pattern=r"^\d{8,15}$")
-    start_date: date
-    end_date: date
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     management_scenario: Literal["BASELINE", "NO_TILL", "MAIZE_TO_SORGHUM"] = "BASELINE"
     climate_source: Literal["SYNTHETIC", "CMIP6_FILE", "OBSERVED", "OBSERVED_HYBRID"] = "SYNTHETIC"
     dataset_ids: List[str] = Field(default_factory=list, max_length=20)
     dataset_roles: Dict[str, Literal["FORCING", "OBSERVATION", "SOIL_INPUT", "LAND_COVER", "YIELD_OBSERVATION", "VALIDATION", "CONTEXT_ONLY"]] = Field(default_factory=dict)
+    swat_plus: Optional[SwatPlusConfiguration] = None
     model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="after")
     def reject_unsupported_irrigation_efficiency(self):
         if self.irrigation_efficiency is not None:
             raise ValueError("irrigation_efficiency is not implemented; use irrigation_mm_per_day in parameters")
+        is_swat = self.hydrology_backend == "SWAT_PLUS" or self.mode == "SWAT_PLUS"
+        if (self.start_date is None) != (self.end_date is None):
+            raise ValueError("start_date and end_date must be supplied together")
+        if self.start_date is None:
+            if is_swat:
+                raise ValueError("SWAT+ runs require explicit start_date and end_date")
+            # Compatibility for the existing deterministic synthetic/proxy API.
+            self.start_date = date(2000, 1, 1)
+            self.end_date = self.start_date + timedelta(days=self.duration_days - 1)
         if self.end_date < self.start_date:
             raise ValueError("end_date must not precede start_date")
         if (self.end_date - self.start_date).days + 1 != self.duration_days:
@@ -94,6 +116,9 @@ class SimulationRunCreate(BaseModel):
             raise ValueError(f"dataset_roles reference unselected datasets: {', '.join(sorted(unknown_role_ids))}")
         if self.climate_source != "SYNTHETIC" and "FORCING" not in self.dataset_roles.values():
             raise ValueError("a non-synthetic climate_source requires one selected FORCING dataset")
+        if is_swat:
+            if self.hydrology_backend != "SWAT_PLUS" or self.mode != "SWAT_PLUS":
+                raise ValueError("SWAT+ runs require both hydrology_backend and mode to be SWAT_PLUS")
         return self
 
 class SimulationResultResponse(BaseModel):

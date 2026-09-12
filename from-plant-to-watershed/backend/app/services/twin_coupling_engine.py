@@ -1,6 +1,6 @@
 """Application adapter between SQLAlchemy persistence and the pure scientific core."""
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import subprocess
 
@@ -12,6 +12,8 @@ from app.models.observation import Dataset, DatasetArtifact, StreamflowObservati
 from app.models.external_model import ExternalModel
 from app.models.watershed import Watershed
 from app.services.external_model_bundle import ExternalModelBundleAdapter
+from app.services.swat_plus_adapter import SwatPlusAdapter, SwatPlusRunConfig
+from app.core.config import settings
 from scientific_core import MultiscaleSimulationOrchestrator, RunConfig, SimulationOrchestrator, ValidationEngine
 from scientific_core.climate_file import NormalizedClimateFileProvider
 
@@ -60,6 +62,52 @@ class TwinCouplingEngine:
         }
 
     @staticmethod
+    async def _execute_swat_baseline(sim_run: SimulationRun, watershed: Watershed) -> None:
+        """Execute SWAT+ without leaking project/process details into the engine."""
+        requested_swat = (sim_run.requested_config or {}).get("swat_plus") or {}
+        config = SwatPlusRunConfig(
+            project_path=Path(requested_swat.get("project_path") or settings.SWAT_PLUS_PROJECT_DIR),
+            executable_path=Path(requested_swat.get("executable_path") or settings.SWAT_PLUS_EXECUTABLE),
+            working_directory=Path(requested_swat.get("working_directory") or settings.SWAT_PLUS_WORKING_DIRECTORY),
+            simulation_start=sim_run.start_date, simulation_end=sim_run.end_date,
+            warmup_period=requested_swat.get("warmup_period", 0),
+            output_frequency=requested_swat.get("output_frequency", "DAILY"),
+            watershed_id=watershed.code, run_id=sim_run.id,
+            timeout_seconds=requested_swat.get("timeout_seconds", settings.SWAT_PLUS_TIMEOUT_SECONDS),
+            run_type=requested_swat.get("run_type", "SWAT_STANDARD_BASELINE"),
+            outlet_unit=requested_swat.get("outlet_unit"),
+        )
+        result = SwatPlusAdapter().run(config)
+        # These normalized rows are persisted exactly as parsed. They are not put in
+        # SimulationResult because that legacy entity has required FSPM/proxy fields
+        # which a standard SWAT+ baseline does not produce.
+        sim_run.effective_config = {
+            "backend": "SWAT_PLUS", "run_type": config.run_type,
+            "simulation_start": config.simulation_start.isoformat(), "simulation_end": config.simulation_end.isoformat(),
+            "warmup_period": config.warmup_period, "output_frequency": config.output_frequency,
+            "watershed_id": config.watershed_id, "outlet_unit": config.outlet_unit,
+        }
+        sim_run.provenance = {
+            **result.provenance, "run_id": result.run_id, "exit_code": result.exit_code,
+            "duration_seconds": result.duration_seconds, "output_files": result.output_files,
+            "process_logs": {"stdout": result.stdout, "stderr": result.stderr},
+            "watershed_snapshot": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
+            "code_version": _code_version(),
+        }
+        sim_run.monthly_outputs = result.records
+        sim_run.hru_aggregates = {"status": "AVAILABLE" if result.hru_results else "NOT_AVAILABLE", "results": result.hru_results}
+        sim_run.field_aggregates = {"status": "NOT_AVAILABLE", "reason": "SWAT_STANDARD_BASELINE does not execute the FSPM layer"}
+        sim_run.plant_sample = []
+        sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "SWAT baseline output integrity only; observational alignment is not part of this run"}
+        totals = result.water_balance.get("totals_mm", {})
+        sim_run.summary_metrics = {
+            "evidence_type": "REAL_SWAT_PLUS", "period_count": len(result.records),
+            "total_runoff_mm": totals.get("runoff_mm"), "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"),
+            "total_percolation_mm": totals.get("percolation_mm"),
+            "water_balance": result.water_balance,
+        }
+
+    @staticmethod
     async def execute_simulation_run(db: AsyncSession, simulation_run_id: str) -> SimulationRun:
         sim_run = (await db.execute(select(SimulationRun).where(SimulationRun.id == simulation_run_id))).scalar_one_or_none()
         if not sim_run:
@@ -75,7 +123,11 @@ class TwinCouplingEngine:
         try:
             requested = sim_run.requested_config or {}
             if sim_run.start_date is None or sim_run.end_date is None:
-                raise ValueError("Experiment is missing explicit start_date/end_date; legacy demo runs cannot be re-executed")
+                if sim_run.hydrology_backend == "SWAT_PLUS" or sim_run.mode == "SWAT_PLUS":
+                    raise ValueError("SWAT+ requires explicit start_date/end_date")
+                # Legacy persisted proxy demos predate the explicit date contract.
+                sim_run.start_date = date(2000, 1, 1)
+                sim_run.end_date = sim_run.start_date + timedelta(days=sim_run.duration_days - 1)
             config = RunConfig(
                 run_id=sim_run.id, seed=sim_run.seed, duration_days=sim_run.duration_days,
                 watershed_area_km2=watershed.area_km2, temp_anomaly_c=scenario.temp_anomaly_c,
@@ -88,7 +140,12 @@ class TwinCouplingEngine:
                 dataset_roles=sim_run.dataset_roles or {},
             )
             if sim_run.hydrology_backend == "SWAT_PLUS" or sim_run.mode == "SWAT_PLUS":
-                raise RuntimeError("SWAT_PLUS is NOT_AVAILABLE: executable/project are not configured")
+                await TwinCouplingEngine._execute_swat_baseline(sim_run, watershed)
+                sim_run.status = "COMPLETED"
+                sim_run.finished_at = datetime.now(timezone.utc)
+                await db.commit()
+                await db.refresh(sim_run)
+                return sim_run
             datasets = list((await db.execute(select(Dataset).where(Dataset.id.in_(sim_run.dataset_ids or [])))).scalars().all()) if sim_run.dataset_ids else []
             artifacts = list((await db.execute(select(DatasetArtifact).where(DatasetArtifact.dataset_id.in_([item.id for item in datasets])))).scalars().all()) if datasets else []
             weather, climate_artifact_provenance = TwinCouplingEngine._resolve_climate_forcing(sim_run, datasets, artifacts)
@@ -213,6 +270,9 @@ class TwinCouplingEngine:
             sim_run = (await db.execute(select(SimulationRun).where(SimulationRun.id == simulation_run_id))).scalar_one()
             sim_run.status = "FAILED"
             sim_run.finished_at = datetime.now(timezone.utc)
-            sim_run.error = {"type": type(exc).__name__, "message": str(exc)}
+            sim_run.error = {
+                "type": getattr(exc, "code", type(exc).__name__), "message": str(exc),
+                **({"details": exc.details} if hasattr(exc, "details") else {}),
+            }
             await db.commit()
             raise

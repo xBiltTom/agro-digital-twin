@@ -11,7 +11,8 @@ La implementación actual ejecuta un pipeline diario persistente compuesto por:
 
 - `SyntheticClimateProvider`: forzamiento meteorológico estacional y pseudoaleatorio con seed; **no** contiene observaciones ni NEX-GDDP-CMIP6.
 - `SimplifiedPlantModel`: planta representativa algebraica; **no** es un FSPM ni representa órganos, fenología o población.
-- `SimplifiedHydrologyModel`: balance conceptual agregado SCS-CN con diagnóstico de residual; **no** ejecuta SWAT+.
+- `SimplifiedHydrologyModel`: balance conceptual agregado SCS-CN con diagnóstico de residual; sigue siendo un proxy y **no** ejecuta SWAT+.
+- `SwatPlusAdapter`: ruta opcional a una corrida `SWAT_STANDARD_BASELINE` real. Copia el proyecto a un workspace por `run_id`, ejecuta el binario y persiste únicamente los outputs que SWAT+ produjo.
 - `UsgsStreamflowProvider`: infraestructura observacional separada que conserva RAW,
   checksum, QC y caudal diario normalizado; **no** calibra ni alimenta los modelos simplificados.
 
@@ -21,7 +22,7 @@ geometrías de campo, cuenca y planta son **procedurales e ilustrativas**.
 
 No están implementados ni demostrados:
 
-- SWAT+ real, FSPM completo o CMIP6/NEX-GDDP-CMIP6 real;
+- FSPM completo o CMIP6/NEX-GDDP-CMIP6 real;
 - USDA NASS, CHIRPS, SoilGrids o Landsat; y un dominio watershed/gauge elegible
   y congelado para USGS;
 - población de campo, Planta → Campo o Campo → HRU;
@@ -86,6 +87,32 @@ SECRET_KEY=una-clave-local-no-compartida
 Los permisos y roles RBAC se inicializan siempre, incluso con
 `ENABLE_DEMO_SEED=false`. Usuarios, Palto/Santa Eulalia, escenarios sintéticos y
 simulaciones legacy sólo se crean cuando ese flag está habilitado.
+
+### Baseline SWAT+ real
+
+El proyecto y ejecutable no se distribuyen con este repositorio. Configure rutas
+locales en `.env`:
+
+```dotenv
+SWAT_PLUS_EXECUTABLE=/ruta/a/swatplus
+SWAT_PLUS_PROJECT_DIR=/ruta/al/proyecto-swat-plus
+SWAT_PLUS_WORKING_DIRECTORY=../data/swat-runs
+SWAT_PLUS_TIMEOUT_SECONDS=3600
+```
+
+El proyecto debe incluir `file.cio` en su raíz o en `TxtInOut/`. Cree una
+simulación con `mode` y `hydrology_backend` iguales a `SWAT_PLUS`. El objeto
+opcional `swat_plus` permite indicar las rutas por corrida, `warmup_period`,
+`output_frequency` (`DAILY`, `MONTHLY`, `ANNUAL`) y `timeout_seconds`; esta fase
+solo acepta `SWAT_STANDARD_BASELINE`. Si los archivos de canal o balance incluyen
+más de una unidad, indique `swat_plus.outlet_unit` para no seleccionar un outlet
+arbitrariamente.
+
+La API copia el proyecto a `SWAT_PLUS_WORKING_DIRECTORY/<run_id>`, ejecuta allí
+el binario y deja los resultados normalizados en
+`GET /api/v1/simulations/{id}/swat-results`, con provenance `REAL_SWAT_PLUS`.
+Si falta un recurso, un output o falla el proceso, la corrida queda en `FAILED`
+con un código explícito; nunca se sustituye con hidrología proxy.
 
 ### Primer administrador
 
@@ -172,7 +199,7 @@ migraciones y aislamiento de SQLite. No se fijan conteos de tests en este README
 | Baseline vs Twin | DEMONSTRATION_COMPARISON | Forcing idéntico y resultados mensuales separados |
 | Validation | REAL COMPUTATION | RMSE, NSE, PBIAS y R² con estados indefinidos explícitos |
 | External ML | ML_MODEL | ModelBundle por path; bundle RF vecino detectado, target `monthly_runoff_mm` |
-| SWAT+ | NOT AVAILABLE | Adapter listo; requiere ejecutable y proyecto configurados |
+| SWAT+ | CONDITIONAL_REAL | Baseline real con binario y proyecto válidos; sin ellos devuelve error tipado, nunca un proxy |
 | CMIP6 | READY_FOR_ARTIFACT | Provider CSV normalizado; demo usa clima sintético |
 
 ## Ejecutar el MVP mañana (local)

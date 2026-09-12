@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     EXTERNAL_MODELS_DIR: str = "models/external"
     SWAT_PLUS_EXECUTABLE: str = ""
     SWAT_PLUS_PROJECT_DIR: str = ""
+    SWAT_PLUS_WORKING_DIRECTORY: str = "data/swat-runs"
+    SWAT_PLUS_TIMEOUT_SECONDS: int = 3600
     CMIP6_ARTIFACT_DIR: str = "data/climate/cmip6"
     DATA_ARTIFACT_ROOT: str = "data"
     ALGORITHM: str = "HS256"
