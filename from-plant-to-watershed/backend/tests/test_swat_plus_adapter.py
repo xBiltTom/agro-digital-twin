@@ -1,8 +1,10 @@
 from datetime import date
 import os
 from pathlib import Path
+import hashlib
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
@@ -19,12 +21,31 @@ from app.services.swat_plus_adapter import (
 )
 from app.services.swat_plus_parser import SwatOutputParser
 from app.services.twin_coupling_engine import TwinCouplingEngine
+from app.main import app
 
 
 def _project(tmp_path: Path) -> Path:
     project = tmp_path / "source-project"
     project.mkdir()
     (project / "file.cio").write_text("SWAT+ input fixture\n", encoding="utf-8")
+    (project / "time.sim").write_text(
+        "time.sim fixture\n"
+        "day_start yrc_start day_end yrc_end step\n"
+        "1 2019 365 2019 0\n", encoding="utf-8",
+    )
+    (project / "print.prt").write_text(
+        "print.prt fixture\n"
+        "nyskip day_start yrc_start day_end yrc_end interval\n"
+        "0 0 2019 0 2019 1\n"
+        "aa_int_cnt\n0\n"
+        "csvout dbout cdfout\nn n n\n"
+        "soilout mgtout hydcon fdcout\nn n n n\n"
+        "objects daily monthly yearly avann\n"
+        "basin_wb n n y y\n"
+        "hru_wb n n n y\n"
+        "channel n n n y\n"
+        "channel_sd n n n y\n", encoding="utf-8",
+    )
     return project
 
 
@@ -100,6 +121,7 @@ def test_nonzero_process_exit_is_not_reported_as_success(tmp_path: Path):
 
 def test_adapter_uses_isolated_workspace_and_parses_real_process_output(tmp_path: Path):
     project = _project(tmp_path)
+    (project / "basin_wb_day.txt").write_text("stale source result\n", encoding="utf-8")
     executable = _executable(tmp_path, "printf 'yr mon day surq et perc sw\\nyyyy mm dd mm mm mm mm\\n2020 1 1 1 2 3 150\\n' > output_wb_day\nprintf 'yr mon day flo_out\\nyyyy mm dd m3/s\\n2020 1 1 4\\n' > output_channel_day")
     config = _config(tmp_path, project, executable)
     result = SwatPlusAdapter().run(config)
@@ -107,7 +129,11 @@ def test_adapter_uses_isolated_workspace_and_parses_real_process_output(tmp_path
     assert result.provenance["evidence_type"] == "REAL_SWAT_PLUS"
     assert result.records[0]["streamflow_m3s"] == 4.0
     assert not (project / "output_wb_day").exists()
+    assert (project / "basin_wb_day.txt").read_text(encoding="utf-8") == "stale source result\n"
     assert (Path(result.workspace) / "output_wb_day").is_file()
+    assert "basin_wb_day.txt" in result.provenance["stale_workspace_outputs_removed"]
+    assert result.provenance["configured_control_files"]["time_sim"]["yrc_start"] == 2020
+    assert result.provenance["configured_control_files"]["print_prt"]["frequency"] == "DAILY"
 
 
 @pytest.mark.asyncio
@@ -135,23 +161,44 @@ async def test_engine_persists_a_real_swat_adapter_result(tmp_path: Path):
 
 
 @pytest.mark.integration
-def test_real_swat_baseline_when_locally_configured():
+@pytest.mark.asyncio
+async def test_real_swat_baseline_api_when_locally_configured():
     executable = os.getenv("SWAT_PLUS_EXECUTABLE")
     project = os.getenv("SWAT_PLUS_PROJECT_DIR")
     start = os.getenv("SWAT_PLUS_INTEGRATION_START")
     end = os.getenv("SWAT_PLUS_INTEGRATION_END")
     if not executable or not project or not Path(executable).is_file() or not Path(project).is_dir() or not start or not end:
         pytest.skip("SKIPPED_SWAT_NOT_INSTALLED")
-    config = SwatPlusRunConfig(
-        project_path=Path(project), executable_path=Path(executable),
-        working_directory=Path(os.getenv("SWAT_PLUS_WORKING_DIRECTORY", ".pytest-swat-runs")),
-        simulation_start=date.fromisoformat(start), simulation_end=date.fromisoformat(end),
-        warmup_period=int(os.getenv("SWAT_PLUS_INTEGRATION_WARMUP", "0")),
-        output_frequency=os.getenv("SWAT_PLUS_INTEGRATION_OUTPUT_FREQUENCY", "DAILY"),
-        watershed_id=os.getenv("SWAT_PLUS_INTEGRATION_WATERSHED", "configured-watershed"),
-        run_id=f"pytest-real-{os.getpid()}", timeout_seconds=int(os.getenv("SWAT_PLUS_TIMEOUT_SECONDS", "3600")),
-    )
-    result = SwatPlusAdapter().run(config)
-    assert result.status == "COMPLETED"
-    assert result.provenance["evidence_type"] == "REAL_SWAT_PLUS"
-    assert result.records
+    source_time_sim = Path(project) / "time.sim"
+    if not source_time_sim.is_file():
+        source_time_sim = Path(project) / "TxtInOut" / "time.sim"
+    source_checksum_before = hashlib.sha256(source_time_sim.read_bytes()).hexdigest()
+    requested_start, requested_end = date.fromisoformat(start), date.fromisoformat(end)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        login = await client.post("/api/v1/auth/login", json={
+            "email": "investigador@digitaltwin.org", "password": "Investiga123!",
+        })
+        headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+        watershed = (await client.get("/api/v1/simulations/watersheds/all", headers=headers)).json()[0]
+        scenario = (await client.get("/api/v1/simulations/scenarios/all", headers=headers)).json()[0]
+        response = await client.post("/api/v1/simulations", headers=headers, json={
+            "name": "SWAT+ real integration", "watershed_id": watershed["id"], "scenario_id": scenario["id"],
+            "duration_days": (requested_end - requested_start).days + 1,
+            "start_date": start, "end_date": end, "mode": "SWAT_PLUS", "hydrology_backend": "SWAT_PLUS",
+            "swat_plus": {"project_path": project, "executable_path": executable,
+                          "working_directory": os.getenv("SWAT_PLUS_WORKING_DIRECTORY", ".pytest-swat-runs"),
+                          "warmup_period": int(os.getenv("SWAT_PLUS_INTEGRATION_WARMUP", "0")),
+                          "output_frequency": os.getenv("SWAT_PLUS_INTEGRATION_OUTPUT_FREQUENCY", "DAILY"),
+                          "timeout_seconds": int(os.getenv("SWAT_PLUS_TIMEOUT_SECONDS", "3600"))},
+        })
+        assert response.status_code == 201, response.text
+        run = response.json()
+        assert run["status"] == "COMPLETED"
+        assert run["provenance"]["evidence_type"] == "REAL_SWAT_PLUS"
+        assert run["provenance"]["exit_code"] == 0
+        assert run["provenance"]["output_generation"]
+        assert all(item["generated_after_start"] for item in run["provenance"]["output_generation"].values())
+        outputs = await client.get(f"/api/v1/simulations/{run['id']}/swat-results", headers=headers)
+        assert outputs.status_code == 200
+        assert outputs.json()["records"]
+    assert hashlib.sha256(source_time_sim.read_bytes()).hexdigest() == source_checksum_before

@@ -122,9 +122,22 @@ class SwatOutputParser:
                              if len(line.split()) >= 2 and any(_normalise(token) in _DATE_KEYS for token in line.split())), None)
         if header_index is None:
             raise ValueError(f"{path.name} does not contain a recognizable table header")
-        headers = lines[header_index].split()
-        units = lines[header_index + 1].split() if header_index + 1 < len(lines) else []
-        rows = [line.split() for line in lines[header_index + 2:] if len(line.split()) >= len(headers)]
+        header_matches = list(re.finditer(r"\S+", lines[header_index]))
+        headers = [match.group() for match in header_matches]
+        # SWAT+ aligns unit cells below the fixed-width header. Splitting the
+        # units line would drop empty cells and shift later units (notably
+        # ``flo_out``) onto sediment columns.
+        units_line = lines[header_index + 1] if header_index + 1 < len(lines) else ""
+        split_units = units_line.split()
+        units = split_units if len(split_units) == len(headers) else [
+            units_line[match.start():header_matches[index + 1].start() if index + 1 < len(header_matches) else None].strip()
+            for index, match in enumerate(header_matches)
+        ]
+        # Some legitimate SWAT+ tables omit trailing empty text fields (for
+        # example ``mgt_ops``). Numeric columns are addressed defensively by
+        # index below, so requiring the complete display-width would discard
+        # otherwise valid daily records.
+        rows = [line.split() for line in lines[header_index + 2:] if len(line.split()) >= 4]
         if not rows:
             raise ValueError(f"{path.name} has no output rows")
         return headers, units, rows
