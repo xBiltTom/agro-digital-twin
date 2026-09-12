@@ -1,4 +1,6 @@
 from typing import List
+import copy
+from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -126,7 +128,47 @@ async def create_and_run_simulation(
     await db.flush()
 
     try:
-        completed_sim = await TwinCouplingEngine.execute_simulation_run(db, new_sim.id)
+        is_coupled = (requested_config.get("swat_plus") or {}).get("run_type") == "SWAT_MULTISCALE_COUPLED"
+        if is_coupled:
+            # A coupled request always materializes its experimental control first.
+            # Both rows preserve the identical source/configuration except run type.
+            experiment_id = str(uuid4())
+            coupled_config = copy.deepcopy(requested_config)
+            coupled_config["swat_plus"].update({"experiment_id": experiment_id})
+            baseline_config = copy.deepcopy(coupled_config)
+            baseline_config["swat_plus"]["run_type"] = "SWAT_STANDARD_BASELINE"
+            baseline = SimulationRun(
+                user_id=current_user.id, watershed_id=sim_in.watershed_id, scenario_id=sim_in.scenario_id,
+                name=f"{sim_in.name} [baseline]", status="PENDING", duration_days=sim_in.duration_days,
+                irrigation_efficiency=None, parameters=sim_in.parameters or {}, seed=sim_in.seed,
+                requested_config=baseline_config, mode=sim_in.mode, plant_count=sim_in.plant_count,
+                hydrology_backend=sim_in.hydrology_backend, external_model_id=None,
+                management_scenario=sim_in.management_scenario, climate_source=sim_in.climate_source,
+                dataset_ids=sim_in.dataset_ids, dataset_roles=sim_in.dataset_roles, station_id=sim_in.station_id,
+                start_date=sim_in.start_date, end_date=sim_in.end_date,
+            )
+            db.add(baseline)
+            await db.flush()
+            coupled_config["swat_plus"].update({"baseline_run_id": baseline.id, "coupled_run_id": new_sim.id})
+            baseline_config["swat_plus"].update({"baseline_run_id": baseline.id, "coupled_run_id": new_sim.id})
+            new_sim.requested_config, baseline.requested_config = coupled_config, baseline_config
+            await db.commit()
+            await TwinCouplingEngine.execute_simulation_run(db, baseline.id)
+            completed_sim = await TwinCouplingEngine.execute_simulation_run(db, new_sim.id)
+            baseline = await db.scalar(select(SimulationRun).where(SimulationRun.id == baseline.id))
+            def _delta(coupled, control):
+                return {"baseline": control, "coupled": coupled, "delta_absolute": None if coupled is None or control is None else coupled - control, "delta_percentage": None if coupled is None or control in (None, 0) else (coupled - control) / control * 100.0}
+            comparison = {"experiment_id": experiment_id, "baseline_run_id": baseline.id, "coupled_run_id": completed_sim.id,
+                          "runoff_mm": _delta(completed_sim.summary_metrics.get("total_runoff_mm"), baseline.summary_metrics.get("total_runoff_mm")),
+                          "evapotranspiration_mm": _delta(completed_sim.summary_metrics.get("total_evapotranspiration_mm"), baseline.summary_metrics.get("total_evapotranspiration_mm")),
+                          "streamflow_m3s": _delta((completed_sim.summary_metrics.get("water_balance") or {}).get("mean_streamflow_m3s"), (baseline.summary_metrics.get("water_balance") or {}).get("mean_streamflow_m3s"))}
+            completed_sim.summary_metrics = {**(completed_sim.summary_metrics or {}), "paired_comparison": comparison}
+            completed_sim.provenance = {**(completed_sim.provenance or {}), "experiment": comparison}
+            baseline.provenance = {**(baseline.provenance or {}), "experiment": comparison}
+            await db.commit()
+            await db.refresh(completed_sim)
+        else:
+            completed_sim = await TwinCouplingEngine.execute_simulation_run(db, new_sim.id)
     except Exception as exc:
         raise HTTPException(status_code=500, detail={
             "message": str(exc), "type": getattr(exc, "code", type(exc).__name__),
@@ -176,8 +218,8 @@ async def get_swat_results(
     sim = await db.scalar(select(SimulationRun).where(SimulationRun.id == sim_id))
     if not sim:
         raise HTTPException(status_code=404, detail="Simulación no encontrada")
-    if (sim.provenance or {}).get("evidence_type") != "REAL_SWAT_PLUS":
-        raise HTTPException(status_code=409, detail={"type": "NOT_AVAILABLE", "message": "This run is not a completed real SWAT+ baseline"})
+    if (sim.provenance or {}).get("evidence_type") not in {"REAL_SWAT_PLUS", "REAL_SWAT_PLUS_COUPLED"}:
+        raise HTTPException(status_code=409, detail={"type": "NOT_AVAILABLE", "message": "This run is not a completed real SWAT+ execution"})
     return {
         "status": sim.status, "run_id": sim.id, "records": sim.monthly_outputs or [],
         "hru_results": (sim.hru_aggregates or {}).get("results", []),

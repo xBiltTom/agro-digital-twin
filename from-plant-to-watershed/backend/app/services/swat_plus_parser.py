@@ -241,6 +241,7 @@ class SwatOutputParser:
             "status": "CHECKED" if complete else "NOT_AVAILABLE", "variable_availability": availability,
             "warnings": warnings,
             "totals_mm": {name: sum(row.get(name, 0.0) for row in records if row.get(name) is not None) for name in ("runoff_mm", "evapotranspiration_mm", "percolation_mm")},
+            "mean_streamflow_m3s": (sum(row["streamflow_m3s"] for row in records if row.get("streamflow_m3s") is not None) / sum(1 for row in records if row.get("streamflow_m3s") is not None)) if any(row.get("streamflow_m3s") is not None for row in records) else None,
             "reason": None if complete else "One or more required balance terms are absent from SWAT+ outputs",
         }
         records = [{key: value for key, value in row.items() if key != "_unit"} for row in records]

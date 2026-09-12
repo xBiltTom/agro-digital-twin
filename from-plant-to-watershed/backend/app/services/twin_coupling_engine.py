@@ -13,8 +13,9 @@ from app.models.external_model import ExternalModel
 from app.models.watershed import Watershed
 from app.services.external_model_bundle import ExternalModelBundleAdapter
 from app.services.swat_plus_adapter import SwatPlusAdapter, SwatPlusRunConfig
+from app.services.swat_plant_parameter_mapper import SwatClimateForcingReader, SwatPlantParameterMapper
 from app.core.config import settings
-from scientific_core import MultiscaleSimulationOrchestrator, RunConfig, SimulationOrchestrator, ValidationEngine
+from scientific_core import MultiscaleSimulationOrchestrator, PlantPopulation, PlantToFieldAggregator, RunConfig, SimulationOrchestrator, ValidationEngine
 from scientific_core.climate_file import NormalizedClimateFileProvider
 
 
@@ -108,6 +109,57 @@ class TwinCouplingEngine:
         }
 
     @staticmethod
+    async def _execute_swat_coupled(sim_run: SimulationRun, watershed: Watershed) -> None:
+        """One-way FSPM -> documented SWAT+ crop inputs -> real SWAT+ execution."""
+        requested_swat = (sim_run.requested_config or {}).get("swat_plus") or {}
+        source_project = Path(requested_swat.get("project_path") or settings.SWAT_PLUS_PROJECT_DIR)
+        climate, climate_provenance = SwatClimateForcingReader(source_project).for_period(sim_run.start_date, sim_run.end_date)
+        population = PlantPopulation(count=sim_run.plant_count, seed=sim_run.seed, crop="maize")
+        # The plant table stores *maximum* LAI, canopy height and root depth, so
+        # map the FSPM seasonal peak rather than an arbitrary final/senescent day.
+        gdd, peak_field, plants = 0.0, None, ()
+        peak_height, peak_root, peak_dates = None, None, {}
+        for index, forcing in enumerate(climate, 1):
+            gdd += max(0.0, forcing["temp_c"] - 8.0)
+            daily_forcing = {**forcing, "gdd_c_day": gdd}
+            current_plants = population.step(index, daily_forcing, soil_moisture_vol=0.24)
+            current_field = PlantToFieldAggregator.aggregate(current_plants, soil_moisture_vol=0.24)
+            if peak_field is None or current_field["mean_LAI"] > peak_field["mean_LAI"]:
+                peak_field, plants = current_field, current_plants
+                peak_dates["date_of_peak_LAI"] = (sim_run.start_date + timedelta(days=index - 1)).isoformat()
+            if peak_height is None or current_field["plant_height_mean_m"] > peak_height["plant_height_mean_m"]:
+                peak_height = current_field
+                peak_dates["date_of_peak_height"] = (sim_run.start_date + timedelta(days=index - 1)).isoformat()
+            if peak_root is None or current_field["root_depth_mean_m"] > peak_root["root_depth_mean_m"]:
+                peak_root = current_field
+                peak_dates["date_of_peak_root_depth"] = (sim_run.start_date + timedelta(days=index - 1)).isoformat()
+        field = peak_field
+        field["plant_height_mean_m"] = peak_height["plant_height_mean_m"]
+        field["root_depth_mean_m"] = peak_root["root_depth_mean_m"]
+        field["aggregation_window"] = "seasonal_peak_canopy_state"
+        field["peak_dates"] = peak_dates
+        field["climate_provenance"] = climate_provenance
+        mapper = SwatPlantParameterMapper(requested_swat.get("target_plant_name", "corn"))
+        config = SwatPlusRunConfig(
+            project_path=source_project, executable_path=Path(requested_swat.get("executable_path") or settings.SWAT_PLUS_EXECUTABLE),
+            working_directory=Path(requested_swat.get("working_directory") or settings.SWAT_PLUS_WORKING_DIRECTORY),
+            simulation_start=sim_run.start_date, simulation_end=sim_run.end_date, warmup_period=requested_swat.get("warmup_period", 0),
+            output_frequency=requested_swat.get("output_frequency", "DAILY"), watershed_id=watershed.code, run_id=sim_run.id,
+            timeout_seconds=requested_swat.get("timeout_seconds", settings.SWAT_PLUS_TIMEOUT_SECONDS), run_type="SWAT_MULTISCALE_COUPLED", outlet_unit=requested_swat.get("outlet_unit"),
+        )
+        result = SwatPlusAdapter().run(config, workspace_mutator=lambda workspace: mapper.apply(workspace, field))
+        manifest = result.provenance["workspace_modifications"]
+        sim_run.effective_config = {"backend": "SWAT_PLUS", "run_type": "SWAT_MULTISCALE_COUPLED", "simulation_start": sim_run.start_date.isoformat(), "simulation_end": sim_run.end_date.isoformat(), "same_source_project": str(source_project.resolve()), "fspm_version": PlantPopulation.VERSION, "plant_count": sim_run.plant_count}
+        sim_run.provenance = {**result.provenance, "evidence_type": "REAL_SWAT_PLUS_COUPLED", "run_id": result.run_id, "exit_code": result.exit_code, "duration_seconds": result.duration_seconds, "output_files": result.output_files, "process_logs": {"stdout": result.stdout, "stderr": result.stderr}, "parameter_updates": manifest.get("parameter_updates", []), **peak_dates, "code_version": _code_version()}
+        sim_run.monthly_outputs = result.records
+        sim_run.hru_aggregates = {"status": "AVAILABLE" if result.hru_results else "NOT_AVAILABLE", "results": result.hru_results, "parameter_mapping": manifest}
+        sim_run.field_aggregates = field
+        sim_run.plant_sample = [vars(plant) for plant in plants[:min(10, len(plants))]]
+        sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "coupled run is an input-response experiment, not an observational validation"}
+        totals = result.water_balance.get("totals_mm", {})
+        sim_run.summary_metrics = {"evidence_type": "REAL_SWAT_PLUS_COUPLED", "period_count": len(result.records), "total_runoff_mm": totals.get("runoff_mm"), "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"), "total_percolation_mm": totals.get("percolation_mm"), "water_balance": result.water_balance}
+
+    @staticmethod
     async def execute_simulation_run(db: AsyncSession, simulation_run_id: str) -> SimulationRun:
         sim_run = (await db.execute(select(SimulationRun).where(SimulationRun.id == simulation_run_id))).scalar_one_or_none()
         if not sim_run:
@@ -140,7 +192,10 @@ class TwinCouplingEngine:
                 dataset_roles=sim_run.dataset_roles or {},
             )
             if sim_run.hydrology_backend == "SWAT_PLUS" or sim_run.mode == "SWAT_PLUS":
-                await TwinCouplingEngine._execute_swat_baseline(sim_run, watershed)
+                if ((sim_run.requested_config or {}).get("swat_plus") or {}).get("run_type") == "SWAT_MULTISCALE_COUPLED":
+                    await TwinCouplingEngine._execute_swat_coupled(sim_run, watershed)
+                else:
+                    await TwinCouplingEngine._execute_swat_baseline(sim_run, watershed)
                 sim_run.status = "COMPLETED"
                 sim_run.finished_at = datetime.now(timezone.utc)
                 await db.commit()

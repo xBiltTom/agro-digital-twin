@@ -70,7 +70,8 @@ class SwatPlusConfiguration(BaseModel):
     output_frequency: Literal["DAILY", "MONTHLY", "ANNUAL"] = "DAILY"
     outlet_unit: Optional[str] = None
     timeout_seconds: int = Field(default=3600, ge=1, le=86400)
-    run_type: Literal["SWAT_STANDARD_BASELINE"] = "SWAT_STANDARD_BASELINE"
+    run_type: Literal["SWAT_STANDARD_BASELINE", "SWAT_MULTISCALE_COUPLED"] = "SWAT_STANDARD_BASELINE"
+    target_plant_name: str = Field(default="corn", min_length=1, max_length=64)
     model_config = ConfigDict(extra="forbid")
 
 class SimulationRunCreate(BaseModel):

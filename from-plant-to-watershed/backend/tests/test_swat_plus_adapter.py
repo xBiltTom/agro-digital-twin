@@ -202,3 +202,56 @@ async def test_real_swat_baseline_api_when_locally_configured():
         assert outputs.status_code == 200
         assert outputs.json()["records"]
     assert hashlib.sha256(source_time_sim.read_bytes()).hexdigest() == source_checksum_before
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_real_fspm_to_hru_to_swat_plus_coupled_pair_when_locally_configured():
+    """No fixture outputs: exercise the full persisted paired real-SWAT+ path."""
+    executable = os.getenv("SWAT_PLUS_EXECUTABLE")
+    project = os.getenv("SWAT_PLUS_COUPLED_PROJECT")
+    start, end = os.getenv("SWAT_PLUS_COUPLED_START"), os.getenv("SWAT_PLUS_COUPLED_END")
+    if not executable or not project or not start or not end:
+        pytest.skip("SKIPPED_COUPLED_SWAT_NOT_CONFIGURED")
+    requested_start, requested_end = date.fromisoformat(start), date.fromisoformat(end)
+    source_plants = Path(project) / "plants.plt"
+    checksum_before = hashlib.sha256(source_plants.read_bytes()).hexdigest()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        login = await client.post("/api/v1/auth/login", json={"email": "investigador@digitaltwin.org", "password": "Investiga123!"})
+        headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+        watershed = (await client.get("/api/v1/simulations/watersheds/all", headers=headers)).json()[0]
+        scenario = (await client.get("/api/v1/simulations/scenarios/all", headers=headers)).json()[0]
+        response = await client.post("/api/v1/simulations", headers=headers, json={
+            "name": "Real paired FSPM/SWAT+ integration", "watershed_id": watershed["id"], "scenario_id": scenario["id"],
+            "duration_days": (requested_end - requested_start).days + 1, "start_date": start, "end_date": end,
+            "seed": 42, "plant_count": 1000, "mode": "SWAT_PLUS", "hydrology_backend": "SWAT_PLUS",
+            "swat_plus": {"project_path": project, "executable_path": executable,
+                          "working_directory": os.getenv("SWAT_PLUS_COUPLED_WORKDIR", ".pytest-coupled-swat-runs"),
+                          "output_frequency": "DAILY", "timeout_seconds": 300,
+                          "run_type": "SWAT_MULTISCALE_COUPLED", "target_plant_name": "corn"},
+        })
+        assert response.status_code == 201, response.text
+        coupled = response.json()
+        assert coupled["provenance"]["evidence_type"] == "REAL_SWAT_PLUS_COUPLED"
+        updates = coupled["provenance"]["parameter_updates"]
+        assert updates and all(item["original_value"] != item["coupled_value"] for item in updates)
+        comparison = coupled["summary_metrics"]["paired_comparison"]
+        assert comparison["baseline_run_id"] and comparison["coupled_run_id"] == coupled["id"]
+        assert comparison["evapotranspiration_mm"]["delta_absolute"] is not None
+        assert coupled["provenance"]["date_of_peak_LAI"]
+        assert coupled["provenance"]["date_of_peak_height"]
+        assert coupled["provenance"]["date_of_peak_root_depth"]
+        results = await client.get(f"/api/v1/simulations/{coupled['id']}/swat-results", headers=headers)
+        assert results.status_code == 200 and results.json()["records"]
+        baseline = await client.get(f"/api/v1/simulations/{comparison['baseline_run_id']}", headers=headers)
+        assert baseline.status_code == 200
+        baseline_payload = baseline.json()
+        assert baseline_payload["provenance"]["evidence_type"] == "REAL_SWAT_PLUS"
+        assert baseline_payload["provenance"]["exit_code"] == 0
+        assert all(item["generated_after_start"] for item in baseline_payload["provenance"]["output_generation"].values())
+        baseline_results = await client.get(f"/api/v1/simulations/{comparison['baseline_run_id']}/swat-results", headers=headers)
+        assert baseline_results.status_code == 200 and baseline_results.json()["records"]
+        baseline_plants = Path(baseline_payload["provenance"]["workspace"]) / "plants.plt"
+        coupled_plants = Path(coupled["provenance"]["workspace"]) / "plants.plt"
+        assert hashlib.sha256(baseline_plants.read_bytes()).hexdigest() != hashlib.sha256(coupled_plants.read_bytes()).hexdigest()
+    assert hashlib.sha256(source_plants.read_bytes()).hexdigest() == checksum_before

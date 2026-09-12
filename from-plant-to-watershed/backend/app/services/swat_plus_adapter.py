@@ -14,7 +14,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import time
-from typing import Any
+from typing import Any, Callable
 
 from app.services.swat_plus_parser import SwatOutputParser, SwatParsedOutput
 
@@ -69,8 +69,8 @@ class SwatPlusRunConfig:
     outlet_unit: str | None = None
 
     def validate(self) -> None:
-        if self.run_type != "SWAT_STANDARD_BASELINE":
-            raise SwatProjectInvalidError("Only SWAT_STANDARD_BASELINE is supported in this phase")
+        if self.run_type not in {"SWAT_STANDARD_BASELINE", "SWAT_MULTISCALE_COUPLED"}:
+            raise SwatProjectInvalidError("run_type must be SWAT_STANDARD_BASELINE or SWAT_MULTISCALE_COUPLED")
         if self.simulation_end < self.simulation_start:
             raise SwatProjectInvalidError("simulation_end must not precede simulation_start")
         if self.warmup_period < 0:
@@ -157,13 +157,24 @@ def _configure_print_prt(path: Path, config: SwatPlusRunConfig) -> dict[str, Any
     desired = {"basin_wb", "hru_wb", "channel", "channel_sd"}
     for index, line in enumerate(lines):
         tokens = line.split()
+        # Official editor projects often enable unrelated daily diagnostics.
+        # Disable them only in the copied workspace; selected parser objects are
+        # enabled below, so the hydrology and source project are unchanged.
+        if len(tokens) >= 5 and all(flag.lower() in {"y", "n", "l", "b"} for flag in tokens[1:5]):
+            lines[index] = f"{tokens[0]:<24}{'n':>8}{'n':>14}{'n':>14}{'n':>14}"
         if len(tokens) >= 5 and tokens[0] in desired:
             flags = ["n", "n", "n", "n"]
             flags[flag_index - 1] = "y"
             lines[index] = f"{tokens[0]:<24}{flags[0]:>8}{flags[1]:>14}{flags[2]:>14}{flags[3]:>14}"
             configured_objects.append(tokens[0])
     if "basin_wb" not in configured_objects:
-        raise SwatProjectInvalidError("print.prt does not define basin_wb output", details={"path": str(path)})
+        # ``basin_wb`` is a real SWAT+ print object. Some official reference
+        # projects ship it only as an avann artifact and omit it from print.prt;
+        # append an explicit row so the requested period has a watershed output.
+        flags = ["n", "n", "n", "n"]
+        flags[flag_index - 1] = "y"
+        lines.append(f"{'basin_wb':<24}{flags[0]:>8}{flags[1]:>14}{flags[2]:>14}{flags[3]:>14}")
+        configured_objects.append("basin_wb")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return {
         "path": str(path), "sha256": _sha256(path), "nyskip": config.warmup_period,
@@ -252,8 +263,9 @@ class SwatPlusAdapter:
         revision = next((line.strip() for line in text.splitlines() if "revision" in line.lower()), None)
         return revision[:500] if revision else None
 
-    def run(self, config: SwatPlusRunConfig | None = None, timeout_seconds: int | None = None) -> SwatRunResult:
-        """Execute exactly one baseline run. The original project is never modified."""
+    def run(self, config: SwatPlusRunConfig | None = None, timeout_seconds: int | None = None,
+            workspace_mutator: Callable[[Path], dict[str, Any]] | None = None) -> SwatRunResult:
+        """Execute one real run; an optional mutator may edit only its copied inputs."""
         if config is None:
             # Compatibility only; normal application calls always provide the
             # explicit contract built by TwinCouplingEngine.
@@ -291,6 +303,12 @@ class SwatPlusAdapter:
             "print_prt": _configure_print_prt(print_prt, config),
         }
         stale_outputs = self._clear_recognized_outputs(run_directory)
+        workspace_modifications: dict[str, Any] = {"status": "NOT_APPLIED"}
+        if workspace_mutator is not None:
+            try:
+                workspace_modifications = workspace_mutator(run_directory)
+            except Exception as exc:
+                raise SwatProjectInvalidError("Coupled SWAT+ input preparation failed", details={"workspace": str(workspace), "message": str(exc)}) from exc
         command = [str(config.executable_path.resolve())]
         execution_started_ns = time.time_ns()
         try:
@@ -345,6 +363,7 @@ class SwatPlusAdapter:
                 "source_file_cio_sha256": _sha256(input_directory / "file.cio"), "workspace": str(workspace),
                 "output_checksums": {str(path.relative_to(workspace)): _sha256(path) for path in parsed.source_files},
                 "stale_workspace_outputs_removed": stale_outputs, "configured_control_files": control_files,
+                "workspace_modifications": workspace_modifications,
                 "output_generation": output_generation,
                 "output_frequency": config.output_frequency, "warmup_period": config.warmup_period,
             },
