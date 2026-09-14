@@ -17,7 +17,6 @@ import {
   Layers,
   Radio,
   FileText,
-  Info,
   CheckCircle2,
   X,
   Compass,
@@ -49,7 +48,6 @@ interface TwinHUDOverlayProps {
   onToggleScientificLabels?: () => void;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
-  scenarioName?: string;
   scenarioPathway?: string;
 }
 
@@ -77,7 +75,6 @@ export default function TwinHUDOverlay({
   onToggleScientificLabels,
   isFullscreen = false,
   onToggleFullscreen,
-  scenarioName = "SSP2-4.5 (Línea Base)",
   scenarioPathway = "SSP2-4.5",
 }: TwinHUDOverlayProps) {
   const [showScientificModal, setShowScientificModal] = useState(false);
@@ -120,7 +117,7 @@ export default function TwinHUDOverlay({
         <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-zinc-950/90 backdrop-blur-xl border border-zinc-800 shadow-2xl">
           <button
             onClick={() => onChangeScale("MACRO")}
-            title="Escala Macro: Cuenca regional SWAT+ con red fluvial, unidades HRU y aforo USGS"
+            title="Escala Macro: contexto de cuenca y resultados agregados"
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-300 cursor-pointer ${
               scaleMode === "MACRO"
                 ? "bg-gradient-to-r from-teal-500/25 to-cyan-500/25 text-teal-300 border border-teal-500/50 shadow-sm"
@@ -133,7 +130,7 @@ export default function TwinHUDOverlay({
 
           <button
             onClick={() => onChangeScale("MESO")}
-            title="Escala Meso: Parcela de campo con 1000 plantas, siembra directa y torre micrometeorológica"
+            title="Escala Meso: población de campo agregada y muestra FSPM persistida"
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-300 cursor-pointer ${
               scaleMode === "MESO"
                 ? "bg-gradient-to-r from-cyan-500/25 to-sky-500/25 text-cyan-300 border border-cyan-500/50 shadow-sm"
@@ -141,12 +138,12 @@ export default function TwinHUDOverlay({
             }`}
           >
             <Grid className="w-4 h-4" />
-            <span>Meso: Campo BARC (n=1000)</span>
+            <span>Meso: Campo agregado</span>
           </button>
 
           <button
             onClick={() => onChangeScale("MICRO")}
-            title="Escala Micro: Planta individual de maíz con arquitectura FSPM 3D y raíces adventicias"
+            title="Escala Micro: estado FSPM de la planta de muestra"
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-300 cursor-pointer ${
               scaleMode === "MICRO"
                 ? "bg-gradient-to-r from-emerald-500/25 to-teal-500/25 text-emerald-300 border border-emerald-500/50 shadow-sm"
@@ -179,7 +176,7 @@ export default function TwinHUDOverlay({
             {onToggleSoilHorizons && (
               <button
                 onClick={onToggleSoilHorizons}
-                title={showSoilHorizons ? "Ocultar Horizontes SoilGrids / HRUs" : "Mostrar Horizontes SoilGrids / HRUs"}
+                title={showSoilHorizons ? "Ocultar perfil de suelo esquemático" : "Mostrar perfil de suelo esquemático"}
                 className={`p-2 rounded-lg text-xs transition cursor-pointer flex items-center gap-1 ${
                   showSoilHorizons
                     ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
@@ -234,13 +231,13 @@ export default function TwinHUDOverlay({
             )}
           </div>
 
-          {/* Botón de Marco Científico e Hipótesis */}
+          {/* Transparencia científica del visor */}
           <button
             onClick={() => setShowScientificModal(true)}
             className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-semibold backdrop-blur-xl shadow-md cursor-pointer transition active:scale-95"
           >
             <Compass className="w-4 h-4" />
-            <span className="hidden sm:inline">Marco Científico (H1)</span>
+            <span className="hidden sm:inline">Estado y límites</span>
           </button>
         </div>
       </div>
@@ -249,7 +246,7 @@ export default function TwinHUDOverlay({
       {precipMm > 10 && (
         <div className="self-center p-2.5 px-5 rounded-full bg-cyan-950/90 border border-cyan-500/50 text-cyan-200 text-xs font-mono flex items-center gap-2.5 shadow-2xl pointer-events-auto backdrop-blur-md">
           <CloudRain className="w-4 h-4 animate-bounce text-cyan-400" />
-          <span>Precipitación Activa (CHIRPS): <b>{precipMm.toFixed(1)} mm/día</b></span>
+          <span>Precipitación del forcing: <b>{precipMm.toFixed(1)} mm/día</b></span>
         </div>
       )}
 
@@ -261,7 +258,7 @@ export default function TwinHUDOverlay({
               <div className="flex items-center gap-2">
                 <Compass className="w-5 h-5 text-emerald-400" />
                 <h3 className="font-bold text-sm text-zinc-100 font-sans">
-                  From Plant to Watershed: Framework Científico Multi-Escala
+                  Estado científico del visor multiescala
                 </h3>
               </div>
               <button
@@ -275,41 +272,39 @@ export default function TwinHUDOverlay({
             {/* DAG del Proyecto */}
             <div className="bg-zinc-900/80 p-4 rounded-xl border border-zinc-800">
               <div className="text-xs font-bold text-teal-400 mb-1.5 font-mono">
-                DAG Causal del Acoplamiento:
+                Flujo representado:
               </div>
               <div className="text-zinc-300 text-xs leading-relaxed font-sans">
-                CO₂ + Temperatura + Precipitación → Crecimiento FSPM Zea mays → ET + Infiltración →
-                Escorrentía SWAT+ → Disponibilidad Hídrica de Cuenca. (Manejo agrícola modula cada flecha).
+                Forcing → población vegetal → agregado de campo → HRU → hidrología. La evidencia y el tipo de motor de cada corrida se consultan en su manifiesto.
               </div>
             </div>
 
-            {/* Hipótesis de Investigación */}
+            {/* Alcance de visualización */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               <div className="bg-zinc-900/60 p-3.5 rounded-xl border border-zinc-800">
-                <div className="font-bold text-amber-400 text-xs mb-1 font-mono">Hipótesis H0:</div>
+                <div className="font-bold text-amber-400 text-xs mb-1 font-mono">Geometría:</div>
                 <div className="text-zinc-400 text-xs">
-                  El acoplamiento planta-cuenca no mejora la predicción de escorrentía vs. SWAT+ con parámetros promedio tabulados.
+                  Terreno, parcelas, raíces, torre y marcadores son contexto visual. No sustituyen DEM, polígonos HRU, estaciones ni sensores reales.
                 </div>
               </div>
               <div className="bg-emerald-950/40 p-3.5 rounded-xl border border-emerald-500/40">
                 <div className="font-bold text-emerald-300 text-xs mb-1 flex items-center gap-1 font-mono">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  Hipótesis H1 (Objetivo):
+                  Datos del visor:
                 </div>
                 <div className="text-emerald-200 text-xs">
-                  El twin multi-escala reduce el RMSE de escorrentía mensual en ≥15% (Wilcoxon p &lt; 0.01) con representación espacial n=1000 BARC.
+                  En corridas simplificadas se reproducen agregados y muestras persistidos. Los resultados SWAT+ reales se muestran en su panel de evidencia, sin inferir mejoras predictivas.
                 </div>
               </div>
             </div>
 
-            {/* Pruebas Estadísticas */}
+            {/* Límites explícitos */}
             <div className="bg-zinc-900/60 p-3.5 rounded-xl border border-zinc-800 space-y-1.5">
-              <div className="font-bold text-cyan-400 text-xs font-mono">Pruebas Estadísticas Validadas:</div>
+              <div className="font-bold text-cyan-400 text-xs font-mono">No afirma:</div>
               <ul className="list-disc pl-4 space-y-1 text-zinc-300 text-xs">
-                <li><b className="text-zinc-100">Kolmogorov-Smirnov (KS):</b> Valida distribución de escorrentía simulada vs. observada (USGS #05451210).</li>
-                <li><b className="text-zinc-100">Wilcoxon signed-rank:</b> Comparación pareada del RMSE mensual (Twin vs SWAT+ estándar).</li>
-                <li><b className="text-zinc-100">Método de Sobol:</b> Sensibilidad global (Transpiración Tr 0.42, Zmax 0.31, LAI 0.18).</li>
-                <li><b className="text-zinc-100">Métricas:</b> NSE ≥ 0.78, PBIAS &lt; ±10%, R² ≥ 0.84.</li>
+                <li>calibración, validación o mejora de predicción sin una comparación observacional explícita;</li>
+                <li>telemetría en tiempo real, datos SoilGrids o CHIRPS si no están declarados en la corrida;</li>
+                <li>geometrías GIS o arquitectura foliar individual cuando solo existe un agregado/muestra persistida.</li>
               </ul>
             </div>
           </div>

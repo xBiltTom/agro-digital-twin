@@ -25,6 +25,11 @@ def _provenance_text(sim_run: SimulationRun) -> str:
         return "Sin artefactos externos usados por esta corrida."
     return "; ".join(f"{item.get('provider', 'dataset')} ({item.get('role', 'CONTEXT_ONLY')})" for item in sources)
 
+
+def _text(value: object | None) -> str:
+    """Report backends require strings; legacy nullable fields remain explicit."""
+    return "NOT_AVAILABLE" if value is None else str(value)
+
 class ReportGeneratorService:
     """Servicio de generación de reportes técnicos multiformato (PDF, Word, Excel)."""
 
@@ -102,14 +107,14 @@ class ReportGeneratorService:
         # 1. Metadatos del Experimento
         story.append(Paragraph("1. Metadatos de la Simulación", h1_style))
         meta_data = [
-            [Paragraph("Nombre de Simulación:", body_bold), Paragraph(sim_run.name, body_style)],
+            [Paragraph("Nombre de Simulación:", body_bold), Paragraph(_text(sim_run.name), body_style)],
             [Paragraph("Escenario Climático:", body_bold), Paragraph(f"{sim_run.scenario.code} - {sim_run.scenario.name}", body_style)],
-            [Paragraph("Trayectoria de Emisiones:", body_bold), Paragraph(sim_run.scenario.pathway, body_style)],
+            [Paragraph("Trayectoria de Emisiones:", body_bold), Paragraph(_text(sim_run.scenario.pathway), body_style)],
             [Paragraph("Horizonte Temporal:", body_bold), Paragraph(f"{sim_run.duration_days} días (Paso diario)", body_style)],
             [Paragraph("Clasificación:", body_bold), Paragraph("DEMO / SYNTHETIC / SIMPLIFIED", body_style)],
             [Paragraph("Implementaciones:", body_bold), Paragraph("SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel", body_style)],
-            [Paragraph("Manejo:", body_bold), Paragraph(sim_run.management_scenario, body_style)],
-            [Paragraph("Fuente climática:", body_bold), Paragraph(sim_run.climate_source, body_style)],
+            [Paragraph("Manejo:", body_bold), Paragraph(_text(sim_run.management_scenario), body_style)],
+            [Paragraph("Fuente climática:", body_bold), Paragraph(_text(sim_run.climate_source), body_style)],
             [Paragraph("Artefactos de datos:", body_bold), Paragraph(_provenance_text(sim_run), body_style)],
             [Paragraph("Semilla RNG:", body_bold), Paragraph("No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else str(sim_run.seed), body_style)],
             [Paragraph("Fecha de Emisión:", body_bold), Paragraph(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), body_style)],
@@ -228,13 +233,13 @@ class ReportGeneratorService:
         h1.style.font.color.rgb = RGBColor(15, 118, 110)
 
         meta_data = [
-            ("Nombre de la Simulación", sim_run.name),
+            ("Nombre de la Simulación", _text(sim_run.name)),
             ("Control climático sintético", f"{sim_run.scenario.code}: {sim_run.scenario.name}"),
             ("Horizonte de Modelado", f"{sim_run.duration_days} días diarios"),
             ("Semilla RNG", "No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else str(sim_run.seed)),
             ("Implementaciones", "SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel"),
-            ("Manejo", sim_run.management_scenario),
-            ("Fuente climática", sim_run.climate_source),
+            ("Manejo", _text(sim_run.management_scenario)),
+            ("Fuente climática", _text(sim_run.climate_source)),
             ("Artefactos de datos", _provenance_text(sim_run)),
             ("Fecha de Generación", datetime.now().strftime("%d/%m/%Y %H:%M")),
         ]

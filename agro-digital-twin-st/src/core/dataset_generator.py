@@ -36,6 +36,19 @@ def generate_ecohydrological_dataset(
     )
 
 
+def load_primary_experiment_dataset(path: str) -> pd.DataFrame:
+    """Load the primary project's final export without regenerating data."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Primary experiment dataset not found: {path}")
+    df = pd.read_parquet(path) if path.endswith(".parquet") else pd.read_csv(path)
+    required = {"date", "watershed_id", "observed_streamflow_m3s", "baseline_streamflow_m3s", "coupled_streamflow_m3s", "data_classification"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Primary experiment dataset missing columns: {', '.join(sorted(missing))}")
+    df["date"] = pd.to_datetime(df["date"], errors="raise")
+    return df
+
+
 def get_dataset(force_regenerate: bool = False, seed: int = 42) -> pd.DataFrame:
     """
     Loads existing dataset or generates the new Plant-to-Watershed synthetic dataset.
@@ -46,6 +59,10 @@ def get_dataset(force_regenerate: bool = False, seed: int = 42) -> pd.DataFrame:
     monthly_runoff_mm, monthly_streamflow_m3s, maize_yield_t_ha,
     climate_scenario, management_scenario.
     """
+    primary_path = os.environ.get("AGRO_TWIN_PRIMARY_EXPERIMENT_DATASET")
+    if primary_path:
+        return load_primary_experiment_dataset(primary_path)
+
     os.makedirs(os.path.dirname(DATASET_RAW_PATH), exist_ok=True)
 
     regenerate = force_regenerate or not os.path.exists(DATASET_RAW_PATH)

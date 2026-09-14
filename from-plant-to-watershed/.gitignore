@@ -1,6 +1,7 @@
 # Operating System Files
 .DS_Store
 Thumbs.db
+*~
 
 # IDEs and Editors
 .idea/
@@ -9,15 +10,126 @@ Thumbs.db
 *.swp
 *.swo
 
+# AI Assistants & Local Tooling
+.agents/
+.codex/
+.claude/
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+.local-postgres/
+
 # Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
+# Database files & journals
 digitaltwin.db
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+backend/data/*.db
 
-# Downloaded scientific artifacts are reproducible through registry metadata, not Git.
+# Python & Testing Cache
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+.coverage
+.coverage.*
+htmlcov/
+
+# HTTP & Runtime Cache
+cache/
+.cache/
+
+# Machine Learning & External Models
+models/external/*
+!models/external/.gitkeep
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.onnx
+*.bin
+*.weights
+
+# Downloaded scientific artifacts and datasets are reproducible through registry metadata, not Git.
 data/raw/*
 data/processed/*
+data/swat-runs/
+data/swat_runs/
+data/exports/
 !data/raw/.gitkeep
-!data/raw/usgs/
-!data/raw/usgs/05451210_2000-01-01_2025-12-31.json
 !data/processed/.gitkeep
+
+# Keep only the MVP reference USGS dataset; ignore all other raw USGS downloads
+!data/raw/usgs/
+data/raw/usgs/*
+!data/raw/usgs/05451210_2000-01-01_2025-12-31.json
+
+# SWAT+ simulation outputs, runtime diagnostics and temporary files
+*.out
+*.fin
+fort.*
+codes.bsn
+erosion.txt
+__warnings.txt
+reservoir_sed.txt
+basin_carbon_all.txt
+basin_totc.txt
+lu_change_out.txt
+output_*.txt
+*_cbn_lyr.txt
+*_cflux_stat.txt
+*_orgc.txt
+*_plc_stat.txt
+*_resc_stat.txt
+*_rsdc_stat.txt
+*_soilc_stat.txt
+*_totc.txt
+*_day.txt
+*_mon.txt
+*_yr.txt
+*_aa.txt
+
+# Common geospatial and heavy dataset formats
+*.nc
+*.nc4
+*.tif
+*.tiff
+*.geotiff
+*.gpkg
+*.parquet
+*.h5
+*.hdf5
+*.shp
+*.shx
+*.dbf
+*.prj
+
+# Frontend & Node
+node_modules/
+.next/
+dist/
+out/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+!*.env.example
+!backend/.env.example

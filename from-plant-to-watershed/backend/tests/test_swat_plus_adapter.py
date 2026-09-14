@@ -16,6 +16,7 @@ from app.services.swat_plus_adapter import (
     SwatOutputNotFoundError,
     SwatPlusAdapter,
     SwatPlusRunConfig,
+    SwatProjectInvalidError,
     SwatProjectNotFoundError,
     SwatRunFailedError,
 )
@@ -83,6 +84,20 @@ def test_missing_project_has_stable_error_code(tmp_path: Path):
     assert raised.value.code == "SWAT_PROJECT_NOT_FOUND"
 
 
+def test_declared_missing_weather_input_is_rejected_before_workspace_creation(tmp_path: Path):
+    project = _project(tmp_path)
+    (project / "weather-sta.cli").write_text(
+        "weather stations\nname wgn pcp tmp slr hmd wnd\nstation wgn pcp.dat tmp.dat sim sim sim\n",
+        encoding="utf-8",
+    )
+    config = _config(tmp_path, project, _executable(tmp_path))
+    with pytest.raises(SwatProjectInvalidError, match="weather files") as raised:
+        SwatPlusAdapter().run(config)
+    assert raised.value.code == "SWAT_PROJECT_INVALID"
+    assert raised.value.details["missing_weather_files"] == ["pcp.dat", "tmp.dat"]
+    assert not (tmp_path / "workspaces" / config.run_id).exists()
+
+
 def test_parser_normalizes_units_and_keeps_only_actual_columns(tmp_path: Path):
     (tmp_path / "output_wb_day").write_text(
         "yr mon day surq et perc sw\n"
@@ -102,6 +117,27 @@ def test_parser_normalizes_units_and_keeps_only_actual_columns(tmp_path: Path):
         "percolation_mm": 4.0, "soil_water_mm": 180.0, "streamflow_m3s": 2.0,
     }]
     assert parsed.water_balance["variable_availability"]["streamflow_m3s"] == "AVAILABLE"
+
+
+def test_parser_accepts_singleton_basin_unit_with_explicit_channel_outlet(tmp_path: Path):
+    (tmp_path / "basin_wb_day.txt").write_text(
+        "yr mon day unit surq et perc sw\n"
+        "yyyy mm dd --- mm mm mm mm\n"
+        "2020 1 1 1 2.5 3.0 4.0 180\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "channel_sd_day.txt").write_text(
+        "yr mon day unit gis_id flo_out\n"
+        "yyyy mm dd --- --- m3/s\n"
+        "2020 1 1 25 10 1.0\n"
+        "2020 1 1 25 153 2.0\n",
+        encoding="utf-8",
+    )
+    parsed = SwatOutputParser(outlet_unit="153").parse(tmp_path)
+    assert parsed.records == [{
+        "period": "2020-01-01", "runoff_mm": 2.5, "evapotranspiration_mm": 3.0,
+        "percolation_mm": 4.0, "soil_water_mm": 180.0, "streamflow_m3s": 2.0,
+    }]
 
 
 def test_success_without_output_is_not_reported_as_success(tmp_path: Path):

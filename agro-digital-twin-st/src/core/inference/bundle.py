@@ -130,6 +130,8 @@ class ModelBundle:
             "metrics": metrics,
             "is_champion": is_champion,
             "is_synthetic_training_data": True,
+            "artifact_classification": "SYNTHETIC_DEVELOPMENT_ARTIFACT",
+            "deployment_status": "demo_only",
             "data_provenance": "Plant-to-Watershed Multi-Scale Simulator (Zea mays / SWAT+)",
             "library_versions": library_versions
         }
@@ -162,6 +164,11 @@ class ModelBundle:
             raise FileNotFoundError(f"Metadata file missing in: {artifact_dir}")
         with open(metadata_file, "r", encoding="utf-8") as f:
             metadata = json.load(f)
+        # Pre-freeze bundles predate the explicit classification. Preserve their
+        # metrics but never let their synthetic training data look observational.
+        if metadata.get("is_synthetic_training_data", False):
+            metadata.setdefault("artifact_classification", "SYNTHETIC_DEVELOPMENT_ARTIFACT")
+            metadata.setdefault("deployment_status", "demo_only")
 
         metrics_file = os.path.join(artifact_dir, "metrics.json")
         metrics = {}

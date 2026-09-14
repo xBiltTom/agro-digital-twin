@@ -5,6 +5,11 @@ import { useFrame } from "@react-three/fiber";
 import { Html, Line } from "@react-three/drei";
 import * as THREE from "three";
 
+const deterministicUnit = (index: number, salt = 0) => {
+  const value = Math.sin((index + 1) * 12.9898 + (salt + 1) * 78.233) * 43758.5453;
+  return value - Math.floor(value);
+};
+
 export interface HruSummary {
   hru_id?: string;
   hru_number?: number;
@@ -17,7 +22,10 @@ interface WatershedMesh3DProps {
   streamflowM3s: number;
   precipMm: number;
   soilMoistureVol: number;
-  hruAggregates?: { hrus?: HruSummary[] };
+  hruAggregates?: { hrus?: HruSummary[]; results?: HruSummary[] };
+  watershedName?: string;
+  stationId?: string | null;
+  evidenceType?: string;
   onSelectSubbasin: () => void;
   showHruBorders?: boolean;
   showHydrologyFlow?: boolean;
@@ -25,8 +33,8 @@ interface WatershedMesh3DProps {
 }
 
 /**
- * Modelo Digital de Elevación (DEM 3D) de la Cuenca SWAT+ (Corn Belt):
- * Simulación de erosión fluvial dendrítica, divisorias de agua en crestas y fondo de valle aluvial.
+ * Schematic watershed context. The app currently does not persist SWAT+ GIS
+ * polygons for the viewer, so this is intentionally never presented as a DEM.
  */
 function WatershedCatchmentTerrain() {
   const geometry = useMemo(() => {
@@ -204,9 +212,13 @@ function RiparianTreeBelt({
 function UsgsGaugingStation({
   position,
   streamflowM3s,
+  stationId,
+  evidenceType,
 }: {
   position: [number, number, number];
   streamflowM3s: number;
+  stationId?: string | null;
+  evidenceType?: string;
 }) {
   return (
     <group position={position}>
@@ -239,13 +251,13 @@ function UsgsGaugingStation({
         >
           <div className="flex items-center gap-1.5 font-bold text-cyan-300">
             <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-ping" />
-            <span>USGS Gage #05451210</span>
+            <span>{stationId ? `USGS Gage #${stationId}` : "Outlet de simulación"}</span>
           </div>
           <div className="mt-1 text-zinc-200 font-mono text-[11px]">
             Caudal Q: <b className="text-teal-300 text-xs">{streamflowM3s.toFixed(2)} m³/s</b>
           </div>
           <div className="text-zinc-400 font-mono text-[10px] mt-0.5">
-            Calibración SWAT+: NSE=0.81 · PBIAS=-2.4%
+            {evidenceType ? `${evidenceType} · caudal simulado` : "caudal del modelo"}
           </div>
         </div>
       </Html>
@@ -263,9 +275,9 @@ function PrecipitationRainSystem({ precipMm }: { precipMm: number }) {
   const initialPositions = useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 50;
-      pos[i * 3 + 1] = Math.random() * 24;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 40;
+      pos[i * 3] = (deterministicUnit(i, 1) - 0.5) * 50;
+      pos[i * 3 + 1] = deterministicUnit(i, 2) * 24;
+      pos[i * 3 + 2] = (deterministicUnit(i, 3) - 0.5) * 40;
     }
     return pos;
   }, [count]);
@@ -277,7 +289,7 @@ function PrecipitationRainSystem({ precipMm }: { precipMm: number }) {
       const yIdx = i * 3 + 1;
       pos[yIdx] -= 28 * delta;
       if (pos[yIdx] < 0.1) {
-        pos[yIdx] = 20 + Math.random() * 4;
+        pos[yIdx] = 20 + deterministicUnit(i, 4) * 4;
       }
     }
     pointsRef.current.geometry.attributes.position.needsUpdate = true;
@@ -306,11 +318,15 @@ export default function WatershedMesh3D({
   precipMm,
   soilMoistureVol,
   hruAggregates,
+  watershedName,
+  stationId,
+  evidenceType,
   onSelectSubbasin,
   showHruBorders = true,
   showHydrologyFlow = true,
   showScientificLabels = true,
 }: WatershedMesh3DProps) {
+  const hruCount = hruAggregates?.results?.length ?? hruAggregates?.hrus?.length ?? 0;
   const riverPoints: [number, number, number][] = useMemo(
     () => [
       [-22, 1.45, 16],
@@ -339,10 +355,10 @@ export default function WatershedMesh3D({
 
   return (
     <group position={[0, -0.38, 0]}>
-      {/* 1. Relieve de Cuenca con Geología Glacial */}
+      {/* 1. Contexto visual esquemático; no es un DEM ni polígonos SWAT+ */}
       <WatershedCatchmentTerrain />
 
-      {/* 2. Parcelas HRU de SWAT+ */}
+      {/* 2. Parcelas esquemáticas: la geometría HRU no está persistida en la API */}
       <AgriculturalHruParcel
         position={[-9, 0.58, 6]}
         size={[14.5, 12.5]}
@@ -380,7 +396,7 @@ export default function WatershedMesh3D({
       <Line points={tributaryPoints} color="#60a5fa" lineWidth={riverWidth * 6.5} transparent opacity={0.85} />
 
       {/* 5. Aforo USGS */}
-      <UsgsGaugingStation position={[22, -0.12, -13.5]} streamflowM3s={streamflowM3s} />
+      <UsgsGaugingStation position={[22, -0.12, -13.5]} streamflowM3s={streamflowM3s} stationId={stationId} evidenceType={evidenceType} />
 
       {/* 6. Lluvia 3D */}
       {showHydrologyFlow && <PrecipitationRainSystem precipMm={precipMm} />}
@@ -394,14 +410,14 @@ export default function WatershedMesh3D({
               style={{ minWidth: "260px" }}
             >
               <div className="flex items-center justify-between border-b border-cyan-500/30 pb-1.5">
-                <span className="font-bold text-cyan-300">Cuenca Hidrológica (Macro SWAT+)</span>
+                <span className="font-bold text-cyan-300">{watershedName ?? "Cuenca"} · contexto macro</span>
                 <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
                   Nivel 3
                 </span>
               </div>
               <div className="mt-2 space-y-1 text-[11px] font-mono">
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Precipitación (CHIRPS):</span>
+                  <span className="text-zinc-400">Precipitación:</span>
                   <span className="font-bold text-sky-300">{precipMm.toFixed(1)} mm/d</span>
                 </div>
                 <div className="flex justify-between">
@@ -409,11 +425,11 @@ export default function WatershedMesh3D({
                   <span className="font-bold text-teal-300">{soilMoistureVol.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Descarga aforada (Q):</span>
+                  <span className="text-zinc-400">Caudal modelado (Q):</span>
                   <span className="font-bold text-cyan-300 text-xs">{streamflowM3s.toFixed(2)} m³/s</span>
                 </div>
                 <div className="mt-1.5 border-t border-zinc-800 pt-1 text-emerald-300 font-sans text-[11px]">
-                  💡 Clic en HRU 1 (verde) para bajar a escala Meso (Campo).
+                  Vista esquemática: {hruCount ? `${hruCount} resultados HRU disponibles` : "geometrías HRU no disponibles en API"}.
                 </div>
               </div>
             </div>
@@ -429,10 +445,10 @@ export default function WatershedMesh3D({
               style={{ minWidth: "170px" }}
             >
               <div className="font-bold flex items-center justify-center gap-1">
-                <span>HRU 1: Maíz (62%)</span>
+                <span>{hruCount ? `${hruCount} HRUs SWAT+` : "HRUs esquemáticos"}</span>
                 <span>→</span>
               </div>
-              <div className="text-[10px] text-zinc-300 font-mono mt-0.5">Explorar 1000 plantas</div>
+              <div className="text-[10px] text-zinc-300 font-mono mt-0.5">Explorar estado FSPM de campo</div>
             </div>
           </Html>
         </>

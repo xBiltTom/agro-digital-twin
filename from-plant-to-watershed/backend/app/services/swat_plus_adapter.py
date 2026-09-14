@@ -224,7 +224,38 @@ class SwatPlusAdapter:
             raise SwatExecutableNotFoundError("SWAT+ executable is not executable", details={"path": str(config.executable_path)})
         if not config.project_path.is_dir():
             raise SwatProjectNotFoundError("SWAT+ project directory was not found", details={"path": str(config.project_path)})
-        return SwatPlusAdapter._input_directory(config.project_path)
+        input_directory = SwatPlusAdapter._input_directory(config.project_path)
+        SwatPlusAdapter._validate_declared_weather_files(input_directory)
+        return input_directory
+
+    @staticmethod
+    def _validate_declared_weather_files(input_directory: Path) -> None:
+        """Reject a project whose declared local weather files are absent.
+
+        ``weather-sta.cli`` can deliberately use ``sim`` (SWAT's weather
+        generator) or ``null`` for a variable.  Those values are not files.
+        Conversely, a filename in its precipitation or temperature columns is
+        an input contract: running without it would either fail late inside
+        SWAT+ or silently make a study non-reproducible.  Validate it before
+        copying a workspace, while retaining compatibility with projects that
+        do not use station weather at all.
+        """
+        station_file = input_directory / "weather-sta.cli"
+        if not station_file.is_file():
+            return
+        rows = [line.split() for line in station_file.read_text(encoding="utf-8", errors="strict").splitlines()[2:]
+                if line.split()]
+        missing: list[str] = []
+        for row in rows:
+            # name, wgn, pcp, tmp, slr, hmd, wnd, pet, atmo_dep
+            for value in row[2:4]:
+                if value.lower() not in {"null", "sim"} and not (input_directory / value).is_file():
+                    missing.append(value)
+        if missing:
+            raise SwatProjectInvalidError(
+                "SWAT+ project declares local weather files that are missing",
+                details={"input_directory": str(input_directory), "missing_weather_files": sorted(set(missing))},
+            )
 
     def capability(self) -> dict[str, Any]:
         try:

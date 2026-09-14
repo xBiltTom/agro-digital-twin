@@ -68,6 +68,21 @@ def test_temporal_3way_leak_free_split():
     assert meta["strategy"] == "temporal_3way"
 
 
+def test_temporal_split_groups_duplicate_dates_with_non_range_index():
+    from src.core.training.splitters import Temporal3WaySplitter
+
+    dates = list(pd.date_range("2020-01-01", periods=10, freq="D"))
+    df = pd.DataFrame({"date": [day for day in dates for _ in range(3)], "entity": [entity for _ in dates for entity in range(3)]}, index=list(range(100, 130)))
+    train_idx, val_idx, test_idx, _ = Temporal3WaySplitter(val_ratio=.2, test_ratio=.2).split(df)
+    train_dates = set(df.loc[train_idx, "date"])
+    val_dates = set(df.loc[val_idx, "date"])
+    test_dates = set(df.loc[test_idx, "date"])
+    assert max(train_dates) < min(val_dates) < min(test_dates)
+    assert not (train_dates & val_dates)
+    assert not (val_dates & test_dates)
+    assert set(train_idx) == set(range(100, 118))
+
+
 def test_watershed_3way_spatial_isolation():
     from src.core.training.splitters import Watershed3WaySplitter
 

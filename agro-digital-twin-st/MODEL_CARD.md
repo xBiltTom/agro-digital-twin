@@ -1,5 +1,7 @@
 # 🌽 Model Card: Plant-to-Watershed Digital Twin Models
 
+> **SYNTHETIC_DEVELOPMENT_ARTIFACT:** Every committed model bundle in this directory was trained on synthetic development data. It is not evidence for the South Fork hypothesis and must not be presented as USGS/SWAT+ validation.
+
 ## 1. Model Details
 - **Model Family**: Plant-to-Watershed AI Lab Surrogates
 - **Champion Architecture**: LSTM Autoencoder + Random Forest Hybrid (and Random Forest Residual Corrector)
@@ -14,17 +16,15 @@
   1. `monthly_runoff_mm` (Coupled monthly watershed runoff, mm/month)
   2. `monthly_streamflow_m3s` (Streamflow discharge at basin outlet, m³/s)
   3. `maize_yield_t_ha` (Annual grain yield of *Zea mays* at harvest, t/ha)
-- **Primary Domain**: Agro-Hydrology, Corn Belt (*Zea mays*), SWAT+ (Soil and Water Assessment Tool).
+- **Primary Domain**: Synthetic agro-hydrology development laboratory.
 - **License**: MIT / Academic Research Use
 
 ---
 
 ## 2. Intended Use & Scope
 - **Primary Intended Uses**:
-  - Fast surrogate modeling replacing computationally demanding SWAT+ and FSPM simulations.
-  - Multi-scale scenario evaluation under climate change projections (CMIP6 SSP2-4.5, SSP5-8.5).
-  - Residual correction of uncoupled SWAT+ baseline models by infusing individual plant physiological dynamics (LAI, rooting depth, stomatal transpiration, water stress).
-  - Direct consumption via decoupled Python package into FastAPI microservices and Next.js digital twin dashboards (`agro-digital-twin`).
+  - Training/statistics laboratory for explicitly supplied experiment datasets.
+  - Auxiliary residual prediction only; it never replaces SWAT+ or establishes H1.
 - **Out-of-Scope Uses**:
   - Direct operational flood control decision-making without field calibration against real USGS streamflow gauge observations.
   - Crop types other than Maize (*Zea mays*) without recalibrating physiological parameters.
@@ -34,10 +34,9 @@
 ## 3. Training Data & Provenance Notice
 > [!WARNING]
 > **SYNTHETIC DATASET NOTICE (DEMO / SYNTHETIC DATA)**
-> The training dataset used in this laboratory was generated using the `SyntheticMultiScaleDatasetGenerator` simulating physical relationships derived from the literature (*Zea mays* physiology and Iowa Corn Belt SWAT+ hydrological characteristics). It serves architectural validation, hypothesis evaluation, and decoupling verification. For production deployments, real observational datasets (USGS streamflow, USDA NASS crop yields, Daymet/GridMET meteorology) must be substituted.
+> The committed bundles used `SyntheticMultiScaleDatasetGenerator`. They serve only architectural development. A real dataset must retain its provenance, temporal split manifest and limitations before any new bundle is trained.
 
-- **Spatial Granularity**: 3 Representative Corn Belt Watersheds (Cedar River, Raccoon River, Iowa River) with 4 Hydrological Response Units (HRUs) each (12 distinct spatial units).
-- **Temporal Span**: 2000-01-01 to 2019-12-01 (20 years monthly = 240 timesteps per HRU; 2,880 records total).
+- **Committed development data**: 3 synthetic watershed labels, 9 HRU labels, 2,808 rows, 2015-01 through 2029-12.
 - **Seasonal Yield Aggregation**: For `maize_yield_t_ha`, monthly records during the growing season (May–October) are aggregated into 1 sample per HRU per year (240 annual samples) with cumulative GDD (base 10°C), seasonal precipitation, seasonal ET, peak LAI, and maximum root depth.
 
 ---
@@ -60,10 +59,9 @@ Models strictly validate inputs using `ModelFeatureSchema`:
 ---
 
 ## 6. Evaluation Metrics & Performance
-Hydrological evaluation follows ASCE / Moriasi et al. standards:
-- **Nash-Sutcliffe Efficiency ($NSE$)**: $> 0.90$ (Very Good)
-- **Percent Bias ($PBIAS$)**: $|\text{PBIAS}| < 5\%$ (Very Good)
-- **RMSE & MAE**: Residual correction reduces SWAT+ baseline error by $> 15\%$, rejecting $H_0$ with Wilcoxon $p < 0.001$.
+Committed synthetic metrics are development-only and cannot be compared with
+South Fork USGS results. The registered South Fork H0/H1 conclusion is in the
+primary project's `research_domain/final_report.json`, not in these artifacts.
 
 ---
 

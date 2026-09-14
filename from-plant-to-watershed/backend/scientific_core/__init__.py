@@ -5,7 +5,9 @@ from .pipeline import MultiscaleRun, MultiscaleSimulationOrchestrator, Simulatio
 from .provenance import EvidenceType, Provenance
 from .multiscale import FieldToHRUCoupler, PlantPopulation, PlantState, PlantToFieldAggregator
 from .validation import ValidationEngine
+from .splits import assign_temporal_split, validate_spatial_split
 
 __all__ = ["EvidenceType", "Provenance", "RunConfig", "ScientificRun", "SimulationOrchestrator",
            "PlantPopulation", "PlantState", "PlantToFieldAggregator", "FieldToHRUCoupler", "ValidationEngine"]
 __all__ += ["MultiscaleRun", "MultiscaleSimulationOrchestrator"]
+__all__ += ["assign_temporal_split", "validate_spatial_split"]

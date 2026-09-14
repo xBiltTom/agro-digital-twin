@@ -8,9 +8,12 @@ import {
   SimulationResult,
   ClimateScenario,
   Watershed,
-  TwinWebSocketTick
+  TwinWebSocketTick,
+  SwatResultsResponse,
+  SwatRunType
   , ExternalModelInfo, DatasetInfo
 } from "../../../types/simulation";
+import SwatRunEvidencePanel from "../../../components/scientific/SwatRunEvidencePanel";
 import {
   Sliders,
   Play,
@@ -52,6 +55,7 @@ export default function SimulationsPage() {
   const [simulations, setSimulations] = useState<SimulationRun[]>([]);
   const [selectedSim, setSelectedSim] = useState<SimulationRun | null>(null);
   const [results, setResults] = useState<SimulationResult[]>([]);
+  const [swatResults, setSwatResults] = useState<SwatResultsResponse | null>(null);
   const [scenarios, setScenarios] = useState<ClimateScenario[]>([]);
   const [watersheds, setWatersheds] = useState<Watershed[]>([]);
   const [capabilities, setCapabilities] = useState<Record<string, { status: string; evidence_type?: string }>>({});
@@ -73,9 +77,9 @@ export default function SimulationsPage() {
   const [formStationId, setFormStationId] = useState("");
   const [formSeed, setFormSeed] = useState(42);
   const [formPlantCount, setFormPlantCount] = useState(1000);
-  const [formMode] = useState<"RESEARCH_MULTISCALE">("RESEARCH_MULTISCALE");
   const [formClimateSource, setFormClimateSource] = useState<"SYNTHETIC" | "CMIP6_FILE" | "OBSERVED">("SYNTHETIC");
   const [formHydrologyBackend, setFormHydrologyBackend] = useState<"SIMPLIFIED" | "SWAT_PLUS">("SIMPLIFIED");
+  const [formSwatRunType, setFormSwatRunType] = useState<SwatRunType>("SWAT_MULTISCALE_COUPLED");
   const [formExternalModel, setFormExternalModel] = useState("");
   const [formManagement, setFormManagement] = useState<"BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM">("BASELINE");
   const [formDatasetIds, setFormDatasetIds] = useState<string[]>([]);
@@ -88,6 +92,10 @@ export default function SimulationsPage() {
   const wsRef = useRef<WebSocket | null>(null);
 
   const canRunSimulations = hasAnyRole(["SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO"]);
+  const isRealSwat = (sim: SimulationRun) => {
+    const evidence = (sim.provenance as { evidence_type?: string } | undefined)?.evidence_type;
+    return sim.hydrology_backend === "SWAT_PLUS" && ["REAL_SWAT_PLUS", "REAL_SWAT_PLUS_COUPLED"].includes(evidence ?? "");
+  };
 
   // Carga inicial de datos
   const loadInitialData = async () => {
@@ -132,6 +140,7 @@ export default function SimulationsPage() {
   const selectSimulation = async (sim: SimulationRun) => {
     setSelectedSim(sim);
     setIsLoadingResults(true);
+    setSwatResults(null);
     // Desconectar WS previo si existía
     if (wsRef.current) {
       wsRef.current.close();
@@ -140,8 +149,14 @@ export default function SimulationsPage() {
     }
 
     try {
-      const dailyResults = await api.getSimulationResults(sim.id, sim.duration_days);
-      setResults(dailyResults);
+      if (isRealSwat(sim)) {
+        const normalizedSwat = await api.getSwatResults(sim.id);
+        setSwatResults(normalizedSwat);
+        setResults([]);
+      } else {
+        const dailyResults = await api.getSimulationResults(sim.id, sim.duration_days);
+        setResults(dailyResults);
+      }
     } catch (err: any) {
       console.error("Error al cargar resultados diarios:", err);
     } finally {
@@ -169,7 +184,7 @@ export default function SimulationsPage() {
         duration_days: durationDays,
         seed: formSeed,
         parameters: {},
-        mode: formMode,
+        mode: formHydrologyBackend === "SWAT_PLUS" ? "SWAT_PLUS" : "RESEARCH_MULTISCALE",
         plant_count: formPlantCount,
         hydrology_backend: formHydrologyBackend,
         external_model_id: formExternalModel || undefined,
@@ -180,6 +195,12 @@ export default function SimulationsPage() {
         station_id: formStationId || undefined,
         start_date: formStartDate,
         end_date: formEndDate,
+        swat_plus: formHydrologyBackend === "SWAT_PLUS" ? {
+          run_type: formSwatRunType,
+          output_frequency: "DAILY",
+          warmup_period: 0,
+          target_plant_name: "corn",
+        } : undefined,
       });
       setSimulations([newSim, ...simulations]);
       setIsModalOpen(false);
@@ -240,6 +261,7 @@ export default function SimulationsPage() {
   // Reducir serie para gráficos si es muy grande
   const chartData = results.filter((_, idx) => idx % Math.max(1, Math.floor(results.length / 90)) === 0);
   const monthlyComparisonData = selectedSim?.monthly_outputs ?? [];
+  const isSelectedRealSwat = selectedSim ? isRealSwat(selectedSim) : false;
   const hasObservedForcing = datasets.some((dataset) => ["CHIRPS", "OBSERVED_CLIMATE"].includes(dataset.provider) && dataset.normalized_artifact_count > 0);
   const hasCmip6Forcing = datasets.some((dataset) => dataset.provider === "NEX-GDDP-CMIP6" && dataset.normalized_artifact_count > 0);
 
@@ -255,7 +277,7 @@ export default function SimulationsPage() {
             </h1>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-            Clima → población de maíz → campo → HRU proxy → hidrología → observaciones USGS cuando se vinculen.
+            Clima → población de maíz → campo → HRU → hidrología. Cada corrida declara si usa el proxy legado o SWAT+ real.
           </p>
         </div>
 
@@ -297,7 +319,7 @@ export default function SimulationsPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
-        {[`CLIMATE · ${selectedSim?.climate_source ?? "NOT_SELECTED"}`, `PLANT ×${selectedSim?.plant_count ?? 1000} · SIMPLIFIED`, "FIELD · DERIVED", "HRU · COARSE PROXY", `HYDROLOGY · ${selectedSim?.hydrology_backend ?? "NOT_SELECTED"}`, `USGS · ${selectedSim?.validation?.status ?? "NOT_LINKED"}`].map((stage, index) => (
+        {[`CLIMATE · ${selectedSim?.climate_source ?? "NOT_SELECTED"}`, `PLANT ×${selectedSim?.plant_count ?? 1000} · ${isSelectedRealSwat ? "FSPM" : "SIMPLIFIED"}`, "FIELD · DERIVED", `HRU · ${isSelectedRealSwat ? "SWAT+ REAL" : "COARSE PROXY"}`, `HYDROLOGY · ${selectedSim?.hydrology_backend ?? "NOT_SELECTED"}`, `USGS · ${selectedSim?.validation?.status ?? "NOT_LINKED"}`].map((stage, index) => (
           <React.Fragment key={stage}><span className="px-3 py-2 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30">{stage}</span>{index < 5 && <span>→</span>}</React.Fragment>
         ))}
       </div>
@@ -381,6 +403,10 @@ export default function SimulationsPage() {
         <div className="lg:col-span-8 flex flex-col gap-6">
           {selectedSim ? (
             <>
+              {isSelectedRealSwat && swatResults ? (
+                <SwatRunEvidencePanel simulation={selectedSim} result={swatResults} />
+              ) : (
+                <>
               {/* Selected simulation card and persisted-result WebSocket playback */}
               <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-4 shadow-sm dark:shadow-xl">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800/80">
@@ -702,6 +728,8 @@ export default function SimulationsPage() {
                   </div>
                 )}
               </div>
+                </>
+              )}
             </>
           ) : (
             <div className="p-12 rounded-2xl border border-zinc-200 dark:border-zinc-800 text-center text-zinc-500 text-xs bg-white dark:bg-transparent">
@@ -782,6 +810,17 @@ export default function SimulationsPage() {
                   </select>
                 </div>
               </div>
+
+              {formHydrologyBackend === "SWAT_PLUS" && (
+                <div className="rounded-xl border border-teal-300 bg-teal-50/70 p-3 dark:border-teal-800 dark:bg-teal-950/20">
+                  <label className="block font-mono uppercase text-[10px] text-teal-800 dark:text-teal-300">Modo de experimento SWAT+</label>
+                  <select value={formSwatRunType} onChange={(e) => setFormSwatRunType(e.target.value as SwatRunType)} className="mt-2 w-full rounded-lg border border-teal-300 bg-white px-3 py-2.5 text-xs text-zinc-900 dark:border-teal-800 dark:bg-zinc-950 dark:text-zinc-200">
+                    <option value="SWAT_MULTISCALE_COUPLED">SWAT_MULTISCALE_COUPLED — crea primero el baseline pareado</option>
+                    <option value="SWAT_STANDARD_BASELINE">SWAT_STANDARD_BASELINE — control SWAT+ sin FSPM</option>
+                  </select>
+                  <p className="mt-2 text-[10px] text-teal-800 dark:text-teal-300">Se usa el proyecto, engine y workspace configurados en el servidor. El modo acoplado conserva forcing y periodo y solo modifica `plants.plt` dentro de una copia aislada.</p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -874,8 +913,8 @@ export default function SimulationsPage() {
               </div>
 
               <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 flex flex-col gap-1">
-                <span className="font-semibold text-zinc-800 dark:text-zinc-300">Población explícita de maíz simplificada</span>
-                <span>Calcula toda la población y persiste agregados más una muestra. No es un FSPM completo; las HRU son proxies.</span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-300">{formHydrologyBackend === "SWAT_PLUS" ? "Acoplamiento FSPM → SWAT+" : "Población explícita de maíz simplificada"}</span>
+                <span>{formHydrologyBackend === "SWAT_PLUS" ? "Calcula la población, persiste agregado y muestra FSPM, modifica únicamente plants.plt en un workspace aislado y ejecuta SWAT+." : "Calcula toda la población y persiste agregados más una muestra. Esta modalidad usa HRUs proxy."}</span>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
@@ -894,7 +933,7 @@ export default function SimulationsPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Ejecutando modelos simplificados...</span>
+                      <span>{formHydrologyBackend === "SWAT_PLUS" ? "Ejecutando SWAT+ real..." : "Ejecutando modelo simplificado..."}</span>
                     </>
                   ) : (
                     <>

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { api } from "../../../lib/api";
-import { SimulationRun, SimulationResult } from "../../../types/simulation";
+import { SimulationRun, SimulationResult, SwatResultsResponse } from "../../../types/simulation";
 import MultiScaleViewer3D, { ScaleMode } from "../../../components/3d/MultiScaleViewer3D";
 import TwinHUDOverlay from "../../../components/3d/TwinHUDOverlay";
 import {
@@ -47,6 +47,7 @@ export default function Twin3DPage() {
   const [simulations, setSimulations] = useState<SimulationRun[]>([]);
   const [selectedSim, setSelectedSim] = useState<SimulationRun | null>(null);
   const [results, setResults] = useState<SimulationResult[]>([]);
+  const [swatResults, setSwatResults] = useState<SwatResultsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -84,6 +85,24 @@ export default function Twin3DPage() {
   const [currentDay, setCurrentDay] = useState(1);
   const [isPlaying, setIsPlaying] = useState(true);
 
+  const isRealSwat = (sim: SimulationRun | null) => {
+    const evidence = (sim?.provenance as { evidence_type?: string } | undefined)?.evidence_type;
+    return sim?.hydrology_backend === "SWAT_PLUS" && ["REAL_SWAT_PLUS", "REAL_SWAT_PLUS_COUPLED"].includes(evidence ?? "");
+  };
+
+  const loadOutputs = async (sim: SimulationRun) => {
+    if (isRealSwat(sim)) {
+      const normalized = await api.getSwatResults(sim.id);
+      setSwatResults(normalized);
+      setResults([]);
+    } else {
+      const daily = await api.getSimulationResults(sim.id, sim.duration_days);
+      setResults(daily);
+      setSwatResults(null);
+    }
+  };
+  const selectedIsRealSwat = isRealSwat(selectedSim);
+
   // Cargar simulaciones y resultados
   useEffect(() => {
     async function loadData() {
@@ -92,8 +111,7 @@ export default function Twin3DPage() {
         setSimulations(sims);
         if (sims.length > 0) {
           setSelectedSim(sims[0]);
-          const dailyRes = await api.getSimulationResults(sims[0].id, sims[0].duration_days);
-          setResults(dailyRes);
+          await loadOutputs(sims[0]);
         }
       } catch (err) {
         console.error("Error al cargar simulación 3D:", err);
@@ -107,21 +125,46 @@ export default function Twin3DPage() {
 
   // Animación del reproductor temporal
   useEffect(() => {
-    if (!isPlaying || results.length === 0) return;
+    const length = selectedIsRealSwat ? (swatResults?.records.length ?? 0) : results.length;
+    if (!isPlaying || length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentDay((prev) => (prev >= results.length ? 1 : prev + 1));
+      setCurrentDay((prev) => (prev >= length ? 1 : prev + 1));
     }, 600);
 
     return () => clearInterval(interval);
-  }, [isPlaying, results.length]);
+  }, [isPlaying, results.length, selectedIsRealSwat, swatResults?.records.length]);
 
   const currentData = results[currentDay - 1];
+  const currentSwat = swatResults?.records[currentDay - 1];
+  const timelineLength = selectedIsRealSwat ? (swatResults?.records.length ?? 0) : results.length;
+  const field = selectedSim?.field_aggregates ?? {};
+  const fieldNumber = (name: string, fallback = 0) => {
+    const value = field[name];
+    return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  };
+  const fspmStress = fieldNumber("water_stress", fieldNumber("mean_stress", 0));
+  const fspmTranspiration = fieldNumber("actual_ET_mm_day", fieldNumber("mean_transpiration_mm", 0));
+  const fspmSoilMoisture = fieldNumber("soil_moisture_vol", 0.24) * 100;
 
   // Preparar datos para gráficos temporales (muestreo decenal si son muchos días)
   const chartData = React.useMemo(() => {
+    if (selectedIsRealSwat) {
+      return (swatResults?.records ?? []).map((r, index) => ({
+        day: index + 1,
+        streamflow: Number((r.streamflow_m3s ?? 0).toFixed(2)),
+        runoff: r.runoff_mm ?? 0,
+        et: r.evapotranspiration_mm ?? 0,
+        percolation: r.percolation_mm ?? 0,
+        soil_water: r.soil_water_mm ?? 0,
+        precip: 0,
+        soil_moisture: 0,
+        transpiration: 0,
+        cwsi: 0,
+        sap_flow: 0,
+      }));
+    }
     if (results.length === 0) return [];
-    // Muestrear o devolver todos
     return results.map((r) => ({
       day: r.day_index,
       streamflow: Number(r.streamflow_m3s.toFixed(2)),
@@ -130,8 +173,12 @@ export default function Twin3DPage() {
       transpiration: Number(r.plant_transpiration_mm.toFixed(2)),
       cwsi: Number(r.cwsi_stress_index.toFixed(2)),
       sap_flow: Number(r.sap_flow_velocity_cmh.toFixed(1)),
+      runoff: 0,
+      et: 0,
+      percolation: 0,
+      soil_water: 0,
     }));
-  }, [results]);
+  }, [results, selectedIsRealSwat, swatResults]);
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-16">
@@ -146,11 +193,13 @@ export default function Twin3DPage() {
               From Plant to Watershed: Digital Twin 3D
               <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                MVP · SIMPLIFIED / ILLUSTRATIVE
+                {selectedIsRealSwat ? "REAL SWAT+ · CONTEXT VIEW" : "MVP · SIMPLIFIED / ILLUSTRATIVE"}
               </span>
             </h1>
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              Planta simplificada · campo n=1000 · HRU proxy · hidrología conceptual · geometría ilustrativa
+              {selectedIsRealSwat
+                ? "Outputs SWAT+ normalizados · FSPM persistido · HRUs sin geometría GIS en esta vista"
+                : "Planta simplificada · campo n=1000 · HRU proxy · hidrología conceptual · geometría ilustrativa"}
             </span>
           </div>
         </div>
@@ -165,9 +214,8 @@ export default function Twin3DPage() {
                 const sim = simulations.find((s) => s.id === e.target.value);
                 if (sim) {
                   try {
-                    const dailyRes = await api.getSimulationResults(sim.id, sim.duration_days);
+                    await loadOutputs(sim);
                     setSelectedSim(sim);
-                    setResults(dailyRes);
                     setCurrentDay(1);
                     setLoadError(null);
                   } catch (err) {
@@ -201,42 +249,50 @@ export default function Twin3DPage() {
         {isLoading ? (
           <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-3 text-zinc-400 text-xs">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-            <span>Cargando corrida multiescala simplificada...</span>
+            <span>Cargando resultados persistidos...</span>
           </div>
-        ) : currentData ? (
+        ) : (currentData || currentSwat) ? (
           <>
             <MultiScaleViewer3D
               scaleMode={scaleMode}
               onChangeScale={setScaleMode}
-              streamflowM3s={currentData.streamflow_m3s}
-              precipMm={currentData.precip_mm}
-              soilMoistureVol={currentData.soil_moisture_vol}
-              transpirationMm={currentData.plant_transpiration_mm}
-              cwsiStress={currentData.cwsi_stress_index}
-              sapFlowVelocityCmh={currentData.sap_flow_velocity_cmh}
+              streamflowM3s={currentSwat?.streamflow_m3s ?? currentData?.streamflow_m3s ?? 0}
+              precipMm={selectedIsRealSwat ? 0 : currentData?.precip_mm ?? 0}
+              soilMoistureVol={selectedIsRealSwat ? fspmSoilMoisture : currentData?.soil_moisture_vol ?? 0}
+              transpirationMm={selectedIsRealSwat ? fspmTranspiration : currentData?.plant_transpiration_mm ?? 0}
+              cwsiStress={selectedIsRealSwat ? fspmStress : currentData?.cwsi_stress_index ?? 0}
+              sapFlowVelocityCmh={selectedIsRealSwat ? 0 : currentData?.sap_flow_velocity_cmh ?? 0}
               plantSample={selectedSim?.plant_sample ?? []}
               plantCount={selectedSim?.plant_count ?? 1000}
               fieldAggregates={selectedSim?.field_aggregates}
-              hruAggregates={selectedSim?.hru_aggregates as { hrus?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }> } | undefined}
+              hruAggregates={selectedSim?.hru_aggregates as { hrus?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }>; results?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }> } | undefined}
+              stationId={selectedSim?.station_id}
+              evidenceType={(selectedSim?.provenance as { evidence_type?: string } | undefined)?.evidence_type}
               showHydrologyFlow={showHydrologyFlow}
               showSoilHorizons={showSoilHorizons}
               showSensors={showSensors}
               showScientificLabels={showScientificLabels}
             />
 
-            <TwinHUDOverlay
+            {selectedIsRealSwat ? (
+              <div className="absolute left-4 top-4 z-20 max-w-md rounded-xl border border-teal-400/50 bg-zinc-950/92 p-3 text-xs text-zinc-100 shadow-2xl backdrop-blur">
+                <div className="font-mono font-bold text-teal-300">{(selectedSim?.provenance as { evidence_type?: string } | undefined)?.evidence_type}</div>
+                <div className="mt-1">Periodo SWAT+ real: {currentSwat?.period ?? "—"} · Q {Number(currentSwat?.streamflow_m3s ?? 0).toFixed(3)} m³/s</div>
+                <div className="mt-1 text-[10px] text-zinc-400">La escena es contexto esquemático. El estado micro/meso usa la muestra y el agregado FSPM que configuraron `plants.plt`; no se inventan series fisiológicas diarias.</div>
+              </div>
+            ) : <TwinHUDOverlay
               scaleMode={scaleMode}
               onChangeScale={setScaleMode}
-              streamflowM3s={currentData.streamflow_m3s}
-              precipMm={currentData.precip_mm}
-              soilMoistureVol={currentData.soil_moisture_vol}
-              transpirationMm={currentData.plant_transpiration_mm}
-              cwsiStress={currentData.cwsi_stress_index}
-              sapFlowVelocityCmh={currentData.sap_flow_velocity_cmh}
+              streamflowM3s={currentData?.streamflow_m3s ?? 0}
+              precipMm={currentData?.precip_mm ?? 0}
+              soilMoistureVol={currentData?.soil_moisture_vol ?? 0}
+              transpirationMm={currentData?.plant_transpiration_mm ?? 0}
+              cwsiStress={currentData?.cwsi_stress_index ?? 0}
+              sapFlowVelocityCmh={currentData?.sap_flow_velocity_cmh ?? 0}
               isPlaying={isPlaying}
               onTogglePlay={() => setIsPlaying(!isPlaying)}
               currentDay={currentDay}
-              totalDays={results.length}
+              totalDays={timelineLength}
               onSeekDay={setCurrentDay}
               showHydrologyFlow={showHydrologyFlow}
               onToggleHydrologyFlow={() => setShowHydrologyFlow(!showHydrologyFlow)}
@@ -248,9 +304,8 @@ export default function Twin3DPage() {
               onToggleScientificLabels={() => setShowScientificLabels(!showScientificLabels)}
               isFullscreen={isFullscreen}
               onToggleFullscreen={toggleFullscreen}
-              scenarioName={selectedSim?.name}
               scenarioPathway={selectedSim?.scenario?.pathway || "SSP2-4.5"}
-            />
+            />}
           </>
         ) : (
           <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-2 text-center p-6">
@@ -283,11 +338,11 @@ export default function Twin3DPage() {
                 <div className="flex items-center gap-2">
                   <Waves className="w-4 h-4 text-teal-500" />
                   <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                    Hidrograma de Cuenca (Caudal Q vs Precipitación P)
+                    {selectedIsRealSwat ? "Balance hídrico SWAT+ (outputs normalizados)" : "Hidrograma de Cuenca (Caudal Q vs Precipitación P)"}
                   </h3>
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/30">
-                  Hidrología conceptual
+                  {selectedIsRealSwat ? "REAL SWAT+" : "Hidrología conceptual"}
                 </span>
               </div>
 
@@ -302,7 +357,13 @@ export default function Twin3DPage() {
                       contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", fontSize: "11px", borderRadius: "8px" }}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "6px" }} />
-                    <Bar yAxisId="right" dataKey="precip" name="Lluvia P (mm)" fill="#38bdf8" opacity={0.4} />
+                    {selectedIsRealSwat ? (
+                      <>
+                        <Bar yAxisId="left" dataKey="runoff" name="Runoff (mm)" fill="#38bdf8" opacity={0.5} />
+                        <Line yAxisId="left" type="monotone" dataKey="et" name="ET (mm)" stroke="#10b981" strokeWidth={1.8} dot={false} />
+                        <Line yAxisId="left" type="monotone" dataKey="percolation" name="Percolación (mm)" stroke="#a855f7" strokeWidth={1.5} dot={false} />
+                      </>
+                    ) : <Bar yAxisId="right" dataKey="precip" name="Lluvia P (mm)" fill="#38bdf8" opacity={0.4} />}
                     <Line yAxisId="left" type="monotone" dataKey="streamflow" name="Caudal Q (m³/s)" stroke="#14b8a6" strokeWidth={2} dot={false} />
                     <ReferenceLine x={currentDay} stroke="#ef4444" strokeWidth={2} strokeDasharray="4 4" yAxisId="left" />
                   </ComposedChart>
@@ -317,10 +378,10 @@ export default function Twin3DPage() {
                 <span>¿Qué muestra este gráfico y cómo interpretarlo?</span>
               </div>
               <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                • <b className="text-zinc-800 dark:text-zinc-200">Caudal Q (línea verde-azul, m³/s):</b> Es la descarga calculada por el modelo hidrológico conceptual; no es una medición de estación.
+                • <b className="text-zinc-800 dark:text-zinc-200">Caudal Q (línea verde-azul, m³/s):</b> {selectedIsRealSwat ? "Salida diaria de SWAT+ en el outlet configurado; no equivale a una observación USGS." : "Es la descarga calculada por el modelo hidrológico conceptual; no es una medición de estación."}
               </p>
               <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                • <b className="text-zinc-800 dark:text-zinc-200">Precipitación (barras celestes, mm):</b> Forzamiento diario sintético de la corrida actual. Los artefactos CHIRPS o CMIP6 se identifican por separado en su manifiesto.
+                • <b className="text-zinc-800 dark:text-zinc-200">{selectedIsRealSwat ? "Runoff, ET y percolación:" : "Precipitación (barras celestes, mm):"}</b> {selectedIsRealSwat ? "Términos calculados por SWAT+ y recuperados desde sus archivos de salida nuevos." : "Forzamiento diario sintético de la corrida actual. Los artefactos CHIRPS o CMIP6 se identifican por separado en su manifiesto."}
               </p>
             </div>
           </div>
@@ -332,15 +393,27 @@ export default function Twin3DPage() {
                 <div className="flex items-center gap-2">
                   <Sprout className="w-4 h-4 text-emerald-500" />
                   <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                    Fisiología del Maíz (Transpiración vs Estrés CWSI)
+                    {selectedIsRealSwat ? "Estado FSPM que configuró plants.plt" : "Fisiología del Maíz (Transpiración vs Estrés CWSI)"}
                   </h3>
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                  Planta simplificada
+                  {selectedIsRealSwat ? "FSPM DERIVED" : "Planta simplificada"}
                 </span>
               </div>
 
-              <div className="h-64 w-full">
+              {selectedIsRealSwat ? (
+                <div className="grid grid-cols-2 gap-3 rounded-xl border border-emerald-300/50 bg-emerald-50/40 p-4 text-xs dark:border-emerald-900 dark:bg-emerald-950/20">
+                  {[
+                    ["LAI medio", fieldNumber("mean_LAI", fieldNumber("mean_lai")), "m² hoja/m² suelo"],
+                    ["Cobertura", fieldNumber("canopy_cover"), "fracción"],
+                    ["Altura", fieldNumber("plant_height_mean_m"), "m"],
+                    ["Raíz", fieldNumber("root_depth_mean_m", fieldNumber("mean_root_depth_cm") / 100), "m"],
+                    ["ET FSPM", fieldNumber("actual_ET_mm_day"), "mm/d"],
+                    ["Estrés", fspmStress, "0–1"],
+                  ].map(([label, value, unit]) => <div key={String(label)} className="rounded-lg bg-white/70 p-2 dark:bg-zinc-950/50"><div className="text-[10px] text-zinc-500">{label}</div><div className="font-mono font-bold text-emerald-800 dark:text-emerald-300">{Number(value).toFixed(3)} <span className="text-[10px] font-normal">{unit}</span></div></div>)}
+                  <p className="col-span-2 text-[10px] text-zinc-500">Es estado agregado/pico usado para modificar inputs SWAT+; transpiración, uptake y yield no se escribieron como outputs o inputs de SWAT+.</p>
+                </div>
+              ) : <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#27272a" opacity={0.5} />
@@ -357,7 +430,7 @@ export default function Twin3DPage() {
                     <ReferenceLine x={currentDay} stroke="#ef4444" strokeWidth={2} strokeDasharray="4 4" yAxisId="left" />
                   </LineChart>
                 </ResponsiveContainer>
-              </div>
+              </div>}
             </div>
 
             {/* Descripción Detallada del Gráfico */}
@@ -367,10 +440,10 @@ export default function Twin3DPage() {
                 <span>¿Qué muestra este gráfico y cómo interpretarlo?</span>
               </div>
               <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                • <b className="text-zinc-800 dark:text-zinc-200">Transpiración Tr (verde, mm/d) y Savia (azul, cm/h):</b> Son salidas/proxies del modelo de planta simplificado, no mediciones fisiológicas.
+                • <b className="text-zinc-800 dark:text-zinc-200">{selectedIsRealSwat ? "Estado FSPM:" : "Transpiración Tr (verde, mm/d) y Savia (azul, cm/h):"}</b> {selectedIsRealSwat ? "Se muestra la agregación determinista que alimentó el mapper; no se presenta como serie fisiológica diaria observada." : "Son salidas/proxies del modelo de planta simplificado, no mediciones fisiológicas."}
               </p>
               <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                • <b className="text-zinc-800 dark:text-zinc-200">Estrés CWSI (línea punteada ámbar):</b> Es un índice proxy de estrés. La respuesta visual de hojas es ilustrativa y no constituye un FSPM.
+                • <b className="text-zinc-800 dark:text-zinc-200">{selectedIsRealSwat ? "Acoplamiento:" : "Estrés CWSI (línea punteada ámbar):"}</b> {selectedIsRealSwat ? "Solo lai_pot, can_ht_max y rt_dp_max cambian en plants.plt; SWAT+ recalcula el balance." : "Es un índice proxy de estrés. La respuesta visual de hojas es ilustrativa y no constituye un FSPM."}
               </p>
             </div>
           </div>
@@ -403,13 +476,13 @@ export default function Twin3DPage() {
             </p>
             <ul className="space-y-2 text-[11px] text-zinc-700 dark:text-zinc-300">
               <li className="flex items-start gap-1.5">
-                <b className="text-teal-500 shrink-0">🏔️ Macro:</b> Cuenca procedural con HRU proxy y red fluvial ilustrativa; no representa geometría SWAT+ ni una estación real.
+                <b className="text-teal-500 shrink-0">🏔️ Macro:</b> Contexto de cuenca esquemático; los outputs reales se identifican como SWAT+ y no implica geometría GIS ni una estación observada.
               </li>
               <li className="flex items-start gap-1.5">
-                <b className="text-cyan-500 shrink-0">🌾 Meso:</b> Parcela agrícola con 1000 plantas, siembra directa (mulch) y torre micrometeorológica Eddy Covariance.
+                <b className="text-cyan-500 shrink-0">🌾 Meso:</b> Campo con el conteo persistido, una muestra FSPM y el agregado de campo; la parcela no es una reconstrucción espacial completa.
               </li>
               <li className="flex items-start gap-1.5">
-                <b className="text-emerald-500 shrink-0">🌱 Micro:</b> Planta individual de maíz y perfil de suelo procedurales que visualizan variables simplificadas.
+                <b className="text-emerald-500 shrink-0">🌱 Micro:</b> Planta de muestra con estado FSPM persistido; las hojas y el perfil de suelo siguen siendo una representación visual.
               </li>
             </ul>
           </div>
@@ -430,7 +503,7 @@ export default function Twin3DPage() {
               </li>
               <li className="flex items-start gap-1.5">
                 <span className="p-1 rounded bg-amber-500/10 text-amber-400"><Layers className="w-3 h-3" /></span>
-                <span><b className="text-zinc-900 dark:text-zinc-100">Suelo / HRU proxy:</b> Alterna horizontes y bordes procedurales; no son capas SoilGrids ni polígonos GIS.</span>
+                <span><b className="text-zinc-900 dark:text-zinc-100">Suelo / HRU:</b> Alterna perfiles y bordes esquemáticos; no son capas SoilGrids ni polígonos GIS.</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <span className="p-1 rounded bg-emerald-500/10 text-emerald-400"><Radio className="w-3 h-3" /></span>

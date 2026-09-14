@@ -1,4 +1,5 @@
 import hashlib
+import os
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -129,3 +130,35 @@ async def test_usgs_ingest_api_uses_observed_registry_without_network(tmp_path: 
         listed = await client.get("/api/v1/datasets/streamflow/observations?station_id=05451210", headers=headers)
         assert listed.status_code == 200
         assert len(listed.json()) >= 3
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_real_usgs_api_ingestion_when_explicitly_enabled():
+    """Exercise the actual USGS API -> raw artifact -> registry -> API path.
+
+    Network access is intentionally opt-in: ordinary CI must remain hermetic,
+    while a scientific integration run can verify the public provider rather
+    than a mocked JSON response.
+    """
+    if os.getenv("RUN_REAL_USGS_INTEGRATION") != "1":
+        pytest.skip("set RUN_REAL_USGS_INTEGRATION=1 to call the public USGS API")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        login = await client.post("/api/v1/auth/login", json={
+            "email": "investigador@digitaltwin.org", "password": "Investiga123!",
+        })
+        assert login.status_code == 200
+        headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+        ingested = await client.post("/api/v1/datasets/usgs/ingest", headers=headers, json={
+            "station_id": "05481000", "start_date": "2007-01-01", "end_date": "2019-12-31",
+        })
+        assert ingested.status_code == 201, ingested.text
+        body = ingested.json()
+        assert body["evidence_type"] == "OBSERVED"
+        observations = await client.get(
+            "/api/v1/datasets/streamflow/observations?station_id=05481000"
+            "&start_date=2007-01-01&end_date=2019-12-31",
+            headers=headers,
+        )
+        assert observations.status_code == 200
+        assert len(observations.json()) == 4748

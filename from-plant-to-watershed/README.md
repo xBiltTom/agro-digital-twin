@@ -5,7 +5,47 @@ Base de software científico reproducible para el proyecto de investigación
 Individual Plant Models with SWAT Hydrology and Downscaled Climate
 Projections”**.
 
-## Estado actual: demostración reproducible
+## Estado final: piloto científico South Fork
+
+La validación congelada corresponde exclusivamente a **South Fork Iowa River**
+(`USGS 05451210`, `HUC8 07080207`). **Multi-watershed validation remains
+future work; this implementation performs a reproducible pilot validation on
+one real agricultural watershed.**
+
+El experimento final ejecutado usa 2015--2020, con warm-up 2015--2017 y
+evaluación USGS 2018--2020. `SWAT_STANDARD_BASELINE` y
+`SWAT_MULTISCALE_COUPLED` comparten clima, HRUs, CDL, suelos, manejo general,
+periodo y outlet; el acoplado cambia únicamente `corn.lai_pot`,
+`corn.can_ht_max` y `corn.rt_dp_max` desde la agregación FSPM de 1,000 plantas.
+
+- Resultado primario: `H1_NOT_SUPPORTED`; RMSE mensual = 9.4471 m3/s para
+  ambos casos, mejora = 0.0%.
+- `COUPLING_EFFECT = ZERO_WITH_CURRENT_PARAMETERIZATION`: la cadena CDL ->
+  HRU -> comunidad -> manejo -> planta fue verificada y los inputs de
+  `plants.plt` cambiaron, pero los outputs SWAT+ permanecieron idénticos.
+- Artefactos reproducibles: `research_domain/final_report.json`,
+  `data/final/experiment_dataset.parquet` y su schema/unidades.
+- Escenarios SWAT+ ejecutados: `+2C`, `-15% precipitation`, `no-till` con
+  operación `zerotill`, y `maize -> grain sorghum` (`grsg`).
+- CMIP6/NASS: `NOT_AVAILABLE`/`LIMITED`; no se usó ningún sustituto sintético.
+
+## Qué es REAL
+
+- South Fork, USGS diario, CDL Iowa 2019 estático, suelos y clima GridMET del
+  proyecto SWAT+, SWAT+ 61.0.2.61, población FSPM simplificada, baseline,
+  coupled y los cuatro escenarios finalizados.
+
+## Qué es aproximación o proxy
+
+- FSPM simplificado y resumen de forcing por media de estaciones; estados FSPM
+  son derivados, no observados. ET, uptake y yield FSPM son `NOT_COUPLED`.
+- CDL es un snapshot 2019, no una rotación histórica. La calibración es
+  `LIMITED_CALIBRATION`; NASS county/yield no tiene crosswalk a cuenca/HRU.
+- No hay artefactos NASA NEX-GDDP-CMIP6 normalizados disponibles en esta
+  ejecución. Sobol no se ejecutó completamente; bootstrap SSP5-8.5 no tiene
+  serie de yield válida.
+
+## Estado legacy: demostración reproducible
 
 La implementación actual ejecuta un pipeline diario persistente compuesto por:
 

@@ -86,6 +86,101 @@ export interface SimulationResult {
   water_balance_residual_mm: number;
 }
 
+export type SwatRunType = "SWAT_STANDARD_BASELINE" | "SWAT_MULTISCALE_COUPLED";
+export type SwatEvidenceType = "REAL_SWAT_PLUS" | "REAL_SWAT_PLUS_COUPLED";
+
+export interface SwatPlusConfiguration {
+  project_path?: string;
+  executable_path?: string;
+  working_directory?: string;
+  warmup_period?: number;
+  output_frequency?: "DAILY" | "MONTHLY" | "ANNUAL";
+  outlet_unit?: string;
+  timeout_seconds?: number;
+  run_type: SwatRunType;
+  target_plant_name?: string;
+}
+
+export interface SwatRecord {
+  period: string;
+  runoff_mm?: number | null;
+  evapotranspiration_mm?: number | null;
+  percolation_mm?: number | null;
+  soil_water_mm?: number | null;
+  streamflow_m3s?: number | null;
+}
+
+export interface SwatParameterUpdate {
+  hru_id: string[];
+  source_variable: string;
+  swat_parameter: "lai_pot" | "can_ht_max" | "rt_dp_max";
+  input_file: string;
+  original_value: number;
+  coupled_value: number;
+  unit: string;
+  transformation: string;
+  justification: string;
+}
+
+export interface PairedMetric {
+  baseline: number | null;
+  coupled: number | null;
+  delta_absolute: number | null;
+  delta_percentage: number | null;
+}
+
+export interface PairedComparison {
+  experiment_id: string;
+  baseline_run_id: string;
+  coupled_run_id: string;
+  runoff_mm: PairedMetric;
+  evapotranspiration_mm: PairedMetric;
+  streamflow_m3s: PairedMetric;
+}
+
+export interface SwatRunProvenance {
+  evidence_type: SwatEvidenceType;
+  engine?: string;
+  executable_version?: string;
+  executable_sha256?: string;
+  exit_code?: number;
+  output_files?: string[];
+  output_checksums?: Record<string, string>;
+  output_generation?: Record<string, { sha256: string; mtime_ns: number; generated_after_start: boolean }>;
+  configured_control_files?: Record<string, unknown>;
+  workspace_modifications?: {
+    workspace_input_files_modified?: string[];
+    input_checksums?: Record<string, { before_sha256: string; after_sha256: string }>;
+    parameter_updates?: SwatParameterUpdate[];
+    not_coupled?: Array<{ variable: string; reason: string }>;
+  };
+  parameter_updates?: SwatParameterUpdate[];
+  date_of_peak_LAI?: string;
+  date_of_peak_height?: string;
+  date_of_peak_root_depth?: string;
+  experiment?: PairedComparison;
+  [key: string]: unknown;
+}
+
+export interface SwatResultsResponse {
+  status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+  run_id: string;
+  records: SwatRecord[];
+  hru_results: Array<Record<string, unknown>>;
+  water_balance: {
+    status?: string;
+    totals_mm?: {
+      runoff_mm?: number;
+      evapotranspiration_mm?: number;
+      percolation_mm?: number;
+    };
+    mean_streamflow_m3s?: number | null;
+    variable_availability?: Record<string, string>;
+    warnings?: Array<{ code: string; message: string }>;
+  } | null;
+  provenance: SwatRunProvenance;
+}
+
 export interface SimulationRun {
   id: string;
   user_id: string;
@@ -98,20 +193,28 @@ export interface SimulationRun {
   seed: number;
   requested_config?: Record<string, unknown>;
   effective_config?: Record<string, unknown>;
-  provenance?: Record<string, unknown>;
+  provenance?: Record<string, unknown> | SwatRunProvenance;
   error?: { type: string; message: string } | null;
   scenario?: ClimateScenario;
   summary_metrics?: {
-    total_precip_mm: number;
-    total_surface_runoff_mm: number;
-    total_actual_et_mm: number;
-    total_discharge_hm3: number;
-    peak_streamflow_m3s: number;
-    mean_cwsi: number;
-    cumulative_water_balance_residual_mm: number;
-    interpretation_status: string;
+    total_precip_mm?: number;
+    total_surface_runoff_mm?: number;
+    total_actual_et_mm?: number;
+    total_discharge_hm3?: number;
+    peak_streamflow_m3s?: number;
+    mean_cwsi?: number;
+    cumulative_water_balance_residual_mm?: number;
+    interpretation_status?: string;
     seasonal_crop_yield_proxy_t_ha?: number;
     yield_proxy_evidence_type?: "DERIVED";
+    evidence_type?: SwatEvidenceType;
+    period_count?: number;
+    total_runoff_mm?: number;
+    total_evapotranspiration_mm?: number;
+    total_percolation_mm?: number;
+    water_balance?: SwatResultsResponse["water_balance"];
+    paired_comparison?: PairedComparison;
+    [key: string]: unknown;
   };
   created_at: string;
   mode: "RESEARCH_MULTISCALE" | "DEVELOPMENT_LEGACY_DEMO" | "DEMO_MULTISCALE" | "REAL_OBSERVATION" | "ML_ASSISTED" | "SWAT_PLUS";
@@ -134,12 +237,24 @@ export interface SimulationRun {
 }
 
 export interface PlantSample {
-  plant_id: number;
+  plant_id: number | string;
   x_m: number;
   y_m: number;
   lai: number;
   stress: number;
   root_depth_cm?: number;
+  phenological_stage?: string;
+  growing_degree_days_c_day?: number;
+  plant_height_m?: number;
+  leaf_count?: number;
+  leaf_area_m2?: number;
+  canopy_cover_fraction?: number;
+  root_depth_m?: number;
+  biomass_g_plant?: number;
+  potential_transpiration_mm_day?: number;
+  actual_transpiration_mm_day?: number;
+  soil_water_uptake_mm_day?: number;
+  estimated_yield_g_plant?: number;
 }
 
 export interface ExternalModelInfo {

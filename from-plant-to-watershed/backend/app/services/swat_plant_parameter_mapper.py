@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+import hashlib
 from pathlib import Path
 from statistics import fmean
 from typing import Any
@@ -19,7 +20,7 @@ class SwatPlantMappingError(ValueError):
 
 @dataclass(frozen=True)
 class SwatClimateForcingReader:
-    """Read direct SWAT+ precipitation/temperature weather files for the FSPM.
+    """Read the distributed SWAT+ weather forcing used by the FSPM.
 
     SWAT+ ``weather-sta.cli`` points to station files.  The documented daily
     records used by the official reference projects are ``year day value`` for
@@ -27,20 +28,25 @@ class SwatClimateForcingReader:
     """
     project: Path
 
-    def _station_files(self) -> tuple[Path, Path]:
+    def _station_files(self) -> list[dict[str, Path]]:
         station = self.project / "weather-sta.cli"
         if not station.is_file():
             raise SwatPlantMappingError("weather-sta.cli is required to derive FSPM forcing from the SWAT+ project")
         rows = [line.split() for line in station.read_text(encoding="utf-8", errors="strict").splitlines()[2:] if line.split()]
-        if not rows or len(rows[0]) < 4:
+        if not rows or any(len(row) < 6 for row in rows):
             raise SwatPlantMappingError("weather-sta.cli does not contain a usable weather station")
-        pcp, tmp = self.project / rows[0][2], self.project / rows[0][3]
-        # Existing SWAT+ examples sometimes declare *.tem while retaining *.tmp.
-        if not tmp.is_file() and tmp.suffix == ".tem" and tmp.with_suffix(".tmp").is_file():
-            tmp = tmp.with_suffix(".tmp")
-        if not pcp.is_file() or not tmp.is_file():
-            raise SwatPlantMappingError("the SWAT+ station precipitation/temperature input files are missing")
-        return pcp, tmp
+        stations: list[dict[str, Path]] = []
+        for row in rows:
+            files = {"name": Path(row[0]), "pcp": self.project / row[2], "tmp": self.project / row[3],
+                     "slr": self.project / row[4], "hmd": self.project / row[5]}
+            # Existing SWAT+ examples sometimes declare *.tem while retaining *.tmp.
+            if not files["tmp"].is_file() and files["tmp"].suffix == ".tem" and files["tmp"].with_suffix(".tmp").is_file():
+                files["tmp"] = files["tmp"].with_suffix(".tmp")
+            missing = [kind for kind, path in files.items() if kind != "name" and not path.is_file()]
+            if missing:
+                raise SwatPlantMappingError(f"SWAT+ station {row[0]!r} is missing direct weather files: {', '.join(missing)}")
+            stations.append(files)
+        return stations
 
     @staticmethod
     def _numeric_rows(path: Path, minimum: int) -> dict[tuple[int, int], list[float]]:
@@ -58,21 +64,44 @@ class SwatClimateForcingReader:
         return output
 
     def for_period(self, start: date, end: date) -> tuple[list[dict[str, float]], dict[str, Any]]:
-        pcp_path, tmp_path = self._station_files()
-        pcp, tmp = self._numeric_rows(pcp_path, 3), self._numeric_rows(tmp_path, 4)
+        stations = self._station_files()
+        station_data = [
+            {
+                "name": files["name"].name,
+                "pcp": self._numeric_rows(files["pcp"], 3),
+                "tmp": self._numeric_rows(files["tmp"], 4),
+                "slr": self._numeric_rows(files["slr"], 3),
+                "hmd": self._numeric_rows(files["hmd"], 3),
+            }
+            for files in stations
+        ]
         daily: list[dict[str, float]] = []
         cursor = start
         from datetime import timedelta
         while cursor <= end:
             key = (cursor.year, cursor.timetuple().tm_yday)
-            if key in tmp and tmp[key][0] > -90 and tmp[key][1] > -90:
-                tmax, tmin = tmp[key]
-                rainfall = pcp.get(key, [0.0])[0]
-                daily.append({"temp_c": (tmax + tmin) / 2.0, "precip_mm": max(0.0, rainfall), "solar_rad_mj": 15.0, "rh_percent": 65.0, "co2_ppm": 400.0})
+            available = [row for row in station_data if key in row["tmp"] and row["tmp"][key][0] > -90 and row["tmp"][key][1] > -90]
+            if available:
+                # The source project does not expose an HRU-to-station weight.
+                # An equal-station mean is therefore a documented basin forcing
+                # summary, rather than silently selecting the first grid cell.
+                daily.append({
+                    "temp_c": fmean((row["tmp"][key][0] + row["tmp"][key][1]) / 2.0 for row in available),
+                    "precip_mm": fmean(max(0.0, row["pcp"].get(key, [0.0])[0]) for row in available),
+                    "solar_rad_mj": fmean(max(0.0, row["slr"].get(key, [0.0])[0]) for row in available),
+                    "rh_percent": fmean(max(0.0, row["hmd"].get(key, [0.0])[0]) * 100.0 for row in available),
+                    "co2_ppm": 400.0,
+                })
             cursor += timedelta(days=1)
         if not daily:
             raise SwatPlantMappingError("SWAT+ weather inputs contain no usable temperature records in the requested period")
-        return daily, {"source": "SWAT+ weather-sta.cli", "precipitation_file": pcp_path.name, "temperature_file": tmp_path.name, "days": len(daily), "limitations": "solar radiation and humidity are generated by SWAT+ WGN in this reference project; FSPM uses fixed documented-assumption placeholders only for its ET diagnostic"}
+        return daily, {
+            "source": "SWAT+ weather-sta.cli direct station files",
+            "station_count": len(station_data),
+            "station_aggregation": "equal_station_mean; HRU-to-station weights are not available in this TxtInOut",
+            "variables": ["pcp", "tmp", "slr", "hmd"], "days": len(daily),
+            "limitations": "The FSPM receives a basin forcing summary rather than an HRU-specific plant forcing.",
+        }
 
 
 class SwatPlantParameterMapper:
@@ -87,12 +116,35 @@ class SwatPlantParameterMapper:
         self.target_plant_name = target_plant_name
 
     @staticmethod
+    def _sha256(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    @staticmethod
     def _active_hrus(workspace: Path, target: str) -> list[str]:
         hru_file, landuse, management = workspace / "hru-data.hru", workspace / "landuse.lum", workspace / "management.sch"
         if not all(path.is_file() for path in (hru_file, landuse, management)):
             raise SwatPlantMappingError("hru-data.hru, landuse.lum and management.sch are required for a traceable plant mapping")
         management_text = management.read_text(encoding="utf-8", errors="strict")
-        if target not in {tokens[4] for tokens in (line.split() for line in management_text.splitlines()) if len(tokens) >= 5}:
+        # SWAT+ editor revisions differ in how much whitespace they retain on
+        # the operation row.  In compact tables (including the South Fork
+        # project) the planted crop is the final token; in expanded tables it
+        # is column five.  Accept both representations, but only from rows
+        # that actually carry an operation payload.
+        management_rows = [line.split() for line in management_text.splitlines() if line.split()]
+        planted_crops = {
+            tokens[4] if len(tokens) >= 5 else tokens[-1]
+            for tokens in management_rows
+            if len(tokens) >= 2 and (
+                tokens[0].startswith("pl_")
+                or tokens[0].startswith("auto_")
+                or tokens[0] in {"plnt", "plant"}
+            )
+        }
+        if target not in planted_crops:
             raise SwatPlantMappingError(f"management.sch does not plant target crop '{target}'")
         # A plant community is the documented land-use bridge from an HRU to a
         # crop. This intentionally does not claim every rotation HRU is corn.
@@ -144,6 +196,7 @@ class SwatPlantParameterMapper:
         plants = workspace / "plants.plt"
         if not plants.is_file():
             raise SwatPlantMappingError("plants.plt is required for real FSPM coupling")
+        source_sha256 = self._sha256(plants)
         target_hrus = self._active_hrus(workspace, self.target_plant_name)
         lines, header, values, index = self._header_and_record(plants, self.target_plant_name)
         aliases = {"lai_pot": "lai_pot", "can_ht_max": "can_ht_max", "rt_dp_max": "rt_dp_max"}
@@ -172,4 +225,5 @@ class SwatPlantParameterMapper:
             updates.append({"hru_id": target_hrus, "source_variable": source_variable, "swat_parameter": column, "input_file": "plants.plt", "original_value": old, "coupled_value": new, "unit": unit, "transformation": transformation, "justification": justification})
         lines[index] = "  ".join(values)
         plants.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        return {"status": "APPLIED", "target_plant_name": self.target_plant_name, "target_hrus": target_hrus, "parameter_updates": updates, "not_coupled": [{"variable": "actual_ET_mm_day", "reason": "SWAT+ recomputes transpiration internally; no output or ET input is edited"}, {"variable": "soil_water_uptake_mm_day", "reason": "SWAT+ recomputes uptake internally from soil/plant state"}, {"variable": "estimated_yield_g_plant", "reason": "yield remains a diagnostic; no harvest/output adjustment is applied"}], "workspace_input_files_modified": ["plants.plt"]}
+        coupled_sha256 = self._sha256(plants)
+        return {"status": "APPLIED", "target_plant_name": self.target_plant_name, "target_hrus": target_hrus, "parameter_updates": updates, "not_coupled": [{"variable": "actual_ET_mm_day", "reason": "SWAT+ recomputes transpiration internally; no output or ET input is edited"}, {"variable": "soil_water_uptake_mm_day", "reason": "SWAT+ recomputes uptake internally from soil/plant state"}, {"variable": "estimated_yield_g_plant", "reason": "yield remains a diagnostic; no harvest/output adjustment is applied"}], "workspace_input_files_modified": ["plants.plt"], "input_checksums": {"plants.plt": {"before_sha256": source_sha256, "after_sha256": coupled_sha256}}, "source_sha256": source_sha256, "coupled_sha256": coupled_sha256}

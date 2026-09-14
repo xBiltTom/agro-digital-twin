@@ -87,7 +87,8 @@ export default function ReportsPage() {
             </h1>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-            Exportación de resultados DEMO con clima sintético y modelos simplificados; sin validación observacional.
+            Los reportes de corridas legacy conservan su provenance. La evidencia científica South Fork real se congela en
+            `research_domain/final_report.json`; no etiquetar una corrida DEMO como validación USGS/SWAT+.
           </p>
         </div>
 

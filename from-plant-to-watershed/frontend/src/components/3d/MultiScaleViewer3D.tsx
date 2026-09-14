@@ -27,7 +27,10 @@ interface MultiScaleViewer3DProps {
   plantSample?: PlantSample3D[];
   plantCount?: number;
   fieldAggregates?: Record<string, unknown>;
-  hruAggregates?: { hrus?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }> };
+  hruAggregates?: { hrus?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }>; results?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }> };
+  watershedName?: string;
+  stationId?: string | null;
+  evidenceType?: string;
   showHydrologyFlow?: boolean;
   showSoilHorizons?: boolean;
   showSensors?: boolean;
@@ -120,6 +123,9 @@ export default function MultiScaleViewer3D({
   plantCount = 1000,
   fieldAggregates,
   hruAggregates,
+  watershedName,
+  stationId,
+  evidenceType,
   showHydrologyFlow = true,
   showSoilHorizons = true,
   showSensors = true,
@@ -246,6 +252,9 @@ export default function MultiScaleViewer3D({
             precipMm={precipMm}
             soilMoistureVol={soilMoistureVol}
             hruAggregates={hruAggregates}
+            watershedName={watershedName}
+            stationId={stationId}
+            evidenceType={evidenceType}
             onSelectSubbasin={() => onChangeScale("MESO")}
             showHruBorders={showSoilHorizons}
             showHydrologyFlow={showHydrologyFlow}
@@ -253,13 +262,14 @@ export default function MultiScaleViewer3D({
           />
         )}
 
-        {/* Escala MESO: Campo de Maíz n=1000 con Variabilidad Espacial BARC */}
+        {/* Escala MESO: campo FSPM agregado y muestra de planta persistida */}
         {scaleMode === "MESO" && (
           <FieldPlotMesh3D
             soilMoistureVol={soilMoistureVol}
             cwsiStress={cwsiStress}
             plantSample={plantSample}
             plantCount={plantCount}
+            fieldAggregate={fieldAggregates}
             onSelectPlant={() => onChangeScale("MICRO")}
             showSensors={showSensors}
             showScientificLabels={showScientificLabels}
@@ -273,8 +283,13 @@ export default function MultiScaleViewer3D({
             cwsiStress={cwsiStress}
             sapFlowVelocityCmh={sapFlowVelocityCmh}
             soilMoistureVol={soilMoistureVol}
-            lai={Number(fieldAggregates?.mean_lai) || undefined}
+            lai={Number(fieldAggregates?.mean_LAI ?? fieldAggregates?.mean_lai) || undefined}
             rootDepthCm={plantSample[0]?.root_depth_cm}
+            plantHeightM={plantSample[0]?.plant_height_m ?? (Number(fieldAggregates?.plant_height_mean_m) || undefined)}
+            leafCount={plantSample[0]?.leaf_count}
+            leafAreaM2={plantSample[0]?.leaf_area_m2}
+            phenologicalStage={plantSample[0]?.phenological_stage}
+            stateLabel={plantSample.length > 0 ? "Muestra FSPM persistida" : "Agregado de campo FSPM"}
             showHydrologyFlow={showHydrologyFlow}
             showSoilHorizons={showSoilHorizons}
             showScientificLabels={showScientificLabels}

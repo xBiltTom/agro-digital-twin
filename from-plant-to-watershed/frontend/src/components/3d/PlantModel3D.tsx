@@ -5,6 +5,11 @@ import { useFrame } from "@react-three/fiber";
 import { Html, Line } from "@react-three/drei";
 import * as THREE from "three";
 
+const deterministicUnit = (index: number, salt = 0) => {
+  const value = Math.sin((index + 1) * 12.9898 + (salt + 1) * 78.233) * 43758.5453;
+  return value - Math.floor(value);
+};
+
 export interface PlantModel3DProps {
   transpirationMm: number;
   cwsiStress: number;
@@ -12,6 +17,11 @@ export interface PlantModel3DProps {
   soilMoistureVol: number;
   lai?: number;
   rootDepthCm?: number;
+  plantHeightM?: number;
+  leafCount?: number;
+  leafAreaM2?: number;
+  phenologicalStage?: string;
+  stateLabel?: string;
   showHydrologyFlow?: boolean;
   showSoilHorizons?: boolean;
   showScientificLabels?: boolean;
@@ -331,7 +341,7 @@ function RealisticBraceRoots() {
 }
 
 /**
- * Corte Pedológico SoilGrids 2.0:
+ * Corte de suelo esquemático para dar contexto visual al sistema radicular.
  * Horizontes Ap (0-30cm), Bt (30-65cm) y C (>65cm) con marcadores de profundidad nítidos.
  */
 function SoilGridsStratigraphyCutout({
@@ -341,7 +351,7 @@ function SoilGridsStratigraphyCutout({
   soilMoistureVol: number;
   rootDepthCm: number;
 }) {
-  const depthM = Math.min(2.0, Math.max(1.0, rootDepthCm / 100));
+  const depthM = Math.min(2.0, Math.max(0.05, rootDepthCm / 100));
   const moistureFactor = Math.min(1, Math.max(0, soilMoistureVol / 40));
 
   const apColor = moistureFactor > 0.5 ? "#281a10" : "#3b2618";
@@ -434,9 +444,9 @@ function PhysiologicalFlowDynamics({
     const pos = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
       const angle = (i * 1.37) % (Math.PI * 2);
-      const r = Math.random() * 0.038;
+      const r = deterministicUnit(i, 1) * 0.038;
       pos[i * 3] = Math.cos(angle) * r;
-      pos[i * 3 + 1] = -0.5 + Math.random() * (stemHeight + 0.5);
+      pos[i * 3 + 1] = -0.5 + deterministicUnit(i, 2) * (stemHeight + 0.5);
       pos[i * 3 + 2] = Math.sin(angle) * r;
     }
     return pos;
@@ -447,9 +457,9 @@ function PhysiologicalFlowDynamics({
     const pos = new Float32Array(vaporCount * 3);
     for (let i = 0; i < vaporCount; i++) {
       const angle = (i * 2.1) % (Math.PI * 2);
-      const r = 0.18 + Math.random() * 0.75;
+      const r = 0.18 + deterministicUnit(i, 3) * 0.75;
       pos[i * 3] = Math.cos(angle) * r;
-      pos[i * 3 + 1] = 0.8 + Math.random() * (stemHeight * 0.8);
+      pos[i * 3 + 1] = 0.8 + deterministicUnit(i, 4) * (stemHeight * 0.8);
       pos[i * 3 + 2] = Math.sin(angle) * r;
     }
     return pos;
@@ -476,7 +486,7 @@ function PhysiologicalFlowDynamics({
         const yIndex = j * 3 + 1;
         vPos[yIndex] += vSpeed * delta;
         if (vPos[yIndex] > stemHeight + 1.2) {
-          vPos[yIndex] = 0.7 + Math.random() * 0.4;
+          vPos[yIndex] = 0.7 + deterministicUnit(j, 5) * 0.4;
         }
       }
       vaporRef.current.geometry.attributes.position.needsUpdate = true;
@@ -525,13 +535,18 @@ export default function PlantModel3D({
   soilMoistureVol,
   lai = 3.8,
   rootDepthCm = 115,
+  plantHeightM,
+  leafCount,
+  leafAreaM2,
+  phenologicalStage,
+  stateLabel = "Estado FSPM persistido",
   showHydrologyFlow = true,
   showSoilHorizons = true,
   showScientificLabels = true,
 }: PlantModel3DProps) {
   const stress = Math.min(1, Math.max(0, cwsiStress));
-  const stemHeight = 2.5 + Math.min(0.9, (lai - 2.0) * 0.25);
-  const totalNodes = 14;
+  const stemHeight = Math.max(0.15, plantHeightM ?? (2.5 + Math.min(0.9, (lai - 2.0) * 0.25)));
+  const totalNodes = Math.max(1, Math.min(22, Math.round(leafCount ?? 14)));
 
   const [expandedCard, setExpandedCard] = useState<"canopy" | "soil" | null>("canopy");
 
@@ -565,7 +580,7 @@ export default function PlantModel3D({
 
   return (
     <group position={[0, -0.18, 0]}>
-      {/* 1. Suelo SoilGrids 2.0 */}
+      {/* 1. Perfil de suelo esquemático; no representa SoilGrids */}
       {showSoilHorizons && (
         <SoilGridsStratigraphyCutout
           soilMoistureVol={soilMoistureVol}
@@ -669,11 +684,20 @@ export default function PlantModel3D({
                   <span className="text-zinc-400">Savia Xilema:</span>
                   <div className="font-bold text-sky-300 text-xs">{sapFlowVelocityCmh.toFixed(1)} cm/h</div>
                 </div>
+                <div>
+                  <span className="text-zinc-400">Altura:</span>
+                  <div className="font-bold text-emerald-300 text-xs">{stemHeight.toFixed(2)} m</div>
+                </div>
+                <div>
+                  <span className="text-zinc-400">Hojas / área:</span>
+                  <div className="font-bold text-emerald-300 text-xs">{totalNodes}{leafAreaM2 === undefined ? "" : ` / ${leafAreaM2.toFixed(3)} m²`}</div>
+                </div>
               </div>
+              <div className="mt-2 text-[10px] text-zinc-400">{stateLabel}{phenologicalStage ? ` · ${phenologicalStage}` : ""}</div>
             </div>
           </Html>
 
-          {/* Tarjeta del Perfil Edafológico SoilGrids */}
+          {/* Tarjeta del perfil edafológico esquemático */}
           <Html position={[1.85, -0.45, 0]} center distanceFactor={7.5}>
             <div
               onClick={() => setExpandedCard(expandedCard === "soil" ? null : "soil")}
@@ -681,7 +705,7 @@ export default function PlantModel3D({
               style={{ minWidth: "200px" }}
             >
               <div className="font-bold text-amber-300 flex items-center justify-between border-b border-amber-500/30 pb-1">
-                <span>SoilGrids 2.0 · Perfil Edafológico</span>
+                <span>Perfil edafológico esquemático</span>
                 <span className="text-[10px] font-mono text-amber-400">0-140cm</span>
               </div>
               <div className="mt-1.5 space-y-0.5 text-[11px] font-mono text-zinc-300">

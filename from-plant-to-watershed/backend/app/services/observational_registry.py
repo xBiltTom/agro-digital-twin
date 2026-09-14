@@ -41,4 +41,8 @@ async def register_usgs_streamflow(
         ) for row in records
     ])
     await db.commit()
+    # ``DatasetResponse.normalized_artifact_count`` is derived from this
+    # relationship.  Load it while the async session is active so FastAPI never
+    # tries a lazy database query during synchronous response serialization.
+    await db.refresh(dataset, attribute_names=["artifacts"])
     return dataset

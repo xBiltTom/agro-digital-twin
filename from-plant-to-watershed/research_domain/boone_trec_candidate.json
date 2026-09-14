@@ -1,0 +1,48 @@
+{
+  "schema_version": "research-domain-candidate-v1",
+  "watershed_id": "TREC-BOONE-CDL-20250629",
+  "selection_status": "BLOCKED",
+  "selection_status_reason": "The public SWAT+ project references 17 required local temperature files that are absent from the published archive; an execution would not be reproducible.",
+  "project": {
+    "provider": "Iowa State University DataShare / Figshare",
+    "dataset": "Tile Drainage and Rotation-Enhanced Cropland Data Layer",
+    "doi": "10.25380/iastate.29869676.v1",
+    "source_archive_url": "https://ndownloader.figshare.com/files/57107195",
+    "archive_md5_published": "8dbd707aaaa8bdbad8b3aa2e039e723d",
+    "selected_member_prefix": "SWAT+ Model Files/Boone Watershed/Boone_CDL_20250629/Scenarios/Default/TxtInOut/",
+    "local_input_manifest": "data/raw/swat_plus/boone_cdl_txtinout/SOURCE_MANIFEST.json",
+    "swat_editor_revision_declared": "61.0.1",
+    "validated_against_local_swat": "62.0.0",
+    "declared_missing_weather_files": [
+      "Basin11_TMP.tmp", "Basin13_TMP.tmp", "Basin18_TMP.tmp", "Basin19_TMP.tmp", "Basin1_TMP.tmp", "Basin20_TMP.tmp", "Basin21_TMP.tmp", "Basin22_TMP.tmp", "Basin23_TMP.tmp", "Basin2_TMP.tmp", "Basin3_TMP.tmp", "Basin4_TMP.tmp", "Basin5_TMP.tmp", "Basin6_TMP.tmp", "Basin7_TMP.tmp", "Basin8_TMP.tmp", "Basin9_TMP.tmp"
+    ]
+  },
+  "independent_observation": {
+    "provider": "USGS",
+    "station_id": "05481000",
+    "variable": "daily mean discharge",
+    "unit": "m3/s (normalized from ft3/s)",
+    "role": ["OBSERVATION", "VALIDATION"],
+    "source_url": "https://waterservices.usgs.gov/nwis/dv/?format=json&sites=05481000&parameterCd=00060&statCd=00003&startDT=2007-01-01&endDT=2019-12-31&siteStatus=all",
+    "raw_artifact": "data/raw/usgs/05481000_2007-01-01_2019-12-31.json",
+    "raw_sha256": "3d7b3a25ae442ce0a869e2a49bc1f889a9a05a37e13651e74a3c45ba0dfc9061",
+    "temporal_extent": ["2007-01-01", "2019-12-31"],
+    "quality_control": {
+      "n_observations": 4748,
+      "missing_count": 0,
+      "duplicate_count": 0,
+      "gap_count": 0,
+      "coverage_fraction": 1.0,
+      "effective_years": 12.999582469181433
+    }
+  },
+  "unverified_selection_fields": {
+    "HUC12": null,
+    "area": null,
+    "agricultural_fraction": null,
+    "gauge_watershed_geometry": null,
+    "dam_screening": null,
+    "land_cover_source": "The project name indicates a Cropland Data Layer variant, but no independently verified area fraction is recorded here."
+  },
+  "assessment_date": "2026-09-12"
+}

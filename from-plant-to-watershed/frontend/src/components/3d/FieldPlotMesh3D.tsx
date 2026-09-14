@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html, Line } from "@react-three/drei";
 import * as THREE from "three";
@@ -12,6 +12,10 @@ export interface PlantSample3D {
   lai: number;
   stress: number;
   root_depth_cm?: number;
+  plant_height_m?: number;
+  leaf_count?: number;
+  leaf_area_m2?: number;
+  phenological_stage?: string;
 }
 
 interface FieldPlotMesh3DProps {
@@ -19,6 +23,7 @@ interface FieldPlotMesh3DProps {
   cwsiStress: number;
   plantSample: PlantSample3D[];
   plantCount?: number;
+  fieldAggregate?: Record<string, unknown>;
   onSelectPlant: () => void;
   showSensors?: boolean;
   showScientificLabels?: boolean;
@@ -36,7 +41,7 @@ interface SimulatedPlant {
 }
 
 /**
- * Torre Micrometeorológica Eddy Covariance (USDA BARC):
+ * Torre micrometeorológica esquemática.
  * Mástil reticulado con anemómetro sónico 3D, radiómetro neto, panel solar y datalogger.
  */
 function EddyCovarianceTower({ position }: { position: [number, number, number] }) {
@@ -87,7 +92,7 @@ function EddyCovarianceTower({ position }: { position: [number, number, number] 
 }
 
 /**
- * Estación de Sondas TDR/FDR de Suelo (SoilGrids Telemetry)
+ * Marcador de sonda de suelo esquemático.
  */
 function SoilMoistureProbeStation({
   position,
@@ -126,6 +131,7 @@ export default function FieldPlotMesh3D({
   cwsiStress,
   plantSample,
   plantCount = 1000,
+  fieldAggregate,
   onSelectPlant,
   showSensors = true,
   showScientificLabels = true,
@@ -136,12 +142,14 @@ export default function FieldPlotMesh3D({
   const leavesCRef = useRef<THREE.InstancedMesh>(null);
   const tasselsRef = useRef<THREE.InstancedMesh>(null);
 
-  // Parcela agronómica: 28 surcos espaciados a 0.76 m (30"), 36 plantas por surco = 1008 plantas
-  const totalPlants = 1008;
-  const numRows = 28;
-  const plantsPerRow = 36;
+  // The mesh count deliberately matches the persisted population count.  Exact
+  // states are available for the stored sample; the remaining instances use the
+  // persisted field aggregate rather than invented spatial variability.
+  const totalPlants = Math.max(1, plantCount);
+  const numRows = Math.ceil(Math.sqrt(totalPlants));
+  const plantsPerRow = Math.ceil(totalPlants / numRows);
   const rowSpacing = 0.76;
-  const inRowSpacing = 0.46;
+  const inRowSpacing = 0.20;
 
   const plantsData: SimulatedPlant[] = useMemo(() => {
     const list: SimulatedPlant[] = [];
@@ -153,41 +161,27 @@ export default function FieldPlotMesh3D({
 
     const fieldWidth = (plantsPerRow - 1) * inRowSpacing;
     const fieldLength = (numRows - 1) * rowSpacing;
+    const aggregateNumber = (name: string, fallback: number) => {
+      const value = fieldAggregate?.[name];
+      return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+    };
+    const aggregateLai = aggregateNumber("mean_LAI", aggregateNumber("mean_lai", 0));
+    const aggregateStress = aggregateNumber("water_stress", aggregateNumber("mean_stress", cwsiStress));
+    const aggregateHeight = aggregateNumber("plant_height_mean_m", aggregateLai > 0 ? 1.45 + (aggregateLai / 4.8) * 0.95 : 0.45);
 
     for (let r = 0; r < numRows; r++) {
       for (let c = 0; c < plantsPerRow; c++) {
         const idx = r * plantsPerRow + c;
+        if (idx >= totalPlants) break;
         const baseX = c * inRowSpacing - fieldWidth / 2;
         const baseZ = r * rowSpacing - fieldLength / 2;
-
-        const jitterX = ((idx * 7919) % 100) / 1000 - 0.05;
-        const jitterZ = ((idx * 6271) % 100) / 1000 - 0.05;
-        const posX = baseX + jitterX;
-        const posZ = baseZ + jitterZ;
-
-        // Gradiente espacial edáfico de BARC (Hondonada húmeda vs Loma degradada)
-        const spatialMoistureGradient =
-          Math.sin(posX * 0.18) * 0.4 - Math.cos(posZ * 0.14) * 0.4;
+        const posX = baseX;
+        const posZ = baseZ;
 
         const sample = sampleMap.get(idx);
-        const localStress =
-          sample?.stress ??
-          Math.min(
-            1,
-            Math.max(
-              0,
-              cwsiStress - spatialMoistureGradient * 0.25 + (((idx * 31) % 20) - 10) / 100
-            )
-          );
-
-        const localLai =
-          sample?.lai ??
-          Math.max(
-            1.6,
-            Math.min(4.8, 3.8 + spatialMoistureGradient * 0.9 - localStress * 1.2)
-          );
-
-        const height = 1.45 + (localLai / 4.8) * 0.95;
+        const localStress = Math.min(1, Math.max(0, sample?.stress ?? aggregateStress));
+        const localLai = Math.max(0, sample?.lai ?? aggregateLai);
+        const height = Math.max(0.15, sample?.plant_height_m ?? aggregateHeight);
 
         // Tonalidad del follaje según vigor y estrés CWSI
         const healthy = new THREE.Color("#2f6e22");
@@ -207,7 +201,7 @@ export default function FieldPlotMesh3D({
       }
     }
     return list;
-  }, [totalPlants, numRows, plantsPerRow, inRowSpacing, rowSpacing, plantSample, cwsiStress]);
+  }, [totalPlants, numRows, plantsPerRow, inRowSpacing, rowSpacing, plantSample, cwsiStress, fieldAggregate]);
 
   // Inicialización de matrices de instanciación
   useEffect(() => {
@@ -331,7 +325,7 @@ export default function FieldPlotMesh3D({
         );
       })}
 
-      {/* 3. 1000 Plantas de Maíz Instanciadas en 3D */}
+      {/* 3. Población de maíz instanciada: coincide con el conteo persistido */}
       <instancedMesh ref={stemsRef} args={[undefined, undefined, totalPlants]} castShadow>
         <cylinderGeometry args={[0.02, 0.034, 1, 8]} />
         <meshStandardMaterial roughness={0.55} />
@@ -399,7 +393,7 @@ export default function FieldPlotMesh3D({
               style={{ minWidth: "240px" }}
             >
               <div className="flex items-center justify-between border-b border-teal-500/30 pb-1.5">
-                <span className="font-bold text-teal-300">Parcela Agrícola (Meso BARC)</span>
+                <span className="font-bold text-teal-300">Campo FSPM agregado</span>
                 <span className="rounded bg-teal-500/20 px-1.5 py-0.5 text-[10px] font-mono text-teal-300">
                   n={plantCount}
                 </span>
@@ -407,15 +401,15 @@ export default function FieldPlotMesh3D({
               <div className="mt-2 space-y-1 text-[11px] font-mono">
                 <div className="flex justify-between">
                   <span className="text-zinc-400">Marco de siembra:</span>
-                  <span className="font-bold text-teal-200">0.76 m (30") × 0.20 m</span>
+                  <span className="font-bold text-teal-200">0.76 m × 0.20 m (visual)</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Manejo de suelo:</span>
-                  <span className="font-bold text-emerald-300">Siembra Directa (Mulch)</span>
+                  <span className="text-zinc-400">Estados individuales:</span>
+                  <span className="font-bold text-emerald-300">muestra persistida + agregado</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Torre Eddy Covariance:</span>
-                  <span className="font-bold text-cyan-300">Flujo H y LE Activo</span>
+                  <span className="text-zinc-400">Geometría de parcela:</span>
+                  <span className="font-bold text-cyan-300">esquemática; no GIS</span>
                 </div>
               </div>
             </div>

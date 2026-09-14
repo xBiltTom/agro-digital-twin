@@ -146,6 +146,7 @@ class SwatOutputParser:
         headers, units, rows = self._table(path)
         columns = _column_map(headers)
         unit_index = next((columns[key] for key in ("unit", "unitid", "gisid") if key in columns), None)
+        gis_id_index = columns.get("gisid")
         fields: dict[str, tuple[int, float | None]] = {}
         for variable in wanted:
             index = _find_column(columns, _VARIABLES[variable])
@@ -163,6 +164,8 @@ class SwatOutputParser:
             record: dict[str, Any] = {"period": period}
             if unit_index is not None and unit_index < len(values):
                 record["_unit"] = values[unit_index]
+            if gis_id_index is not None and gis_id_index < len(values):
+                record["_gis_id"] = values[gis_id_index]
             for variable, (index, factor) in fields.items():
                 raw = _parse_number(values[index]) if index < len(values) else None
                 if raw is None and index < len(values) and values[index].strip().lower() in {"nan", "+nan", "-nan", "inf", "+inf", "-inf", "infinity", "+infinity", "-infinity"}:
@@ -172,10 +175,18 @@ class SwatOutputParser:
         return parsed
 
     def _select_outlet(self, rows: list[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
-        units = {str(row["_unit"]) for row in rows if row.get("_unit") not in {None, ""}}
+        selector = "_gis_id" if kind == "channel" and any(row.get("_gis_id") not in {None, ""} for row in rows) else "_unit"
+        units = {str(row[selector]) for row in rows if row.get(selector) not in {None, ""}}
         if self.outlet_unit is not None:
-            selected = [row for row in rows if str(row.get("_unit")) == self.outlet_unit]
+            selected = [row for row in rows if str(row.get(selector)) == self.outlet_unit]
             if not selected:
+                # SWAT+ basin-level tables conventionally use their own
+                # singleton basin unit (often ``1``), whereas channel tables
+                # use the selected outlet channel GIS ID.  Keep that one
+                # physical basin series instead of treating the valid,
+                # different identifier as a missing outlet.
+                if kind == "basin water-balance" and len(units) == 1:
+                    return rows
                 raise ValueError(f"Configured outlet_unit {self.outlet_unit!r} was not found in {kind} output")
             return selected
         if len(units) > 1:
@@ -244,8 +255,11 @@ class SwatOutputParser:
             "mean_streamflow_m3s": (sum(row["streamflow_m3s"] for row in records if row.get("streamflow_m3s") is not None) / sum(1 for row in records if row.get("streamflow_m3s") is not None)) if any(row.get("streamflow_m3s") is not None for row in records) else None,
             "reason": None if complete else "One or more required balance terms are absent from SWAT+ outputs",
         }
-        records = [{key: value for key, value in row.items() if key != "_unit"} for row in records]
-        hru_results = [{("hru_unit" if key == "_unit" else key): value for key, value in row.items()} for row in hru_results]
+        # ``_unit``/``_gis_id`` are parser selectors, not public scientific
+        # variables.  Keep them long enough to select the configured outlet,
+        # then remove them from the normalized API records.
+        records = [{key: value for key, value in row.items() if key not in {"_unit", "_gis_id"}} for row in records]
+        hru_results = [{("hru_unit" if key == "_unit" else key): value for key, value in row.items() if key != "_gis_id"} for row in hru_results]
         source_files = wb_files + channel_files + hru_files
         return SwatParsedOutput(records=records, hru_results=hru_results, water_balance=water_balance,
                                 output_files=[str(path.relative_to(run_directory)) for path in source_files], source_files=source_files)

@@ -17,10 +17,26 @@ async def lifespan(app: FastAPI):
     settings.validate_runtime_security()
     
     # 1. Crear tablas si no existen
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    await apply_pending_migrations(engine)
-    logger.info("Tablas de base de datos verificadas/creadas.")
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        await apply_pending_migrations(engine)
+        logger.info("Tablas de base de datos verificadas/creadas.")
+    except Exception as exc:
+        if "No such file or directory" in str(exc) or "connect" in str(exc).lower():
+            logger.error(
+                "\n"
+                "================================================================================\n"
+                "ERROR DE CONEXIÓN A LA BASE DE DATOS:\n"
+                f"No se pudo conectar a: {settings.DATABASE_URL}\n\n"
+                "Causas comunes y solución:\n"
+                "1. Si estás usando PostgreSQL local (puerto 5432):\n"
+                "   -> Verifica que el servicio esté iniciado: sudo systemctl start postgresql\n"
+                "2. Si deseas usar SQLite local (sin PostgreSQL):\n"
+                "   -> Configura en backend/.env: DATABASE_URL=sqlite+aiosqlite:///./digitaltwin.db\n"
+                "================================================================================\n"
+            )
+        raise exc
 
     # 2. RBAC is structural data; only legacy fixtures are opt-in.
     async with AsyncSessionLocal() as session:

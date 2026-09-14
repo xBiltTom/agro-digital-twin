@@ -156,9 +156,10 @@ class MultiScaleTrainer:
             holdout_watershed=self.holdout_watershed
         )
 
-        train_df = working_df.iloc[train_idx].copy()
-        val_df = working_df.iloc[val_idx].copy()
-        test_df = working_df.iloc[test_idx].copy()
+        # Splitters return DataFrame index labels, not positional offsets.
+        train_df = working_df.loc[train_idx].copy()
+        val_df = working_df.loc[val_idx].copy()
+        test_df = working_df.loc[test_idx].copy()
 
         split_desc = (
             f"3-Way Leak-Free ({split_meta.get('strategy', self.validation_strategy)}): "

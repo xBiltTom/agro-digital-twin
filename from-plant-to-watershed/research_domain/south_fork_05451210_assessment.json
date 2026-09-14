@@ -1,0 +1,162 @@
+{
+  "schema_version": "south-fork-assessment-v1",
+  "assessment_date": "2026-09-12",
+  "watershed_id": "USGS-05451210",
+  "selection_status": "BUILD_AND_RUN_VERIFIED_STATIC_CDL",
+  "selection_status_reason": "The candidate passes the gauge, gauge-specific drainage geometry, major-dam screen, official CDL overlay, complete TxtInOut construction, and paired real SWAT+ execution. The land-cover classification is a static 2019 snapshot and is not a time-varying crop-history claim.",
+  "gauge": {
+    "provider": "USGS",
+    "station_id": "05451210",
+    "name": "South Fork Iowa River NE of New Providence, IA",
+    "latitude_dd": 42.3150833333,
+    "longitude_dd": -93.1519444444,
+    "county": "Hardin County, Iowa",
+    "huc8": "07080207",
+    "gauge_segment_huc12": "070802070604",
+    "drainage_area": {
+      "value": 224,
+      "unit": "mi2",
+      "metric_equivalent_approx_km2": 580.16,
+      "source": "USGS station description"
+    },
+    "period_of_record": {
+      "start": "1995-10-01",
+      "end": "current year",
+      "source": "USGS station description"
+    },
+    "stored_daily_discharge_artifact": {
+      "path": "data/raw/usgs/05451210_2000-01-01_2025-12-31.json",
+      "sha256": "5d63af30789bf2f970bfafdea9b8151271b5c96bc30601fe856b7a369df42a3d",
+      "coverage_start": "2000-01-01",
+      "coverage_end": "2025-12-31",
+      "coverage_fraction": 0.9998947035906076,
+      "role": ["OBSERVATION", "VALIDATION"]
+    },
+    "sources": [
+      "https://waterdata.usgs.gov/nwis/uv?legacy=1&site_no=05451210",
+      "https://programs.iowadnr.gov/adbnet/Segments/746"
+    ]
+  },
+  "gauge_specific_geometry": {
+    "status": "VERIFIED",
+    "provider": "USGS NLDI",
+    "endpoint": "https://api.water.usgs.gov/nldi/linked-data/nwissite/USGS-05451210/basin",
+    "geometry_type": "Polygon",
+    "geometry_sha256": "7b364655c4337de86d49b66487c6c9c36ec161ce94c5e811b3578c4a76efa265",
+    "note": "This is the upstream drainage polygon returned for this specific NWIS feature; its area has not been independently recomputed in this manifest."
+  },
+  "agriculture": {
+    "status": "RECOMPUTED_STATIC_CDL",
+    "cultivated_crop_fraction": 0.849118274738852,
+    "unit": "fraction of drainage area",
+    "source": "Hladik, M.L., Kolpin, D.W., and Kuivila, K.M. (2014), Environmental Pollution 193, Table 1, USGS station 05451210",
+    "source_url": "https://ca.water.usgs.gov/pubs/2014/HladikKolpinKuivila2014.pdf",
+    "cdl_year": 2019,
+    "corn_fraction_valid_pixels": 0.6104090114086744,
+    "corn_majority_threshold": 0.5,
+    "corn_hru_count": 32,
+    "corn_hru_ids": [1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36],
+    "soybean_fraction_valid_pixels": 0.22642127051876573,
+    "other_crop_fraction_valid_pixels": 0.012287992811411883,
+    "non_crop_fraction_valid_pixels": 0.15088172526114796,
+    "overlay_provenance": {
+      "classification": "STATIC_CDL_SNAPSHOT",
+      "raster_path": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/cdl/cdl_2019_south_fork.tif",
+      "raster_sha256": "78f78e2e7bd180eff3786d7b9b7fb2564292bcad87e2d7801f8c1a5171a18027",
+      "composition_path": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/cdl/hru_crop_composition.parquet",
+      "composition_sha256": "60134c299e33452e6c1b9d875d848d0a26afc4bcd956d4ef88d296b87faf9d95",
+      "hru_path": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/delin/hrus/hrus.gpkg",
+      "hru_sha256": "ba67f613e2b381e5a648fa7853d4dd9228f98c203f6b5c8d06c6cab0db7f351f",
+      "metadata_url": "https://www.nass.usda.gov/Research_and_Science/Cropland/metadata/metadata_ia19.htm",
+      "query_url": "https://nassgeodata.gmu.edu/axis2/services/CDLService/GetCDLFile?year=2019&bbox=190469.5,2147196.4,233206.2,2177722.6",
+      "crs": "EPSG:5070",
+      "resolution_m": [30.0, 30.0],
+      "valid_pixel_count": 623210,
+      "valid_area_ha": 56088.9
+    },
+    "limitation": "The CDL is a static 2019 snapshot; it is used to identify maize-majority HRUs for this experiment, not to assert annual crop rotation or historical land-cover change."
+  },
+  "dam_screening": {
+    "classification": "PASS",
+    "scope": "major dams represented in the National Inventory of Dams",
+    "provider": "USACE National Inventory of Dams",
+    "feature_service": "https://geospatial.sec.usace.army.mil/dls/rest/services/NID/National_Inventory_of_Dams_Public_Service/FeatureServer/0",
+    "method": "POST spatial-intersects query with the NLDI upstream polygon for USGS-05451210",
+    "dam_count": 0,
+    "exceeded_transfer_limit": false,
+    "limitations": "The screen does not assert the absence of every small or unregistered low-head structure; the required major-dam screen passed. Iowa DNR's water-trail inventory also reported zero South Fork Iowa River dams requiring portage in its published table."
+  },
+  "data_sources": {
+    "land_cover": {
+    "status": "ACQUIRED_AND_OVERLAID",
+      "candidate_source": "USDA National Agricultural Statistics Service Cropland Data Layer",
+    "role": "static HRU crop classification and agricultural-fraction overlay"
+    },
+    "soils": {
+    "status": "AVAILABLE_IN_BUILDER_REFERENCE_DBS",
+      "candidate_source": "gNATSGO / SWAT+ reference soils database",
+      "role": "soil parameterization and HRU construction"
+    },
+    "weather": {
+    "status": "AVAILABLE_IN_SOUTH_FORK_TXTINOUT",
+      "candidate_source": "the reproducible builder's documented GridMET workflow",
+      "role": "daily SWAT+ forcing"
+    }
+  },
+  "builder_assessment": {
+    "tool": "AI-Hydro/swatplus-builder",
+    "source_commit": "9397584e4ca116fbfe757039523ad8bae68ea90c",
+    "declared_version": "0.7.13",
+    "declared_supported_swat_revisions": ["60.5.7", "61.0.2.61"],
+    "local_swat_revision": "61.0.2.61",
+    "compatibility_with_local_swat_62": "NOT_USED_IN_THIS_BUILD",
+    "preflight": {
+      "swatplus_datasets.sqlite": "AVAILABLE_OFFICIAL_REFERENCE_DB",
+      "swatplus_soils.sqlite": "AVAILABLE_OFFICIAL_REFERENCE_DB",
+      "swatplus_wgn.sqlite": "AVAILABLE_OFFICIAL_REFERENCE_DB",
+      "reference_db_root": "/home/bilton/.swatplus_builder/reference_dbs",
+      "auto_download": "NOT_IMPLEMENTED_BY_BUILDER"
+    },
+    "construction_result": "COMPLETED_SOUTH_FORK_TXTINOUT",
+    "source_artifact": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry",
+    "source_file_cio_sha256": "585de9decfefebe7017e2ec41d3ddf5f1be78987f692a53902f6c584ef3078c1",
+    "reference_databases": {
+      "official_documentation": "https://swatplus.gitbook.io/docs/installation",
+      "root": "/home/bilton/.swatplus_builder/reference_dbs",
+      "swatplus_datasets.sqlite": {
+        "sha256": "91843c2cbe773f919b373cfa49b9a293a6a2694bdd16484f98b2166aa58f72c1"
+      },
+      "swatplus_soils.sqlite": {
+        "sha256": "721ccbb0bf49e8e9fd7834a6ece00a4b560fee506b4693b74bc40ee9dccf5fd1"
+      },
+      "swatplus_wgn.sqlite": {
+        "sha256": "81d308449645839ad2fa3bbc2351bc7d0bbcf337fa8acd291b8ac95f4fcf828b"
+      }
+    },
+    "engine": {
+      "path": "/home/bilton/.swatplus_builder/bin/swatplus_exe",
+      "revision": "61.0.2.61",
+      "sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+      "health": "DEGRADED_ONLY_OPTIONAL_MCP_MISSING; engine, datasets and GIS checks pass"
+    }
+  },
+  "minimum_project_validity": {
+    "txtinout_complete": "AVAILABLE",
+    "all_references_resolve": "AVAILABLE_FOR_REAL_ENGINE",
+    "adapter_accepted": "AVAILABLE",
+    "real_swat_exit_code_0": "AVAILABLE",
+    "new_outputs_parsed": "AVAILABLE",
+    "baseline": "REAL_SWAT_PLUS",
+    "coupled": "REAL_SWAT_PLUS_COUPLED",
+    "usgs_metrics": "AVAILABLE_DAILY_2019",
+    "paired_report": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/paired_cdl_2019_report_v6.json",
+    "baseline_run_id": "south-fork-2019-cdl-baseline-v6",
+    "coupled_run_id": "south-fork-2019-cdl-coupled-v6",
+    "limitations": [
+      "Output water-balance totals are identical for this 2019 pair at SWAT+ printed precision; no output post-adjustment was applied.",
+      "The FSPM ET/uptake/yield diagnostics remain NOT_COUPLED inputs; SWAT+ recomputes these internally.",
+      "The bounded annual execution uses nyskip=0; a preceding spin-up year is not included in this milestone.",
+      "USGS comparison is daily and observational; no final hypothesis test or calibration is claimed."
+    ]
+  }
+}

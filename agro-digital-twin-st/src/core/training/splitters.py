@@ -30,22 +30,30 @@ class Temporal3WaySplitter:
         if "date" not in df.columns:
             raise KeyError("DataFrame must contain 'date' column for Temporal3WaySplitter.")
 
-        sorted_df = df.sort_values(by="date")
-        sorted_indices = sorted_df.index.to_numpy()
-        n_total = len(sorted_indices)
-
-        n_train = int(n_total * (1.0 - self.val_ratio - self.test_ratio))
-        n_val = int(n_total * self.val_ratio)
-
-        train_idx = sorted_indices[:n_train]
-        val_idx = sorted_indices[n_train : n_train + n_val]
-        test_idx = sorted_indices[n_train + n_val :]
+        dates = pd.to_datetime(df["date"], errors="raise").dt.normalize()
+        unique_dates = np.sort(dates.unique())
+        if len(unique_dates) < 3:
+            raise ValueError("Temporal3WaySplitter requires at least three unique dates.")
+        n_dates = len(unique_dates)
+        n_train = int(n_dates * (1.0 - self.val_ratio - self.test_ratio))
+        n_val = int(n_dates * self.val_ratio)
+        if n_train < 1 or n_val < 1 or n_dates - n_train - n_val < 1:
+            raise ValueError("Temporal3WaySplitter ratios leave an empty date partition.")
+        train_dates = unique_dates[:n_train]
+        val_dates = unique_dates[n_train:n_train + n_val]
+        test_dates = unique_dates[n_train + n_val:]
+        # Return index labels. Every entity/scenario sharing a date stays in
+        # one partition, so temporal groups cannot leak across boundaries.
+        train_idx = df.index[dates.isin(train_dates)].to_numpy()
+        val_idx = df.index[dates.isin(val_dates)].to_numpy()
+        test_idx = df.index[dates.isin(test_dates)].to_numpy()
 
         meta = {
             "strategy": "temporal_3way",
-            "train_range": [str(sorted_df.loc[train_idx, "date"].min().date()), str(sorted_df.loc[train_idx, "date"].max().date())],
-            "val_range": [str(sorted_df.loc[val_idx, "date"].min().date()), str(sorted_df.loc[val_idx, "date"].max().date())],
-            "test_range": [str(sorted_df.loc[test_idx, "date"].min().date()), str(sorted_df.loc[test_idx, "date"].max().date())],
+            "train_range": [str(pd.Timestamp(train_dates[0]).date()), str(pd.Timestamp(train_dates[-1]).date())],
+            "val_range": [str(pd.Timestamp(val_dates[0]).date()), str(pd.Timestamp(val_dates[-1]).date())],
+            "test_range": [str(pd.Timestamp(test_dates[0]).date()), str(pd.Timestamp(test_dates[-1]).date())],
+            "date_partition_counts": {"train": len(train_dates), "validation": len(val_dates), "test": len(test_dates)},
             "train_samples": len(train_idx),
             "val_samples": len(val_idx),
             "test_samples": len(test_idx)
@@ -111,10 +119,12 @@ class TemporalHoldoutSplitter:
         self.test_ratio = test_ratio
 
     def split(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
-        sorted_indices = df.sort_values(by="date").index.to_numpy()
-        n_total = len(sorted_indices)
-        n_train = int(n_total * (1.0 - self.test_ratio))
-        return sorted_indices[:n_train], sorted_indices[n_train:]
+        dates = pd.to_datetime(df["date"], errors="raise").dt.normalize()
+        unique_dates = np.sort(dates.unique())
+        n_train = int(len(unique_dates) * (1.0 - self.test_ratio))
+        if n_train < 1 or n_train >= len(unique_dates):
+            raise ValueError("TemporalHoldoutSplitter ratios leave an empty date partition.")
+        return df.index[dates.isin(unique_dates[:n_train])].to_numpy(), df.index[dates.isin(unique_dates[n_train:])].to_numpy()
 
 
 class WatershedHoldoutSplitter:

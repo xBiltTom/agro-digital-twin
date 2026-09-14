@@ -13,7 +13,7 @@ import {
   ClimateScenario,
   Watershed,
   SimulationRun,
-  SimulationResult
+  SimulationResult, SwatPlusConfiguration, SwatResultsResponse
   , ExternalModelInfo, DatasetInfo
 } from "../types/simulation";
 
@@ -144,6 +144,10 @@ class ApiService {
     return this.request<SimulationResult[]>(`/simulations/${id}/results?limit=${limit}`);
   }
 
+  async getSwatResults(id: string): Promise<SwatResultsResponse> {
+    return this.request<SwatResultsResponse>(`/simulations/${id}/swat-results`);
+  }
+
   async createSimulation(data: {
     name: string;
     watershed_id: string;
@@ -162,6 +166,7 @@ class ApiService {
     station_id?: string;
     start_date: string;
     end_date: string;
+    swat_plus?: SwatPlusConfiguration;
   }): Promise<SimulationRun> {
     return this.request<SimulationRun>("/simulations", {
       method: "POST",
