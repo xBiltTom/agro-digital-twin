@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-09-06 20:52:46",
+  "target_name": "monthly_runoff_mm",
+  "learning_mode": "direct",
+  "validation_strategy": "temporal",
+  "split_description": "Temporal Holdout Split: Training before 2026-10-01, Testing 2026-10-01+ (No temporal leakage)",
+  "champion_model_name": "LSTM Autoencoder + Random Forest",
+  "champion_metrics": {
+    "rmse": 2.5809,
+    "mae": 1.5438,
+    "r2": 0.9861,
+    "nse": 0.9861,
+    "pbias": 1.77
+  },
+  "champion_artifact_dir": "artifacts/monthly_runoff_mm/champion",
+  "duration_seconds": 35.64,
+  "is_synthetic_dataset": true,
+  "models": {
+    "Random Forest Regressor": {
+      "rmse": 2.8774,
+      "mae": 1.6346,
+      "r2": 0.9828,
+      "nse": 0.9828,
+      "pbias": 2.58
+    },
+    "XGBoost Regressor": {
+      "rmse": 4.6471,
+      "mae": 2.1785,
+      "r2": 0.9551,
+      "nse": 0.9551,
+      "pbias": 6.37
+    },
+    "Support Vector Regression (SVR)": {
+      "rmse": 3.9501,
+      "mae": 1.5292,
+      "r2": 0.9675,
+      "nse": 0.9675,
+      "pbias": 3.9
+    },
+    "CNN-LSTM Hybrid": {
+      "rmse": 7.1099,
+      "mae": 3.0583,
+      "r2": 0.8948,
+      "nse": 0.8948,
+      "pbias": 15.92
+    },
+    "LSTM Autoencoder + Random Forest": {
+      "rmse": 2.5809,
+      "mae": 1.5438,
+      "r2": 0.9861,
+      "nse": 0.9861,
+      "pbias": 1.77
+    }
+  },
+  "train_samples": 2106,
+  "test_samples": 702
+}

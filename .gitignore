@@ -1,6 +1,7 @@
 # Operating System Files
 .DS_Store
 Thumbs.db
+*~
 
 # IDEs and Editors
 .idea/
@@ -9,7 +10,106 @@ Thumbs.db
 *.swp
 *.swo
 
+# AI Assistants & Local Tooling
+.agents/
+.codex/
+.claude/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!*.env.example
+
+# Compressed archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+.local-postgres/
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# HTTP & Runtime Cache
+cache/
+.cache/
+
+# Node modules & builds
+node_modules/
+.next/
+dist/
+out/
+build/
+coverage/
+*.tsbuildinfo
+
+# Database files & journals
+digitaltwin.db
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Machine Learning Models & Weights
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.onnx
+*.bin
+*.weights
+
+# SWAT+ Simulation Outputs & Runtime Diagnostics
+*.out
+*.fin
+fort.*
+codes.bsn
+erosion.txt
+__warnings.txt
+reservoir_sed.txt
+basin_carbon_all.txt
+basin_totc.txt
+lu_change_out.txt
+output_*.txt
+
+# Geospatial & Big Data Formats
+*.nc
+*.nc4
+*.tif
+*.tiff
+*.geotiff
+*.gpkg
+*.parquet
+*.h5
+*.hdf5
+*.shp
+*.shx
+*.dbf
+*.prj
+
 # Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-digitaltwin.db
+# Backups
+*.bak
+.git.bak/

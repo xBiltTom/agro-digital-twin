@@ -1,0 +1,13 @@
+{
+  "value": {
+    "timeSeries": [{
+      "sourceInfo": {"siteCode": [{"value": "05451210"}]},
+      "variable": {"variableCode": [{"value": "00060"}], "unit": {"unitCode": "ft3/s"}},
+      "values": [{"value": [
+        {"value": "1.0", "qualifiers": ["A"], "dateTime": "2020-01-01T00:00:00.000-06:00"},
+        {"value": "", "qualifiers": ["P"], "dateTime": "2020-01-02T00:00:00.000-06:00"},
+        {"value": "3.0", "qualifiers": ["A"], "dateTime": "2020-01-03T00:00:00.000-06:00"}
+      ]}]
+    }]
+  }
+}

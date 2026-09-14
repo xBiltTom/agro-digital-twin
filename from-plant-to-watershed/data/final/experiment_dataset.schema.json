@@ -1,0 +1,21 @@
+{
+  "schema_version": "south-fork-final-v1",
+  "row_count": 1096,
+  "data_file": "experiment_dataset.parquet",
+  "units": {
+    "streamflow_m3s": "m3/s",
+    "runoff_mm": "mm/day",
+    "et_mm": "mm/day",
+    "soil_water_mm": "mm",
+    "precipitation_mm": "mm/day",
+    "temperature": "degC",
+    "FSPM_LAI": "m2_leaf/m2_ground",
+    "FSPM_root_depth": "m",
+    "FSPM_biomass": "g/plant"
+  },
+  "synthetic_data": false,
+  "limitations": [
+    "FSPM variables are derived model states, not observations.",
+    "hru_id is watershed outlet because this export joins outlet-level SWAT+ and USGS series."
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "feature_names": [
+    "precip_mm",
+    "temp_mean_c",
+    "solar_radiation",
+    "soil_moisture",
+    "infiltration_mm",
+    "lai",
+    "root_depth_m",
+    "transpiration_mm",
+    "water_stress",
+    "et_mm"
+  ],
+  "features": [
+    {
+      "name": "precip_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Climate",
+      "min_val": 0.0,
+      "max_val": 500.0,
+      "required": true,
+      "default": 60.0,
+      "description": "Monthly precipitation"
+    },
+    {
+      "name": "temp_mean_c",
+      "dtype": "float",
+      "unit": "\u00b0C",
+      "scale_level": "Climate",
+      "min_val": -30.0,
+      "max_val": 45.0,
+      "required": true,
+      "default": 14.0,
+      "description": "Mean air temperature"
+    },
+    {
+      "name": "solar_radiation",
+      "dtype": "float",
+      "unit": "MJ/m2/day",
+      "scale_level": "Climate",
+      "min_val": 0.0,
+      "max_val": 40.0,
+      "required": true,
+      "default": 18.0,
+      "description": "Mean solar radiation"
+    },
+    {
+      "name": "soil_moisture",
+      "dtype": "float",
+      "unit": "% vol",
+      "scale_level": "Watershed",
+      "min_val": 5.0,
+      "max_val": 50.0,
+      "required": true,
+      "default": 28.0,
+      "description": "Volumetric soil moisture content"
+    },
+    {
+      "name": "infiltration_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Watershed",
+      "min_val": 0.0,
+      "max_val": 400.0,
+      "required": true,
+      "default": 45.0,
+      "description": "Soil infiltration depth"
+    },
+    {
+      "name": "lai",
+      "dtype": "float",
+      "unit": "m2/m2",
+      "scale_level": "Plant",
+      "min_val": 0.0,
+      "max_val": 8.0,
+      "required": true,
+      "default": 2.5,
+      "description": "Leaf Area Index from FSPM"
+    },
+    {
+      "name": "root_depth_m",
+      "dtype": "float",
+      "unit": "m",
+      "scale_level": "Plant",
+      "min_val": 0.05,
+      "max_val": 3.0,
+      "required": true,
+      "default": 0.8,
+      "description": "Effective rooting depth"
+    },
+    {
+      "name": "transpiration_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Plant",
+      "min_val": 0.0,
+      "max_val": 250.0,
+      "required": true,
+      "default": 35.0,
+      "description": "Crop transpiration"
+    },
+    {
+      "name": "water_stress",
+      "dtype": "float",
+      "unit": "dimensionless",
+      "scale_level": "Plant",
+      "min_val": 0.0,
+      "max_val": 1.0,
+      "required": true,
+      "default": 0.1,
+      "description": "Crop water stress index [0-1]"
+    },
+    {
+      "name": "et_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Field",
+      "min_val": 0.0,
+      "max_val": 300.0,
+      "required": true,
+      "default": 50.0,
+      "description": "Aggregated evapotranspiration"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: digitaltwin
+      POSTGRES_USER: digitaltwin
+      POSTGRES_PASSWORD: digitaltwin_local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U digitaltwin -d digitaltwin"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  backend:
+    build: ./backend
+    environment:
+      APP_ENV: development
+      SECRET_KEY: local-mvp-only-change-in-production
+      DATABASE_URL: postgresql+asyncpg://digitaltwin:digitaltwin_local@postgres:5432/digitaltwin
+      ENABLE_DEMO_SEED: "true"
+      ENABLE_MVP_BOOTSTRAP: "true"
+      MVP_USGS_SNAPSHOT: /data/raw/usgs/05451210_2000-01-01_2025-12-31.json
+      MVP_EXTERNAL_MODEL: /models/external/monthly_runoff_mm/random_forest
+    volumes:
+      - ./data:/data
+      - ../agro-digital-twin-st/artifacts:/models/external:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+volumes:
+  postgres_data:

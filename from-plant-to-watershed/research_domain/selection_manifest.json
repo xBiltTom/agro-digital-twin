@@ -1,0 +1,15 @@
+{
+  "schema_version": "phase-c-1.0",
+  "status": "FIRST_SCIENTIFIC_WATERSHED_VERIFIED_STATIC_CDL",
+  "protocol": "docs/methodology/watershed-selection-protocol.md",
+  "candidate_matrix": "research_domain/candidate_matrix.json",
+  "decision": "South Fork Iowa River / USGS 05451210 is the first reproducible scientific watershed artifact: gauge-specific NLDI geometry, passed major-dam screen, official 2019 NASS CDL HRU overlay, complete TxtInOut, and a paired real SWAT+ baseline/coupled run on the same source project and forcing. The CDL classification is explicitly a static snapshot.",
+  "included_watersheds": ["USGS-05451210"],
+  "future_spatial_validation": "NOT_STARTED: this milestone verifies the first static-CDL watershed build and paired engine execution only; multi-period calibration, time-varying crop history, and formal spatial validation remain out of scope.",
+  "first_scientific_watershed": {
+    "watershed_id": "USGS-05451210",
+    "assessment": "research_domain/south_fork_05451210_assessment.json",
+    "paired_report": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/paired_cdl_2019_report_v6.json",
+    "classification": "STATIC_CDL_SNAPSHOT"
+  }
+}

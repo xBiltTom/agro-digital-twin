@@ -1,0 +1,20 @@
+{
+  "schema_version": "phase-c-1.0",
+  "ingestions": [
+    {
+      "station_id": "05451210",
+      "station_name": "South Fork Iowa River NE of New Providence, IA",
+      "endpoint": "https://waterservices.usgs.gov/nwis/dv/?format=json&sites=05451210&parameterCd=00060&statCd=00003&startDT=2000-01-01&endDT=2025-12-31&siteStatus=all",
+      "retrieved_on": "2026-09-07",
+      "artifact": "data/raw/usgs/05451210_2000-01-01_2025-12-31.json",
+      "checksum_sha256": "5d63af30789bf2f970bfafdea9b8151271b5c96bc30601fe856b7a369df42a3d",
+      "original_unit": "ft3/s",
+      "normalized_unit": "m3/s",
+      "variable": "daily mean streamflow (USGS 00060 / 00003)",
+      "n_observations": 9496,
+      "record_start": "2000-01-01",
+      "record_end": "2025-12-31",
+      "qc": {"missing_count": 0, "duplicate_count": 0, "invalid_count": 0, "gap_count": 1, "coverage_fraction": 0.9998947035906076, "effective_years": 25.999164938362867}
+    }
+  ]
+}
