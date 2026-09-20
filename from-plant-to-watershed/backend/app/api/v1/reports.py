@@ -1,5 +1,7 @@
+import json
 import re
 import unicodedata
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -14,6 +16,8 @@ from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/reports", tags=["Reportes Multiformato"])
 
+FINAL_REPORT_PATH = Path(__file__).resolve().parents[4] / "research_domain" / "final_report.json"
+
 MIME_TYPES = {
     "pdf": "application/pdf",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -25,6 +29,72 @@ def _safe_filename_fragment(value: str) -> str:
     """Return an ASCII-only HTTP header-safe file-name fragment."""
     normalized = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9_-]+", "_", normalized.lower()).strip("_")[:30] or "simulacion"
+
+
+def _metric_value(metrics: dict, name: str):
+    metric = metrics.get(name, {})
+    return metric.get("value") if isinstance(metric, dict) else None
+
+
+def _final_scientific_summary(report: dict) -> dict:
+    validation = report["validation"]
+
+    def validation_summary(period: str) -> dict:
+        result = validation[period]
+        return {
+            "matched_count": result["alignment"]["matched_count"],
+            "imputation": result["alignment"]["imputation"],
+            "hypothesis_status": result["hypothesis_status"],
+            "improvement_percent": _metric_value(result, "improvement_percent"),
+            "baseline": {name: _metric_value(result["baseline"], name) for name in ("rmse", "nse", "kge")},
+            "coupled": {name: _metric_value(result["twin"], name) for name in ("rmse", "nse", "kge")},
+        }
+
+    return {
+        "report_version": report["report_version"],
+        "created_at": report["created_at"],
+        "scope": report["scope"],
+        "experiment": {
+            key: report["experiment"][key]
+            for key in ("simulation_period", "warm_up", "evaluation", "calibration")
+        },
+        "hypothesis": report["hypothesis"],
+        "coupling_effect": report["coupling_effect"],
+        "runs": {
+            name: {
+                "run_id": report[name]["run_id"],
+                "evidence_type": report[name]["provenance"]["evidence_type"],
+                "totals": report[name]["totals"],
+            }
+            for name in ("baseline", "coupled")
+        },
+        "validation": {
+            "daily": validation_summary("daily"),
+            "monthly_primary": validation_summary("monthly_primary"),
+        },
+        "scenarios": [
+            {
+                "name": name,
+                "status": scenario["status"],
+                "delta_from_historical_baseline": scenario["delta_from_historical_baseline"],
+            }
+            for name, scenario in report["scenarios"].items()
+        ],
+        "cmip6": report["cmip6"],
+        "nass_yield_validation": report["nass_yield_validation"],
+        "limitations": report["limitations"],
+        "statistics": report["statistics"],
+    }
+
+
+@router.get("/final-scientific")
+async def get_final_scientific_report(_user: User = Depends(get_current_active_user)):
+    """Return the safe, authoritative South Fork pilot summary."""
+    try:
+        report = json.loads(FINAL_REPORT_PATH.read_text(encoding="utf-8"))
+        return _final_scientific_summary(report)
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise HTTPException(status_code=503, detail="Reporte científico final no disponible") from exc
 
 @router.get("/download/{simulation_id}/{report_format}")
 async def download_report(

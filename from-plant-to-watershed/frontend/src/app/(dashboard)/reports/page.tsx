@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { api } from "../../../lib/api";
-import { SimulationRun } from "../../../types/simulation";
+import { FinalScientificReport, SimulationRun } from "../../../types/simulation";
 import {
   FileSpreadsheet,
   FileText,
@@ -22,6 +22,7 @@ export default function ReportsPage() {
   const [simulations, setSimulations] = useState<SimulationRun[]>([]);
   const [selectedSimId, setSelectedSimId] = useState<string>("");
   const [history, setHistory] = useState<any[]>([]);
+  const [finalReport, setFinalReport] = useState<FinalScientificReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [downloadingFormat, setDownloadingFormat] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -29,12 +30,14 @@ export default function ReportsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [sims, hist] = await Promise.all([
+      const [sims, hist, final] = await Promise.all([
         api.getSimulations(),
         api.getReportsHistory(),
+        api.getFinalScientificReport(),
       ]);
       setSimulations(sims);
       setHistory(hist);
+      setFinalReport(final);
       if (sims.length > 0 && !selectedSimId) {
         setSelectedSimId(sims[0].id);
       }
@@ -126,6 +129,59 @@ export default function ReportsPage() {
           )}
           <span>{statusMsg.text}</span>
         </div>
+      )}
+
+      {finalReport && (
+        <section className="p-5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800/70 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
+                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Evidencia final del piloto South Fork</h2>
+                <span className="px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700 text-[10px] font-mono font-bold text-amber-800 dark:text-amber-300">
+                  {finalReport.hypothesis.conclusion}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-zinc-700 dark:text-zinc-300 max-w-3xl">
+                {finalReport.scope.watershed} · USGS {finalReport.scope.usgs_gauge} · HUC8 {finalReport.scope.huc8}. {finalReport.scope.statement}
+              </p>
+            </div>
+            <div className="text-[11px] font-mono text-emerald-800 dark:text-emerald-300">
+              {finalReport.runs.baseline.evidence_type} → {finalReport.runs.coupled.evidence_type}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5 text-xs">
+            <div className="p-3 rounded-xl bg-white/80 dark:bg-zinc-950/40 border border-emerald-200 dark:border-emerald-900">
+              <span className="block text-[10px] font-mono text-zinc-500">RMSE mensual baseline</span>
+              <strong className="text-zinc-900 dark:text-zinc-100">{finalReport.validation.monthly_primary.baseline.rmse?.toFixed(3)} m³/s</strong>
+            </div>
+            <div className="p-3 rounded-xl bg-white/80 dark:bg-zinc-950/40 border border-emerald-200 dark:border-emerald-900">
+              <span className="block text-[10px] font-mono text-zinc-500">RMSE mensual coupled</span>
+              <strong className="text-zinc-900 dark:text-zinc-100">{finalReport.validation.monthly_primary.coupled.rmse?.toFixed(3)} m³/s</strong>
+            </div>
+            <div className="p-3 rounded-xl bg-white/80 dark:bg-zinc-950/40 border border-emerald-200 dark:border-emerald-900">
+              <span className="block text-[10px] font-mono text-zinc-500">Mejora RMSE mensual</span>
+              <strong className="text-amber-700 dark:text-amber-300">{finalReport.validation.monthly_primary.improvement_percent?.toFixed(1)}%</strong>
+            </div>
+            <div className="p-3 rounded-xl bg-white/80 dark:bg-zinc-950/40 border border-emerald-200 dark:border-emerald-900">
+              <span className="block text-[10px] font-mono text-zinc-500">Pares observados diarios</span>
+              <strong className="text-zinc-900 dark:text-zinc-100">{finalReport.validation.daily.matched_count} · sin imputación</strong>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3 text-[11px]">
+            <div className="rounded-xl border border-emerald-200 dark:border-emerald-900 p-3 text-zinc-700 dark:text-zinc-300">
+              <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300">ESCENARIOS SWAT+ EJECUTADOS</span>
+              <p className="mt-1">{finalReport.scenarios.map((scenario) => scenario.name).join(" · ")}</p>
+              <p className="mt-1 text-amber-800 dark:text-amber-300">Efecto del acoplamiento: {finalReport.coupling_effect}.</p>
+            </div>
+            <div className="rounded-xl border border-amber-200 dark:border-amber-900 p-3 text-zinc-700 dark:text-zinc-300">
+              <span className="font-mono font-bold text-amber-800 dark:text-amber-300">DATOS NO DISPONIBLES O LIMITADOS</span>
+              <p className="mt-1">CMIP6 SSP2-4.5 y SSP5-8.5: NOT_AVAILABLE. NASS yield: {finalReport.nass_yield_validation.status}.</p>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Selected Simulation Summary Card */}

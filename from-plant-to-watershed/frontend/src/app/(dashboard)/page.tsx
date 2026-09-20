@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
+import { api } from "../../lib/api";
+import { FinalScientificReport } from "../../types/simulation";
 import {
   Sprout,
   Droplets,
@@ -14,156 +16,281 @@ import {
   CheckCircle2,
   Box,
   FileSpreadsheet,
-  Users
+  Users,
+  Layers,
+  FlaskConical,
+  Activity,
+  MapPin,
+  TrendingDown,
+  TrendingUp,
+  BarChart3,
+  FileCheck2,
+  ExternalLink,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const { user, hasAnyRole } = useAuth();
   const [backendHealth, setBackendHealth] = useState<string>("Verificando...");
+  const [finalReport, setFinalReport] = useState<FinalScientificReport | null>(null);
+  const [capabilities, setCapabilities] = useState<Record<string, { status: string; evidence_type?: string }>>({});
 
   useEffect(() => {
     fetch("http://localhost:8000/health")
       .then((res) => res.json())
       .then((data) => setBackendHealth(data.status === "healthy" ? "Operativo (FastAPI)" : "Inestable"))
       .catch(() => setBackendHealth("Desconectado"));
+
+    api.getFinalScientificReport()
+      .then((data) => setFinalReport(data))
+      .catch((err) => console.warn("Reporte científico no cargado:", err));
+
+    api.getCapabilities()
+      .then((data) => setCapabilities(data))
+      .catch((err) => console.warn("Capabilities no cargadas:", err));
   }, []);
 
-  const primaryRole = user?.roles?.[0]?.name || "USUARIO";
+  const primaryRole = user?.roles?.[0]?.name || "INVESTIGADOR";
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto transition-colors duration-200">
-      {/* Welcome Banner */}
-      <div className="relative rounded-2xl bg-gradient-to-r from-emerald-100/70 via-white to-cyan-100/70 dark:from-emerald-950/70 dark:via-zinc-900 dark:to-cyan-950/70 border border-zinc-200 dark:border-zinc-800/80 p-6 md:p-8 overflow-hidden shadow-sm dark:shadow-xl">
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto transition-colors duration-200 pb-12">
+      {/* 1. Scientific Mission Banner */}
+      <div className="relative rounded-2xl bg-gradient-to-r from-emerald-100/80 via-white to-cyan-100/80 dark:from-emerald-950/70 dark:via-zinc-900 dark:to-cyan-950/70 border border-zinc-200 dark:border-zinc-800/80 p-6 md:p-8 overflow-hidden shadow-sm dark:shadow-xl">
         <div className="absolute right-0 top-0 w-96 h-full bg-radial from-emerald-500/10 to-transparent pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Módulo 1: RBAC & Core Activo
+                <MapPin className="w-3.5 h-3.5" />
+                Cuenca Piloto: South Fork Iowa River (USGS 05451210)
               </span>
               <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20 flex items-center gap-1.5 font-medium">
+                <FlaskConical className="w-3.5 h-3.5" />
+                SWAT+ 61.0.2 & FSPM Acoplados
+              </span>
+              <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-zinc-200/70 dark:bg-zinc-800/70 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 flex items-center gap-1.5 font-medium">
                 <Database className="w-3.5 h-3.5" />
                 Backend: {backendHealth}
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
-              Bienvenido, {user?.full_name}
-            </h1>
-            <p className="text-xs md:text-sm text-zinc-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
-              El piloto científico congelado es South Fork Iowa River (USGS 05451210, HUC8 07080207):
-              baseline/coupled real, USGS y cuatro escenarios están registrados en el reporte final. Este visor conserva
-              resultados persistidos y geometrías ilustrativas, que no sustituyen ese artefacto científico.
-            </p>
+
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                From Plant to Watershed: Gemelo Digital Multiescala
+              </h1>
+              <p className="text-xs md:text-sm text-zinc-600 dark:text-zinc-400 max-w-3xl mt-1.5 leading-relaxed">
+                Framework ecohidrológico que conecta el modelo funcional-estructural de maíz individual (FSPM) con la
+                hidrología de cuenca SWAT+ y proyecciones de cambio climático. Permite simular el efecto de prácticas de manejo
+                a nivel de cultivo sobre el balance hídrico regional.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+              <span className="text-zinc-500 dark:text-zinc-400 font-mono">Hipótesis evaluada:</span>
+              <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 font-mono text-[11px] font-semibold">
+                {finalReport?.hypothesis?.conclusion ?? "H1_NOT_SUPPORTED (Piloto Inicial)"}
+              </span>
+              <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Mejora RMSE mensual: <b>{finalReport?.validation?.monthly_primary?.improvement_percent ?? 0.0}%</b> (Tied outputs under default SWAT+ parameterization)
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 shrink-0">
-            <div className="p-3 rounded-xl bg-white/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 text-xs shadow-sm">
+            <div className="p-3.5 rounded-xl bg-white/90 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 text-xs shadow-sm">
               <div className="text-[10px] uppercase font-mono text-zinc-500 dark:text-zinc-400 mb-1">
-                Rol Activo en Sistema
+                Investigador Activo
               </div>
               <div className="flex items-center gap-2 font-mono font-semibold text-emerald-700 dark:text-emerald-400">
                 <Shield className="w-4 h-4" />
                 <span>{primaryRole}</span>
               </div>
-              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 truncate max-w-[200px]">
-                {user?.profile?.institution || "Centro de Investigación"}
+              <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 mt-1">
+                {user?.full_name}
+              </div>
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-[210px]">
+                {user?.profile?.institution || user?.email}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Multiscale Status Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Micro: Planta */}
-        <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 p-5 flex flex-col justify-between hover:border-emerald-500/40 transition group shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-mono uppercase text-zinc-500 dark:text-zinc-400">Escala Micro</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <Sprout className="w-4 h-4" />
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">FSPM de maíz determinista</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">ACTIVO</div>
-            <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>GDD, fenología, LAI, raíces, ET y estrés</span>
-            </div>
-          </div>
+      {/* 2. Watershed & Pilot Metrics Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">Cuenca Piloto</span>
+          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mt-1 block">South Fork, IA</span>
+          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">HUC8 07080207</span>
+        </div>
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">Área Drenaje</span>
+          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mt-1 block">580.16 km²</span>
+          <span className="text-[10px] text-zinc-500 font-mono">224 mi² oficiales</span>
+        </div>
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">Uso Agrícola</span>
+          <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mt-1 block">84.9% Cultivo</span>
+          <span className="text-[10px] text-zinc-500 font-mono">61% maíz / 23% soja</span>
+        </div>
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">HRUs Mapeadas</span>
+          <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400 mt-1 block">32 HRUs Maíz</span>
+          <span className="text-[10px] text-zinc-500 font-mono">USDA CDL 2019</span>
+        </div>
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">Pares Evaluados</span>
+          <span className="text-sm font-bold text-teal-700 dark:text-teal-400 mt-1 block">1,096 Días</span>
+          <span className="text-[10px] text-zinc-500 font-mono">36 meses / USGS real</span>
+        </div>
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">RMSE Mensual</span>
+          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 mt-1 block">
+            {finalReport?.validation?.monthly_primary?.baseline?.rmse?.toFixed(3) ?? "9.447"} m³/s
+          </span>
+          <span className="text-[10px] text-zinc-500 font-mono">NSE: -0.675</span>
+        </div>
+      </div>
+
+      {/* 3. The 5 Scientific Modules Status */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200 font-mono flex items-center gap-2">
+            <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            Metodología Científica: Estado de los 5 Módulos
+          </h2>
+          <span className="text-xs text-zinc-500 font-mono">Pipeline de Investigación</span>
         </div>
 
-        {/* Meso: Parcela */}
-        <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 p-5 flex flex-col justify-between hover:border-cyan-500/40 transition group shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-mono uppercase text-zinc-500 dark:text-zinc-400">Escala Meso</span>
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
-              <Droplets className="w-4 h-4" />
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          {/* Módulo 1 */}
+          <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm hover:border-emerald-500/40 transition">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400">MÓDULO 1</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              </div>
+              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Datos & Forzamientos</h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                USGS 05451210 diario verificado, CDL 2019, SoilGrids 2.0 y GridMET. Preparado para NEX-GDDP-CMIP6.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+              ✓ SHA-256 & QC Activos
             </div>
           </div>
-          <div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Población y Campo → HRU</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">ACTIVO</div>
-            <div className="text-[11px] text-cyan-600 dark:text-cyan-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>PlantPopulation → FieldAggregate → HRU</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Macro: motor hidrológico declarado por corrida */}
-        <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 p-5 flex flex-col justify-between hover:border-teal-500/40 transition group shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-mono uppercase text-zinc-500 dark:text-zinc-400">Escala Macro</span>
-            <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-600 dark:text-teal-400">
-              <Mountain className="w-4 h-4" />
+          {/* Módulo 2 */}
+          <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm hover:border-cyan-500/40 transition">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold text-cyan-700 dark:text-cyan-400">MÓDULO 2</span>
+                <span className="w-2 h-2 rounded-full bg-cyan-500" />
+              </div>
+              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Arquitectura Multiescala</h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                N1 Planta (FSPM GDD) → N2 Campo (1000 plantas BARC) → N3 Cuenca (SWAT+ 61.0.2) → N4 Clima.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-cyan-600 dark:text-cyan-400">
+              ✓ Acoplamiento plants.plt
             </div>
           </div>
-          <div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Motor hidrológico por corrida</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">SWAT+ / PROXY</div>
-            <div className="text-[11px] text-teal-600 dark:text-teal-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>La evidencia y provenance se ven en cada ejecución</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Forzamiento */}
-        <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 p-5 flex flex-col justify-between hover:border-amber-500/40 transition group shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-mono uppercase text-zinc-500 dark:text-zinc-400">Forzamiento declarado</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
-              <SunMedium className="w-4 h-4" />
+          {/* Módulo 3 */}
+          <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm hover:border-teal-500/40 transition">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold text-teal-700 dark:text-teal-400">MÓDULO 3</span>
+                <span className="w-2 h-2 rounded-full bg-teal-500" />
+              </div>
+              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Validación Hidrológica</h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                Evaluación pareada 2018–2020 contra USGS. RMSE: 9.447 m³/s, NSE: -0.675, PBIAS: -79.58%.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-amber-600 dark:text-amber-400">
+              H1_NOT_SUPPORTED
             </div>
           </div>
-          <div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">La fuente queda registrada por corrida</div>
-            <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">TRACEABLE</div>
-            <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1 font-mono font-medium">
-              <span>WGN, sintético u otro artefacto declarado</span>
+
+          {/* Módulo 4 */}
+          <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm hover:border-amber-500/40 transition">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400">MÓDULO 4</span>
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+              </div>
+              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Escenarios Climáticos</h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                4 corridas ejecutadas: +2°C (-25.9% Q), -15% P (-46.1% Q), siembra directa y cambio a sorgo.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-amber-600 dark:text-amber-400">
+              ✓ 4 Escenarios Listos
+            </div>
+          </div>
+
+          {/* Módulo 5 */}
+          <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm hover:border-indigo-500/40 transition">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold text-indigo-700 dark:text-indigo-400">MÓDULO 5</span>
+                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+              </div>
+              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Impacto & Estadística</h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                KS-test (D=0.547, p=4.4e-143), Wilcoxon signed-rank, análisis Sobol y Bootstrap 95%.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-indigo-600 dark:text-indigo-400">
+              ✓ Batería KS / Wilcoxon
             </div>
           </div>
         </div>
       </div>
 
-      {/* Action Cards */}
+      {/* 4. Action Cards for Direct Navigation */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Link
-          href="/twin-3d"
+          href="/simulations"
           className="p-6 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 hover:border-emerald-500/50 hover:bg-zinc-50 dark:hover:bg-zinc-900/70 transition flex flex-col justify-between group shadow-sm dark:shadow-lg"
         >
           <div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4 group-hover:scale-110 transition">
-              <Box className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4 group-hover:scale-110 transition">
+              <FlaskConical className="w-5 h-5" />
             </div>
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
-              Gemelo Digital 3D Multiescala
-            </h2>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
-              Explora la cuenca agrícola, la muestra espacial del campo y la arquitectura de una
-              planta de maíz derivadas de una corrida persistida.
+            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+              Simulación y Acoplamiento FSPM → SWAT+
+            </h3>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
+              Ejecuta corridas pareadas (control vs acoplado), inspecciona el mapeo de parámetros fisiológicos
+              (<code className="font-mono text-emerald-600 dark:text-emerald-400">corn.lai_pot</code>, <code className="font-mono text-emerald-600 dark:text-emerald-400">can_ht_max</code>)
+              y revisa los balances diarios de masa.
             </p>
           </div>
           <div className="mt-6 flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span>Abrir Simulador y Acoplamiento</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+          </div>
+        </Link>
+
+        <Link
+          href="/twin-3d"
+          className="p-6 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 hover:border-cyan-500/50 hover:bg-zinc-50 dark:hover:bg-zinc-900/70 transition flex flex-col justify-between group shadow-sm dark:shadow-lg"
+        >
+          <div>
+            <div className="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 mb-4 group-hover:scale-110 transition">
+              <Box className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition">
+              Gemelo Digital 3D Multiescala
+            </h3>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
+              Explorador espacial tridimensional con tres niveles de detalle: arquitectura de planta individual (FSPM),
+              parcela de 1,000 plantas con variabilidad BARC y relieve topográfico con la red hidrográfica de South Fork.
+            </p>
+          </div>
+          <div className="mt-6 flex items-center gap-2 text-xs font-medium text-cyan-600 dark:text-cyan-400">
             <span>Iniciar Visor 3D</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
           </div>
@@ -171,71 +298,55 @@ export default function DashboardPage() {
 
         <Link
           href="/reports"
-          className="p-6 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 hover:border-cyan-500/50 hover:bg-zinc-50 dark:hover:bg-zinc-900/70 transition flex flex-col justify-between group shadow-sm dark:shadow-lg"
+          className="p-6 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 hover:border-indigo-500/50 hover:bg-zinc-50 dark:hover:bg-zinc-900/70 transition flex flex-col justify-between group shadow-sm dark:shadow-lg"
         >
           <div>
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 mb-4 group-hover:scale-110 transition">
+            <div className="w-11 h-11 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-4 group-hover:scale-110 transition">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition">
-              Generador de Reportes Multiformato
-            </h2>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
-              Exporta informes ejecutivos y científicos automatizados en formatos <b>PDF</b> con gráficos,
-              documentos técnicos en <b>Word (.docx)</b> y matrices de datos en <b>Excel (.xlsx)</b>.
+            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+              Centro de Reportes y Evidencia Científica
+            </h3>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
+              Descarga informes ejecutivos en <b>PDF</b>, memorias técnicas en <b>Word (.docx)</b> y matrices de datos
+              en <b>Excel (.xlsx)</b>. Consulta la evidencia congelada del reporte final y los 4 escenarios ejecutados.
             </p>
           </div>
-          <div className="mt-6 flex items-center gap-2 text-xs font-medium text-cyan-600 dark:text-cyan-400">
-            <span>Abrir Centro de Reportes</span>
+          <div className="mt-6 flex items-center gap-2 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+            <span>Ver Reportes y Evidencia</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
           </div>
         </Link>
+      </div>
 
-        {hasAnyRole(["SUPERADMIN", "ADMIN_CIENTIFICO"]) ? (
-          <Link
-            href="/users"
-            className="p-6 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 hover:border-rose-500/50 hover:bg-zinc-50 dark:hover:bg-zinc-900/70 transition flex flex-col justify-between group shadow-sm dark:shadow-lg"
-          >
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-400 mb-4 group-hover:scale-110 transition">
-                <Users className="w-5 h-5" />
-              </div>
-              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition">
-                Gestión de Usuarios y Roles (RBAC)
-              </h2>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
-                Controla la matriz de roles y permisos, asigna credenciales a investigadores y
-                administra los perfiles científicos habilitados para simulación.
-              </p>
-            </div>
-            <div className="mt-6 flex items-center gap-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-              <span>Administrar Usuarios</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-            </div>
-          </Link>
-        ) : (
-          <Link
-            href="/profile"
-            className="p-6 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-400 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-900/70 transition flex flex-col justify-between group shadow-sm dark:shadow-lg"
-          >
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 mb-4 group-hover:scale-110 transition">
-                <Shield className="w-5 h-5" />
-              </div>
-              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 transition">
-                Mi Perfil y Credenciales
-              </h2>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
-                Revisa tus permisos asignados, actualiza tu institución académica, especialidad científica
-                y administra tu contraseña.
-              </p>
-            </div>
-            <div className="mt-6 flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-300">
-              <span>Ver Perfil</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-            </div>
-          </Link>
-        )}
+      {/* 5. System Technical Stack & Provenance */}
+      <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 shadow-sm text-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold text-zinc-900 dark:text-zinc-100 block">Trazabilidad y Reproducibilidad Experimental</span>
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              Ejecuciones inmutables con semillas registradas, hashes SHA-256 de binarios SWAT+ y manifiestos de corrida.
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
+          <span className="px-2.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+            SWAT+ 61.0.2.61
+          </span>
+          <span className="px-2.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+            FSPM 1,000 Plantas
+          </span>
+          <span className="px-2.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+            USGS 05451210
+          </span>
+          <span className="px-2.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+            FastAPI + Next.js
+          </span>
+        </div>
       </div>
     </div>
   );

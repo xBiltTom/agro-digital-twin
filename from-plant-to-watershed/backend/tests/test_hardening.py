@@ -143,3 +143,25 @@ def test_websocket_rejects_anonymous_and_accepts_authenticated_playback():
             tick = websocket.receive_json()
         assert tick["type"] == "SIMULATION_PLAYBACK_TICK"
         assert tick["evidence_type"] == "DEMO"
+
+
+def test_final_scientific_report_requires_authentication_and_hides_workspace_paths():
+    with TestClient(app) as client:
+        assert client.get("/api/v1/reports/final-scientific").status_code == 401
+
+        login = client.post("/api/v1/auth/login", json={
+            "email": "investigador@digitaltwin.org", "password": "Investiga123!",
+        })
+        assert login.status_code == 200
+        response = client.get(
+            "/api/v1/reports/final-scientific",
+            headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["scope"]["usgs_gauge"] == "05451210"
+    assert payload["hypothesis"]["conclusion"] == "H1_NOT_SUPPORTED"
+    assert payload["coupling_effect"] == "ZERO_WITH_CURRENT_PARAMETERIZATION"
+    assert "provenance" not in response.text
+    assert "/home/" not in response.text
