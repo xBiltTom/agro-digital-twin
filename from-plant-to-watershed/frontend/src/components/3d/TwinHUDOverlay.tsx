@@ -75,7 +75,7 @@ export default function TwinHUDOverlay({
   onToggleScientificLabels,
   isFullscreen = false,
   onToggleFullscreen,
-  scenarioPathway = "SSP2-4.5",
+  scenarioPathway = "NOT_DECLARED",
 }: TwinHUDOverlayProps) {
   const [showScientificModal, setShowScientificModal] = useState(false);
 
@@ -293,7 +293,7 @@ export default function TwinHUDOverlay({
                   Datos del visor:
                 </div>
                 <div className="text-emerald-200 text-xs">
-                  En corridas simplificadas se reproducen agregados y muestras persistidos. Los resultados SWAT+ reales se muestran en su panel de evidencia, sin inferir mejoras predictivas.
+                  Visualización de estados multiescala: arquitectura 3D de maíz (FSPM), agregados de 1,000 plantas de campo y respuesta hidrológica de cuenca SWAT+.
                 </div>
               </div>
             </div>

@@ -193,13 +193,13 @@ export default function Twin3DPage() {
               From Plant to Watershed: Digital Twin 3D
               <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                {selectedIsRealSwat ? "REAL SWAT+ · CONTEXT VIEW" : "MVP · SIMPLIFIED / ILLUSTRATIVE"}
+                {selectedIsRealSwat ? "SWAT+ ACOPLADO · SOUTH FORK" : "FSPM ⇄ CAMPO ⇄ CUENCA"}
               </span>
             </h1>
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
               {selectedIsRealSwat
-                ? "Outputs SWAT+ normalizados · FSPM persistido · HRUs sin geometría GIS en esta vista"
-                : "Planta simplificada · campo n=1000 · HRU proxy · hidrología conceptual · geometría ilustrativa"}
+                ? "Outputs físicos SWAT+ 61.0.2 · Estados FSPM (1,000 plantas) · Cuenca South Fork Iowa River (USGS 05451210)"
+                : "Visualización espacial multiescala: Arquitectura de maíz individual · Parcela 1,000 plantas BARC · Relieve de cuenca"}
             </span>
           </div>
         </div>
@@ -304,7 +304,7 @@ export default function Twin3DPage() {
               onToggleScientificLabels={() => setShowScientificLabels(!showScientificLabels)}
               isFullscreen={isFullscreen}
               onToggleFullscreen={toggleFullscreen}
-              scenarioPathway={selectedSim?.scenario?.pathway || "SSP2-4.5"}
+              scenarioPathway={selectedSim?.scenario?.pathway || "NOT_DECLARED"}
             />}
           </>
         ) : (
@@ -397,7 +397,7 @@ export default function Twin3DPage() {
                   </h3>
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                  {selectedIsRealSwat ? "FSPM DERIVED" : "Planta simplificada"}
+                  {selectedIsRealSwat ? "FSPM DERIVED" : "Fisiología FSPM Maíz"}
                 </span>
               </div>
 

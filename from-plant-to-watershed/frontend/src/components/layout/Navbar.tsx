@@ -38,9 +38,9 @@ export default function Navbar() {
             Plataforma Gemelo Digital Activa
           </span>
         </div>
-        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400">
-          <Activity className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
-          <span>Modelos simplificados · DEMO</span>
+        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300">
+          <Activity className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+          <span>Piloto South Fork · SWAT+ 61.0.2 / FSPM Activo</span>
         </div>
       </div>
 

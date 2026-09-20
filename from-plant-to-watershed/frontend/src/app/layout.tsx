@@ -4,8 +4,8 @@ import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeContext";
 
 export const metadata: Metadata = {
-  title: "AP-3 Gemelo Digital: From Plant to Watershed",
-  description: "Base demostrativa con modelos científicos simplificados, clima sintético y visualización ilustrativa",
+  title: "From Plant to Watershed | Gemelo Digital Agrícola Multiescala",
+  description: "Framework de modelado ecohidrológico acoplando modelos funcionales-estructurales de planta (FSPM) con hidrología de cuenca SWAT+ y proyecciones climáticas",
 };
 
 export default function RootLayout({

@@ -24,6 +24,42 @@ export interface DatasetInfo {
   normalized_artifact_count: number;
 }
 
+export interface FinalScientificReport {
+  report_version: string;
+  created_at: string;
+  scope: { watershed: string; usgs_gauge: string; huc8: string; statement: string };
+  experiment: {
+    simulation_period: string[];
+    warm_up: string[];
+    evaluation: string[];
+    calibration: { status: string; procedure: string };
+  };
+  hypothesis: { conclusion: string; h0: string; h1: string };
+  coupling_effect: string;
+  runs: Record<string, {
+    run_id: string;
+    evidence_type: string;
+    totals: { et_mm: number; runoff_mm: number; soil_water_mm: number; streamflow_m3s_mean: number; yield_estimated: number | null };
+  }>;
+  validation: Record<string, {
+    matched_count: number;
+    imputation: string;
+    hypothesis_status: string;
+    improvement_percent: number | null;
+    baseline: Record<"rmse" | "nse" | "kge", number | null>;
+    coupled: Record<"rmse" | "nse" | "kge", number | null>;
+  }>;
+  scenarios: Array<{
+    name: string;
+    status: string;
+    delta_from_historical_baseline: Record<string, { absolute: number | null; percent: number | null }>;
+  }>;
+  cmip6: Record<string, string>;
+  nass_yield_validation: { status: string; reason: string };
+  limitations: string[];
+  statistics: Record<string, { status: string; reason?: string }>;
+}
+
 export interface PlantSpecies {
   id: string;
   name: string;
@@ -258,7 +294,20 @@ export interface PlantSample {
 }
 
 export interface ExternalModelInfo {
-  id: string; name: string; target: string; framework: string; status: string; metrics: Record<string, number>;
+  id: string;
+  name: string;
+  target: string;
+  framework: string;
+  status: string;
+  metrics: Record<string, number>;
+  artifact_path?: string;
+  version?: string | null;
+  checksum?: string;
+  bundle_contract_version?: string | null;
+  learning_mode?: string | null;
+  training_data_type?: string | null;
+  feature_schema?: Record<string, unknown>;
+  provenance?: Record<string, unknown>;
 }
 
 export interface TwinWebSocketTick {

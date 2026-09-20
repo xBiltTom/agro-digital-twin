@@ -14,7 +14,7 @@ import {
   Watershed,
   SimulationRun,
   SimulationResult, SwatPlusConfiguration, SwatResultsResponse
-  , ExternalModelInfo, DatasetInfo
+  , ExternalModelInfo, DatasetInfo, FinalScientificReport
 } from "../types/simulation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -223,6 +223,10 @@ class ApiService {
 
   async getReportsHistory(): Promise<any[]> {
     return this.request<any[]>("/reports/history");
+  }
+
+  async getFinalScientificReport(): Promise<FinalScientificReport> {
+    return this.request<FinalScientificReport>("/reports/final-scientific");
   }
 }
 

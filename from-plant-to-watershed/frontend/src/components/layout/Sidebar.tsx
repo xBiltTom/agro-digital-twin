@@ -12,7 +12,8 @@ import {
   Users,
   UserCheck,
   Layers,
-  Sprout
+  Sprout,
+  Database
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -21,10 +22,17 @@ export default function Sidebar() {
 
   const navigation = [
     {
-      name: "Dashboard General",
+      name: "Dashboard Científico",
       href: "/",
       icon: LayoutDashboard,
       roles: ["ALL"],
+    },
+    {
+      name: "Simulación y Acoplamiento",
+      href: "/simulations",
+      icon: Sliders,
+      roles: ["SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO"],
+      badge: "SWAT+",
     },
     {
       name: "Gemelo Digital 3D",
@@ -34,13 +42,13 @@ export default function Sidebar() {
       badge: "3D",
     },
     {
-      name: "MVP multiescala",
-      href: "/simulations",
-      icon: Sliders,
-      roles: ["SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO"],
+      name: "Catálogo de Datos y ML",
+      href: "/datasets",
+      icon: Database,
+      roles: ["ALL"],
     },
     {
-      name: "Reportes Multiformato",
+      name: "Reportes y Evidencia",
       href: "/reports",
       icon: FileSpreadsheet,
       roles: ["ALL"],
@@ -72,12 +80,12 @@ export default function Sidebar() {
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5">
-              AP-3 TWIN
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800/50">
-                v1.0
+              PLANT TO WATERSHED
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50">
+                SWAT+
               </span>
             </span>
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Plant to Watershed</span>
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Gemelo Digital Multiescala</span>
           </div>
         </Link>
 
@@ -132,11 +140,11 @@ export default function Sidebar() {
       {/* Footer Info */}
       <div className="p-4 border-t border-zinc-200 dark:border-zinc-900 text-[11px] text-zinc-500 dark:text-zinc-400 flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
-          <Layers className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-          <span className="font-mono text-zinc-700 dark:text-zinc-300">Escalas: Micro ⇄ Meso ⇄ Macro</span>
+          <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span className="font-mono text-zinc-700 dark:text-zinc-300">Piloto: South Fork Iowa River</span>
         </div>
         <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-          Vertical slice honesto: Plant → Field → HRU → Watershed.
+          USGS 05451210 · FSPM ⇄ 1000 Plantas ⇄ SWAT+
         </p>
       </div>
     </aside>

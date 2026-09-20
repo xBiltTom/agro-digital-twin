@@ -58,9 +58,9 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description=(
-        "Base demostrativa reproducible con modelos simplificados de planta e hidrología y clima sintético. "
-        "Puede ejecutar un baseline SWAT+ real si se configura un binario y proyecto SWAT+ válidos; "
-        "no implementa FSPM ni NEX-GDDP-CMIP6."
+        "Plataforma reproducible con visualizaciones simplificadas y un piloto científico South Fork "
+        "Iowa River con baseline/coupled SWAT+ real y FSPM determinista. "
+        "Los artefactos NEX-GDDP-CMIP6 requieren disponibilidad explícita y no se sustituyen con datos sintéticos."
     ),
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
