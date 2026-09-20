@@ -172,6 +172,23 @@ def test_adapter_uses_isolated_workspace_and_parses_real_process_output(tmp_path
     assert result.provenance["configured_control_files"]["print_prt"]["frequency"] == "DAILY"
 
 
+def test_adapter_records_only_the_coupled_input_checksum_delta(tmp_path: Path):
+    project = _project(tmp_path)
+    (project / "plants.plt").write_text("plants\nname lai_pot\ncorn 6\n", encoding="utf-8")
+    source_plants_checksum = hashlib.sha256((project / "plants.plt").read_bytes()).hexdigest()
+    executable = _executable(tmp_path, "printf 'yr mon day surq et perc sw\\nyyyy mm dd mm mm mm mm\\n2020 1 1 1 2 3 150\\n2020 1 2 1 2 3 150\\n' > output_wb_day\nprintf 'yr mon day flo_out\\nyyyy mm dd m3/s\\n2020 1 1 4\\n2020 1 2 4\\n' > output_channel_day")
+    def mutator(workspace: Path):
+        (workspace / "plants.plt").write_text("plants\nname lai_pot\ncorn 5\n", encoding="utf-8")
+        return {"status": "APPLIED", "workspace_input_files_modified": ["plants.plt"]}
+    result = SwatPlusAdapter().run(
+        _config(tmp_path, project, executable),
+        workspace_mutator=mutator,
+    )
+    assert result.provenance["input_checksum_diff"]["changed"] == ["plants.plt"]
+    assert result.provenance["input_checksums_before_mutator"]["plants.plt"] != result.provenance["input_checksums_after_mutator"]["plants.plt"]
+    assert hashlib.sha256((project / "plants.plt").read_bytes()).hexdigest() == source_plants_checksum
+
+
 @pytest.mark.asyncio
 async def test_engine_persists_a_real_swat_adapter_result(tmp_path: Path):
     project = _project(tmp_path)

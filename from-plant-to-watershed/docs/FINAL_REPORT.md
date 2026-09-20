@@ -22,14 +22,19 @@ writes `research_domain/final_report.json` and
 
 ## Results
 
+- The numerical results below are the archived `south-fork-final-v1` result
+  for the former three-maximum-parameter contract. They are retained as an
+  audit record and must not be reported as results of the current v2 contract.
+  Run `backend/scripts/run_final_south_fork.py` to create the v2 report with
+  parameter-level lineage and input/output checksums.
 - Window: 2015--2020; warm-up: 2015--2017; USGS evaluation: 2018--2020.
 - Crop diagnostic: 32 CDL corn HRUs resolve to `corn_lum`, `corn_comm`,
   `corn_rot`, auto-management and the `corn` plant record. Output confirms
   35,072 HRU-day records with that active community/rotation.
 - Monthly baseline and coupled RMSE: 9.4471 m3/s; NSE: -0.6746; PBIAS:
   -79.58%; KGE: -0.0812; R2: 0.0721.
-- Coupling improvement: 0.0%; conclusion: `H1_NOT_SUPPORTED`.
-- `COUPLING_EFFECT = ZERO_WITH_CURRENT_PARAMETERIZATION` is accepted after
+- Former-contract coupling improvement: 0.0%; conclusion: `H1_NOT_SUPPORTED`.
+- `COUPLING_EFFECT = ZERO_WITH_FORMER_PARAMETERIZATION` was accepted after
   verifying active crop configuration and changed `plants.plt` checksums.
 
 ## Scenarios

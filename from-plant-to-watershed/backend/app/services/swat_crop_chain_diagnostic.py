@@ -44,7 +44,8 @@ class SwatCropChainDiagnostic:
         plant_header = plant_input[1].split()
         plant_rows = [line.split() for line in plant_input[2:] if line.split()]
         crop_record = next((row for row in plant_rows if row[0] == crop), [])
-        parameter_columns = {name: plant_header.index(name) for name in ("lai_pot", "can_ht_max", "rt_dp_max")}
+        coupled_parameters = ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl", "can_ht_max", "rt_dp_max", "ext_co", "bm_e")
+        parameter_columns = {name: plant_header.index(name) for name in coupled_parameters if name in plant_header}
         plant_record_ok = bool(crop_record) and all(index < len(crop_record) for index in parameter_columns.values())
         checks = {
             "cdl_hrus_reference_crop_landuse": hru_ok,
@@ -52,7 +53,7 @@ class SwatCropChainDiagnostic:
             "community_references_crop": community_ok,
             "management_references_crop_auto_decision": schedule_ok,
             "decision_table_has_plant_and_harvest_actions": decision_ok,
-            "plants_record_has_growth_parameters": plant_record_ok,
+            "plants_record_has_growth_parameters": plant_record_ok and all(name in parameter_columns for name in ("lai_pot", "can_ht_max", "rt_dp_max")),
         }
         return {
             "status": "PASS" if all(checks.values()) else "FAIL", "crop": crop, "target_hru_count": len(target_names),

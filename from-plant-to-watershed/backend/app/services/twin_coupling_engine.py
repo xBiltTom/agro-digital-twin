@@ -115,28 +115,45 @@ class TwinCouplingEngine:
         source_project = Path(requested_swat.get("project_path") or settings.SWAT_PLUS_PROJECT_DIR)
         climate, climate_provenance = SwatClimateForcingReader(source_project).for_period(sim_run.start_date, sim_run.end_date)
         population = PlantPopulation(count=sim_run.plant_count, seed=sim_run.seed, crop="maize")
-        # The plant table stores *maximum* LAI, canopy height and root depth, so
-        # map the FSPM seasonal peak rather than an arbitrary final/senescent day.
-        gdd, peak_field, plants = 0.0, None, ()
+        # The plant table stores species traits. Annual maize thermal time and
+        # absorbed radiation therefore restart each calendar crop season; the
+        # mapper receives a multi-season summary of LAI development, not a
+        # six-year cumulative plant that could only senesce once.
+        gdd, absorbed_par, peak_field, plants = 0.0, 0.0, None, ()
         peak_height, peak_root, peak_dates = None, None, {}
+        fields_by_year: dict[int, list[dict[str, Any]]] = {}
         for index, forcing in enumerate(climate, 1):
+            current_date = sim_run.start_date + timedelta(days=index - 1)
+            if current_date.month == 1 and current_date.day == 1:
+                gdd, absorbed_par = 0.0, 0.0
             gdd += max(0.0, forcing["temp_c"] - 8.0)
-            daily_forcing = {**forcing, "gdd_c_day": gdd}
+            daily_forcing = {**forcing, "gdd_c_day": gdd, "cumulative_absorbed_par_mj_m2": absorbed_par}
             current_plants = population.step(index, daily_forcing, soil_moisture_vol=0.24)
             current_field = PlantToFieldAggregator.aggregate(current_plants, soil_moisture_vol=0.24)
+            # PAR is 48% of shortwave radiation; green-canopy interception is
+            # already represented by the FSPM Beer-Lambert cover calculation.
+            absorbed_par += max(0.0, forcing["solar_rad_mj"]) * .48 * current_field["canopy_cover"]
+            fields_by_year.setdefault(current_date.year, []).append(current_field)
             if peak_field is None or current_field["mean_LAI"] > peak_field["mean_LAI"]:
                 peak_field, plants = current_field, current_plants
-                peak_dates["date_of_peak_LAI"] = (sim_run.start_date + timedelta(days=index - 1)).isoformat()
+                peak_dates["date_of_peak_LAI"] = current_date.isoformat()
             if peak_height is None or current_field["plant_height_mean_m"] > peak_height["plant_height_mean_m"]:
                 peak_height = current_field
-                peak_dates["date_of_peak_height"] = (sim_run.start_date + timedelta(days=index - 1)).isoformat()
+                peak_dates["date_of_peak_height"] = current_date.isoformat()
             if peak_root is None or current_field["root_depth_mean_m"] > peak_root["root_depth_mean_m"]:
                 peak_root = current_field
-                peak_dates["date_of_peak_root_depth"] = (sim_run.start_date + timedelta(days=index - 1)).isoformat()
+                peak_dates["date_of_peak_root_depth"] = current_date.isoformat()
+        seasonal_contracts = [PlantToFieldAggregator.seasonal_lai_contract(rows) for rows in fields_by_year.values() if len(rows) >= 3 and max(row["mean_LAI"] for row in rows) > 0]
+        if not seasonal_contracts:
+            raise ValueError("FSPM produced no seasonal LAI trajectory for SWAT+ coupling")
         field = peak_field
         field["plant_height_mean_m"] = peak_height["plant_height_mean_m"]
         field["root_depth_mean_m"] = peak_root["root_depth_mean_m"]
-        field["aggregation_window"] = "seasonal_peak_canopy_state"
+        field["swat_lai_contract"] = {key: fmean(contract[key] for contract in seasonal_contracts)
+                                      for key in ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl")}
+        field["swat_lai_contract"]["season_count"] = len(seasonal_contracts)
+        field["swat_lai_contract"]["derivation"] = "mean of annual SIMPLIFIED_FSPM seasonal LAI contracts"
+        field["aggregation_window"] = "annual seasonal LAI trajectories plus period maximum height/root depth"
         field["peak_dates"] = peak_dates
         field["climate_provenance"] = climate_provenance
         mapper = SwatPlantParameterMapper(requested_swat.get("target_plant_name", "corn"))

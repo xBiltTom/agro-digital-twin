@@ -116,6 +116,10 @@ def _sha256(path: Path) -> str:
 _RECOGNIZED_OUTPUT_PATTERNS = (
     "output_wb*", "basin_wb*", "output_channel*", "channel_sd*", "output_hru*", "hru_wb*",
 )
+_TRACEABLE_INPUT_FILES = (
+    "plants.plt", "plant.ini", "landuse.lum", "management.sch", "hru-data.hru",
+    "soils.sol", "soil_plant.ini", "time.sim", "print.prt",
+)
 
 
 def _day_of_year(value: date) -> int:
@@ -214,6 +218,12 @@ class SwatPlusAdapter:
                     stale[str(output.relative_to(run_directory))] = _sha256(output)
                     output.unlink()
         return stale
+
+    @staticmethod
+    def _input_checksums(run_directory: Path) -> dict[str, str]:
+        """Checksum the finite, named SWAT+ input contract used for lineage."""
+        return {name: _sha256(run_directory / name) for name in _TRACEABLE_INPUT_FILES
+                if (run_directory / name).is_file()}
 
     @staticmethod
     def _validate_resources(config: SwatPlusRunConfig) -> Path:
@@ -334,12 +344,18 @@ class SwatPlusAdapter:
             "print_prt": _configure_print_prt(print_prt, config),
         }
         stale_outputs = self._clear_recognized_outputs(run_directory)
+        input_checksums_before_mutator = self._input_checksums(run_directory)
         workspace_modifications: dict[str, Any] = {"status": "NOT_APPLIED"}
         if workspace_mutator is not None:
             try:
                 workspace_modifications = workspace_mutator(run_directory)
             except Exception as exc:
                 raise SwatProjectInvalidError("Coupled SWAT+ input preparation failed", details={"workspace": str(workspace), "message": str(exc)}) from exc
+        input_checksums_after_mutator = self._input_checksums(run_directory)
+        changed_input_files = sorted(name for name, before in input_checksums_before_mutator.items()
+                                     if input_checksums_after_mutator.get(name) != before)
+        created_input_files = sorted(name for name in input_checksums_after_mutator
+                                     if name not in input_checksums_before_mutator)
         command = [str(config.executable_path.resolve())]
         execution_started_ns = time.time_ns()
         try:
@@ -395,6 +411,10 @@ class SwatPlusAdapter:
                 "output_checksums": {str(path.relative_to(workspace)): _sha256(path) for path in parsed.source_files},
                 "stale_workspace_outputs_removed": stale_outputs, "configured_control_files": control_files,
                 "workspace_modifications": workspace_modifications,
+                "input_checksums_before_mutator": input_checksums_before_mutator,
+                "input_checksums_after_mutator": input_checksums_after_mutator,
+                "input_checksum_diff": {"changed": changed_input_files, "created": created_input_files,
+                                        "unchanged": sorted((set(input_checksums_before_mutator) & set(input_checksums_after_mutator)) - set(changed_input_files))},
                 "output_generation": output_generation,
                 "output_frequency": config.output_frequency, "warmup_period": config.warmup_period,
             },

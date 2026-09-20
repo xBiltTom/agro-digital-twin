@@ -51,7 +51,7 @@ export default function StatisticalBatteryPanel({ report }: Props) {
         </div>
 
         <span className="px-3 py-1 rounded-xl bg-white/80 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-indigo-700 dark:text-indigo-400 shrink-0 font-semibold">
-          Protocolo OSF Registrado
+          Protocolo de análisis interno
         </span>
       </div>
 
