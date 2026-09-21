@@ -218,14 +218,26 @@ def _no_till(workspace: Path) -> dict[str, Any]:
 
 
 def _sorghum(workspace: Path) -> dict[str, Any]:
-    replacements = (("corn_lum", "sorghum_lum"), ("corn_comm", "sorghum_comm"), ("corn_rot", "sorghum_rot"), ("corn", "grsg"))
+    # ``grsg`` is the actual South Fork SWAT+ plant record.  Keep its land-use,
+    # community and rotation identifiers aligned with the mapper/diagnostic.
+    replacements = (("corn_lum", "grsg_lum"), ("corn_comm", "grsg_comm"), ("corn_rot", "grsg_rot"), ("corn", "grsg"))
     for name in ("hru-data.hru", "landuse.lum", "plant.ini", "management.sch"):
         path = workspace / name
         text = path.read_text(encoding="utf-8", errors="strict")
         for old, new in replacements:
             text = text.replace(old, new)
         path.write_text(text, encoding="utf-8")
-    return {"target_plant": "grsg", "plant_table_description": "grain_sorghum", "method": "CDL corn-majority HRU community/rotation replaced by existing SWAT+ grsg tabulated record"}
+    return {"target_plant": "grsg", "landuse": "grsg_lum", "community": "grsg_comm", "rotation": "grsg_rot", "plant_table_description": "grain_sorghum", "method": "CDL corn-majority HRU community/rotation replaced by existing SWAT+ grsg tabulated record"}
+
+
+def _require_coupled_field_crop(field: dict[str, Any], crop: str) -> None:
+    """Reject a crop field contract that does not match the active SWAT+ crop."""
+    expected_fspm_crop = {"corn": "maize", "grsg": "sorghum_proxy"}.get(crop)
+    if field.get("target_plant_name") != crop or (expected_fspm_crop and field.get("fspm_crop") != expected_fspm_crop):
+        raise ValueError(
+            f"scenario crop {crop!r} cannot receive FSPM target {field.get('target_plant_name')!r} "
+            f"with crop classification {field.get('fspm_crop')!r}"
+        )
 
 
 def _run(name: str, field: dict[str, Any], *, coupled: bool = False, scenario: str = "HISTORICAL_REFERENCE",
@@ -242,8 +254,7 @@ def _run(name: str, field: dict[str, Any], *, coupled: bool = False, scenario: s
             change["crop_change"] = _sorghum(workspace)
         crop = "grsg" if scenario == "MAIZE_TO_SORGHUM" else "corn"
         if coupled:
-            if field.get("target_plant_name") != crop:
-                raise ValueError(f"scenario crop {crop!r} cannot receive an FSPM field for {field.get('target_plant_name')!r}")
+            _require_coupled_field_crop(field, crop)
             change["fspm_parameter_mapping"] = SwatPlantParameterMapper(crop).apply(workspace, field)
         change["crop_chain_input"] = SwatCropChainDiagnostic.input_chain(workspace, cdl["target_hrus"], crop=crop)
         return change
@@ -340,6 +351,7 @@ def main() -> None:
     field, fspm_daily = _fspm_field(forcing=historical_forcing, forcing_provenance=historical_forcing_provenance)
     baseline = _run("south-fork-final-baseline-2015-2020", field)
     coupled = _run("south-fork-final-coupled-2015-2020", field, coupled=True)
+    reference_totals = _totals(baseline)
     observed, bflow, cflow = _observations(EVALUATION_START, EVALUATION_END), _series(baseline, "streamflow_m3s"), _series(coupled, "streamflow_m3s")
     daily = ValidationEngine.compare_dated(observed, bflow, cflow, temporal_resolution="daily", observed_evidence_type="OBSERVED", baseline_evidence_type="REAL_SWAT_PLUS", coupled_evidence_type="REAL_SWAT_PLUS_COUPLED")
     monthly = ValidationEngine.compare_dated(_monthly(observed), _monthly(bflow), _monthly(cflow), temporal_resolution="monthly", observed_evidence_type="OBSERVED", baseline_evidence_type="REAL_SWAT_PLUS", coupled_evidence_type="REAL_SWAT_PLUS_COUPLED")

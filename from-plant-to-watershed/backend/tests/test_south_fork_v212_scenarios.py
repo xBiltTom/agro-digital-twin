@@ -1,5 +1,6 @@
-import inspect
 from types import SimpleNamespace
+
+import pytest
 
 import scripts.run_final_south_fork as runner
 
@@ -76,7 +77,9 @@ def test_sorghum_proxy_is_recomputed_and_targets_grsg_not_maize(monkeypatch):
     assert field["fspm_crop"] == "sorghum_proxy"
     assert lineage["fspm_classification"] == "SIMPLIFIED_SORGHUM_PROXY"
     assert lineage["crop_modified"] is True
-    assert 'field.get("target_plant_name") != crop' in inspect.getsource(runner._run)
+    runner._require_coupled_field_crop(field, "grsg")
+    with pytest.raises(ValueError):
+        runner._require_coupled_field_crop({**field, "fspm_crop": "maize"}, "grsg")
 
 
 def test_scenario_execution_is_coupled_and_compared_with_historical_coupled(monkeypatch):
