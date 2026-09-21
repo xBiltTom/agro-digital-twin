@@ -52,7 +52,8 @@ export interface FinalScientificReport {
   scenarios: Array<{
     name: string;
     status: string;
-    delta_from_historical_baseline: Record<string, { absolute: number | null; percent: number | null }>;
+    comparison_baseline: string;
+    delta_from_historical_coupled_v2: Record<string, { absolute: number | null; percent: number | null }> | null;
   }>;
   cmip6: Record<string, string>;
   nass_yield_validation: { status: string; reason: string };
@@ -60,6 +61,7 @@ export interface FinalScientificReport {
   statistics: Record<string, {
     status?: string;
     reason?: string;
+    interpretation?: string;
     statistic?: number;
     p_value_asymptotic?: number;
     n_observed?: number;

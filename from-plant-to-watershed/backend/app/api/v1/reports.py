@@ -78,7 +78,10 @@ def _final_scientific_summary(report: dict) -> dict:
             {
                 "name": name,
                 "status": scenario["status"],
-                "delta_from_historical_baseline": scenario["delta_from_historical_baseline"],
+                "comparison_baseline": scenario.get("comparison_baseline", "ARCHIVED_RESULT_BASELINE"),
+                "delta_from_historical_coupled_v2": scenario.get(
+                    "delta_from_historical_coupled_v2", scenario.get("delta_from_historical_baseline")
+                ),
             }
             for name, scenario in report["scenarios"].items()
         ],

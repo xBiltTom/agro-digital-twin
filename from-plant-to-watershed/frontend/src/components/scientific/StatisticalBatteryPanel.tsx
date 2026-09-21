@@ -42,6 +42,9 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
   const stats = report.statistics || {};
   const ks = stats.ks_baseline_vs_observed || {};
   const wilcoxon = stats.wilcoxon_monthly_absolute_errors || {};
+  const wilcoxonNarrative = wilcoxon.status === "COMPUTED"
+    ? wilcoxon.interpretation ?? "N/D"
+    : wilcoxon.reason ?? "N/D";
   const sobol = stats.sobol || {};
   const bootstrap = stats.bootstrap_ssp585_yield_ic95 || {};
 
@@ -140,14 +143,14 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
               </div>
               <div className="flex items-center justify-between font-mono">
                 <span className="text-zinc-500">Diagnóstico de rangos:</span>
-                <span className="font-bold text-amber-700 dark:text-amber-400">{wilcoxon.reason ?? "N/D"}</span>
+                <span className="font-bold text-amber-700 dark:text-amber-400">{wilcoxonNarrative}</span>
               </div>
             </div>
           </div>
 
           <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/80 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/80">
             <span className="font-semibold text-zinc-700 dark:text-zinc-300">Justificación metodológica: </span>
-            {wilcoxon.reason ?? "N/D"}
+            {wilcoxonNarrative}
           </div>
         </div>
 

@@ -34,6 +34,12 @@ START, END, WARMUP_YEARS = date(2015, 1, 1), date(2020, 12, 31), 3
 EVALUATION_START, EVALUATION_END = date(2018, 1, 1), date(2020, 12, 31)
 FSPM_SEED, PLANT_COUNT = 42, 1000
 WATERSHED_ID, OUTLET = "USGS-05451210", "153"
+SCENARIO_DEFINITIONS: dict[str, dict[str, Any]] = {
+    "TEMPERATURE_PLUS_2C": {"weather": {"temp_offset_c": 2.0}},
+    "PRECIPITATION_MINUS_15PCT": {"weather": {"precip_factor": 0.85}},
+    "NO_TILL": {"scenario": "NO_TILL"},
+    "MAIZE_TO_SORGHUM": {"scenario": "MAIZE_TO_SORGHUM"},
+}
 
 
 def _sha256(path: Path) -> str:
@@ -61,24 +67,33 @@ def _monthly(values: dict[str, float]) -> dict[str, float]:
     return {month: fmean(rows) for month, rows in sorted(grouped.items())}
 
 
-def _fspm_field() -> tuple[dict[str, Any], dict[str, dict[str, float]]]:
-    forcing, provenance = SwatClimateForcingReader(SOURCE_PROJECT).for_period(START, END)
-    season = SwatCropChainDiagnostic.auto_management_season(SOURCE_PROJECT, target_crop="corn")
-    windows = season.windows(START, END, (weather["temp_c"] for weather in forcing), thermal_maturity_gdd=1450.0)
+def _fspm_field(*, forcing: list[dict[str, float]] | None = None, forcing_provenance: dict[str, Any] | None = None,
+                crop: str = "maize", target_plant_name: str = "corn", scenario_name: str = "HISTORICAL_COUPLED_V2",
+                start: date = START, end: date = END) -> tuple[dict[str, Any], dict[str, dict[str, float]]]:
+    """Run the deterministic 1,000-plant contract for one forcing/crop scenario."""
+    if forcing is None:
+        forcing, provenance = SwatClimateForcingReader(SOURCE_PROJECT).for_period(start, end)
+    else:
+        provenance = dict(forcing_provenance or {})
+    if len(forcing) != (end - start).days + 1:
+        raise ValueError("FSPM forcing must contain one row per requested day")
+    season = SwatCropChainDiagnostic.auto_management_season(SOURCE_PROJECT, target_crop=target_plant_name)
+    thermal_maturity_gdd = 1450.0
+    windows = season.windows(start, end, (weather["temp_c"] for weather in forcing), thermal_maturity_gdd=thermal_maturity_gdd)
     active_by_date = {
         date.fromisoformat(day.isoformat()): window
         for window in windows
         for day in (date.fromisoformat(window["start_date"]) + timedelta(days=offset)
                     for offset in range((date.fromisoformat(window["end_date"]) - date.fromisoformat(window["start_date"])).days + 1))
     }
-    population, gdd, absorbed_par = PlantPopulation(PLANT_COUNT, FSPM_SEED, crop="maize"), 0.0, 0.0
+    population, gdd, absorbed_par = PlantPopulation(PLANT_COUNT, FSPM_SEED, crop=crop), 0.0, 0.0
     peak_lai: dict[str, Any] | None = None
     peak_height: dict[str, Any] | None = None
     peak_root: dict[str, Any] | None = None
     daily: dict[str, dict[str, float]] = {}
     fields_by_season: dict[str, list[dict[str, Any]]] = {}
     for index, weather in enumerate(forcing, 1):
-        current_date = date.fromordinal(START.toordinal() + index - 1)
+        current_date = date.fromordinal(start.toordinal() + index - 1)
         window = active_by_date.get(current_date)
         day = current_date.isoformat()
         if window is None:
@@ -104,7 +119,59 @@ def _fspm_field() -> tuple[dict[str, Any], dict[str, dict[str, float]]]:
     lai_contract = {key: fmean(contract[key] for contract in seasonal_contracts)
                     for key in ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl")}
     lai_contract.update({"season_count": len(seasonal_contracts), "derivation": "mean of SWAT auto-management PHU-derived SIMPLIFIED_FSPM seasonal LAI contracts"})
-    return {**peak_lai, "plant_height_mean_m": peak_height["plant_height_mean_m"], "root_depth_mean_m": peak_root["root_depth_mean_m"], "swat_lai_contract": lai_contract, "aggregation_window": "SWAT auto-management PHU-derived approximate crop-season trajectories", "season_provenance": season.provenance(windows), "fspm_growth_temperature_base_c": season.crop_temperature_base_c, "fspm_growth_temperature_base_source": "plants.plt.tmp_base", "fspm_seed": FSPM_SEED, "plant_count": PLANT_COUNT, "forcing": provenance}, daily
+    classification = "SIMPLIFIED_SORGHUM_PROXY" if crop == "sorghum_proxy" else "SIMPLIFIED_FSPM"
+    return {**peak_lai, "plant_height_mean_m": peak_height["plant_height_mean_m"], "root_depth_mean_m": peak_root["root_depth_mean_m"], "swat_lai_contract": lai_contract, "aggregation_window": "SWAT auto-management PHU-derived approximate crop-season trajectories", "season_provenance": season.provenance(windows), "fspm_growth_temperature_base_c": season.crop_temperature_base_c, "fspm_growth_temperature_base_source": "plants.plt.tmp_base", "fspm_seed": FSPM_SEED, "plant_count": PLANT_COUNT, "fspm_crop": crop, "fspm_classification": classification, "target_plant_name": target_plant_name, "scenario_name": scenario_name, "forcing": provenance}, daily
+
+
+def _scenario_forcing(historical_forcing: list[dict[str, float]], *, scenario_name: str,
+                      temp_offset_c: float = 0.0, precip_factor: float = 1.0,
+                      historical_provenance: dict[str, Any] | None = None) -> tuple[list[dict[str, float]], dict[str, Any]]:
+    """Create the FSPM input forcing corresponding to a SWAT+ weather perturbation."""
+    changed = [
+        {**row, "temp_c": row["temp_c"] + temp_offset_c, "precip_mm": max(0.0, row["precip_mm"] * precip_factor)}
+        for row in historical_forcing
+    ]
+    return changed, {
+        **(historical_provenance or {}), "scenario_name": scenario_name,
+        "forcing_modified": bool(temp_offset_c or precip_factor != 1.0),
+        "temperature_offset_c": temp_offset_c, "precipitation_factor": precip_factor,
+        "method": "FSPM forcing perturbed before population execution; matches the SWAT+ weather-file perturbation.",
+    }
+
+
+def _prepare_scenario_fspm(*, scenario_name: str, options: dict[str, Any], historical_field: dict[str, Any],
+                           historical_forcing: list[dict[str, float]], historical_forcing_provenance: dict[str, Any]) -> tuple[dict[str, Any], dict[str, dict[str, float]], dict[str, Any]]:
+    """Return a field contract and complete, auditable scenario lineage."""
+    weather = options.get("weather")
+    management = options.get("scenario") == "NO_TILL"
+    crop_change = options.get("scenario") == "MAIZE_TO_SORGHUM"
+    if weather:
+        forcing, provenance = _scenario_forcing(historical_forcing, scenario_name=scenario_name,
+                                                 historical_provenance=historical_forcing_provenance, **weather)
+        field, daily = _fspm_field(forcing=forcing, forcing_provenance=provenance, scenario_name=scenario_name)
+        fspm_recomputed = True
+        response_reason = ("FSPM_WATER_RESPONSE=NOT_MODELED: the simplified FSPM receives its existing fixed "
+                           "soil_moisture_vol=0.24 input, so precipitation is passed through the scenario forcing "
+                           "but is not converted into an unvalidated root-zone-water state.") if weather.get("precip_factor", 1.0) != 1.0 else None
+    elif crop_change:
+        field, daily = _fspm_field(forcing=historical_forcing, forcing_provenance=historical_forcing_provenance,
+                                   crop="sorghum_proxy", target_plant_name="grsg", scenario_name=scenario_name)
+        fspm_recomputed, response_reason = True, "SIMPLIFIED_SORGHUM_PROXY: proxy crop contract mapped only to SWAT+ grsg."
+    else:
+        field, daily = historical_field, {}
+        fspm_recomputed = False
+        response_reason = "FSPM_RESPONSE_TO_MANAGEMENT=NOT_MODELED: no-till changes only documented SWAT+ management; no physiological response is invented."
+    lineage = {
+        "scenario_name": scenario_name, "scenario_type": "CLIMATE" if weather else "CROP" if crop_change else "MANAGEMENT",
+        "fspm_recomputed": fspm_recomputed, "fspm_crop": field["fspm_crop"], "fspm_classification": field["fspm_classification"],
+        "forcing_modified": bool(weather), "management_modified": management or crop_change, "crop_modified": crop_change,
+        "comparison_baseline": "HISTORICAL_COUPLED_V2", "field_plant_contract": {
+            "scenario_name": field["scenario_name"], "plant_count": field["plant_count"], "seed": field["fspm_seed"],
+            "target_plant_name": field["target_plant_name"], "swat_lai_contract": field["swat_lai_contract"],
+            "mapped_field_values": {key: field[key] for key in ("plant_height_mean_m", "root_depth_mean_m", "canopy_extinction_coefficient", "biomass_energy_ratio_kg_ha_per_mj_m2")},
+        }, "fspm_response_limitation": response_reason,
+    }
+    return field, daily, lineage
 
 
 def _weather_rows(path: Path) -> list[list[str]]:
@@ -161,13 +228,12 @@ def _sorghum(workspace: Path) -> dict[str, Any]:
     return {"target_plant": "grsg", "plant_table_description": "grain_sorghum", "method": "CDL corn-majority HRU community/rotation replaced by existing SWAT+ grsg tabulated record"}
 
 
-def _run(name: str, field: dict[str, Any], *, coupled: bool = False, scenario: str = "HISTORICAL_REFERENCE", weather: dict[str, Any] | None = None) -> SwatRunResult:
+def _run(name: str, field: dict[str, Any], *, coupled: bool = False, scenario: str = "HISTORICAL_REFERENCE",
+         weather: dict[str, Any] | None = None, scenario_lineage: dict[str, Any] | None = None) -> SwatRunResult:
     mapper = SwatCDLHRUMapper(CDL_COMPOSITION, threshold=0.50)
     def mutator(workspace: Path) -> dict[str, Any]:
         cdl = mapper.apply(workspace)
         change: dict[str, Any] = {"cdl_hru_mapping": cdl}
-        if coupled:
-            change["fspm_parameter_mapping"] = SwatPlantParameterMapper("corn").apply(workspace, field)
         if weather:
             change["climate_forcing_change"] = _change_weather(workspace, **weather)
         if scenario == "NO_TILL":
@@ -175,6 +241,10 @@ def _run(name: str, field: dict[str, Any], *, coupled: bool = False, scenario: s
         if scenario == "MAIZE_TO_SORGHUM":
             change["crop_change"] = _sorghum(workspace)
         crop = "grsg" if scenario == "MAIZE_TO_SORGHUM" else "corn"
+        if coupled:
+            if field.get("target_plant_name") != crop:
+                raise ValueError(f"scenario crop {crop!r} cannot receive an FSPM field for {field.get('target_plant_name')!r}")
+            change["fspm_parameter_mapping"] = SwatPlantParameterMapper(crop).apply(workspace, field)
         change["crop_chain_input"] = SwatCropChainDiagnostic.input_chain(workspace, cdl["target_hrus"], crop=crop)
         return change
     result = SwatPlusAdapter().run(SwatPlusRunConfig(
@@ -185,7 +255,29 @@ def _run(name: str, field: dict[str, Any], *, coupled: bool = False, scenario: s
     if coupled:
         result.provenance["evidence_type"] = "REAL_SWAT_PLUS_COUPLED"
     result.provenance["workspace_modifications"]["crop_chain_output"] = SwatCropChainDiagnostic.output_chain(result.workspace, crop="grsg" if scenario == "MAIZE_TO_SORGHUM" else "corn")
+    if scenario_lineage is not None:
+        result.provenance["scenario_contract"] = {
+            **scenario_lineage,
+            "swat_parameter_updates": result.provenance["workspace_modifications"].get("fspm_parameter_mapping", {}).get("parameter_updates", []),
+        }
     return result
+
+
+def _run_coupled_scenario(*, scenario_name: str, options: dict[str, Any], historical_field: dict[str, Any],
+                          historical_forcing: list[dict[str, float]], historical_forcing_provenance: dict[str, Any],
+                          historical_coupled: SwatRunResult) -> dict[str, Any]:
+    """Execute a scenario as a perturbation of ``HISTORICAL_COUPLED_V2``."""
+    scenario_field, _scenario_daily, scenario_lineage = _prepare_scenario_fspm(
+        scenario_name=scenario_name, options=options, historical_field=historical_field,
+        historical_forcing=historical_forcing, historical_forcing_provenance=historical_forcing_provenance,
+    )
+    run = _run(f"south-fork-final-coupled-v2-{scenario_name.lower()}", scenario_field, coupled=True,
+               scenario=options.get("scenario", "HISTORICAL_REFERENCE"), weather=options.get("weather"),
+               scenario_lineage=scenario_lineage)
+    values = _totals(run)
+    return {"status": "COMPLETED", "run_id": run.run_id, "values": values,
+            "comparison_baseline": "HISTORICAL_COUPLED_V2", "reference_run_id": historical_coupled.run_id,
+            "delta_from_historical_coupled_v2": _delta(_totals(historical_coupled), values), "provenance": run.provenance}
 
 
 def _totals(run: SwatRunResult) -> dict[str, float | None]:
@@ -244,19 +336,19 @@ def main() -> None:
         if not path.exists(): raise FileNotFoundError(path)
     source_input_names = ("plants.plt", "plant.ini", "landuse.lum", "management.sch", "hru-data.hru", "soils.sol", "time.sim", "print.prt")
     source_input_checksums_before = {name: _sha256(SOURCE_PROJECT / name) for name in source_input_names if (SOURCE_PROJECT / name).is_file()}
-    field, fspm_daily = _fspm_field()
+    historical_forcing, historical_forcing_provenance = SwatClimateForcingReader(SOURCE_PROJECT).for_period(START, END)
+    field, fspm_daily = _fspm_field(forcing=historical_forcing, forcing_provenance=historical_forcing_provenance)
     baseline = _run("south-fork-final-baseline-2015-2020", field)
     coupled = _run("south-fork-final-coupled-2015-2020", field, coupled=True)
     observed, bflow, cflow = _observations(EVALUATION_START, EVALUATION_END), _series(baseline, "streamflow_m3s"), _series(coupled, "streamflow_m3s")
     daily = ValidationEngine.compare_dated(observed, bflow, cflow, temporal_resolution="daily", observed_evidence_type="OBSERVED", baseline_evidence_type="REAL_SWAT_PLUS", coupled_evidence_type="REAL_SWAT_PLUS_COUPLED")
     monthly = ValidationEngine.compare_dated(_monthly(observed), _monthly(bflow), _monthly(cflow), temporal_resolution="monthly", observed_evidence_type="OBSERVED", baseline_evidence_type="REAL_SWAT_PLUS", coupled_evidence_type="REAL_SWAT_PLUS_COUPLED")
-    reference_totals = _totals(baseline)
-    definitions: dict[str, dict[str, Any]] = {"TEMPERATURE_PLUS_2C": {"weather": {"temp_offset_c": 2.0}}, "PRECIPITATION_MINUS_15PCT": {"weather": {"precip_factor": 0.85}}, "NO_TILL": {"scenario": "NO_TILL"}, "MAIZE_TO_SORGHUM": {"scenario": "MAIZE_TO_SORGHUM"}}
     scenarios: dict[str, Any] = {}
-    for name, options in definitions.items():
-        run = _run(f"south-fork-final-{name.lower()}", field, scenario=options.get("scenario", "HISTORICAL_REFERENCE"), weather=options.get("weather"))
-        values = _totals(run)
-        scenarios[name] = {"status": "COMPLETED", "run_id": run.run_id, "values": values, "delta_from_historical_baseline": _delta(reference_totals, values), "provenance": run.provenance}
+    for name, options in SCENARIO_DEFINITIONS.items():
+        scenarios[name] = _run_coupled_scenario(
+            scenario_name=name, options=options, historical_field=field, historical_forcing=historical_forcing,
+            historical_forcing_provenance=historical_forcing_provenance, historical_coupled=coupled,
+        )
     monthly_dates = monthly["alignment"]["matched_dates"]
     b_month, c_month, o_month = _monthly(bflow), _monthly(cflow), _monthly(observed)
     b_errors, c_errors = [abs(b_month[day] - o_month[day]) for day in monthly_dates], [abs(c_month[day] - o_month[day]) for day in monthly_dates]

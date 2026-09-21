@@ -60,15 +60,15 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
   }
 
   const chartData = report.scenarios.map((scen) => {
-    const deltas = scen.delta_from_historical_baseline;
+    const deltas: Record<string, { absolute: number | null; percent: number | null }> = scen.delta_from_historical_coupled_v2 || {};
     return {
-      name: scen.name === "+2C"
+      name: scen.name === "TEMPERATURE_PLUS_2C" || scen.name === "+2C"
         ? "+2°C Temp"
-        : scen.name === "-15% precipitation"
+        : scen.name === "PRECIPITATION_MINUS_15PCT" || scen.name === "-15% precipitation"
         ? "-15% Lluvia"
-        : scen.name === "no-till"
+        : scen.name === "NO_TILL" || scen.name === "no-till"
         ? "Siembra Directa"
-        : "Maíz → Sorgo",
+        : scen.name === "MAIZE_TO_SORGHUM" ? "Maíz → Sorgo" : scen.name,
       fullName: scen.name,
       status: scen.status,
       streamflowDelta: deltas.streamflow_m3s_mean?.percent ?? null,
@@ -107,7 +107,7 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
           <div>
             <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              Variación porcentual frente al baseline de la ejecución v2
+              Variación porcentual frente a HISTORICAL_COUPLED_V2
             </h3>
             <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
               Caudal en río (m³/s), Escorrentía superficial (mm), Evapotranspiración (mm) y Agua en suelo (mm)
@@ -145,7 +145,7 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
       {/* 4 Scenario Cards Detailed Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {report.scenarios.map((scen, idx) => {
-          const deltas = scen.delta_from_historical_baseline;
+          const deltas: Record<string, { absolute: number | null; percent: number | null }> = scen.delta_from_historical_coupled_v2 || {};
           const qDelta = deltas.streamflow_m3s_mean?.percent ?? null;
           const rDelta = deltas.runoff_mm?.percent ?? null;
           const etDelta = deltas.et_mm?.percent ?? null;
@@ -205,7 +205,7 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
               </div>
 
               <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-[10px] text-zinc-500 leading-tight">
-                Valores provenientes de <code>current_result.scenarios</code>; no se añade una interpretación numérica fija en la UI.
+                Referencia: <code>{scen.comparison_baseline}</code>. Valores provenientes de <code>current_result.scenarios</code>; no se añade una interpretación numérica fija en la UI.
               </div>
             </div>
           );

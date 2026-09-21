@@ -45,6 +45,21 @@ their provenance is `ASSUMED_PARAMETER_NOT_CALIBRATED`, `calibrated: false`, and
 records source value, population mean/std, model clamp and SWAT+ documented range.
 They are not inferred or discovered from the 1,000 plants.
 
+## Coupled scenario contract (v2.1.1 correction)
+
+`HISTORICAL_COUPLED_V2` is the reference for scenario deltas. The scientific H1
+comparison remains separate: `SWAT_STANDARD_BASELINE` versus
+`SWAT_MULTISCALE_COUPLED`. Climate scenarios perturb the FSPM forcing first,
+re-run the seeded 1,000-plant population, and then map that scenario-specific
+field to a coupled SWAT+ workspace. The precipitation scenario records that the
+simplified FSPM still has fixed `soil_moisture_vol=0.24`; it does not fabricate
+a root-zone water response from rainfall until that state is defensibly modeled.
+`NO_TILL` instead reuses the historical
+coupled field and records `FSPM_RESPONSE_TO_MANAGEMENT=NOT_MODELED`, because no
+direct no-till physiology is represented. `MAIZE_TO_SORGHUM` runs only the
+explicit `SIMPLIFIED_SORGHUM_PROXY` and maps it to `grsg`; a maize field is
+rejected for that crop mapping.
+
 `SwatPlantParameterMapper` changes only the active crop record in `plants.plt`.
 The source project's real `plants.plt` header is checked before every write; the
 field meanings/ranges follow the [SWAT+ plants.plt input documentation](https://swatplus.gitbook.io/io-docs/introduction-1/databases/plants.plt)
