@@ -13,7 +13,7 @@ import {
   SwatRunType,
   ExternalModelInfo,
   DatasetInfo,
-  FinalScientificReport,
+  CurrentFinalScientificReportResponse,
 } from "../../../types/simulation";
 import SwatRunEvidencePanel from "../../../components/scientific/SwatRunEvidencePanel";
 import HypothesisValidationPanel from "../../../components/scientific/HypothesisValidationPanel";
@@ -67,7 +67,7 @@ export default function SimulationsPage() {
   const [capabilities, setCapabilities] = useState<Record<string, { status: string; evidence_type?: string }>>({});
   const [externalModels, setExternalModels] = useState<ExternalModelInfo[]>([]);
   const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
-  const [finalReport, setFinalReport] = useState<FinalScientificReport | null>(null);
+  const [finalReport, setFinalReport] = useState<CurrentFinalScientificReportResponse | null>(null);
   const [activeTab, setActiveTab] = useState<"RUNS" | "VALIDATION" | "SCENARIOS" | "STATISTICS">("RUNS");
 
   const [isLoading, setIsLoading] = useState(true);

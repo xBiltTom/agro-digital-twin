@@ -26,19 +26,31 @@ import {
   ReferenceLine,
   Cell,
 } from "recharts";
-import { FinalScientificReport } from "../../types/simulation";
+import { CurrentFinalScientificReportResponse } from "../../types/simulation";
 
 interface Props {
-  report: FinalScientificReport | null;
+  report: CurrentFinalScientificReportResponse | null;
 }
 
-export default function ClimateScenariosPanel({ report }: Props) {
-  if (!report) {
+export default function ClimateScenariosPanel({ report: envelope }: Props) {
+  if (!envelope) {
     return (
       <div className="p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center text-xs text-zinc-500">
         Cargando escenarios de adaptación climática...
       </div>
     );
+  }
+  if (envelope.current_contract.current_execution_status === "NOT_EXECUTED") {
+    return <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      No hay escenarios del contrato v2 ejecutados. Los escenarios v1 no se presentan como resultados actuales.
+    </div>;
+  }
+
+  const report = envelope.current_result;
+  if (!report) {
+    return <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      El contrato South Fork v2 figura como ejecutado, pero sus escenarios no están disponibles.
+    </div>;
   }
 
   const chartData = report.scenarios.map((scen) => {

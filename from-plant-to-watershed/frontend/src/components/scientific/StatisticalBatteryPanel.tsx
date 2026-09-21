@@ -12,22 +12,34 @@ import {
   Sparkles,
   ShieldAlert,
 } from "lucide-react";
-import { FinalScientificReport } from "../../types/simulation";
+import { CurrentFinalScientificReportResponse } from "../../types/simulation";
 
 interface Props {
-  report: FinalScientificReport | null;
+  report: CurrentFinalScientificReportResponse | null;
 }
 
-export default function StatisticalBatteryPanel({ report }: Props) {
-  if (!report) {
+export default function StatisticalBatteryPanel({ report: envelope }: Props) {
+  if (!envelope) {
     return (
       <div className="p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center text-xs text-zinc-500">
         Cargando batería de pruebas estadísticas...
       </div>
     );
   }
+  if (envelope.current_contract.current_execution_status === "NOT_EXECUTED") {
+    return <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      Batería estadística del contrato v2 pendiente de ejecución; los resultados v1 sólo son evidencia histórica archivada.
+    </div>;
+  }
 
-  const stats = (report as any).statistics || {};
+  const report = envelope.current_result;
+  if (!report) {
+    return <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      El contrato South Fork v2 figura como ejecutado, pero su batería estadística no está disponible.
+    </div>;
+  }
+
+  const stats = report.statistics || {};
   const ks = stats.ks_baseline_vs_observed || {};
   const wilcoxon = stats.wilcoxon_monthly_absolute_errors || {};
   const sobol = stats.sobol || {};
@@ -81,23 +93,23 @@ export default function StatisticalBatteryPanel({ report }: Props) {
               <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] text-zinc-500 block">Estadístico D</span>
                 <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mt-0.5 block">
-                  {typeof ks.statistic === "number" ? ks.statistic.toFixed(4) : "0.5474"}
+                  {typeof ks.statistic === "number" ? ks.statistic.toFixed(4) : "N/D"}
                 </span>
                 <span className="text-[9px] text-zinc-500">Distancia máxima ECDF</span>
               </div>
               <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] text-zinc-500 block">p-value (asintótico)</span>
                 <span className="font-bold text-rose-600 dark:text-rose-400 text-sm mt-0.5 block truncate">
-                  4.46e-143
+                  {typeof ks.p_value_asymptotic === "number" ? ks.p_value_asymptotic.toExponential(2) : "N/D"}
                 </span>
-                <span className="text-[9px] text-zinc-500">n = 1,096 pares diarios</span>
+                <span className="text-[9px] text-zinc-500">n = {report.validation.daily.matched_count} pares diarios</span>
               </div>
             </div>
           </div>
 
           <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/80 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/80">
             <span className="font-semibold text-zinc-700 dark:text-zinc-300">Conclusión: </span>
-            Rechazo de equivalencia distribucional exacta (p &lt; 0.001); confirma que la cuenca South Fork requiere calibración de parámetros de retención y conductividad hidrológica.
+            {ks.status === "COMPUTED" ? "Resultado KS disponible para la ejecución actual; su interpretación se limita a esta única cuenca." : "La prueba KS de la ejecución actual no está disponible."}
           </div>
         </div>
 

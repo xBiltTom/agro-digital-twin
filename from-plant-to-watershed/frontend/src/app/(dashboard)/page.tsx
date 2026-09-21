@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../lib/api";
-import { FinalScientificReport } from "../../types/simulation";
+import { CurrentFinalScientificReportResponse } from "../../types/simulation";
 import {
   Sprout,
   Droplets,
@@ -31,7 +31,7 @@ import {
 export default function DashboardPage() {
   const { user, hasAnyRole } = useAuth();
   const [backendHealth, setBackendHealth] = useState<string>("Verificando...");
-  const [finalReport, setFinalReport] = useState<FinalScientificReport | null>(null);
+  const [finalReport, setFinalReport] = useState<CurrentFinalScientificReportResponse | null>(null);
   const [capabilities, setCapabilities] = useState<Record<string, { status: string; evidence_type?: string }>>({});
 
   useEffect(() => {
@@ -50,6 +50,8 @@ export default function DashboardPage() {
   }, []);
 
   const primaryRole = user?.roles?.[0]?.name || "INVESTIGADOR";
+  const currentResult = finalReport?.current_result;
+  const currentStatus = finalReport?.current_contract?.current_execution_status;
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto transition-colors duration-200 pb-12">
@@ -87,10 +89,10 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
               <span className="text-zinc-500 dark:text-zinc-400 font-mono">Hipótesis evaluada:</span>
               <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 font-mono text-[11px] font-semibold">
-                {finalReport?.hypothesis?.conclusion ?? "H1_NOT_SUPPORTED (Piloto Inicial)"}
+                {currentStatus === "NOT_EXECUTED" ? "SOUTH_FORK_V2: NOT_EXECUTED" : currentResult?.hypothesis.conclusion ?? "REPORTE_V2_NO_DISPONIBLE"}
               </span>
               <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Mejora RMSE mensual: <b>{finalReport?.validation?.monthly_primary?.improvement_percent ?? 0.0}%</b> (Tied outputs under default SWAT+ parameterization)
+                {currentStatus === "NOT_EXECUTED" ? "Las métricas v1 son históricas; el contrato v2 aún no tiene resultados." : <>Mejora RMSE mensual: <b>{currentResult?.validation?.monthly_primary?.improvement_percent ?? "N/D"}%</b></>}
               </span>
             </div>
           </div>
@@ -138,16 +140,16 @@ export default function DashboardPage() {
           <span className="text-[10px] text-zinc-500 font-mono">USDA CDL 2019</span>
         </div>
         <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">Pares Evaluados</span>
-          <span className="text-sm font-bold text-teal-700 dark:text-teal-400 mt-1 block">1,096 Días</span>
-          <span className="text-[10px] text-zinc-500 font-mono">36 meses / USGS real</span>
+          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">Pares v2 evaluados</span>
+          <span className="text-sm font-bold text-teal-700 dark:text-teal-400 mt-1 block">{currentResult?.validation?.daily?.matched_count ?? "N/D"}</span>
+          <span className="text-[10px] text-zinc-500 font-mono">{currentStatus === "NOT_EXECUTED" ? "Contrato v2 pendiente" : "USGS real"}</span>
         </div>
         <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
           <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">RMSE Mensual</span>
           <span className="text-sm font-bold text-amber-700 dark:text-amber-400 mt-1 block">
-            {finalReport?.validation?.monthly_primary?.baseline?.rmse?.toFixed(3) ?? "9.447"} m³/s
+            {currentResult?.validation?.monthly_primary?.baseline?.rmse?.toFixed(3) ?? "N/D"}{currentResult ? " m³/s" : ""}
           </span>
-          <span className="text-[10px] text-zinc-500 font-mono">NSE: -0.675</span>
+          <span className="text-[10px] text-zinc-500 font-mono">NSE: {currentResult?.validation?.monthly_primary?.baseline?.nse?.toFixed(3) ?? "N/D"}</span>
         </div>
       </div>
 
@@ -205,11 +207,11 @@ export default function DashboardPage() {
               </div>
               <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Validación Hidrológica</h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                Evaluación pareada 2018–2020 contra USGS. RMSE: 9.447 m³/s, NSE: -0.675, PBIAS: -79.58%.
+                {currentStatus === "NOT_EXECUTED" ? "El contrato South Fork v2 aún no tiene evaluación hidrológica." : <>Evaluación pareada contra USGS. RMSE: {currentResult?.validation?.monthly_primary?.baseline?.rmse?.toFixed(3) ?? "N/D"} m³/s; NSE: {currentResult?.validation?.monthly_primary?.baseline?.nse?.toFixed(3) ?? "N/D"}.</>}
               </p>
             </div>
             <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-amber-600 dark:text-amber-400">
-              H1_NOT_SUPPORTED
+              {currentStatus === "NOT_EXECUTED" ? "NOT_EXECUTED" : currentResult?.hypothesis.conclusion ?? "REPORTE_V2_NO_DISPONIBLE"}
             </div>
           </div>
 

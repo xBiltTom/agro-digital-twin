@@ -13,7 +13,7 @@ import json
 import math
 import os
 import random
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from statistics import fmean
 from typing import Any, Callable
@@ -63,21 +63,33 @@ def _monthly(values: dict[str, float]) -> dict[str, float]:
 
 def _fspm_field() -> tuple[dict[str, Any], dict[str, dict[str, float]]]:
     forcing, provenance = SwatClimateForcingReader(SOURCE_PROJECT).for_period(START, END)
+    season = SwatCropChainDiagnostic.auto_management_season(SOURCE_PROJECT, target_crop="corn")
+    windows = season.windows(START, END, (weather["temp_c"] for weather in forcing), thermal_maturity_gdd=1450.0)
+    active_by_date = {
+        date.fromisoformat(day.isoformat()): window
+        for window in windows
+        for day in (date.fromisoformat(window["start_date"]) + timedelta(days=offset)
+                    for offset in range((date.fromisoformat(window["end_date"]) - date.fromisoformat(window["start_date"])).days + 1))
+    }
     population, gdd, absorbed_par = PlantPopulation(PLANT_COUNT, FSPM_SEED, crop="maize"), 0.0, 0.0
     peak_lai: dict[str, Any] | None = None
     peak_height: dict[str, Any] | None = None
     peak_root: dict[str, Any] | None = None
     daily: dict[str, dict[str, float]] = {}
-    fields_by_year: dict[int, list[dict[str, Any]]] = {}
+    fields_by_season: dict[str, list[dict[str, Any]]] = {}
     for index, weather in enumerate(forcing, 1):
         current_date = date.fromordinal(START.toordinal() + index - 1)
-        if current_date.month == 1 and current_date.day == 1:
+        window = active_by_date.get(current_date)
+        day = current_date.isoformat()
+        if window is None:
+            daily[day] = {"precipitation_mm": weather["precip_mm"], "temperature_min": weather["temp_c"], "temperature_max": weather["temp_c"], "FSPM_LAI": 0.0, "FSPM_root_depth": 0.0, "FSPM_biomass": 0.0, "FSPM_water_stress": None}
+            continue
+        if day == window["start_date"]:
             gdd, absorbed_par = 0.0, 0.0
         gdd += max(0.0, weather["temp_c"] - 8.0)
         aggregate = PlantToFieldAggregator.aggregate(population.step(index, {**weather, "gdd_c_day": gdd, "cumulative_absorbed_par_mj_m2": absorbed_par}, soil_moisture_vol=0.24), soil_moisture_vol=0.24)
         absorbed_par += max(0.0, weather["solar_rad_mj"]) * .48 * aggregate["canopy_cover"]
-        fields_by_year.setdefault(current_date.year, []).append(aggregate)
-        day = current_date.isoformat()
+        fields_by_season.setdefault(window["start_date"], []).append(aggregate)
         daily[day] = {"precipitation_mm": weather["precip_mm"], "temperature_min": weather["temp_c"], "temperature_max": weather["temp_c"], "FSPM_LAI": aggregate["mean_LAI"], "FSPM_root_depth": aggregate["root_depth_mean_m"], "FSPM_biomass": aggregate["biomass_g_plant"], "FSPM_water_stress": aggregate["water_stress"]}
         if peak_lai is None or aggregate["mean_LAI"] > peak_lai["mean_LAI"]:
             peak_lai = aggregate
@@ -86,13 +98,13 @@ def _fspm_field() -> tuple[dict[str, Any], dict[str, dict[str, float]]]:
         if peak_root is None or aggregate["root_depth_mean_m"] > peak_root["root_depth_mean_m"]:
             peak_root = aggregate
     assert peak_lai and peak_height and peak_root
-    seasonal_contracts = [PlantToFieldAggregator.seasonal_lai_contract(rows) for rows in fields_by_year.values() if len(rows) >= 3 and max(row["mean_LAI"] for row in rows) > 0]
+    seasonal_contracts = [PlantToFieldAggregator.seasonal_lai_contract(rows) for rows in fields_by_season.values() if len(rows) >= 3 and max(row["mean_LAI"] for row in rows) > 0]
     if not seasonal_contracts:
-        raise RuntimeError("FSPM produced no usable annual LAI contract")
+        raise RuntimeError("FSPM produced no usable auto-management crop-season LAI contract")
     lai_contract = {key: fmean(contract[key] for contract in seasonal_contracts)
                     for key in ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl")}
-    lai_contract.update({"season_count": len(seasonal_contracts), "derivation": "mean of annual SIMPLIFIED_FSPM seasonal LAI contracts"})
-    return {**peak_lai, "plant_height_mean_m": peak_height["plant_height_mean_m"], "root_depth_mean_m": peak_root["root_depth_mean_m"], "swat_lai_contract": lai_contract, "aggregation_window": "annual seasonal LAI trajectories plus period maximum height/root depth", "fspm_seed": FSPM_SEED, "plant_count": PLANT_COUNT, "forcing": provenance}, daily
+    lai_contract.update({"season_count": len(seasonal_contracts), "derivation": "mean of SWAT auto-management PHU-derived SIMPLIFIED_FSPM seasonal LAI contracts"})
+    return {**peak_lai, "plant_height_mean_m": peak_height["plant_height_mean_m"], "root_depth_mean_m": peak_root["root_depth_mean_m"], "swat_lai_contract": lai_contract, "aggregation_window": "SWAT auto-management PHU-derived approximate crop-season trajectories", "season_provenance": season.provenance(windows), "fspm_seed": FSPM_SEED, "plant_count": PLANT_COUNT, "forcing": provenance}, daily
 
 
 def _weather_rows(path: Path) -> list[list[str]]:
@@ -223,7 +235,7 @@ def _write_dataset(baseline: SwatRunResult, coupled: SwatRunResult, observed: di
     out = ROOT / "data/final"; out.mkdir(parents=True, exist_ok=True)
     data_path, schema_path = out / "experiment_dataset.parquet", out / "experiment_dataset.schema.json"
     pq.write_table(pa.Table.from_pylist(rows), data_path, compression="zstd")
-    schema_path.write_text(json.dumps({"schema_version": "south-fork-final-v1", "row_count": len(rows), "data_file": data_path.name, "units": {"streamflow_m3s": "m3/s", "runoff_mm": "mm/day", "et_mm": "mm/day", "soil_water_mm": "mm", "precipitation_mm": "mm/day", "temperature": "degC", "FSPM_LAI": "m2_leaf/m2_ground", "FSPM_root_depth": "m", "FSPM_biomass": "g/plant"}, "synthetic_data": False, "limitations": ["FSPM variables are derived model states, not observations.", "hru_id is watershed outlet because this export joins outlet-level SWAT+ and USGS series."]}, indent=2) + "\n", encoding="utf-8")
+    schema_path.write_text(json.dumps({"schema_version": "south-fork-final-v2", "contract_version": "south-fork-final-v2", "row_count": len(rows), "data_file": data_path.name, "units": {"streamflow_m3s": "m3/s", "runoff_mm": "mm/day", "et_mm": "mm/day", "soil_water_mm": "mm", "precipitation_mm": "mm/day", "temperature": "degC", "FSPM_LAI": "m2_leaf/m2_ground", "FSPM_root_depth": "m", "FSPM_biomass": "g/plant"}, "synthetic_data": False, "limitations": ["FSPM variables are derived model states, not observations.", "hru_id is watershed outlet because this export joins outlet-level SWAT+ and USGS series."]}, indent=2) + "\n", encoding="utf-8")
     return str(data_path), str(schema_path)
 
 
@@ -251,8 +263,12 @@ def main() -> None:
     dataset_path, schema_path = _write_dataset(baseline, coupled, observed, fspm_daily)
     output_identical = baseline.provenance["output_checksums"] == coupled.provenance["output_checksums"]
     source_input_checksums_after = {name: _sha256(SOURCE_PROJECT / name) for name in source_input_names if (SOURCE_PROJECT / name).is_file()}
-    report = {"report_version": "south-fork-final-v2", "created_at": datetime.now(timezone.utc).isoformat(), "scope": {"watershed": "South Fork Iowa River", "usgs_gauge": "05451210", "huc8": "07080207", "statement": "Multi-watershed validation remains future work; this implementation performs a reproducible pilot validation on one real agricultural watershed."}, "experiment": {"simulation_period": [START.isoformat(), END.isoformat()], "warm_up": [START.isoformat(), "2017-12-31"], "evaluation": [EVALUATION_START.isoformat(), EVALUATION_END.isoformat()], "calibration": {"status": "LIMITED_CALIBRATION", "procedure": "No hydrological parameters were changed. The existing uncalibrated builder parameterization was retained identically for baseline and coupled runs.", "objective_function": "NOT_OPTIMIZED", "seed": None, "parameters": []}, "source_inputs_immutable": source_input_checksums_before == source_input_checksums_after, "source_input_checksums_before": source_input_checksums_before, "source_input_checksums_after": source_input_checksums_after}, "problem": {"plant_field_hru_watershed_connection": "VERIFIED_INPUT_CHAIN_AND_REAL_SWAT_OUTPUT"}, "fspm": {"classification": "SIMPLIFIED_FSPM", "field_aggregate": field, "plant_count": PLANT_COUNT, "seed": FSPM_SEED}, "baseline": {"run_id": baseline.run_id, "totals": reference_totals, "provenance": baseline.provenance}, "coupled": {"run_id": coupled.run_id, "totals": _totals(coupled), "provenance": coupled.provenance}, "coupling_diagnostic": {"parameter_lineage": coupled.provenance["workspace_modifications"]["fspm_parameter_mapping"]["parameter_updates"], "active_crop_chain": coupled.provenance["workspace_modifications"].get("crop_chain_output"), "input_checksum_diff": coupled.provenance.get("input_checksum_diff"), "output_checksums_identical": output_identical, "hydrology_delta_from_baseline": _delta(reference_totals, _totals(coupled)), "no_output_postprocessing": True}, "coupling_effect": "ZERO_WITH_CURRENT_PARAMETERIZATION" if output_identical else "NONZERO_WITH_CURRENT_PARAMETERIZATION", "validation": {"daily": daily, "monthly_primary": monthly}, "hypothesis": {"h0": "coupling does not improve prediction", "h1": "coupling reduces monthly RMSE by at least 15%", "conclusion": monthly["hypothesis_status"]}, "scenarios": scenarios, "cmip6": {"SSP2-4.5": "NOT_AVAILABLE: no normalized NASA NEX-GDDP-CMIP6 artifact was supplied; no synthetic substitute was used.", "SSP5-8.5": "NOT_AVAILABLE: no normalized NASA NEX-GDDP-CMIP6 artifact was supplied; no synthetic substitute was used."}, "statistics": {"ks_baseline_vs_observed": _ks(list(observed.values()), [bflow[day] for day in observed if day in bflow]), "ks_coupled_vs_observed": _ks(list(observed.values()), [cflow[day] for day in observed if day in cflow]), "wilcoxon_monthly_absolute_errors": _wilcoxon(b_errors, c_errors), "bootstrap_ssp585_yield_ic95": {"status": "INSUFFICIENT_EVIDENCE", "reason": "No SSP5-8.5 yield series exists."}, "sobol": {"status": "IMPLEMENTED_BUT_NOT_FULLY_EXECUTED", "parameters": ["biomass_energy_ratio_kg_ha_per_mj_m2", "canopy_extinction_coefficient", "root_depth_mean_m", "mean_LAI"], "reason": "A Sobol run would require repeated real SWAT+ executions; it was not used to fabricate sensitivity results."}}, "nass_yield_validation": {"status": "LIMITED", "reason": "No documented Hardin County-to-watershed/HRU yield crosswalk is included; county yield is not a direct watershed measurement."}, "dataset": {"path": dataset_path, "schema": schema_path, "sha256": _sha256(Path(dataset_path))}, "limitations": ["Single-watershed pilot only.", "Static 2019 CDL snapshot.", "SIMPLIFIED_FSPM and basin-mean forcing summary.", "Annual crop seasons reset on January 1 because exact SWAT+ auto-plant event logs are unavailable.", "Limited hydrological calibration.", "FSPM ET, uptake, stress, stomatal conductance, root distribution and yield are NOT_COUPLED.", "NASS county/watershed spatial mismatch.", "CMIP6 artifacts unavailable in this execution."]}
-    target = ROOT / "research_domain/final_report.json"; target.write_text(json.dumps(report, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    report = {"report_version": "south-fork-final-v2", "created_at": datetime.now(timezone.utc).isoformat(), "scope": {"watershed": "South Fork Iowa River", "usgs_gauge": "05451210", "huc8": "07080207", "statement": "Multi-watershed validation remains future work; this implementation performs a reproducible pilot validation on one real agricultural watershed."}, "experiment": {"simulation_period": [START.isoformat(), END.isoformat()], "warm_up": [START.isoformat(), "2017-12-31"], "evaluation": [EVALUATION_START.isoformat(), EVALUATION_END.isoformat()], "calibration": {"status": "LIMITED_CALIBRATION", "procedure": "No hydrological parameters were changed. The existing uncalibrated builder parameterization was retained identically for baseline and coupled runs.", "objective_function": "NOT_OPTIMIZED", "seed": None, "parameters": []}, "source_inputs_immutable": source_input_checksums_before == source_input_checksums_after, "source_input_checksums_before": source_input_checksums_before, "source_input_checksums_after": source_input_checksums_after}, "problem": {"plant_field_hru_watershed_connection": "VERIFIED_INPUT_CHAIN_AND_REAL_SWAT_OUTPUT"}, "fspm": {"classification": "SIMPLIFIED_FSPM", "field_aggregate": field, "plant_count": PLANT_COUNT, "seed": FSPM_SEED}, "baseline": {"run_id": baseline.run_id, "totals": reference_totals, "provenance": baseline.provenance}, "coupled": {"run_id": coupled.run_id, "totals": _totals(coupled), "provenance": coupled.provenance}, "coupling_diagnostic": {"parameter_lineage": coupled.provenance["workspace_modifications"]["fspm_parameter_mapping"]["parameter_updates"], "active_crop_chain": coupled.provenance["workspace_modifications"].get("crop_chain_output"), "input_checksum_diff": coupled.provenance.get("input_checksum_diff"), "output_checksums_identical": output_identical, "hydrology_delta_from_baseline": _delta(reference_totals, _totals(coupled)), "no_output_postprocessing": True}, "coupling_effect": "ZERO_WITH_CURRENT_PARAMETERIZATION" if output_identical else "NONZERO_WITH_CURRENT_PARAMETERIZATION", "validation": {"daily": daily, "monthly_primary": monthly}, "hypothesis": {"h0": "coupling does not improve prediction", "h1": "coupling reduces monthly RMSE by at least 15%", "conclusion": monthly["hypothesis_status"]}, "scenarios": scenarios, "cmip6": {"SSP2-4.5": "NOT_AVAILABLE: no normalized NASA NEX-GDDP-CMIP6 artifact was supplied; no synthetic substitute was used.", "SSP5-8.5": "NOT_AVAILABLE: no normalized NASA NEX-GDDP-CMIP6 artifact was supplied; no synthetic substitute was used."}, "statistics": {"ks_baseline_vs_observed": _ks(list(observed.values()), [bflow[day] for day in observed if day in bflow]), "ks_coupled_vs_observed": _ks(list(observed.values()), [cflow[day] for day in observed if day in cflow]), "wilcoxon_monthly_absolute_errors": _wilcoxon(b_errors, c_errors), "bootstrap_ssp585_yield_ic95": {"status": "INSUFFICIENT_EVIDENCE", "reason": "No SSP5-8.5 yield series exists."}, "sobol": {"status": "IMPLEMENTED_BUT_NOT_FULLY_EXECUTED", "parameters": ["biomass_energy_ratio_kg_ha_per_mj_m2", "canopy_extinction_coefficient", "root_depth_mean_m", "mean_LAI"], "reason": "A Sobol run would require repeated real SWAT+ executions; it was not used to fabricate sensitivity results."}}, "nass_yield_validation": {"status": "LIMITED", "reason": "No documented Hardin County-to-watershed/HRU yield crosswalk is included; county yield is not a direct watershed measurement."}, "dataset": {"path": dataset_path, "schema": schema_path, "sha256": _sha256(Path(dataset_path))}, "limitations": ["Single-watershed pilot only.", "Static 2019 CDL snapshot.", "SIMPLIFIED_FSPM and basin-mean forcing summary.", "Season starts are PHU-based approximate planting windows because SWAT+ auto-management event logs are unavailable.", "Limited hydrological calibration.", "FSPM ET, uptake, stress, stomatal conductance, root distribution and yield are NOT_COUPLED.", "NASS county/watershed spatial mismatch.", "CMIP6 artifacts unavailable in this execution."]}
+    target = ROOT / "research_domain/final_report_v2.json"; target.write_text(json.dumps(report, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    (ROOT / "research_domain/current_contract_status.json").write_text(json.dumps({
+        "current_contract": {"contract_version": "south-fork-final-v2", "current_execution_status": "EXECUTED", "result_path": "research_domain/final_report_v2.json", "reason": None},
+        "archived_result": {"report_version": "south-fork-final-v1", "status": "ARCHIVED_HISTORICAL_RESULT", "result_path": "research_domain/final_report.json", "interpretation": "Historical result for the former three-parameter coupling contract; not a result of the current v2 contract."},
+    }, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"report": str(target), "dataset": dataset_path, "h1": monthly["hypothesis_status"], "coupling_effect": report["coupling_effect"]}, indent=2))
 
 

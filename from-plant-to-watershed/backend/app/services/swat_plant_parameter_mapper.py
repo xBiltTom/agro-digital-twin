@@ -260,7 +260,7 @@ class SwatPlantParameterMapper:
             transformation = f"direct FieldAggregate value clamped to documented [{lower}, {upper}]"
             if swat_parameter == "rt_dp_max" and root_limit_m is not None:
                 transformation += f"; capped by soils.sol {root_limit_source}={root_limit_m:.6f} m"
-            updates.append({"hru_id": target_hrus, "crop": self.target_plant_name, "source_variable": source_variable, "fspm_value": raw, "swat_parameter": column, "input_file": "plants.plt", "original_value": old, "coupled_value": new, "delta_absolute": new - old, "delta_percent": None if old == 0 else (new - old) / old * 100.0, "unit": unit, "clamp": {"minimum": lower, "maximum": upper, "applied": new != raw}, "transformation": transformation, "justification": justification, "status": "CHANGED" if was_changed else "UNCHANGED"})
+            updates.append({"hru_id": target_hrus, "crop": self.target_plant_name, "source_variable": source_variable, "fspm_value": raw, "swat_parameter": column, "input_file": "plants.plt", "original_value": old, "coupled_value": new, "delta_absolute": new - old, "delta_percent": None if old == 0 else (new - old) / old * 100.0, "unit": unit, "clamp": {"minimum": lower, "maximum": upper, "applied": new != raw}, "source_parameter_provenance": (field.get("coupling_parameter_provenance") or {}).get(column), "transformation": transformation, "justification": justification, "status": "CHANGED" if was_changed else "UNCHANGED"})
         if changed:
             lines[index] = "  ".join(values)
             plants.write_text("\n".join(lines) + "\n", encoding="utf-8")

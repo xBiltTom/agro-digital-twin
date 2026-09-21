@@ -34,3 +34,25 @@ def test_fspm_reader_uses_all_direct_swat_weather_stations(tmp_path):
     rows, provenance = SwatClimateForcingReader(tmp_path).for_period(date(2019, 1, 1), date(2019, 1, 1))
     assert rows == [{"temp_c": 17.0, "precip_mm": 3.0, "solar_rad_mj": 12.0, "rh_percent": 60.0, "co2_ppm": 400.0}]
     assert provenance["station_count"] == 2
+
+
+def test_auto_management_season_uses_phu_window_not_january_first(tmp_path):
+    (tmp_path / "management.sch").write_text("sch\nheader\ncorn_rot 0 1\npl_hv_summer1 corn\n", encoding="utf-8")
+    (tmp_path / "lum.dtl").write_text(
+        "lum\nheader\n"
+        "pl_hv_summer1 6 5 3\n"
+        "phu_base0 hru 0 null - .15000 > - - - -\n"
+        "soil_water hru 0 fc * 2.00000 < < - - -\n"
+        "jday hru 0 null - 350 = - - - -\n"
+        "act_typ obj obj_num name option const\n"
+        "name next 0\n", encoding="utf-8")
+    (tmp_path / "plants.plt").write_text("plt\nname tmp_base\ncorn 8\n", encoding="utf-8")
+    season = SwatCropChainDiagnostic.auto_management_season(tmp_path)
+    windows = season.windows(date(2020, 1, 1), date(2020, 12, 31), [18.0] * 366, thermal_maturity_gdd=1450.0)
+    assert windows[0]["start_date"] != "2020-01-01"
+    assert windows[0]["status"] == "APPROXIMATE_PLANTING_WINDOW"
+    provenance = season.provenance(windows)
+    assert provenance["season_start_method"] == "SWAT_AUTO_MANAGEMENT_PHU_TRIGGER_APPROXIMATION"
+    assert provenance["preplant_trigger_reset"] == "CALENDAR_YEAR_BOUNDARY_FOR_ANNUAL_PHU_ACCUMULATOR_ONLY_NOT_FSPM_SEASON_RESET"
+    assert provenance["confidence"] == "LIMITED"
+    assert "no executed planting-event log" in provenance["limitation"]

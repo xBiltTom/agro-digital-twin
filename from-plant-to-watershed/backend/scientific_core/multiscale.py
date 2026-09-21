@@ -48,6 +48,8 @@ class PlantState:
     radiation_use_efficiency_kg_ha_per_mj_m2: float = 40.0
     canopy_extinction_coefficient: float = 0.50
     thermal_maturity_gdd: float = 1450.0
+    base_canopy_extinction_coefficient: float = 0.50
+    base_biomass_energy_ratio_kg_ha_per_mj_m2: float = 40.0
 
 
 class PlantPopulation:
@@ -99,6 +101,8 @@ class PlantPopulation:
                 radiation_use_efficiency_kg_ha_per_mj_m2=max(10.0, min(90.0, rng.gauss(biomass_energy_ratio_kg_ha_per_mj_m2, 2.0))),
                 canopy_extinction_coefficient=max(.05, min(2.0, rng.gauss(canopy_extinction_coefficient, .025))),
                 thermal_maturity_gdd=thermal_maturity_gdd,
+                base_canopy_extinction_coefficient=canopy_extinction_coefficient,
+                base_biomass_energy_ratio_kg_ha_per_mj_m2=biomass_energy_ratio_kg_ha_per_mj_m2,
             ) for index in range(count)
         )
 
@@ -138,7 +142,7 @@ class PlantPopulation:
                           (1.0 - .35 * result["cwsi_stress_index"]))
             distribution = (round(.60 if root_depth_m <= .3 else .45, 5), round(.30 if root_depth_m <= .3 else .35, 5), round(.10 if root_depth_m <= .3 else .20, 5))
             states.append(PlantState(
-                **{key: getattr(plant, key) for key in ("plant_id", "x_m", "y_m", "base_kc", "root_depth_cm", "soil_moisture_offset", "leaf_area_scale", "transpiration_capacity_scale", "phenology_scale", "biomass_response_scale", "radiation_use_efficiency_kg_ha_per_mj_m2", "canopy_extinction_coefficient", "thermal_maturity_gdd")},
+                **{key: getattr(plant, key) for key in ("plant_id", "x_m", "y_m", "base_kc", "root_depth_cm", "soil_moisture_offset", "leaf_area_scale", "transpiration_capacity_scale", "phenology_scale", "biomass_response_scale", "radiation_use_efficiency_kg_ha_per_mj_m2", "canopy_extinction_coefficient", "thermal_maturity_gdd", "base_canopy_extinction_coefficient", "base_biomass_energy_ratio_kg_ha_per_mj_m2")},
                 lai=round(lai, 6), transpiration_mm=actual, stress=result["cwsi_stress_index"],
                 phenological_stage=stage, growing_degree_days_c_day=scaled_gdd,
                 plant_height_m=height_m, leaf_count=leaf_count, leaf_area_m2=leaf_area,
@@ -188,6 +192,26 @@ class PlantToFieldAggregator:
             "biomass_energy_ratio_kg_ha_per_mj_m2": fmean(p.radiation_use_efficiency_kg_ha_per_mj_m2 for p in rows),
             "units": {"mean_LAI": "m2_leaf/m2_ground", "canopy_cover": "fraction", "root_depth_mean_m": "m", "actual_ET_mm_day": "mm/day", "potential_ET_mm_day": "mm/day", "biomass_g_plant": "g/plant", "yield_estimate_g_plant": "g/plant", "mean_growing_degree_days_c_day": "degC_day", "mean_thermal_maturity_gdd": "degC_day", "phenology_fraction": "fraction", "canopy_extinction_coefficient": "dimensionless", "biomass_energy_ratio_kg_ha_per_mj_m2": "kg/ha/(MJ/m2)"},
         })
+        result["coupling_parameter_provenance"] = {
+            "ext_co": {
+                "source_type": "MODEL_BASE_PARAMETER", "source_value": fmean(p.base_canopy_extinction_coefficient for p in rows),
+                "population_mean": result["canopy_extinction_coefficient"],
+                "population_std": pstdev(p.canopy_extinction_coefficient for p in rows),
+                "assumption_status": "ASSUMED_PARAMETER_NOT_CALIBRATED", "calibrated": False,
+                "intra_population_variation": "seeded truncated normal; sigma=0.025",
+                "model_clamp": {"minimum": .05, "maximum": 2.0},
+                "swat_documented_range": {"minimum": .0, "maximum": 2.0},
+            },
+            "bm_e": {
+                "source_type": "MODEL_BASE_PARAMETER", "source_value": fmean(p.base_biomass_energy_ratio_kg_ha_per_mj_m2 for p in rows),
+                "population_mean": result["biomass_energy_ratio_kg_ha_per_mj_m2"],
+                "population_std": pstdev(p.radiation_use_efficiency_kg_ha_per_mj_m2 for p in rows),
+                "assumption_status": "ASSUMED_PARAMETER_NOT_CALIBRATED", "calibrated": False,
+                "intra_population_variation": "seeded truncated normal; sigma=2.0 kg/ha/(MJ/m2)",
+                "model_clamp": {"minimum": 10.0, "maximum": 90.0},
+                "swat_documented_range": {"minimum": 10.0, "maximum": 90.0},
+            },
+        }
         result["evidence_type"] = "DERIVED_FSPM"
         result["provenance"] = {"source": "SIMPLIFIED_FSPM maize population", "version": PlantPopulation.VERSION, "aggregation": "unweighted population statistics", "units_explicit": True, "classification": "SIMPLIFIED_FSPM"}
         return result

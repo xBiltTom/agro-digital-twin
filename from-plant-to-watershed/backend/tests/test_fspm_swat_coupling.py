@@ -42,6 +42,11 @@ def test_maize_population_is_seed_reproducible_and_has_explicit_units():
     assert field["units"]["mean_LAI"] == "m2_leaf/m2_ground"
     assert field["units"]["biomass_energy_ratio_kg_ha_per_mj_m2"] == "kg/ha/(MJ/m2)"
     assert field["LAI_distribution"]["p10"] <= field["mean_LAI"] <= field["LAI_distribution"]["p90"]
+    for parameter in ("ext_co", "bm_e"):
+        trait = field["coupling_parameter_provenance"][parameter]
+        assert trait["assumption_status"] == "ASSUMED_PARAMETER_NOT_CALIBRATED"
+        assert trait["calibrated"] is False
+        assert trait["population_std"] > 0
 
 
 def test_field_to_documented_swat_inputs_emits_a_complete_manifest(tmp_path):
@@ -52,6 +57,9 @@ def test_field_to_documented_swat_inputs_emits_a_complete_manifest(tmp_path):
     assert {row["swat_parameter"] for row in manifest["parameter_updates"]} == {"lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl", "can_ht_max", "rt_dp_max", "ext_co", "bm_e"}
     assert {row["status"] for row in manifest["parameter_updates"]} <= {"CHANGED", "UNCHANGED"}
     assert all(row["unit"] and row["justification"] for row in manifest["parameter_updates"])
+    traits = {row["swat_parameter"]: row["source_parameter_provenance"] for row in manifest["parameter_updates"]}
+    assert traits["ext_co"]["source_value"] == .5
+    assert traits["bm_e"]["source_value"] == 40.0
     assert "corn 6 .15 .15 .5 .95 .8 2.5 2 .65 40 corn" not in (tmp_path / "plants.plt").read_text(encoding="utf-8")
     assert {entry["variable"] for entry in manifest["not_coupled"]} >= {"actual_ET_mm_day", "water_stress", "root_distribution"}
 

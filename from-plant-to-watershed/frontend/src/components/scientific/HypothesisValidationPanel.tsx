@@ -14,19 +14,31 @@ import {
   MapPin,
   HelpCircle,
 } from "lucide-react";
-import { FinalScientificReport } from "../../types/simulation";
+import { CurrentFinalScientificReportResponse } from "../../types/simulation";
 
 interface Props {
-  report: FinalScientificReport | null;
+  report: CurrentFinalScientificReportResponse | null;
 }
 
-export default function HypothesisValidationPanel({ report }: Props) {
-  if (!report) {
+export default function HypothesisValidationPanel({ report: envelope }: Props) {
+  if (!envelope) {
     return (
       <div className="p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center text-xs text-zinc-500">
         Cargando reporte autoritativo de validación científica...
       </div>
     );
+  }
+  if (envelope.current_contract.current_execution_status === "NOT_EXECUTED") {
+    return <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      Contrato South Fork v2: <b className="font-mono">NOT_EXECUTED</b>. Las métricas v1 permanecen archivadas y no representan el contrato actual.
+    </div>;
+  }
+
+  const report = envelope.current_result;
+  if (!report) {
+    return <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      El contrato South Fork v2 figura como ejecutado, pero su reporte actual no está disponible.
+    </div>;
   }
 
   const monthly = report.validation.monthly_primary;
@@ -82,7 +94,7 @@ export default function HypothesisValidationPanel({ report }: Props) {
             <b className="font-mono text-zinc-800 dark:text-zinc-200">{report.coupling_effect}</b>
           </div>
           <div className="mt-1 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] text-zinc-500">
-            Mejora obtenida: <b>{monthly.improvement_percent?.toFixed(1) ?? "0.0"}%</b> (Requerido: ≥15%)
+            Mejora obtenida: <b>{monthly.improvement_percent?.toFixed(1) ?? "N/D"}{monthly.improvement_percent === null ? "" : "%"}</b> (Requerido: ≥15%)
           </div>
         </div>
       </div>
@@ -112,28 +124,28 @@ export default function HypothesisValidationPanel({ report }: Props) {
               <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase">
                 Validación Primaria Mensual
               </span>
-              <span className="text-[10px] font-mono text-zinc-500">36 periodos</span>
+              <span className="text-[10px] font-mono text-zinc-500">{monthly.matched_count} periodos</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
               <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] font-mono text-zinc-500 block">RMSE (m³/s)</span>
                 <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100 text-sm mt-0.5 block">
-                  {monthly.baseline.rmse?.toFixed(3) ?? "9.447"}
+                  {monthly.baseline.rmse?.toFixed(3) ?? "N/D"}
                 </span>
                 <span className="text-[9px] text-zinc-500 font-mono">Base = Coupled</span>
               </div>
               <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] font-mono text-zinc-500 block">NSE</span>
                 <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-sm mt-0.5 block">
-                  {monthly.baseline.nse?.toFixed(3) ?? "-0.675"}
+                  {monthly.baseline.nse?.toFixed(3) ?? "N/D"}
                 </span>
                 <span className="text-[9px] text-zinc-500 font-mono">Nash-Sutcliffe</span>
               </div>
               <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] font-mono text-zinc-500 block">KGE</span>
                 <span className="font-mono font-bold text-cyan-700 dark:text-cyan-400 text-sm mt-0.5 block">
-                  {monthly.baseline.kge?.toFixed(3) ?? "-0.081"}
+                  {monthly.baseline.kge?.toFixed(3) ?? "N/D"}
                 </span>
                 <span className="text-[9px] text-zinc-500 font-mono">Kling-Gupta</span>
               </div>
@@ -152,14 +164,14 @@ export default function HypothesisValidationPanel({ report }: Props) {
               <span className="font-mono text-xs font-bold text-cyan-700 dark:text-cyan-400 uppercase">
                 Evaluación Diaria de Caudales
               </span>
-              <span className="text-[10px] font-mono text-zinc-500">1,096 pares diarios</span>
+              <span className="text-[10px] font-mono text-zinc-500">{daily.matched_count} pares diarios</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
               <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] font-mono text-zinc-500 block">RMSE (m³/s)</span>
                 <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100 text-sm mt-0.5 block">
-                  {daily.baseline.rmse?.toFixed(3) ?? "7.102"}
+                  {daily.baseline.rmse?.toFixed(3) ?? "N/D"}
                 </span>
                 <span className="text-[9px] text-zinc-500 font-mono">Diario</span>
               </div>

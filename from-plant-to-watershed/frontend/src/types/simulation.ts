@@ -57,7 +57,23 @@ export interface FinalScientificReport {
   cmip6: Record<string, string>;
   nass_yield_validation: { status: string; reason: string };
   limitations: string[];
-  statistics: Record<string, { status: string; reason?: string }>;
+  statistics: Record<string, { status: string; reason?: string; statistic?: number; p_value_asymptotic?: number }>;
+}
+
+export interface CurrentFinalScientificReportResponse {
+  current_contract: {
+    contract_version: string;
+    current_execution_status: "NOT_EXECUTED" | "EXECUTED";
+    result_path: string | null;
+    reason?: string | null;
+  };
+  current_result: FinalScientificReport | null;
+  archived_result: {
+    report_version: string;
+    status: string;
+    result_path: string;
+    interpretation: string;
+  };
 }
 
 export interface PlantSpecies {

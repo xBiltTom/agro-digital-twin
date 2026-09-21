@@ -10,14 +10,19 @@ agricultural watershed.
 ## Reproduction
 
 ```bash
-cd backend
-PYTHONPATH=. SOUTH_FORK_FINAL_RUN_ROOT=/path/to/final-runs \
-  .venv/bin/python scripts/run_final_south_fork.py
+cd from-plant-to-watershed
+PYTHONPATH=backend \
+SOUTH_FORK_SWAT_PROJECT=/path/to/SouthFork/TxtInOut \
+SWAT_PLUS_EXECUTABLE=/path/to/swatplus_exe \
+SOUTH_FORK_CDL_COMPOSITION=/path/to/hru_crop_composition.parquet \
+SOUTH_FORK_FINAL_RUN_ROOT=/path/to/final-runs \
+python3 backend/scripts/run_final_south_fork.py
 ```
 
 The runner needs the local verified SWAT+ project, executable and CDL parquet
 paths described in `research_domain/south_fork_05451210_assessment.json`. It
-writes `research_domain/final_report.json` and
+preserves `research_domain/final_report.json` as the archived v1 result, and
+writes `research_domain/final_report_v2.json`, `research_domain/current_contract_status.json` and
 `data/final/experiment_dataset.parquet`; it never post-processes SWAT+ output.
 
 ## Results

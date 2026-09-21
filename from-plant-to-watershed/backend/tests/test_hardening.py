@@ -145,7 +145,7 @@ def test_websocket_rejects_anonymous_and_accepts_authenticated_playback():
         assert tick["evidence_type"] == "DEMO"
 
 
-def test_final_scientific_report_requires_authentication_and_hides_workspace_paths():
+def test_final_scientific_report_requires_authentication_and_never_exposes_v1_as_current_v2():
     with TestClient(app) as client:
         assert client.get("/api/v1/reports/final-scientific").status_code == 401
 
@@ -157,11 +157,19 @@ def test_final_scientific_report_requires_authentication_and_hides_workspace_pat
             "/api/v1/reports/final-scientific",
             headers={"Authorization": f"Bearer {login.json()['access_token']}"},
         )
+        archive_response = client.get(
+            "/api/v1/reports/final-scientific/archive-v1",
+            headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+        )
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["scope"]["usgs_gauge"] == "05451210"
-    assert payload["hypothesis"]["conclusion"] == "H1_NOT_SUPPORTED"
-    assert payload["coupling_effect"] == "ZERO_WITH_CURRENT_PARAMETERIZATION"
+    assert payload["current_contract"]["contract_version"] == "south-fork-final-v2"
+    assert payload["current_contract"]["current_execution_status"] == "NOT_EXECUTED"
+    assert payload["current_result"] is None
+    assert payload["archived_result"]["report_version"] == "south-fork-final-v1"
+    assert payload["archived_result"]["status"] == "ARCHIVED_HISTORICAL_RESULT"
+    assert archive_response.status_code == 200
+    assert archive_response.json()["not_current_contract_result"] is True
     assert "provenance" not in response.text
     assert "/home/" not in response.text

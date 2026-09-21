@@ -17,6 +17,8 @@ from app.api.deps import get_current_active_user
 router = APIRouter(prefix="/reports", tags=["Reportes Multiformato"])
 
 FINAL_REPORT_PATH = Path(__file__).resolve().parents[4] / "research_domain" / "final_report.json"
+CURRENT_CONTRACT_STATUS_PATH = Path(__file__).resolve().parents[4] / "research_domain" / "current_contract_status.json"
+CURRENT_V2_REPORT_PATH = Path(__file__).resolve().parents[4] / "research_domain" / "final_report_v2.json"
 
 MIME_TYPES = {
     "pdf": "application/pdf",
@@ -89,12 +91,30 @@ def _final_scientific_summary(report: dict) -> dict:
 
 @router.get("/final-scientific")
 async def get_final_scientific_report(_user: User = Depends(get_current_active_user)):
-    """Return the safe, authoritative South Fork pilot summary."""
+    """Return only the current contract's result status, never a stale result."""
     try:
-        report = json.loads(FINAL_REPORT_PATH.read_text(encoding="utf-8"))
-        return _final_scientific_summary(report)
+        status_manifest = json.loads(CURRENT_CONTRACT_STATUS_PATH.read_text(encoding="utf-8"))
+        current_contract = status_manifest["current_contract"]
+        archived_result = status_manifest["archived_result"]
+        if current_contract["current_execution_status"] == "EXECUTED":
+            report = json.loads(CURRENT_V2_REPORT_PATH.read_text(encoding="utf-8"))
+            return {"current_contract": current_contract, "current_result": _final_scientific_summary(report),
+                    "archived_result": archived_result}
+        return {"current_contract": current_contract, "current_result": None,
+                "archived_result": archived_result}
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
         raise HTTPException(status_code=503, detail="Reporte científico final no disponible") from exc
+
+
+@router.get("/final-scientific/archive-v1")
+async def get_archived_v1_final_scientific_report(_user: User = Depends(get_current_active_user)):
+    """Expose the old result only through an endpoint explicitly labelled archive."""
+    try:
+        report = json.loads(FINAL_REPORT_PATH.read_text(encoding="utf-8"))
+        return {"archive_status": "ARCHIVED_HISTORICAL_RESULT", "contract_version": "south-fork-final-v1",
+                "not_current_contract_result": True, "result": _final_scientific_summary(report)}
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise HTTPException(status_code=503, detail="Reporte científico histórico no disponible") from exc
 
 @router.get("/download/{simulation_id}/{report_format}")
 async def download_report(

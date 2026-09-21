@@ -14,6 +14,28 @@ station precipitation and temperature records; where the reference uses WGN for
 solar/humidity, the FSPM records that limitation instead of presenting a second
 observed forcing source.
 
+## Seasonal clock (v2.1)
+
+South Fork's source `management.sch` invokes `pl_hv_summer1`; `lum.dtl` configures
+that decision table with `phu_base0 > 0.15`, a soil-water condition, and a fixed
+harvest fallback at day 350. The TxtInOut and selected print outputs do not expose
+the executed planting event. Consequently the FSPM does **not** reset at January
+1: it opens an `APPROXIMATE_PLANTING_WINDOW` when PHU accumulated above the
+`phu_base0` reference temperature (0 °C) reaches `0.15 × thermal_maturity_gdd`,
+then resets crop GDD and absorbed PAR only at that window start and closes at the
+configured harvest boundary. `plants.plt.tmp_base` remains the FSPM crop-growth
+base temperature, not a replacement for SWAT+'s `phu_base0` trigger. Provenance records the
+decision table, source files, trigger, dates/windows, confidence `LIMITED`, and
+the fact that only the pre-plant annual PHU accumulator resets at the calendar
+boundary (never the FSPM season). This is an explicit approximation, not a claim that
+SWAT+ planted on that date.
+
+`ext_co` and `bm_e` originate as model-base assumptions, with seeded bounded
+intra-population variation. Until a repository artifact supports calibration,
+their provenance is `ASSUMED_PARAMETER_NOT_CALIBRATED`, `calibrated: false`, and
+records source value, population mean/std, model clamp and SWAT+ documented range.
+They are not inferred or discovered from the 1,000 plants.
+
 `SwatPlantParameterMapper` changes only the active crop record in `plants.plt`.
 The source project's real `plants.plt` header is checked before every write; the
 field meanings/ranges follow the [SWAT+ plants.plt input documentation](https://swatplus.gitbook.io/io-docs/introduction-1/databases/plants.plt)
