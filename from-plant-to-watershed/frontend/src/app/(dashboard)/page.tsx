@@ -52,6 +52,7 @@ export default function DashboardPage() {
   const primaryRole = user?.roles?.[0]?.name || "INVESTIGADOR";
   const currentResult = finalReport?.current_result;
   const currentStatus = finalReport?.current_contract?.current_execution_status;
+  const currentScenarioCount = currentResult?.scenarios.length;
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto transition-colors duration-200 pb-12">
@@ -135,9 +136,9 @@ export default function DashboardPage() {
           <span className="text-[10px] text-zinc-500 font-mono">61% maíz / 23% soja</span>
         </div>
         <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">HRUs Mapeadas</span>
-          <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400 mt-1 block">32 HRUs Maíz</span>
-          <span className="text-[10px] text-zinc-500 font-mono">USDA CDL 2019</span>
+          <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">HRUs objetivo (plan)</span>
+          <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400 mt-1 block">CDL corn-majority</span>
+          <span className="text-[10px] text-zinc-500 font-mono">El conteo ejecutado se reportará con v2</span>
         </div>
         <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm">
           <span className="text-[10px] font-mono uppercase text-zinc-500 dark:text-zinc-400 block">Pares v2 evaluados</span>
@@ -173,7 +174,7 @@ export default function DashboardPage() {
               </div>
               <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Datos & Forzamientos</h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                USGS 05451210 diario verificado, CDL 2019, SoilGrids 2.0 y GridMET. Preparado para NEX-GDDP-CMIP6.
+                USGS 05451210 y CDL 2019 están documentados para South Fork. La ejecución v2 usa el forcing y los suelos del proyecto SWAT+ South Fork; no declara SoilGrids, GridMET ni CMIP6 como inputs ejecutados.
               </p>
             </div>
             <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
@@ -190,7 +191,7 @@ export default function DashboardPage() {
               </div>
               <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Arquitectura Multiescala</h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                N1 Planta (FSPM GDD) → N2 Campo (1000 plantas BARC) → N3 Cuenca (SWAT+ 61.0.2) → N4 Clima.
+                N1 Planta (SIMPLIFIED_FSPM con GDD) → N2 Campo (1,000 plantas con variación seeded) → N3 Cuenca (SWAT+ 61.0.2).
               </p>
             </div>
             <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-cyan-600 dark:text-cyan-400">
@@ -224,11 +225,11 @@ export default function DashboardPage() {
               </div>
               <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Escenarios Climáticos</h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                4 corridas ejecutadas: +2°C (-25.9% Q), -15% P (-46.1% Q), siembra directa y cambio a sorgo.
+                {currentStatus === "NOT_EXECUTED" ? "Escenarios v2 pendientes de ejecución." : currentScenarioCount ? `${currentScenarioCount} escenarios incluidos en current_result.scenarios.` : "Escenarios v2 no disponibles."}
               </p>
             </div>
             <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-amber-600 dark:text-amber-400">
-              ✓ 4 Escenarios Listos
+              {currentStatus === "NOT_EXECUTED" ? "NOT_EXECUTED" : currentScenarioCount ? `${currentScenarioCount} ESCENARIOS V2` : "N/D"}
             </div>
           </div>
 
@@ -241,11 +242,11 @@ export default function DashboardPage() {
               </div>
               <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">Impacto & Estadística</h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                KS-test (D=0.547, p=4.4e-143), Wilcoxon signed-rank, análisis Sobol y Bootstrap 95%.
+                {currentStatus === "NOT_EXECUTED" ? "Batería estadística v2 pendiente de ejecución." : "KS, Wilcoxon, Sobol y Bootstrap se muestran únicamente si están presentes en current_result.statistics."}
               </p>
             </div>
             <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[10px] font-mono text-indigo-600 dark:text-indigo-400">
-              ✓ Batería KS / Wilcoxon
+              {currentStatus === "NOT_EXECUTED" ? "NOT_EXECUTED" : "ESTADÍSTICA V2"}
             </div>
           </div>
         </div>
@@ -289,7 +290,7 @@ export default function DashboardPage() {
             </h3>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
               Explorador espacial tridimensional con tres niveles de detalle: arquitectura de planta individual (FSPM),
-              parcela de 1,000 plantas con variabilidad BARC y relieve topográfico con la red hidrográfica de South Fork.
+              parcela de 1,000 plantas SIMPLIFIED_FSPM con variación seeded y relieve topográfico con la red hidrográfica de South Fork.
             </p>
           </div>
           <div className="mt-6 flex items-center gap-2 text-xs font-medium text-cyan-600 dark:text-cyan-400">

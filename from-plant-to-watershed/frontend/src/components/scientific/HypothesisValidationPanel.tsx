@@ -133,7 +133,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
                 <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100 text-sm mt-0.5 block">
                   {monthly.baseline.rmse?.toFixed(3) ?? "N/D"}
                 </span>
-                <span className="text-[9px] text-zinc-500 font-mono">Base = Coupled</span>
+                <span className="text-[9px] text-zinc-500 font-mono">Baseline</span>
               </div>
               <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] font-mono text-zinc-500 block">NSE</span>
@@ -152,9 +152,9 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
             </div>
 
             <div className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed pt-1">
-              Las corridas <code className="font-mono text-xs">SWAT_STANDARD_BASELINE</code> y <code className="font-mono text-xs">SWAT_MULTISCALE_COUPLED</code> comparten
-              idéntico forzamiento, suelos, manejo y salida. El acoplamiento modificó los parámetros de cultivo en <code className="font-mono text-xs">plants.plt</code>,
-              pero el solver produjo caudales idénticos bajo la parametrización actual de cuenca.
+              La comparación emparejada conserva forzamiento, suelos, manejo y condiciones iniciales entre
+              <code className="font-mono text-xs"> SWAT_STANDARD_BASELINE </code> y <code className="font-mono text-xs">SWAT_MULTISCALE_COUPLED</code>.
+              Efecto informado por la ejecución v2: <code className="font-mono text-xs">{report.coupling_effect}</code>.
             </div>
           </div>
 
@@ -178,22 +178,22 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
               <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] font-mono text-zinc-500 block">NSE</span>
                 <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-sm mt-0.5 block">
-                  {daily.baseline.nse?.toFixed(3) ?? "-0.540"}
+                  {daily.baseline.nse?.toFixed(3) ?? "N/D"}
                 </span>
                 <span className="text-[9px] text-zinc-500 font-mono">Diario</span>
               </div>
               <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] font-mono text-zinc-500 block">PBIAS</span>
                 <span className="font-mono font-bold text-rose-700 dark:text-rose-400 text-sm mt-0.5 block">
-                  -79.58%
+                  {daily.baseline.pbias === null ? "N/D" : `${daily.baseline.pbias.toFixed(2)}%`}
                 </span>
                 <span className="text-[9px] text-zinc-500 font-mono">Sesgo porcentual</span>
               </div>
             </div>
 
             <div className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed pt-1">
-              La verificación de la cadena de cultivo CDL → HRU → Comunidad → Manejo → Planta confirmó
-              que 32 HRUs de maíz procesaron <b>35,072 registros HRU-día</b> con la comunidad y rotación activa.
+              La trazabilidad de HRU/cultivo y los checksums de inputs se reportan en el resultado v2;
+              esta vista no reutiliza conteos ni diagnósticos del archivo histórico v1.
             </div>
           </div>
         </div>

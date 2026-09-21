@@ -140,7 +140,7 @@ class TwinCouplingEngine:
                 continue
             if current_date.isoformat() == window["start_date"]:
                 gdd, absorbed_par = 0.0, 0.0
-            gdd += max(0.0, forcing["temp_c"] - 8.0)
+            gdd += season.fspm_growth_gdd_increment(forcing["temp_c"])
             daily_forcing = {**forcing, "gdd_c_day": gdd, "cumulative_absorbed_par_mj_m2": absorbed_par}
             current_plants = population.step(index, daily_forcing, soil_moisture_vol=0.24)
             current_field = PlantToFieldAggregator.aggregate(current_plants, soil_moisture_vol=0.24)
@@ -171,6 +171,8 @@ class TwinCouplingEngine:
         field["peak_dates"] = peak_dates
         field["climate_provenance"] = climate_provenance
         field["season_provenance"] = season.provenance(season_windows)
+        field["fspm_growth_temperature_base_c"] = season.crop_temperature_base_c
+        field["fspm_growth_temperature_base_source"] = "plants.plt.tmp_base"
         mapper = SwatPlantParameterMapper(requested_swat.get("target_plant_name", "corn"))
         config = SwatPlusRunConfig(
             project_path=source_project, executable_path=Path(requested_swat.get("executable_path") or settings.SWAT_PLUS_EXECUTABLE),

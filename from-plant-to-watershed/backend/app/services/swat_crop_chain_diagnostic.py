@@ -24,6 +24,8 @@ class SwatAutoManagementSeason:
     phu_base0_fraction: float
     harvest_day_of_year: int
     crop_temperature_base_c: float
+    window_conditions_used: tuple[str, ...] = ("phu_base0", "jday")
+    dynamic_conditions_not_reproduced: tuple[str, ...] = ()
     phu_trigger_base_c: float = 0.0
     confidence: str = "LIMITED"
 
@@ -67,6 +69,10 @@ class SwatAutoManagementSeason:
             })
         return windows
 
+    def fspm_growth_gdd_increment(self, temperature_c: float) -> float:
+        """Return the FSPM crop-growth increment using ``plants.plt.tmp_base``."""
+        return max(0.0, float(temperature_c) - self.crop_temperature_base_c)
+
     def provenance(self, windows: list[dict[str, Any]]) -> dict[str, Any]:
         return {
             "status": "APPROXIMATE_PLANTING_WINDOW",
@@ -78,7 +84,12 @@ class SwatAutoManagementSeason:
             "phu_base0_fraction": self.phu_base0_fraction,
             "phu_trigger_base_c": self.phu_trigger_base_c,
             "crop_temperature_base_c": self.crop_temperature_base_c,
+            "fspm_growth_temperature_base_c": self.crop_temperature_base_c,
+            "fspm_growth_temperature_base_source": "plants.plt.tmp_base",
             "phu_reference": "SIMPLIFIED_FSPM_THERMAL_MATURITY_GDD",
+            "window_conditions_used": list(self.window_conditions_used),
+            "dynamic_conditions_not_reproduced": list(self.dynamic_conditions_not_reproduced),
+            "dynamic_conditions_limitation": "These SWAT+ decision-table conditions require internal HRU/crop state or an executed-event trace. They are recorded but not simulated by the FSPM window approximation.",
             "preplant_trigger_reset": "CALENDAR_YEAR_BOUNDARY_FOR_ANNUAL_PHU_ACCUMULATOR_ONLY_NOT_FSPM_SEASON_RESET",
             "harvest_boundary_day_of_year": self.harvest_day_of_year,
             "confidence": self.confidence,
@@ -125,10 +136,20 @@ class SwatCropChainDiagnostic:
             raise ValueError(f"lum.dtl does not define decision table {decision_table!r}")
         block = lum_lines[start:next((index for index in range(start + 1, len(lum_lines)) if lum_lines[index].split() and lum_lines[index].split()[0] == "name"), len(lum_lines))]
         phu_fraction, harvest_day = None, None
+        condition_variables: list[str] = []
+        phu_base0_condition_count = 0
         for line in block:
             row = line.split()
+            if row and row[0] == decision_table:
+                continue
+            if not row or row[0] == "act_typ":
+                break
+            if row[0] not in {"var", "name"}:
+                condition_variables.append(row[0])
             if phu_fraction is None and len(row) >= 7 and row[0] == "phu_base0" and row[4] == "-" and row[6] == ">":
                 phu_fraction = float(row[5])
+            if row[0] == "phu_base0":
+                phu_base0_condition_count += 1
             # SWAT+ decision-table rows can include extra comparison operands;
             # the assignment operator is therefore not reliably at column 6.
             if len(row) >= 7 and row[0] == "jday" and row[4] == "-" and "=" in row[6:]:
@@ -142,10 +163,14 @@ class SwatCropChainDiagnostic:
             plant_record = next((line.split() for line in records[2:] if line.split() and line.split()[0] == target_crop), None)
         if not plant_header or not plant_record or "tmp_base" not in plant_header:
             raise ValueError(f"plants.plt does not define tmp_base for {target_crop!r}")
+        not_reproduced = [name for name in dict.fromkeys(condition_variables) if name not in {"phu_base0", "jday"}]
+        if phu_base0_condition_count > 1:
+            not_reproduced.insert(0, "phu_base0_fallback_threshold")
         return SwatAutoManagementSeason(
             decision_table=decision_table, management_schedule=schedule_name, configured_crop=configured_crop,
             phu_base0_fraction=phu_fraction, harvest_day_of_year=harvest_day,
             crop_temperature_base_c=float(plant_record[plant_header.index("tmp_base")]),
+            dynamic_conditions_not_reproduced=tuple(not_reproduced),
         )
 
     @classmethod

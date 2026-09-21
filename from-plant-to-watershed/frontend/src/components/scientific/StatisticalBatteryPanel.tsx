@@ -77,7 +77,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
                 PRUEBA KS (2 MUESTRAS)
               </span>
               <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                {ks.status ?? "COMPUTED"}
+                {ks.status ?? "N/D"}
               </span>
             </div>
 
@@ -121,7 +121,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
                 WILCOXON SIGNED-RANK
               </span>
               <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">
-                {wilcoxon.status ?? "INSUFFICIENT_EVIDENCE"}
+                {wilcoxon.status ?? "N/D"}
               </span>
             </div>
 
@@ -136,18 +136,18 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
             <div className="mt-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs flex flex-col gap-1.5">
               <div className="flex items-center justify-between font-mono">
                 <span className="text-zinc-500">Muestra evaluada:</span>
-                <span className="font-bold text-zinc-800 dark:text-zinc-200">36 pares mensuales</span>
+                <span className="font-bold text-zinc-800 dark:text-zinc-200">{wilcoxon.n_pairs ?? "N/D"} pares mensuales</span>
               </div>
               <div className="flex items-center justify-between font-mono">
-                <span className="text-zinc-500">Diferencias de rango:</span>
-                <span className="font-bold text-amber-700 dark:text-amber-400">100% Empates (Ties)</span>
+                <span className="text-zinc-500">Diagnóstico de rangos:</span>
+                <span className="font-bold text-amber-700 dark:text-amber-400">{wilcoxon.reason ?? "N/D"}</span>
               </div>
             </div>
           </div>
 
           <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/80 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/80">
             <span className="font-semibold text-zinc-700 dark:text-zinc-300">Justificación metodológica: </span>
-            {wilcoxon.reason ?? "Todos los pares mensuales presentaron idéntico error absoluto en el solver; la prueba arroja evidencia insuficiente para rechazar H0."}
+            {wilcoxon.reason ?? "N/D"}
           </div>
         </div>
 
@@ -159,7 +159,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
                 SENSIBILIDAD DE SOBOL
               </span>
               <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">
-                DISEÑADO & RESTRINGIDO
+                {sobol.status ?? "N/D"}
               </span>
             </div>
 
@@ -174,18 +174,18 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
             <div className="mt-4 flex flex-col gap-1.5 font-mono text-xs">
               <span className="text-[11px] text-zinc-500">Parámetros incluidos en el espacio de muestreo:</span>
               <div className="flex flex-wrap gap-1.5 mt-1">
-                {(sobol.parameters || ["transpiration_capacity_scale", "root_depth_mean_m", "mean_LAI"]).map((p: string) => (
+                {(sobol.parameters || []).length > 0 ? sobol.parameters?.map((p) => (
                   <span key={p} className="px-2 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60 text-[10px]">
                     {p}
                   </span>
-                ))}
+                )) : <span className="text-zinc-500">N/D</span>}
               </div>
             </div>
           </div>
 
           <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/80 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/80">
             <span className="font-semibold text-zinc-700 dark:text-zinc-300">Trazabilidad: </span>
-            {sobol.reason ?? "El motor de Sobol está implementado pero requiere barrido Monte Carlo extenso de corridas de SWAT+; no se utilizaron valores sintéticos inventados."}
+            {sobol.reason ?? "N/D"}
           </div>
         </div>
 
@@ -197,7 +197,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
                 BOOTSTRAP IC 95%
               </span>
               <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
-                RESTRINGIDO POR DATOS
+                {bootstrap.status ?? "N/D"}
               </span>
             </div>
 
@@ -210,19 +210,19 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
 
             <div className="mt-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs flex flex-col gap-1.5 font-mono">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Escenario objetivo:</span>
-                <span className="font-bold text-zinc-800 dark:text-zinc-200">CMIP6 SSP5-8.5</span>
+                <span className="text-zinc-500">Estado de la prueba:</span>
+                <span className="font-bold text-zinc-800 dark:text-zinc-200">{bootstrap.status ?? "N/D"}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Estado de la serie de yield:</span>
-                <span className="font-bold text-amber-600">NOT_AVAILABLE</span>
+                <span className="text-zinc-500">Motivo:</span>
+                <span className="font-bold text-amber-600">{bootstrap.reason ?? "N/D"}</span>
               </div>
             </div>
           </div>
 
           <div className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/80 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/80">
             <span className="font-semibold text-zinc-700 dark:text-zinc-300">Rigor científico: </span>
-            {bootstrap.reason ?? "Sin series de rendimiento validadas en SWAT+ bajo CMIP6, el sistema reporta INSUFFICIENT_EVIDENCE para preservar la honestidad empírica."}
+            {bootstrap.reason ?? "N/D"}
           </div>
         </div>
       </div>

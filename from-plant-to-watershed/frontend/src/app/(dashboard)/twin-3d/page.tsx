@@ -199,7 +199,7 @@ export default function Twin3DPage() {
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
               {selectedIsRealSwat
                 ? "Outputs físicos SWAT+ 61.0.2 · Estados FSPM (1,000 plantas) · Cuenca South Fork Iowa River (USGS 05451210)"
-                : "Visualización espacial multiescala: Arquitectura de maíz individual · Parcela 1,000 plantas BARC · Relieve de cuenca"}
+                : "Visualización espacial multiescala: Arquitectura de maíz individual · Parcela de 1,000 plantas SIMPLIFIED_FSPM con variación seeded · Relieve de cuenca"}
             </span>
           </div>
         </div>

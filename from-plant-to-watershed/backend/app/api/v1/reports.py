@@ -48,8 +48,8 @@ def _final_scientific_summary(report: dict) -> dict:
             "imputation": result["alignment"]["imputation"],
             "hypothesis_status": result["hypothesis_status"],
             "improvement_percent": _metric_value(result, "improvement_percent"),
-            "baseline": {name: _metric_value(result["baseline"], name) for name in ("rmse", "nse", "kge")},
-            "coupled": {name: _metric_value(result["twin"], name) for name in ("rmse", "nse", "kge")},
+            "baseline": {name: _metric_value(result["baseline"], name) for name in ("rmse", "nse", "kge", "pbias", "r2", "mae")},
+            "coupled": {name: _metric_value(result["twin"], name) for name in ("rmse", "nse", "kge", "pbias", "r2", "mae")},
         }
 
     return {

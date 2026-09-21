@@ -46,8 +46,8 @@ export interface FinalScientificReport {
     imputation: string;
     hypothesis_status: string;
     improvement_percent: number | null;
-    baseline: Record<"rmse" | "nse" | "kge", number | null>;
-    coupled: Record<"rmse" | "nse" | "kge", number | null>;
+    baseline: Record<"rmse" | "nse" | "kge" | "pbias" | "r2" | "mae", number | null>;
+    coupled: Record<"rmse" | "nse" | "kge" | "pbias" | "r2" | "mae", number | null>;
   }>;
   scenarios: Array<{
     name: string;
@@ -57,7 +57,16 @@ export interface FinalScientificReport {
   cmip6: Record<string, string>;
   nass_yield_validation: { status: string; reason: string };
   limitations: string[];
-  statistics: Record<string, { status: string; reason?: string; statistic?: number; p_value_asymptotic?: number }>;
+  statistics: Record<string, {
+    status?: string;
+    reason?: string;
+    statistic?: number;
+    p_value_asymptotic?: number;
+    n_observed?: number;
+    n_simulated?: number;
+    n_pairs?: number;
+    parameters?: string[];
+  }>;
 }
 
 export interface CurrentFinalScientificReportResponse {

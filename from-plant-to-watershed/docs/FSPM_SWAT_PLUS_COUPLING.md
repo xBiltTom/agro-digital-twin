@@ -24,11 +24,20 @@ the executed planting event. Consequently the FSPM does **not** reset at January
 `phu_base0` reference temperature (0 °C) reaches `0.15 × thermal_maturity_gdd`,
 then resets crop GDD and absorbed PAR only at that window start and closes at the
 configured harvest boundary. `plants.plt.tmp_base` remains the FSPM crop-growth
-base temperature, not a replacement for SWAT+'s `phu_base0` trigger. Provenance records the
+base temperature and is used directly for each FSPM growth-GDD increment
+(`fspm_growth_temperature_base_c`, source `plants.plt.tmp_base`); it is not a
+replacement for SWAT+'s `phu_base0` trigger. Provenance records the
 decision table, source files, trigger, dates/windows, confidence `LIMITED`, and
 the fact that only the pre-plant annual PHU accumulator resets at the calendar
 boundary (never the FSPM season). This is an explicit approximation, not a claim that
 SWAT+ planted on that date.
+
+The window uses only the configured `phu_base0` threshold and `jday` harvest
+boundary. `dynamic_conditions_not_reproduced` records all additional decision-table
+conditions (for South Fork: the PHU fallback threshold, `phu_plant`, `soil_water`,
+and `year_rot`). They require SWAT+'s internal HRU/crop state or an executed-event
+trace and are deliberately not emulated. Therefore an approximate window is never
+reported as SWAT+'s executed planting date.
 
 `ext_co` and `bm_e` originate as model-base assumptions, with seeded bounded
 intra-population variation. Until a repository artifact supports calibration,

@@ -42,7 +42,9 @@ def test_auto_management_season_uses_phu_window_not_january_first(tmp_path):
         "lum\nheader\n"
         "pl_hv_summer1 6 5 3\n"
         "phu_base0 hru 0 null - .15000 > - - - -\n"
+        "phu_plant hru 0 phu_mat - 1.15000 - > - -\n"
         "soil_water hru 0 fc * 2.00000 < < - - -\n"
+        "year_rot hru 0 null - 1.00000 - - - >\n"
         "jday hru 0 null - 350 = - - - -\n"
         "act_typ obj obj_num name option const\n"
         "name next 0\n", encoding="utf-8")
@@ -54,5 +56,25 @@ def test_auto_management_season_uses_phu_window_not_january_first(tmp_path):
     provenance = season.provenance(windows)
     assert provenance["season_start_method"] == "SWAT_AUTO_MANAGEMENT_PHU_TRIGGER_APPROXIMATION"
     assert provenance["preplant_trigger_reset"] == "CALENDAR_YEAR_BOUNDARY_FOR_ANNUAL_PHU_ACCUMULATOR_ONLY_NOT_FSPM_SEASON_RESET"
+    assert provenance["fspm_growth_temperature_base_c"] == 8.0
+    assert provenance["fspm_growth_temperature_base_source"] == "plants.plt.tmp_base"
+    assert set(provenance["dynamic_conditions_not_reproduced"]) >= {"phu_plant", "soil_water", "year_rot"}
+    assert provenance["window_conditions_used"] == ["phu_base0", "jday"]
     assert provenance["confidence"] == "LIMITED"
     assert "no executed planting-event log" in provenance["limitation"]
+
+
+def test_tmp_base_from_plants_plt_controls_fspm_growth_gdd(tmp_path):
+    (tmp_path / "management.sch").write_text("sch\nheader\ncorn_rot 0 1\npl_hv_summer1 corn\n", encoding="utf-8")
+    (tmp_path / "lum.dtl").write_text(
+        "lum\nheader\npl_hv_summer1 2 1 1\n"
+        "phu_base0 hru 0 null - .15000 > -\n"
+        "jday hru 0 null - 350 = -\n"
+        "act_typ obj obj_num name option const\nname next 0\n", encoding="utf-8")
+    plants = tmp_path / "plants.plt"
+    plants.write_text("plt\nname tmp_base\ncorn 8\n", encoding="utf-8")
+    base_eight = SwatCropChainDiagnostic.auto_management_season(tmp_path)
+    plants.write_text("plt\nname tmp_base\ncorn 10\n", encoding="utf-8")
+    base_ten = SwatCropChainDiagnostic.auto_management_season(tmp_path)
+    assert base_eight.fspm_growth_gdd_increment(18.0) == 10.0
+    assert base_ten.fspm_growth_gdd_increment(18.0) == 8.0

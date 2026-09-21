@@ -86,7 +86,7 @@ def _fspm_field() -> tuple[dict[str, Any], dict[str, dict[str, float]]]:
             continue
         if day == window["start_date"]:
             gdd, absorbed_par = 0.0, 0.0
-        gdd += max(0.0, weather["temp_c"] - 8.0)
+        gdd += season.fspm_growth_gdd_increment(weather["temp_c"])
         aggregate = PlantToFieldAggregator.aggregate(population.step(index, {**weather, "gdd_c_day": gdd, "cumulative_absorbed_par_mj_m2": absorbed_par}, soil_moisture_vol=0.24), soil_moisture_vol=0.24)
         absorbed_par += max(0.0, weather["solar_rad_mj"]) * .48 * aggregate["canopy_cover"]
         fields_by_season.setdefault(window["start_date"], []).append(aggregate)
@@ -104,7 +104,7 @@ def _fspm_field() -> tuple[dict[str, Any], dict[str, dict[str, float]]]:
     lai_contract = {key: fmean(contract[key] for contract in seasonal_contracts)
                     for key in ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl")}
     lai_contract.update({"season_count": len(seasonal_contracts), "derivation": "mean of SWAT auto-management PHU-derived SIMPLIFIED_FSPM seasonal LAI contracts"})
-    return {**peak_lai, "plant_height_mean_m": peak_height["plant_height_mean_m"], "root_depth_mean_m": peak_root["root_depth_mean_m"], "swat_lai_contract": lai_contract, "aggregation_window": "SWAT auto-management PHU-derived approximate crop-season trajectories", "season_provenance": season.provenance(windows), "fspm_seed": FSPM_SEED, "plant_count": PLANT_COUNT, "forcing": provenance}, daily
+    return {**peak_lai, "plant_height_mean_m": peak_height["plant_height_mean_m"], "root_depth_mean_m": peak_root["root_depth_mean_m"], "swat_lai_contract": lai_contract, "aggregation_window": "SWAT auto-management PHU-derived approximate crop-season trajectories", "season_provenance": season.provenance(windows), "fspm_growth_temperature_base_c": season.crop_temperature_base_c, "fspm_growth_temperature_base_source": "plants.plt.tmp_base", "fspm_seed": FSPM_SEED, "plant_count": PLANT_COUNT, "forcing": provenance}, daily
 
 
 def _weather_rows(path: Path) -> list[list[str]]:
