@@ -69,6 +69,7 @@ def _monthly(values: dict[str, float]) -> dict[str, float]:
 
 def _fspm_field(*, forcing: list[dict[str, float]] | None = None, forcing_provenance: dict[str, Any] | None = None,
                 crop: str = "maize", target_plant_name: str = "corn", scenario_name: str = "HISTORICAL_COUPLED_V2",
+                management_crop: str = "corn", growth_temperature_crop: str | None = None,
                 start: date = START, end: date = END) -> tuple[dict[str, Any], dict[str, dict[str, float]]]:
     """Run the deterministic 1,000-plant contract for one forcing/crop scenario."""
     if forcing is None:
@@ -77,7 +78,10 @@ def _fspm_field(*, forcing: list[dict[str, float]] | None = None, forcing_proven
         provenance = dict(forcing_provenance or {})
     if len(forcing) != (end - start).days + 1:
         raise ValueError("FSPM forcing must contain one row per requested day")
-    season = SwatCropChainDiagnostic.auto_management_season(SOURCE_PROJECT, target_crop=target_plant_name)
+    growth_crop = growth_temperature_crop or target_plant_name
+    season = SwatCropChainDiagnostic.auto_management_season(
+        SOURCE_PROJECT, target_crop=management_crop, growth_temperature_crop=growth_crop,
+    )
     thermal_maturity_gdd = 1450.0
     windows = season.windows(start, end, (weather["temp_c"] for weather in forcing), thermal_maturity_gdd=thermal_maturity_gdd)
     active_by_date = {
@@ -120,7 +124,12 @@ def _fspm_field(*, forcing: list[dict[str, float]] | None = None, forcing_proven
                     for key in ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl")}
     lai_contract.update({"season_count": len(seasonal_contracts), "derivation": "mean of SWAT auto-management PHU-derived SIMPLIFIED_FSPM seasonal LAI contracts"})
     classification = "SIMPLIFIED_SORGHUM_PROXY" if crop == "sorghum_proxy" else "SIMPLIFIED_FSPM"
-    return {**peak_lai, "plant_height_mean_m": peak_height["plant_height_mean_m"], "root_depth_mean_m": peak_root["root_depth_mean_m"], "swat_lai_contract": lai_contract, "aggregation_window": "SWAT auto-management PHU-derived approximate crop-season trajectories", "season_provenance": season.provenance(windows), "fspm_growth_temperature_base_c": season.crop_temperature_base_c, "fspm_growth_temperature_base_source": "plants.plt.tmp_base", "fspm_seed": FSPM_SEED, "plant_count": PLANT_COUNT, "fspm_crop": crop, "fspm_classification": classification, "target_plant_name": target_plant_name, "scenario_name": scenario_name, "forcing": provenance}, daily
+    management_inheritance = ("INHERITED_FROM_HISTORICAL_CORN_MANAGEMENT"
+                              if management_crop == "corn" and target_plant_name == "grsg"
+                              else "DIRECT_TARGET_CROP_MANAGEMENT")
+    inheritance_reason = ("SOURCE_PROJECT_NO_INDEPENDENT_GRSG_MANAGEMENT_SCHEDULE"
+                          if management_inheritance == "INHERITED_FROM_HISTORICAL_CORN_MANAGEMENT" else None)
+    return {**peak_lai, "plant_height_mean_m": peak_height["plant_height_mean_m"], "root_depth_mean_m": peak_root["root_depth_mean_m"], "swat_lai_contract": lai_contract, "aggregation_window": "SWAT auto-management PHU-derived approximate crop-season trajectories", "season_provenance": season.provenance(windows), "season_management_source_crop": management_crop, "season_management_inheritance": management_inheritance, "season_management_inheritance_reason": inheritance_reason, "growth_temperature_crop": growth_crop, "fspm_growth_temperature_base_c": season.crop_temperature_base_c, "fspm_growth_temperature_base_source": f"plants.plt.{growth_crop}.tmp_base", "fspm_seed": FSPM_SEED, "plant_count": PLANT_COUNT, "fspm_crop": crop, "fspm_classification": classification, "target_plant_name": target_plant_name, "scenario_name": scenario_name, "forcing": provenance}, daily
 
 
 def _scenario_forcing(historical_forcing: list[dict[str, float]], *, scenario_name: str,
@@ -155,7 +164,8 @@ def _prepare_scenario_fspm(*, scenario_name: str, options: dict[str, Any], histo
                            "but is not converted into an unvalidated root-zone-water state.") if weather.get("precip_factor", 1.0) != 1.0 else None
     elif crop_change:
         field, daily = _fspm_field(forcing=historical_forcing, forcing_provenance=historical_forcing_provenance,
-                                   crop="sorghum_proxy", target_plant_name="grsg", scenario_name=scenario_name)
+                                   crop="sorghum_proxy", management_crop="corn", target_plant_name="grsg",
+                                   growth_temperature_crop="grsg", scenario_name=scenario_name)
         fspm_recomputed, response_reason = True, "SIMPLIFIED_SORGHUM_PROXY: proxy crop contract mapped only to SWAT+ grsg."
     else:
         field, daily = historical_field, {}
@@ -164,6 +174,10 @@ def _prepare_scenario_fspm(*, scenario_name: str, options: dict[str, Any], histo
     lineage = {
         "scenario_name": scenario_name, "scenario_type": "CLIMATE" if weather else "CROP" if crop_change else "MANAGEMENT",
         "fspm_recomputed": fspm_recomputed, "fspm_crop": field["fspm_crop"], "fspm_classification": field["fspm_classification"],
+        "target_plant_name": field["target_plant_name"], "season_management_source_crop": field.get("season_management_source_crop"),
+        "season_management_inheritance": field.get("season_management_inheritance"),
+        "season_management_inheritance_reason": field.get("season_management_inheritance_reason"),
+        "fspm_growth_temperature_base_source": field.get("fspm_growth_temperature_base_source"),
         "forcing_modified": bool(weather), "management_modified": management or crop_change, "crop_modified": crop_change,
         "comparison_baseline": "HISTORICAL_COUPLED_V2", "field_plant_contract": {
             "scenario_name": field["scenario_name"], "plant_count": field["plant_count"], "seed": field["fspm_seed"],

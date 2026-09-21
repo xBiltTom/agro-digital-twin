@@ -21,6 +21,7 @@ class SwatAutoManagementSeason:
     decision_table: str
     management_schedule: str
     configured_crop: str
+    growth_temperature_crop: str
     phu_base0_fraction: float
     harvest_day_of_year: int
     crop_temperature_base_c: float
@@ -81,11 +82,12 @@ class SwatAutoManagementSeason:
             "management_schedule": self.management_schedule,
             "decision_table": self.decision_table,
             "configured_crop": self.configured_crop,
+            "growth_temperature_crop": self.growth_temperature_crop,
             "phu_base0_fraction": self.phu_base0_fraction,
             "phu_trigger_base_c": self.phu_trigger_base_c,
             "crop_temperature_base_c": self.crop_temperature_base_c,
             "fspm_growth_temperature_base_c": self.crop_temperature_base_c,
-            "fspm_growth_temperature_base_source": "plants.plt.tmp_base",
+            "fspm_growth_temperature_base_source": f"plants.plt.{self.growth_temperature_crop}.tmp_base",
             "phu_reference": "SIMPLIFIED_FSPM_THERMAL_MATURITY_GDD",
             "window_conditions_used": list(self.window_conditions_used),
             "dynamic_conditions_not_reproduced": list(self.dynamic_conditions_not_reproduced),
@@ -111,9 +113,11 @@ class SwatCropChainDiagnostic:
         return [line.split() for line in path.read_text(encoding="utf-8", errors="strict").splitlines()[2:] if line.split()]
 
     @staticmethod
-    def auto_management_season(workspace: str | Path, *, target_crop: str = "corn") -> SwatAutoManagementSeason:
-        """Read the configured PHU planting/harvest controls without inventing events."""
+    def auto_management_season(workspace: str | Path, *, target_crop: str = "corn",
+                               growth_temperature_crop: str | None = None) -> SwatAutoManagementSeason:
+        """Read a management crop's season and a possibly distinct growth-base crop."""
         root = Path(workspace)
+        growth_crop = growth_temperature_crop or target_crop
         required = ("management.sch", "lum.dtl", "plants.plt")
         if any(not (root / name).is_file() for name in required):
             raise ValueError("auto-management season requires management.sch, lum.dtl and plants.plt")
@@ -160,9 +164,9 @@ class SwatCropChainDiagnostic:
         records = (root / "plants.plt").read_text(encoding="utf-8", errors="strict").splitlines()
         if len(records) >= 3:
             plant_header = records[1].split()
-            plant_record = next((line.split() for line in records[2:] if line.split() and line.split()[0] == target_crop), None)
+            plant_record = next((line.split() for line in records[2:] if line.split() and line.split()[0] == growth_crop), None)
         if not plant_header or not plant_record or "tmp_base" not in plant_header:
-            raise ValueError(f"plants.plt does not define tmp_base for {target_crop!r}")
+            raise ValueError(f"plants.plt does not define tmp_base for {growth_crop!r}")
         not_reproduced = [name for name in dict.fromkeys(condition_variables) if name not in {"phu_base0", "jday"}]
         if phu_base0_condition_count > 1:
             not_reproduced.insert(0, "phu_base0_fallback_threshold")
@@ -170,6 +174,7 @@ class SwatCropChainDiagnostic:
             decision_table=decision_table, management_schedule=schedule_name, configured_crop=configured_crop,
             phu_base0_fraction=phu_fraction, harvest_day_of_year=harvest_day,
             crop_temperature_base_c=float(plant_record[plant_header.index("tmp_base")]),
+            growth_temperature_crop=growth_crop,
             dynamic_conditions_not_reproduced=tuple(not_reproduced),
         )
 

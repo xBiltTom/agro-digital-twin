@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from types import SimpleNamespace
 
 import pytest
@@ -79,6 +80,58 @@ def test_coupled_crop_guard_requires_matching_target_and_proxy_classification():
         runner._require_coupled_field_crop(_field(fspm_crop="maize"), "grsg")
     with pytest.raises(ValueError, match="target"):
         runner._require_coupled_field_crop(_field(target_plant_name="corn"), "grsg")
+
+
+def test_sorghum_proxy_inherits_corn_schedule_but_uses_grsg_tmp_base(tmp_path, monkeypatch):
+    _sorghum_workspace(tmp_path)
+    (tmp_path / "management.sch").write_text(
+        "management.sch\nheader\ncorn_rot 0 1\npl_hv_summer1 corn\n", encoding="utf-8"
+    )
+    (tmp_path / "lum.dtl").write_text(
+        "lum.dtl\nheader\n"
+        "pl_hv_summer1 6 5 3\n"
+        "phu_base0 hru 0 null - .10000 > - - - -\n"
+        "jday hru 0 null - 11 = - - - -\n"
+        "act_typ obj obj_num name option const\n"
+        "plant crop\nharvest_kill crop\n", encoding="utf-8"
+    )
+    (tmp_path / "plants.plt").write_text(
+        "plants.plt\n"
+        "name tmp_base lai_pot frac_hu1 lai_max1 frac_hu2 lai_max2 hu_lai_decl can_ht_max rt_dp_max ext_co bm_e\n"
+        "corn 8 6 .15 .15 .5 .95 .8 2.5 2 .65 40\n"
+        "grsg 12 5 .10 .10 .4 .80 .7 2.0 1.5 .55 35\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(runner, "SOURCE_PROJECT", tmp_path)
+    start, end = date(2020, 1, 1), date(2020, 1, 11)
+    forcing = [{"temp_c": 20.0, "precip_mm": 1.0, "solar_rad_mj": 15.0, "rh_percent": 60.0, "co2_ppm": 400.0} for _ in range(11)]
+
+    season = SwatCropChainDiagnostic.auto_management_season(
+        tmp_path, target_crop="corn", growth_temperature_crop="grsg"
+    )
+    field, _daily = runner._fspm_field(
+        forcing=forcing, forcing_provenance={"source": "test"}, crop="sorghum_proxy",
+        management_crop="corn", target_plant_name="grsg", growth_temperature_crop="grsg",
+        scenario_name="MAIZE_TO_SORGHUM", start=start, end=end,
+    )
+
+    assert season.configured_crop == "corn"
+    assert season.growth_temperature_crop == "grsg"
+    assert season.fspm_growth_gdd_increment(20.0) == 8.0
+    assert field["fspm_crop"] == "sorghum_proxy"
+    assert field["target_plant_name"] == "grsg"
+    assert field["season_management_source_crop"] == "corn"
+    assert field["season_management_inheritance"] == "INHERITED_FROM_HISTORICAL_CORN_MANAGEMENT"
+    assert field["season_management_inheritance_reason"] == "SOURCE_PROJECT_NO_INDEPENDENT_GRSG_MANAGEMENT_SCHEDULE"
+    assert field["fspm_growth_temperature_base_c"] == 12.0
+    assert field["fspm_growth_temperature_base_source"] == "plants.plt.grsg.tmp_base"
+    assert field["season_provenance"]["management_schedule"] == "corn_rot"
+    assert field["season_provenance"]["growth_temperature_crop"] == "grsg"
+
+    runner._sorghum(tmp_path)
+    manifest = SwatPlantParameterMapper("grsg").apply(tmp_path, field)
+    diagnostic = SwatCropChainDiagnostic.input_chain(tmp_path, [1], crop="grsg")
+    assert manifest["target_hrus"] == ["hru01"]
+    assert diagnostic["status"] == "PASS"
 
 
 def _run_result(run_id, streamflow, *, coupled=False):

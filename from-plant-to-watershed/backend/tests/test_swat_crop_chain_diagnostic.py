@@ -57,7 +57,7 @@ def test_auto_management_season_uses_phu_window_not_january_first(tmp_path):
     assert provenance["season_start_method"] == "SWAT_AUTO_MANAGEMENT_PHU_TRIGGER_APPROXIMATION"
     assert provenance["preplant_trigger_reset"] == "CALENDAR_YEAR_BOUNDARY_FOR_ANNUAL_PHU_ACCUMULATOR_ONLY_NOT_FSPM_SEASON_RESET"
     assert provenance["fspm_growth_temperature_base_c"] == 8.0
-    assert provenance["fspm_growth_temperature_base_source"] == "plants.plt.tmp_base"
+    assert provenance["fspm_growth_temperature_base_source"] == "plants.plt.corn.tmp_base"
     assert set(provenance["dynamic_conditions_not_reproduced"]) >= {"phu_plant", "soil_water", "year_rot"}
     assert provenance["window_conditions_used"] == ["phu_base0", "jday"]
     assert provenance["confidence"] == "LIMITED"

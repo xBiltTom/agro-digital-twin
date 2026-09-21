@@ -66,16 +66,32 @@ def test_no_till_reuses_historical_fspm_but_retains_coupled_contract():
 
 def test_sorghum_proxy_is_recomputed_and_targets_grsg_not_maize(monkeypatch):
     calls = []
-    monkeypatch.setattr(runner, "_fspm_field", lambda **kwargs: (calls.append(kwargs) or _field(
-        scenario_name=kwargs["scenario_name"], crop=kwargs["crop"], target=kwargs["target_plant_name"]), {}))
+    def fake_fspm(**kwargs):
+        calls.append(kwargs)
+        field = _field(scenario_name=kwargs["scenario_name"], crop=kwargs["crop"], target=kwargs["target_plant_name"])
+        field.update({
+            "season_management_source_crop": kwargs["management_crop"],
+            "season_management_inheritance": "INHERITED_FROM_HISTORICAL_CORN_MANAGEMENT",
+            "season_management_inheritance_reason": "SOURCE_PROJECT_NO_INDEPENDENT_GRSG_MANAGEMENT_SCHEDULE",
+            "fspm_growth_temperature_base_source": f"plants.plt.{kwargs['growth_temperature_crop']}.tmp_base",
+        })
+        return field, {}
+
+    monkeypatch.setattr(runner, "_fspm_field", fake_fspm)
     field, _, lineage = runner._prepare_scenario_fspm(
         scenario_name="MAIZE_TO_SORGHUM", options=runner.SCENARIO_DEFINITIONS["MAIZE_TO_SORGHUM"],
         historical_field=_field(), historical_forcing=[], historical_forcing_provenance={},
     )
     assert calls[0]["crop"] == "sorghum_proxy"
+    assert calls[0]["management_crop"] == "corn"
     assert calls[0]["target_plant_name"] == "grsg"
+    assert calls[0]["growth_temperature_crop"] == "grsg"
     assert field["fspm_crop"] == "sorghum_proxy"
     assert lineage["fspm_classification"] == "SIMPLIFIED_SORGHUM_PROXY"
+    assert lineage["season_management_source_crop"] == "corn"
+    assert lineage["season_management_inheritance"] == "INHERITED_FROM_HISTORICAL_CORN_MANAGEMENT"
+    assert lineage["season_management_inheritance_reason"] == "SOURCE_PROJECT_NO_INDEPENDENT_GRSG_MANAGEMENT_SCHEDULE"
+    assert lineage["fspm_growth_temperature_base_source"] == "plants.plt.grsg.tmp_base"
     assert lineage["crop_modified"] is True
     runner._require_coupled_field_crop(field, "grsg")
     with pytest.raises(ValueError):
