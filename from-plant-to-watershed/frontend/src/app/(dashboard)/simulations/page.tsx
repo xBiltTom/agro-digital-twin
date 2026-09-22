@@ -819,21 +819,34 @@ export default function SimulationsPage() {
 
       {/* Modal: New Simulation Run */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-2xl flex flex-col gap-4 text-zinc-900 dark:text-zinc-100">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
-                  Configurar experimento multiescala
-                </h3>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+          <div className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col text-zinc-900 dark:text-zinc-100 overflow-hidden">
+            {/* Header Fijo */}
+            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/40">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                  <Sliders className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                    Configurar Experimento Multiescala
+                  </h3>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Define las variables de clima, planta FSPM y cuenca hidrográfica SWAT+
+                  </p>
+                </div>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer text-base"
+              >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateSimulation} className="flex flex-col gap-4 text-xs">
+            {/* Contenido con Scroll Propio e Independiente */}
+            <form id="simulation-form" onSubmit={handleCreateSimulation} className="flex-1 min-h-0 overflow-y-auto p-6 flex flex-col gap-4 text-xs">
               <div>
                 <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
                   Nombre de la Simulación
@@ -891,127 +904,261 @@ export default function SimulationsPage() {
 
               {formHydrologyBackend === "SWAT_PLUS" && (
                 <div className="rounded-xl border border-teal-300 bg-teal-50/70 p-3 dark:border-teal-800 dark:bg-teal-950/20">
-                  <label className="block font-mono uppercase text-[10px] text-teal-800 dark:text-teal-300">Modo de experimento SWAT+</label>
-                  <select value={formSwatRunType} onChange={(e) => setFormSwatRunType(e.target.value as SwatRunType)} className="mt-2 w-full rounded-lg border border-teal-300 bg-white px-3 py-2.5 text-xs text-zinc-900 dark:border-teal-800 dark:bg-zinc-950 dark:text-zinc-200">
+                  <label className="block font-mono uppercase text-[10px] text-teal-800 dark:text-teal-300 font-semibold">
+                    Modo de experimento SWAT+
+                  </label>
+                  <select
+                    value={formSwatRunType}
+                    onChange={(e) => setFormSwatRunType(e.target.value as SwatRunType)}
+                    className="mt-2 w-full rounded-lg border border-teal-300 bg-white px-3 py-2.5 text-xs text-zinc-900 dark:border-teal-800 dark:bg-zinc-950 dark:text-zinc-200"
+                  >
                     <option value="SWAT_MULTISCALE_COUPLED">SWAT_MULTISCALE_COUPLED — crea primero el baseline pareado</option>
                     <option value="SWAT_STANDARD_BASELINE">SWAT_STANDARD_BASELINE — control SWAT+ sin FSPM</option>
                   </select>
-                  <p className="mt-2 text-[10px] text-teal-800 dark:text-teal-300">Se usa el proyecto, engine y workspace configurados en el servidor. El modo acoplado conserva forcing y periodo y solo modifica `plants.plt` dentro de una copia aislada.</p>
+                  <p className="mt-2 text-[10px] text-teal-800 dark:text-teal-300">
+                    Se usa el proyecto, engine y workspace configurados en el servidor. El modo acoplado conserva forcing y periodo y solo modifica `plants.plt` dentro de una copia aislada.
+                  </p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Fuente climática</label>
-                  <select value={formClimateSource} onChange={(e) => setFormClimateSource(e.target.value as "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED")} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
+                    Fuente climática
+                  </label>
+                  <select
+                    value={formClimateSource}
+                    onChange={(e) => setFormClimateSource(e.target.value as "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED")}
+                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+                  >
                     <option value="SYNTHETIC">SYNTHETIC — fallback reproducible</option>
-                    <option value="OBSERVED" disabled={!hasObservedForcing}>OBSERVED — {hasObservedForcing ? "FORCING disponible" : "NOT_AVAILABLE: falta CHIRPS normalizado"}</option>
-                    <option value="CMIP6_FILE" disabled={!hasCmip6Forcing}>CMIP6_FILE — {hasCmip6Forcing ? "FORCING disponible" : "NOT_AVAILABLE: falta NEX-GDDP normalizado"}</option>
+                    <option value="OBSERVED" disabled={!hasObservedForcing}>
+                      OBSERVED — {hasObservedForcing ? "FORCING disponible" : "NOT_AVAILABLE: falta CHIRPS normalizado"}
+                    </option>
+                    <option value="CMIP6_FILE" disabled={!hasCmip6Forcing}>
+                      CMIP6_FILE — {hasCmip6Forcing ? "FORCING disponible" : "NOT_AVAILABLE: falta NEX-GDDP normalizado"}
+                    </option>
                   </select>
                 </div>
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Backend hidrológico</label>
-                  <select value={formHydrologyBackend} onChange={(e) => setFormHydrologyBackend(e.target.value as "SIMPLIFIED" | "SWAT_PLUS")} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
+                    Backend hidrológico
+                  </label>
+                  <select
+                    value={formHydrologyBackend}
+                    onChange={(e) => setFormHydrologyBackend(e.target.value as "SIMPLIFIED" | "SWAT_PLUS")}
+                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+                  >
                     <option value="SIMPLIFIED">SIMPLIFIED — por HRU proxy</option>
-                    <option value="SWAT_PLUS" disabled={capabilities.swat_plus?.status !== "ACTIVE"}>SWAT_PLUS — {capabilities.swat_plus?.status ?? "NOT_AVAILABLE"}</option>
+                    <option value="SWAT_PLUS" disabled={capabilities.swat_plus?.status !== "ACTIVE"}>
+                      SWAT_PLUS — {capabilities.swat_plus?.status ?? "NOT_AVAILABLE"}
+                    </option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Estación USGS</label>
-                  <input type="text" inputMode="numeric" pattern="\d{8,15}" value={formStationId} onChange={(e) => setFormStationId(e.target.value)} placeholder="Selecciona una estación" className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
+                    Estación USGS
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d{8,15}"
+                    value={formStationId}
+                    onChange={(e) => setFormStationId(e.target.value)}
+                    placeholder="05451210"
+                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+                  />
                 </div>
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Inicio</label>
-                  <input type="date" required value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
+                    Fecha Inicio
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formStartDate}
+                    onChange={(e) => setFormStartDate(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+                  />
                 </div>
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Fin</label>
-                  <input type="date" required value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
+                    Fecha Fin
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formEndDate}
+                    onChange={(e) => setFormEndDate(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Seed reproducible</label>
-                  <input type="number" min={0} value={formSeed} onChange={(e) => setFormSeed(Number(e.target.value))} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
+                    Seed reproducible
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={formSeed}
+                    onChange={(e) => setFormSeed(Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+                  />
                 </div>
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Plantas</label>
-                  <input type="number" min={1} max={10000} value={formPlantCount} onChange={(e) => setFormPlantCount(Number(e.target.value))} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
+                    Plantas FSPM ({formPlantCount})
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10000}
+                    value={formPlantCount}
+                    onChange={(e) => setFormPlantCount(Number(e.target.value))}
+                    className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">Manejo agrícola MVP</label>
-                <select value={formManagement} onChange={(e) => setFormManagement(e.target.value as "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM")} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
-                  <option value="BASELINE">BASELINE — maíz</option>
-                  <option value="NO_TILL">NO_TILL — proxy CN −4</option>
-                  <option value="MAIZE_TO_SORGHUM">MAIZE_TO_SORGHUM — proxy de sustitución</option>
+                <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
+                  Manejo agrícola MVP
+                </label>
+                <select
+                  value={formManagement}
+                  onChange={(e) => setFormManagement(e.target.value as "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM")}
+                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+                >
+                  <option value="BASELINE">BASELINE — maíz convencional</option>
+                  <option value="NO_TILL">NO_TILL — siembra directa (proxy CN −4)</option>
+                  <option value="MAIZE_TO_SORGHUM">MAIZE_TO_SORGHUM — sustitución por sorgo</option>
                 </select>
-                <p className="mt-1 text-[10px] text-zinc-500">Los ajustes son proxies reproducibles del MVP; no operaciones calibradas de SWAT+.</p>
+                <p className="mt-1 text-[10px] text-zinc-500">
+                  Los ajustes son proxies reproducibles del MVP; no operaciones calibradas de SWAT+.
+                </p>
               </div>
 
-              <fieldset className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
-                <legend className="px-1 font-mono uppercase text-[10px] text-zinc-600 dark:text-zinc-400">Artefactos y rol dentro del experimento</legend>
+              <fieldset className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 bg-zinc-50/50 dark:bg-zinc-950/40">
+                <legend className="px-1.5 font-mono uppercase text-[10px] text-zinc-600 dark:text-zinc-400 font-semibold">
+                  Artefactos y rol dentro del experimento
+                </legend>
                 {datasets.length === 0 ? (
-                  <p className="text-[11px] text-zinc-500">No hay artefactos externos registrados. Solo está disponible SYNTHETIC.</p>
-                ) : datasets.map((dataset) => (
-                  <div key={dataset.id} className="flex items-center gap-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-300">
-                    <input type="checkbox" checked={formDatasetIds.includes(dataset.id)} onChange={(event) => {
-                      setFormDatasetIds((current) => event.target.checked ? [...current, dataset.id] : current.filter((id) => id !== dataset.id));
-                      setFormDatasetRoles((current) => {
-                        const next = { ...current };
-                        if (event.target.checked) next[dataset.id] = "CONTEXT_ONLY";
-                        else delete next[dataset.id];
-                        return next;
-                      });
-                    }} />
-                    <span className="flex-1">{dataset.provider}: {dataset.dataset_name} · {dataset.evidence_type}</span>
-                    {formDatasetIds.includes(dataset.id) && <select value={formDatasetRoles[dataset.id] ?? "CONTEXT_ONLY"} onChange={(event) => setFormDatasetRoles((current) => ({ ...current, [dataset.id]: event.target.value as "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY" }))} className="rounded border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-0.5 text-[10px]">
-                      <option value="FORCING">FORCING</option><option value="OBSERVATION">OBSERVATION</option><option value="VALIDATION">VALIDATION</option><option value="SOIL_INPUT">SOIL_INPUT</option><option value="LAND_COVER">LAND_COVER</option><option value="YIELD_OBSERVATION">YIELD_OBSERVATION</option><option value="CONTEXT_ONLY">CONTEXT_ONLY</option>
-                    </select>}
+                  <p className="text-[11px] text-zinc-500">
+                    No hay artefactos externos registrados. Solo está disponible SYNTHETIC.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1">
+                    {datasets.map((dataset) => (
+                      <div key={dataset.id} className="flex items-center gap-2 py-1 text-[11px] text-zinc-700 dark:text-zinc-300">
+                        <input
+                          type="checkbox"
+                          checked={formDatasetIds.includes(dataset.id)}
+                          onChange={(event) => {
+                            setFormDatasetIds((current) =>
+                              event.target.checked ? [...current, dataset.id] : current.filter((id) => id !== dataset.id)
+                            );
+                            setFormDatasetRoles((current) => {
+                              const next = { ...current };
+                              if (event.target.checked) next[dataset.id] = "CONTEXT_ONLY";
+                              else delete next[dataset.id];
+                              return next;
+                            });
+                          }}
+                        />
+                        <span className="flex-1 truncate">{dataset.provider}: {dataset.dataset_name} · {dataset.evidence_type}</span>
+                        {formDatasetIds.includes(dataset.id) && (
+                          <select
+                            value={formDatasetRoles[dataset.id] ?? "CONTEXT_ONLY"}
+                            onChange={(event) =>
+                              setFormDatasetRoles((current) => ({
+                                ...current,
+                                [dataset.id]: event.target.value as any,
+                              }))
+                            }
+                            className="rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-1.5 py-0.5 text-[10px]"
+                          >
+                            <option value="FORCING">FORCING</option>
+                            <option value="OBSERVATION">OBSERVATION</option>
+                            <option value="VALIDATION">VALIDATION</option>
+                            <option value="SOIL_INPUT">SOIL_INPUT</option>
+                            <option value="LAND_COVER">LAND_COVER</option>
+                            <option value="YIELD_OBSERVATION">YIELD_OBSERVATION</option>
+                            <option value="CONTEXT_ONLY">CONTEXT_ONLY</option>
+                          </select>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
-                <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">OBSERVED y CMIP6_FILE requieren exactamente un artefacto FORCING normalizado. USGS debe ser OBSERVATION o VALIDATION.</p>
+                )}
+                <p className="mt-2 text-[10px] text-amber-700 dark:text-amber-400">
+                  OBSERVED y CMIP6_FILE requieren exactamente un artefacto FORCING normalizado. USGS debe ser OBSERVATION o VALIDATION.
+                </p>
               </fieldset>
 
               <div>
-                <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">ModelBundle externo opcional</label>
-                <select value={formExternalModel} onChange={(e) => setFormExternalModel(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
+                  ModelBundle externo opcional
+                </label>
+                <select
+                  value={formExternalModel}
+                  onChange={(e) => setFormExternalModel(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+                >
                   <option value="">No usar modelo externo</option>
-                  {externalModels.map((model) => <option key={model.id} value={model.id}>{model.name} · {model.target} · {model.framework}</option>)}
+                  {externalModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name} · {model.target} · {model.framework}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              <div className="p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
-                El periodo, la estación y los roles de datos quedan en el manifiesto. El riego sigue deshabilitado porque el modelo no implementa planes de manejo.
-              </div>
-
               <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 flex flex-col gap-1">
-                <span className="font-semibold text-zinc-800 dark:text-zinc-300">{formHydrologyBackend === "SWAT_PLUS" ? "Acoplamiento Multiescala FSPM → SWAT+" : "Población FSPM de maíz y balance hídrico"}</span>
-                <span>{formHydrologyBackend === "SWAT_PLUS" ? "Calcula la población FSPM (1000 plantas), mapea parámetros fenológicos a plants.plt en un workspace aislado y ejecuta el modelo físico SWAT+." : "Calcula la población de plantas y ejecuta el balance ecohidrológico acoplado."}</span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-300">
+                  {formHydrologyBackend === "SWAT_PLUS" ? "Acoplamiento Multiescala FSPM → SWAT+" : "Población FSPM de maíz y balance hídrico"}
+                </span>
+                <span>
+                  {formHydrologyBackend === "SWAT_PLUS"
+                    ? "Calcula la población FSPM (1000 plantas), mapea parámetros fenológicos a plants.plt en un workspace aislado y ejecuta el modelo físico SWAT+."
+                    : "Calcula la población de plantas y ejecuta el balance ecohidrológico acoplado."}
+                </span>
               </div>
+            </form>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+            {/* Footer Fijo con Botones Siempre Visibles */}
+            <div className="px-6 py-3.5 border-t border-zinc-200 dark:border-zinc-800 shrink-0 bg-zinc-50 dark:bg-zinc-950/60 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-zinc-500 dark:text-zinc-400 hidden sm:inline">
+                Duración:{" "}
+                <b className="text-zinc-800 dark:text-zinc-200 font-mono">
+                  {formStartDate && formEndDate
+                    ? `${Math.max(0, Math.floor((Date.parse(`${formEndDate}T00:00:00Z`) - Date.parse(`${formStartDate}T00:00:00Z`)) / 86_400_000) + 1)} días`
+                    : "0 días"}
+                </b>
+              </span>
+              <div className="flex items-center gap-2 ml-auto">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium transition cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium transition cursor-pointer text-xs"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
+                  form="simulation-form"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-zinc-950 font-semibold transition flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md shadow-emerald-500/20"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-zinc-950 font-semibold transition flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md shadow-emerald-500/20 text-xs"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>{formHydrologyBackend === "SWAT_PLUS" ? "Ejecutando SWAT+ acoplado..." : "Ejecutando simulación..."}</span>
+                      <span>{formHydrologyBackend === "SWAT_PLUS" ? "Ejecutando SWAT+..." : "Ejecutando..."}</span>
                     </>
                   ) : (
                     <>
@@ -1021,7 +1168,7 @@ export default function SimulationsPage() {
                   )}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
