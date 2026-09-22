@@ -270,10 +270,10 @@ export default function FieldPlotMesh3D({
     });
   }, [plantsData]);
 
-  // Oleaje de viento procedural en tiempo real
+  // Oleaje de viento procedural en tiempo real (efecto Honami sobre las 1,000 plantas)
   useFrame(({ clock }) => {
     const time = clock.getElapsedTime();
-    if (!leavesBRef.current) return;
+    if (!leavesBRef.current || !leavesCRef.current) return;
 
     const matrix = new THREE.Matrix4();
     const pos = new THREE.Vector3();
@@ -281,29 +281,50 @@ export default function FieldPlotMesh3D({
     const scl = new THREE.Vector3();
     const q = new THREE.Quaternion();
 
-    for (let i = 0; i < plantsData.length; i += 3) {
+    // Propagación de onda de viento diagonal a través de la parcela
+    for (let i = 0; i < plantsData.length; i += 2) {
       const plant = plantsData[i];
-      const windWave = Math.sin(plant.x * 0.45 + plant.z * 0.35 - time * 2.5) * 0.08;
+      const wavePhase = (plant.x * 0.38 + plant.z * 0.52) - time * 2.4;
+      const windWave = Math.sin(wavePhase) * 0.09;
+      const microFlutter = Math.sin(wavePhase * 2.2) * 0.03;
 
+      // Nivel B
       leavesBRef.current.getMatrixAt(i, matrix);
       matrix.decompose(pos, q, scl);
       rot.setFromQuaternion(q);
-      rot.z += windWave * 0.03;
+      rot.z += windWave * 0.04;
+      rot.x += windWave * 0.02;
       matrix.compose(pos, q.setFromEuler(rot), scl);
       leavesBRef.current.setMatrixAt(i, matrix);
+
+      // Nivel C (superior, mayor deflexión)
+      leavesCRef.current.getMatrixAt(i, matrix);
+      matrix.decompose(pos, q, scl);
+      rot.setFromQuaternion(q);
+      rot.z += (windWave + microFlutter) * 0.06;
+      matrix.compose(pos, q.setFromEuler(rot), scl);
+      leavesCRef.current.setMatrixAt(i, matrix);
     }
     leavesBRef.current.instanceMatrix.needsUpdate = true;
+    leavesCRef.current.instanceMatrix.needsUpdate = true;
   });
 
   const activePlant = plantsData[504] || plantsData[0];
-  const soilBaseColor = soilMoistureVol > 28 ? "#352215" : "#523620";
+  const soilMoistureFactor = Math.min(1, Math.max(0, soilMoistureVol / 45));
+  const soilBaseColor = soilMoistureFactor > 0.5 ? "#24160d" : "#452d1b";
+  const soilRoughness = Math.max(0.42, 0.95 - soilMoistureFactor * 0.48);
+  const soilMetalness = soilMoistureFactor * 0.12;
 
   return (
     <group position={[0, -0.12, 0]}>
-      {/* 1. Suelo Agrícola con Textura de Labranza */}
+      {/* 1. Suelo Agrícola con Textura de Labranza y Brillo de Humedad */}
       <mesh receiveShadow rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
         <planeGeometry args={[27, 27, 32, 32]} />
-        <meshStandardMaterial color={soilBaseColor} roughness={0.96} />
+        <meshStandardMaterial
+          color={soilBaseColor}
+          roughness={soilRoughness}
+          metalness={soilMetalness}
+        />
       </mesh>
 
       {/* 2. Surcos Agrícolas y Colchón de Rastrojo (Siembra Directa) */}
@@ -314,7 +335,11 @@ export default function FieldPlotMesh3D({
             {/* Surco oscuro húmedo */}
             <mesh rotation-x={-Math.PI / 2}>
               <planeGeometry args={[23.2, 0.14]} />
-              <meshStandardMaterial color="#24160d" roughness={1} />
+              <meshStandardMaterial
+                color="#1b0f08"
+                roughness={soilRoughness * 0.8}
+                metalness={soilMetalness}
+              />
             </mesh>
             {/* Banda de rastrojo / mulch protector */}
             <mesh rotation-x={-Math.PI / 2} position={[0, 0.005, 0.38]}>
@@ -325,30 +350,45 @@ export default function FieldPlotMesh3D({
         );
       })}
 
-      {/* 3. Población de maíz instanciada: coincide con el conteo persistido */}
+      {/* 3. Población de maíz instanciada: 1,000 plantas con brillo físico PBR */}
       <instancedMesh ref={stemsRef} args={[undefined, undefined, totalPlants]} castShadow>
         <cylinderGeometry args={[0.02, 0.034, 1, 8]} />
-        <meshStandardMaterial roughness={0.55} />
+        <meshPhysicalMaterial roughness={0.42} clearcoat={0.3} />
       </instancedMesh>
 
       <instancedMesh ref={leavesARef} args={[undefined, undefined, totalPlants]} castShadow receiveShadow>
         <planeGeometry args={[0.76, 0.16]} />
-        <meshStandardMaterial side={THREE.DoubleSide} roughness={0.45} />
+        <meshPhysicalMaterial
+          side={THREE.DoubleSide}
+          roughness={0.28}
+          clearcoat={0.65}
+          clearcoatRoughness={0.2}
+        />
       </instancedMesh>
 
       <instancedMesh ref={leavesBRef} args={[undefined, undefined, totalPlants]} castShadow receiveShadow>
         <planeGeometry args={[0.78, 0.15]} />
-        <meshStandardMaterial side={THREE.DoubleSide} roughness={0.45} />
+        <meshPhysicalMaterial
+          side={THREE.DoubleSide}
+          roughness={0.28}
+          clearcoat={0.68}
+          clearcoatRoughness={0.2}
+        />
       </instancedMesh>
 
       <instancedMesh ref={leavesCRef} args={[undefined, undefined, totalPlants]} castShadow receiveShadow>
         <planeGeometry args={[0.65, 0.13]} />
-        <meshStandardMaterial side={THREE.DoubleSide} roughness={0.45} />
+        <meshPhysicalMaterial
+          side={THREE.DoubleSide}
+          roughness={0.28}
+          clearcoat={0.72}
+          clearcoatRoughness={0.2}
+        />
       </instancedMesh>
 
       <instancedMesh ref={tasselsRef} args={[undefined, undefined, totalPlants]} castShadow>
         <coneGeometry args={[0.07, 0.28, 6]} />
-        <meshStandardMaterial roughness={0.65} />
+        <meshStandardMaterial roughness={0.55} color="#e5ce79" />
       </instancedMesh>
 
       {/* 4. Retículo de Selección de Planta de Muestra */}

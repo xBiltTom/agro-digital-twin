@@ -2,7 +2,8 @@
 
 import React, { useRef, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Sky, Stars, ContactShadows } from "@react-three/drei";
+import { OrbitControls, Sky, Stars, ContactShadows, Environment, Lightformer } from "@react-three/drei";
+import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
 
 type OrbitControlsImpl = {
@@ -181,25 +182,62 @@ export default function MultiScaleViewer3D({
           speed={0.5}
         />
 
+        {/* Entorno PBR de Iluminación Global IBL (reflejos físicos en hojas, suelo, agua y metales) */}
+        <Environment background={false}>
+          <mesh scale={100}>
+            <sphereGeometry args={[1, 32, 32]} />
+            <meshBasicMaterial side={THREE.BackSide} color="#0c192c" />
+          </mesh>
+          <Lightformer
+            form="circle"
+            intensity={scaleMode === "MICRO" ? 3.8 : 3.0}
+            position={[sunPosition[0] * 0.8, sunPosition[1] * 0.8, sunPosition[2] * 0.8]}
+            scale={scaleMode === "MICRO" ? 14 : 28}
+            color="#fff7ed"
+          />
+          <Lightformer
+            form="ring"
+            intensity={1.6}
+            position={[0, 45, 0]}
+            scale={35}
+            color="#38bdf8"
+          />
+          <Lightformer
+            form="rect"
+            intensity={0.9}
+            position={[0, 4, -35]}
+            scale={[55, 12]}
+            color="#fef08a"
+          />
+          <Lightformer
+            form="rect"
+            intensity={0.65}
+            position={[0, -15, 0]}
+            scale={45}
+            color="#2d4a1d"
+          />
+        </Environment>
+
         {/* Iluminación solar física con sombras suaves de alta resolución */}
-        <ambientLight intensity={0.62} />
+        <ambientLight intensity={0.55} />
         <hemisphereLight
-          args={["#a7f3d0", "#1e293b", 0.65]}
+          args={["#a7f3d0", "#1e293b", 0.6]}
           position={[0, 50, 0]}
         />
         <directionalLight
           position={sunPosition}
-          intensity={2.1}
+          intensity={2.3}
+          color="#fffdf5"
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
-          shadow-bias={-0.0001}
+          shadow-bias={-0.00012}
           shadow-camera-near={1}
           shadow-camera-far={130}
-          shadow-camera-left={-32}
-          shadow-camera-right={32}
-          shadow-camera-top={32}
-          shadow-camera-bottom={-32}
+          shadow-camera-left={-34}
+          shadow-camera-right={34}
+          shadow-camera-top={34}
+          shadow-camera-bottom={-34}
         />
 
         {/* Luces de rebote y relleno para evitar partes negras artificiales */}
@@ -210,7 +248,7 @@ export default function MultiScaleViewer3D({
         <fog
           attach="fog"
           args={[
-            "#0a1120",
+            "#0b1324",
             scaleMode === "MICRO" ? 16 : scaleMode === "MESO" ? 35 : 50,
             scaleMode === "MICRO" ? 36 : scaleMode === "MESO" ? 90 : 130,
           ]}
@@ -295,6 +333,17 @@ export default function MultiScaleViewer3D({
             showScientificLabels={showScientificLabels}
           />
         )}
+
+        {/* Post-procesado cinemático: Bloom para reflejos especulares, agua y savia, con viñeteado óptico */}
+        <EffectComposer multisampling={2}>
+          <Bloom
+            luminanceThreshold={0.82}
+            luminanceSmoothing={0.25}
+            intensity={0.45}
+            mipmapBlur
+          />
+          <Vignette eskil={false} offset={0.28} darkness={0.42} />
+        </EffectComposer>
       </Canvas>
     </div>
   );

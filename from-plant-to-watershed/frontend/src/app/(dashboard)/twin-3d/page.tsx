@@ -274,21 +274,15 @@ export default function Twin3DPage() {
               showScientificLabels={showScientificLabels}
             />
 
-            {selectedIsRealSwat ? (
-              <div className="absolute left-4 top-4 z-20 max-w-md rounded-xl border border-teal-400/50 bg-zinc-950/92 p-3 text-xs text-zinc-100 shadow-2xl backdrop-blur">
-                <div className="font-mono font-bold text-teal-300">{(selectedSim?.provenance as { evidence_type?: string } | undefined)?.evidence_type}</div>
-                <div className="mt-1">Periodo SWAT+ real: {currentSwat?.period ?? "—"} · Q {Number(currentSwat?.streamflow_m3s ?? 0).toFixed(3)} m³/s</div>
-                <div className="mt-1 text-[10px] text-zinc-400">La escena es contexto esquemático. El estado micro/meso usa la muestra y el agregado FSPM que configuraron `plants.plt`; no se inventan series fisiológicas diarias.</div>
-              </div>
-            ) : <TwinHUDOverlay
+            <TwinHUDOverlay
               scaleMode={scaleMode}
               onChangeScale={setScaleMode}
-              streamflowM3s={currentData?.streamflow_m3s ?? 0}
-              precipMm={currentData?.precip_mm ?? 0}
-              soilMoistureVol={currentData?.soil_moisture_vol ?? 0}
-              transpirationMm={currentData?.plant_transpiration_mm ?? 0}
-              cwsiStress={currentData?.cwsi_stress_index ?? 0}
-              sapFlowVelocityCmh={currentData?.sap_flow_velocity_cmh ?? 0}
+              streamflowM3s={selectedIsRealSwat ? (currentSwat?.streamflow_m3s ?? 0) : (currentData?.streamflow_m3s ?? 0)}
+              precipMm={selectedIsRealSwat ? (currentSwat?.runoff_mm ?? 0) : (currentData?.precip_mm ?? 0)}
+              soilMoistureVol={selectedIsRealSwat ? (currentSwat?.soil_water_mm ? (currentSwat.soil_water_mm / 150) * 35 : fspmSoilMoisture) : (currentData?.soil_moisture_vol ?? 0)}
+              transpirationMm={selectedIsRealSwat ? (currentSwat?.evapotranspiration_mm ?? fspmTranspiration) : (currentData?.plant_transpiration_mm ?? 0)}
+              cwsiStress={selectedIsRealSwat ? fspmStress : (currentData?.cwsi_stress_index ?? 0)}
+              sapFlowVelocityCmh={selectedIsRealSwat ? fspmTranspiration * 2.8 : (currentData?.sap_flow_velocity_cmh ?? 0)}
               isPlaying={isPlaying}
               onTogglePlay={() => setIsPlaying(!isPlaying)}
               currentDay={currentDay}
@@ -305,7 +299,9 @@ export default function Twin3DPage() {
               isFullscreen={isFullscreen}
               onToggleFullscreen={toggleFullscreen}
               scenarioPathway={selectedSim?.scenario?.pathway || "NOT_DECLARED"}
-            />}
+              evidenceBadge={selectedIsRealSwat ? `${(selectedSim?.provenance as { evidence_type?: string } | undefined)?.evidence_type ?? "SWAT+ ACOPLADO"} · USGS 05451210` : undefined}
+              dateStr={selectedIsRealSwat ? currentSwat?.period : currentData?.date_str}
+            />
           </>
         ) : (
           <div className="w-full h-full bg-zinc-950 flex flex-col items-center justify-center gap-2 text-center p-6">

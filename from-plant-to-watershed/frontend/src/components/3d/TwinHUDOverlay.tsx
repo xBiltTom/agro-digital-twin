@@ -49,6 +49,8 @@ interface TwinHUDOverlayProps {
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
   scenarioPathway?: string;
+  evidenceBadge?: string;
+  dateStr?: string;
 }
 
 export default function TwinHUDOverlay({
@@ -76,6 +78,8 @@ export default function TwinHUDOverlay({
   isFullscreen = false,
   onToggleFullscreen,
   scenarioPathway = "NOT_DECLARED",
+  evidenceBadge,
+  dateStr,
 }: TwinHUDOverlayProps) {
   const [showScientificModal, setShowScientificModal] = useState(false);
 
@@ -320,7 +324,7 @@ export default function TwinHUDOverlay({
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
               <Activity className="w-4 h-4 text-emerald-400" />
               <span className="text-xs font-bold text-zinc-100 uppercase tracking-wider font-mono">
-                Corrida Multiescala · {scenarioPathway}
+                {evidenceBadge ? evidenceBadge : `Corrida Multiescala · ${scenarioPathway}`}
               </span>
             </div>
             <div>{getStressBadge(cwsiStress)}</div>
@@ -406,7 +410,7 @@ export default function TwinHUDOverlay({
                 Ciclo hidrológico y fenológico anual
               </span>
               <span className="text-zinc-100 font-bold bg-zinc-900 px-3 py-1 rounded-md border border-zinc-800">
-                Día {currentDay} de {totalDays}
+                Día {currentDay} de {totalDays}{dateStr ? ` (${dateStr})` : ""}
               </span>
             </div>
             <input

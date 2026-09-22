@@ -40,21 +40,22 @@ function WatershedCatchmentTerrain() {
   const geometry = useMemo(() => {
     const width = 58;
     const height = 46;
-    const segX = 96;
-    const segY = 76;
+    const segX = 120;
+    const segY = 96;
     const geo = new THREE.PlaneGeometry(width, height, segX, segY);
     const pos = geo.attributes.position;
     const colors = new Float32Array(pos.count * 3);
 
-    const valleyCol = new THREE.Color("#274223");
-    const ridgeCol = new THREE.Color("#566e32");
-    const cropCol = new THREE.Color("#3c5e27");
+    const valleyCol = new THREE.Color("#1f381c");
+    const ridgeCol = new THREE.Color("#5a7433");
+    const cropCol = new THREE.Color("#375b24");
+    const cropCol2 = new THREE.Color("#4a6a2c");
 
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const y = pos.getY(i);
 
-      // Crestas de divisoria de aguas en los bordes
+      // Crestas de divisoria de aguas en los bordes de la cuenca
       const edgeX = Math.abs(x) / (width / 2);
       const edgeY = Math.abs(y) / (height / 2);
       const boundaryRidge =
@@ -63,22 +64,25 @@ function WatershedCatchmentTerrain() {
       // Incisión del valle fluvial meándrico principal
       const riverPathX = -18 + (y + height / 2) * 0.74 + Math.sin(y * 0.16) * 3.8;
       const distToRiver = Math.abs(x - riverPathX);
-      const valleyCarve = -Math.exp(-Math.pow(distToRiver / 4.6, 2)) * 1.9;
+      const valleyCarve = -Math.exp(-Math.pow(distToRiver / 4.6, 2)) * 1.95;
 
-      // Topografía glacial suave tipo Midwest
+      // Topografía glacial ondulada suave típica de Iowa (Des Moines Lobe)
       const rolling =
-        Math.sin(x * 0.19) * Math.cos(y * 0.16) * 1.3 +
-        Math.sin(x * 0.4 + y * 0.24) * 0.6 +
-        Math.cos(x * 0.09 - y * 0.14) * 0.8;
+        Math.sin(x * 0.19) * Math.cos(y * 0.16) * 1.35 +
+        Math.sin(x * 0.4 + y * 0.24) * 0.65 +
+        Math.cos(x * 0.09 - y * 0.14) * 0.85;
 
-      const elevation = Math.max(-0.55, boundaryRidge + valleyCarve + rolling);
+      const elevation = Math.max(-0.58, boundaryRidge + valleyCarve + rolling);
       pos.setZ(i, elevation);
 
-      const normElev = Math.min(1, Math.max(0, (elevation + 0.55) / 5.6));
+      const normElev = Math.min(1, Math.max(0, (elevation + 0.58) / 5.8));
+      
+      // Mosaico de parcelas y fondo de valle
+      const parcelPattern = (Math.sin(x * 0.8) * Math.cos(y * 0.8) > 0.1) ? cropCol : cropCol2;
       const vertexColor =
-        normElev < 0.35
-          ? valleyCol.clone().lerp(cropCol, normElev / 0.35)
-          : cropCol.clone().lerp(ridgeCol, (normElev - 0.35) / 0.65);
+        normElev < 0.32
+          ? valleyCol.clone().lerp(parcelPattern, normElev / 0.32)
+          : parcelPattern.clone().lerp(ridgeCol, (normElev - 0.32) / 0.68);
 
       colors[i * 3] = vertexColor.r;
       colors[i * 3 + 1] = vertexColor.g;
@@ -92,8 +96,113 @@ function WatershedCatchmentTerrain() {
 
   return (
     <mesh geometry={geometry} rotation-x={-Math.PI / 2} receiveShadow>
-      <meshStandardMaterial vertexColors roughness={0.92} metalness={0.04} />
+      <meshStandardMaterial vertexColors roughness={0.88} metalness={0.06} />
     </mesh>
+  );
+}
+
+/**
+ * Superficie Fluvial 3D Fotorrealista con Curvatura Suave, Ondas Viajeras y Reflejos Físicos
+ */
+function RealisticRiverSurface3D({
+  points,
+  width,
+  streamflowM3s,
+}: {
+  points: [number, number, number][];
+  width: number;
+  streamflowM3s: number;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const flowSpeed = Math.min(3.2, 0.9 + (streamflowM3s / 12) * 0.4);
+
+  const { geometry, foamLineLeft, foamLineRight } = useMemo(() => {
+    const vectors = points.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+    const curve = new THREE.CatmullRomCurve3(vectors);
+    const divisions = 68;
+    const curvePoints = curve.getPoints(divisions);
+
+    const vertices: number[] = [];
+    const indices: number[] = [];
+    const uvs: number[] = [];
+    const leftFoam: [number, number, number][] = [];
+    const rightFoam: [number, number, number][] = [];
+    const up = new THREE.Vector3(0, 1, 0);
+
+    for (let i = 0; i <= divisions; i++) {
+      const p = curvePoints[i];
+      const t = i / divisions;
+      const tangent = curve.getTangent(t).normalize();
+      const binormal = new THREE.Vector3().crossVectors(tangent, up).normalize();
+
+      const halfW = (width * 0.5) * (0.88 + Math.sin(t * Math.PI * 3.5) * 0.12);
+
+      const left = new THREE.Vector3().copy(p).addScaledVector(binormal, halfW);
+      const right = new THREE.Vector3().copy(p).addScaledVector(binormal, -halfW);
+
+      vertices.push(left.x, left.y + 0.05, left.z);
+      vertices.push(right.x, right.y + 0.05, right.z);
+
+      uvs.push(0, t * 8);
+      uvs.push(1, t * 8);
+
+      leftFoam.push([left.x, left.y + 0.055, left.z]);
+      rightFoam.push([right.x, right.y + 0.055, right.z]);
+
+      if (i < divisions) {
+        const row = i * 2;
+        indices.push(row, row + 1, row + 2);
+        indices.push(row + 1, row + 3, row + 2);
+      }
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+
+    return { geometry: geo, foamLineLeft: leftFoam, foamLineRight: rightFoam };
+  }, [points, width]);
+
+  // Física de oleaje y corriente en tiempo real
+  useFrame(({ clock }) => {
+    if (!meshRef.current) return;
+    const time = clock.getElapsedTime() * flowSpeed;
+    const pos = meshRef.current.geometry.attributes.position;
+
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      const wave = Math.sin(x * 0.7 + z * 0.5 - time * 2.5) * 0.025;
+      const ripple = Math.sin(x * 2.2 - z * 1.9 + time * 4.0) * 0.012;
+      pos.setY(i, pos.getY(i) + (wave + ripple) * 0.006);
+    }
+    pos.needsUpdate = true;
+  });
+
+  return (
+    <group>
+      {/* Lámina de agua 3D con refracción, Fresnel y reflejos de cielo */}
+      <mesh ref={meshRef} geometry={geometry} receiveShadow>
+        <meshPhysicalMaterial
+          color="#0284c7"
+          roughness={0.06}
+          metalness={0.05}
+          clearcoat={1.0}
+          clearcoatRoughness={0.03}
+          transmission={0.46}
+          ior={1.333}
+          specularIntensity={1.0}
+          transparent
+          opacity={0.93}
+        />
+      </mesh>
+
+      {/* Líneas de espuma en las orillas ribereñas */}
+      <Line points={foamLineLeft} color="#bae6fd" lineWidth={1.8} transparent opacity={0.7} />
+      <Line points={foamLineRight} color="#bae6fd" lineWidth={1.8} transparent opacity={0.7} />
+    </group>
   );
 }
 
@@ -391,9 +500,9 @@ export default function WatershedMesh3D({
       {/* 3. Bosque Ribereño */}
       <RiparianTreeBelt curvePoints={riverPoints} treeCount={26} />
 
-      {/* 4. Red Fluvial Dendrítica con Reflejo */}
-      <Line points={riverPoints} color="#38bdf8" lineWidth={riverWidth * 13} transparent opacity={0.94} />
-      <Line points={tributaryPoints} color="#60a5fa" lineWidth={riverWidth * 6.5} transparent opacity={0.85} />
+      {/* 4. Red Fluvial 3D Físico con Shader de Ondas y Reflejos */}
+      <RealisticRiverSurface3D points={riverPoints} width={riverWidth * 2.2} streamflowM3s={streamflowM3s} />
+      <RealisticRiverSurface3D points={tributaryPoints} width={riverWidth * 1.3} streamflowM3s={streamflowM3s * 0.4} />
 
       {/* 5. Aforo USGS */}
       <UsgsGaugingStation position={[22, -0.12, -13.5]} streamflowM3s={streamflowM3s} stationId={stationId} evidenceType={evidenceType} />
