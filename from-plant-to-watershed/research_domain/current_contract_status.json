@@ -1,9 +1,9 @@
 {
   "current_contract": {
     "contract_version": "south-fork-final-v2",
-    "current_execution_status": "NOT_EXECUTED",
-    "result_path": null,
-    "reason": "The v2 plant-to-field-to-SWAT+ contract has not yet completed a South Fork paired execution."
+    "current_execution_status": "EXECUTED",
+    "result_path": "research_domain/final_report_v2.json",
+    "reason": null
   },
   "archived_result": {
     "report_version": "south-fork-final-v1",

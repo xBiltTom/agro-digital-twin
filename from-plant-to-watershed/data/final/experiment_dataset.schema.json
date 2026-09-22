@@ -1,5 +1,6 @@
 {
-  "schema_version": "south-fork-final-v1",
+  "schema_version": "south-fork-final-v2",
+  "contract_version": "south-fork-final-v2",
   "row_count": 1096,
   "data_file": "experiment_dataset.parquet",
   "units": {
