@@ -165,8 +165,8 @@ def test_final_scientific_report_requires_authentication_and_never_exposes_v1_as
     assert response.status_code == 200
     payload = response.json()
     assert payload["current_contract"]["contract_version"] == "south-fork-final-v2"
-    assert payload["current_contract"]["current_execution_status"] == "NOT_EXECUTED"
-    assert payload["current_result"] is None
+    assert payload["current_contract"]["current_execution_status"] == "EXECUTED"
+    assert payload["current_result"]["report_version"] == "south-fork-final-v2"
     assert payload["archived_result"]["report_version"] == "south-fork-final-v1"
     assert payload["archived_result"]["status"] == "ARCHIVED_HISTORICAL_RESULT"
     assert archive_response.status_code == 200

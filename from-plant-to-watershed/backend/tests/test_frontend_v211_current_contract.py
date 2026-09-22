@@ -34,5 +34,5 @@ def test_not_executed_panels_gate_current_metrics_and_scenarios():
         assert 'current_execution_status === "NOT_EXECUTED"' in source
         assert "current_result" in source
     assert "Escenarios v2 pendientes de ejecución" in climate
-    assert "current_result.scenarios" in climate
+    assert "report.scenarios" in climate
     assert 'sobol.parameters || ["transpiration_capacity_scale"' not in statistics

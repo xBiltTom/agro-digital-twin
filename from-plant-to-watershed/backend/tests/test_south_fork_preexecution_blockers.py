@@ -164,7 +164,7 @@ def test_main_builds_report_with_baseline_reference_totals_without_real_swat(tmp
     dataset.write_text("placeholder", encoding="utf-8")
     schema.write_text("{}", encoding="utf-8")
     baseline, coupled = _run_result("baseline", 1.0), _run_result("coupled", 2.0, coupled=True)
-    field = {**_field(fspm_crop="maize", target_plant_name="corn"), "scenario_name": "HISTORICAL_COUPLED_V2"}
+    field = {**_field(fspm_crop="maize", target_plant_name="corn"), "scenario_name": "HISTORICAL_COUPLED_V3"}
 
     monkeypatch.setattr(runner, "ROOT", root)
     monkeypatch.setattr(runner, "SOURCE_PROJECT", source)
@@ -175,12 +175,16 @@ def test_main_builds_report_with_baseline_reference_totals_without_real_swat(tmp
     monkeypatch.setattr(runner, "_run", lambda name, *_args, **_kwargs: baseline if "baseline" in name else coupled)
     monkeypatch.setattr(runner, "_observations", lambda *_args: {"2018-01-01": 1.5})
     monkeypatch.setattr(runner, "ValidationEngine", SimpleNamespace(compare_dated=lambda *_args, **_kwargs: {"alignment": {"matched_dates": ["2018-01-01"]}, "hypothesis_status": "NOT_SUPPORTED"}))
-    monkeypatch.setattr(runner, "_run_coupled_scenario", lambda **_kwargs: {"status": "COMPLETED", "comparison_baseline": "HISTORICAL_COUPLED_V2"})
+    monkeypatch.setattr(runner, "_run_coupled_scenario", lambda **_kwargs: {"status": "COMPLETED", "comparison_baseline": "HISTORICAL_COUPLED_V3"})
     monkeypatch.setattr(runner, "_write_dataset", lambda *_args: (str(dataset), str(schema)))
 
     runner.main()
 
-    report = json.loads((root / "research_domain" / "final_report_v2.json").read_text(encoding="utf-8"))
+    report = json.loads((root / "research_domain" / "final_report_v3.json").read_text(encoding="utf-8"))
+    status = json.loads((root / "research_domain" / "final_report_v3.status.json").read_text(encoding="utf-8"))
+    assert status["historical_reference"] == "research_domain/final_report_v2.json"
+    assert not (root / "research_domain" / "final_report_v2.json").exists()
+    assert not (root / "research_domain" / "current_contract_status.json").exists()
     assert report["baseline"]["totals"]["streamflow_m3s_mean"] == 1.0
     assert report["coupled"]["totals"]["streamflow_m3s_mean"] == 2.0
     assert report["coupling_diagnostic"]["hydrology_delta_from_baseline"]["streamflow_m3s_mean"]["absolute"] == 1.0

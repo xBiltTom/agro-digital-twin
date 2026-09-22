@@ -88,3 +88,85 @@ The old coupling was weak because it changed just three maxima in a static plant
 record, while SWAT+ uses a heat-unit LAI curve, radiation interception and biomass
 growth during each planted season. A changed input checksum alone did not prove
 that those maxima were dynamically limiting the active HRUs.
+
+## Phase 1 plant-water unit correction (proposed v3 execution)
+
+The existing South Fork v2 report and dataset are historical outputs. They were
+computed with `soil_moisture_vol=0.24` at the FSPM entry point, while the
+`SimplifiedPlantModel` uses volumetric **percent** thresholds of 12, 32 and 44.
+Thus the model interpreted an intended volumetric fraction of 0.24 (24%) as
+0.24%. The population also divided a seeded moisture offset, already measured
+in percentage points, by 100. Both errors have been corrected in source code;
+the v2 metrics and conclusions have not been changed.
+
+| Component | Water variable | Unit and meaning |
+| --- | --- | --- |
+| SWAT+ output parser | `soil_water_mm` | mm of soil-water storage over its modeled soil profile; kept separate |
+| South Fork FSPM source | assumed `0.24` fraction | converted once to 24 volumetric percent; constant for all days |
+| `SimplifiedPlantModel`, `PlantPopulation`, field aggregate and proxy HRU | `soil_moisture_vol` | volumetric percent in [0, 100] |
+| Plant heterogeneity | `soil_moisture_offset` | volumetric percentage points (sampled within ±3) |
+| Simplified hydrology | `soil_water_depth_mm` and `soil_moisture_vol` | mm and percent respectively; its assumed 1000 mm profile yields `mm / profile_mm × 100` |
+
+The 1000 mm profile in the separate simplified hydrology model is **not** a
+valid conversion factor for SWAT+ HRU soil water. SWAT+ soil storage can cover
+different soil depths/layers and spatial supports. A defensible HRU/root-zone
+profile mapping and time alignment are still required before SWAT+ `soil_water_mm`
+can drive FSPM moisture. The corrected South Fork FSPM continues to use an
+explicitly tagged assumed constant; its precipitation scenarios still have no
+modeled soil-moisture response. The SWAT+ crop mapper remains one-way and does
+not write FSPM ET, uptake or stress into SWAT+.
+
+The fixed-weather FSPM response changes under this correction: stress and
+actual transpiration/uptake change, while potential transpiration does not.
+LAI and instantaneous biomass estimates depend on stress; canopy interception
+can then change cumulative absorbed PAR and later biomass. Root depth and
+phenology do not depend on moisture in this simplified model. Biomass is an
+algebraic estimate from cumulative intercepted radiation and current stress;
+it is not a validated daily carbon balance. Sap flow is a proxy proportional
+to actual transpiration and is zero at zero flux. None of these variables is
+an observed or fully validated 3D plant state.
+
+`run_final_south_fork.py` now writes `final_report_v3.json` and
+`experiment_dataset_v3.parquet` if deliberately executed. It leaves the v2
+artifacts and the current report API pointer unchanged. A v3 execution must be
+reviewed with its own provenance and observational validation before any claim
+of improved FSPM–SWAT+ coupling or promotion as the current result.
+
+For a read-only comparison using the same 2015–2020 SWAT+ weather files,
+seed 42, 1,000 plants and historical `final_report_v2.json`, call
+`scripts.run_final_south_fork._fspm_field()` from the backend and compare its
+field aggregate with `report["fspm"]["field_aggregate"]`. The population's
+peak-canopy field changes as follows (these are FSPM outputs, not new SWAT+
+results):
+
+```bash
+cd backend
+./.venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+from scripts.run_final_south_fork import _fspm_field
+
+old = json.loads(Path('../research_domain/final_report_v2.json').read_text())['fspm']['field_aggregate']
+new, _ = _fspm_field()
+for key in ('soil_moisture_vol', 'mean_LAI', 'potential_ET_mm_day',
+            'actual_ET_mm_day', 'water_stress', 'biomass_g_plant'):
+    print(key, old[key], new[key])
+PY
+```
+
+Set `SOUTH_FORK_SWAT_PROJECT` to the original project's `TxtInOut` if its local
+path differs from the runner default. This command reads inputs and does not
+write a new report.
+
+| Variable | Historical v2 | Corrected code, same forcing |
+| --- | ---: | ---: |
+| Assumed soil moisture (% volumetric) | 0.24 | 24.0 |
+| Mean LAI | 2.821900386 | 5.004551569 |
+| Potential ET (mm/day) | 2.476320524 | 2.476320524 |
+| Actual ET / uptake (mm/day) | 0 | 2.340662154 |
+| Mean water stress | 1 | 0.05448651 |
+| Biomass estimate (g/plant) | 128.885444 | 260.853183 |
+
+The biomass difference includes changed canopy interception during the season;
+the two peak states need not fall on the same day. These values do not establish
+improved runoff or streamflow prediction.

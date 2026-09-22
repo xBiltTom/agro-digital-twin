@@ -5,7 +5,7 @@ import pytest
 import scripts.run_final_south_fork as runner
 
 
-def _field(*, scenario_name="HISTORICAL_COUPLED_V2", crop="maize", target="corn"):
+def _field(*, scenario_name="HISTORICAL_COUPLED_V3", crop="maize", target="corn"):
     return {
         "scenario_name": scenario_name, "fspm_crop": crop,
         "fspm_classification": "SIMPLIFIED_SORGHUM_PROXY" if crop == "sorghum_proxy" else "SIMPLIFIED_FSPM",
@@ -35,7 +35,7 @@ def test_climate_scenario_forcing_is_perturbed_before_fspm_execution(monkeypatch
     assert field is not historical_field
     assert lineage["fspm_recomputed"] is True
     assert lineage["forcing_modified"] is True
-    assert lineage["comparison_baseline"] == "HISTORICAL_COUPLED_V2"
+    assert lineage["comparison_baseline"] == "HISTORICAL_COUPLED_V3"
 
 
 def test_dry_scenario_recomputes_fspm_with_reduced_precipitation(monkeypatch):
@@ -99,7 +99,7 @@ def test_sorghum_proxy_is_recomputed_and_targets_grsg_not_maize(monkeypatch):
 
 
 def test_scenario_execution_is_coupled_and_compared_with_historical_coupled(monkeypatch):
-    lineage = {"scenario_name": "TEMPERATURE_PLUS_2C", "comparison_baseline": "HISTORICAL_COUPLED_V2"}
+    lineage = {"scenario_name": "TEMPERATURE_PLUS_2C", "comparison_baseline": "HISTORICAL_COUPLED_V3"}
     monkeypatch.setattr(runner, "_prepare_scenario_fspm", lambda **_: (_field(), {}, lineage))
     captured = {}
     run = SimpleNamespace(run_id="scenario-run", records=[{"period": "2018-01-01", "streamflow_m3s": 2.0, "runoff_mm": 1.0, "evapotranspiration_mm": 1.0, "soil_water_mm": 1.0}], provenance={})
@@ -115,9 +115,9 @@ def test_scenario_execution_is_coupled_and_compared_with_historical_coupled(monk
         historical_field=_field(), historical_forcing=[], historical_forcing_provenance={}, historical_coupled=historical,
     )
     assert captured["coupled"] is True
-    assert record["comparison_baseline"] == "HISTORICAL_COUPLED_V2"
+    assert record["comparison_baseline"] == "HISTORICAL_COUPLED_V3"
     assert record["reference_run_id"] == "historical-coupled"
-    assert record["delta_from_historical_coupled_v2"]["streamflow_m3s_mean"]["absolute"] == 1.0
+    assert record["delta_from_historical_coupled_v3"]["streamflow_m3s_mean"]["absolute"] == 1.0
 
 
 def test_wilcoxon_ui_selects_interpretation_or_reason():
@@ -130,6 +130,6 @@ def test_wilcoxon_ui_selects_interpretation_or_reason():
 def test_scenario_ui_uses_coupled_reference_and_current_runner_identifiers():
     source = (runner.ROOT / "frontend/src/components/scientific/ClimateScenariosPanel.tsx").read_text(encoding="utf-8")
     assert "delta_from_historical_coupled_v2" in source
-    assert "HISTORICAL_COUPLED_V2" in source
+    assert "scen.comparison_baseline" in source
     for scenario_name in runner.SCENARIO_DEFINITIONS:
         assert scenario_name in source

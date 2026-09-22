@@ -18,6 +18,7 @@ from app.services.swat_crop_chain_diagnostic import SwatCropChainDiagnostic
 from app.core.config import settings
 from scientific_core import MultiscaleSimulationOrchestrator, PlantPopulation, PlantToFieldAggregator, RunConfig, SimulationOrchestrator, ValidationEngine
 from scientific_core.climate_file import NormalizedClimateFileProvider
+from scientific_core.units import ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT
 
 
 def _code_version() -> str | None:
@@ -144,8 +145,9 @@ class TwinCouplingEngine:
                 gdd, absorbed_par = 0.0, 0.0
             gdd += season.fspm_growth_gdd_increment(forcing["temp_c"])
             daily_forcing = {**forcing, "gdd_c_day": gdd, "cumulative_absorbed_par_mj_m2": absorbed_par}
-            current_plants = population.step(index, daily_forcing, soil_moisture_vol=0.24)
-            current_field = PlantToFieldAggregator.aggregate(current_plants, soil_moisture_vol=0.24)
+            current_plants = population.step(index, daily_forcing, soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
+            current_field = PlantToFieldAggregator.aggregate(current_plants, soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
+            current_field["soil_moisture_source"] = "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
             # PAR is 48% of shortwave radiation; green-canopy interception is
             # already represented by the FSPM Beer-Lambert cover calculation.
             absorbed_par += max(0.0, forcing["solar_rad_mj"]) * .48 * current_field["canopy_cover"]

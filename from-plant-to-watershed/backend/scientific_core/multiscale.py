@@ -15,6 +15,7 @@ from statistics import fmean, pstdev
 from typing import Any, Iterable
 
 from .plant import SimplifiedPlantModel
+from .units import validate_soil_moisture_vol_percent
 
 
 @dataclass(frozen=True)
@@ -24,7 +25,7 @@ class PlantState:
     y_m: float
     base_kc: float
     root_depth_cm: float
-    soil_moisture_offset: float
+    soil_moisture_offset: float  # volumetric percentage points
     lai: float = 0.0
     transpiration_mm: float = 0.0
     stress: float = 0.0
@@ -107,16 +108,23 @@ class PlantPopulation:
         )
 
     def step(self, day_index: int, forcing: dict[str, float], soil_moisture_vol: float) -> tuple[PlantState, ...]:
+        """Evaluate representative plants at volumetric soil moisture in percent."""
+        validate_soil_moisture_vol_percent(soil_moisture_vol)
+        for name in ("temp_c", "solar_rad_mj", "rh_percent", "co2_ppm", "gdd_c_day", "cumulative_absorbed_par_mj_m2"):
+            if name in forcing and not math.isfinite(forcing[name]):
+                raise ValueError(f"{name} must be finite")
         # A maize thermal-time state.  ``day_index`` is deliberately only the
         # calendar/management clock; every output is deterministic for seed +
         # forcing + soil + management/parameters.
         gdd = float(forcing.get("gdd_c_day", max(0.0, day_index * max(0.0, forcing["temp_c"] - 8.0))))
+        if gdd < 0 or forcing.get("cumulative_absorbed_par_mj_m2", 0.0) < 0:
+            raise ValueError("gdd_c_day and cumulative absorbed PAR cannot be negative")
         peak_lai = 4.2 if self.crop == "sorghum_proxy" else 5.2
         cumulative_apar = max(0.0, float(forcing.get("cumulative_absorbed_par_mj_m2", 0.0)))
         states = []
         for plant in self.plants:
             model = SimplifiedPlantModel(plant.base_kc, plant.root_depth_cm)
-            moisture = max(0.0, soil_moisture_vol + plant.soil_moisture_offset / 100.0)
+            moisture = min(100.0, max(0.0, soil_moisture_vol + plant.soil_moisture_offset))
             result = model.compute_daily_plant_step(
                 forcing["temp_c"], forcing["solar_rad_mj"], forcing["rh_percent"], moisture, forcing["co2_ppm"]
             )
@@ -157,6 +165,8 @@ class PlantPopulation:
 class PlantToFieldAggregator:
     @staticmethod
     def aggregate(plants: Iterable[PlantState], soil_moisture_vol: float) -> dict[str, Any]:
+        """Aggregate plant states; soil_moisture_vol remains volumetric percent."""
+        validate_soil_moisture_vol_percent(soil_moisture_vol)
         rows = tuple(plants)
         if not rows:
             raise ValueError("at least one plant is required")
@@ -190,7 +200,7 @@ class PlantToFieldAggregator:
             "phenology_fraction": fmean(min(1.0, p.growing_degree_days_c_day / p.thermal_maturity_gdd) for p in rows),
             "canopy_extinction_coefficient": fmean(p.canopy_extinction_coefficient for p in rows),
             "biomass_energy_ratio_kg_ha_per_mj_m2": fmean(p.radiation_use_efficiency_kg_ha_per_mj_m2 for p in rows),
-            "units": {"mean_LAI": "m2_leaf/m2_ground", "canopy_cover": "fraction", "root_depth_mean_m": "m", "actual_ET_mm_day": "mm/day", "potential_ET_mm_day": "mm/day", "biomass_g_plant": "g/plant", "yield_estimate_g_plant": "g/plant", "mean_growing_degree_days_c_day": "degC_day", "mean_thermal_maturity_gdd": "degC_day", "phenology_fraction": "fraction", "canopy_extinction_coefficient": "dimensionless", "biomass_energy_ratio_kg_ha_per_mj_m2": "kg/ha/(MJ/m2)"},
+            "units": {"soil_moisture_vol": "volumetric percent [0, 100]", "mean_LAI": "m2_leaf/m2_ground", "canopy_cover": "fraction", "root_depth_mean_m": "m", "actual_ET_mm_day": "mm/day", "potential_ET_mm_day": "mm/day", "transpiration_mm_day": "mm/day", "soil_water_uptake_mm_day": "mm/day", "water_stress": "fraction [0, 1]", "biomass_g_plant": "g/plant", "yield_estimate_g_plant": "g/plant", "mean_growing_degree_days_c_day": "degC_day", "mean_thermal_maturity_gdd": "degC_day", "phenology_fraction": "fraction", "canopy_extinction_coefficient": "dimensionless", "biomass_energy_ratio_kg_ha_per_mj_m2": "kg/ha/(MJ/m2)"},
         })
         result["coupling_parameter_provenance"] = {
             "ext_co": {
@@ -291,6 +301,7 @@ class FieldToHRUCoupler:
         )
 
     def couple(self, field: dict[str, Any]) -> dict[str, Any]:
+        validate_soil_moisture_vol_percent(field["soil_moisture_vol"])
         crop_factor = {"maize": 1.0, "sorghum_proxy": .92, "soy_proxy": .83, "other": .68}
         soil_offset = {"loam": 0.0, "mixed": -1.25}
         mapped = []

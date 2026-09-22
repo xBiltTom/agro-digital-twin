@@ -17,21 +17,22 @@ from app.services.swat_cdl_hru_mapper import SwatCDLHRUMapper
 from app.services.swat_plant_parameter_mapper import SwatClimateForcingReader, SwatPlantParameterMapper
 from app.services.swat_plus_adapter import SwatPlusAdapter, SwatPlusRunConfig, _sha256
 from scientific_core import PlantPopulation, PlantToFieldAggregator
+from scientific_core.units import ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT
 from scientific_core.validation import ValidationEngine
 
 
 SOURCE_PROJECT = Path(os.environ["SOUTH_FORK_SWAT_PROJECT"])
 EXECUTABLE = Path(os.environ["SWAT_PLUS_EXECUTABLE"])
 CDL_COMPOSITION = Path(os.environ["SOUTH_FORK_CDL_COMPOSITION"])
-RUN_ROOT = Path(os.environ.get("SOUTH_FORK_RUN_ROOT", "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/paired_runs"))
-REPORT_PATH = Path(os.environ.get("SOUTH_FORK_PAIRED_REPORT", "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/paired_cdl_2019_report.json"))
+RUN_ROOT = Path(os.environ.get("SOUTH_FORK_RUN_ROOT", "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/paired_runs_v3"))
+REPORT_PATH = Path(os.environ.get("SOUTH_FORK_PAIRED_REPORT", "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/paired_cdl_2019_report_v3.json"))
 CDL_PROVENANCE_PATH = CDL_COMPOSITION.with_name("hru_crop_provenance.json")
 START = date.fromisoformat(os.environ.get("SOUTH_FORK_START", "2019-01-01"))
 END = date.fromisoformat(os.environ.get("SOUTH_FORK_END", "2019-12-31"))
 SEED = int(os.environ.get("SOUTH_FORK_FSPM_SEED", "42"))
 PLANT_COUNT = int(os.environ.get("SOUTH_FORK_PLANT_COUNT", "1000"))
-BASELINE_RUN_ID = os.environ.get("SOUTH_FORK_BASELINE_RUN_ID", "south-fork-2019-cdl-baseline")
-COUPLED_RUN_ID = os.environ.get("SOUTH_FORK_COUPLED_RUN_ID", "south-fork-2019-cdl-coupled")
+BASELINE_RUN_ID = os.environ.get("SOUTH_FORK_BASELINE_RUN_ID", "south-fork-2019-cdl-v3-baseline")
+COUPLED_RUN_ID = os.environ.get("SOUTH_FORK_COUPLED_RUN_ID", "south-fork-2019-cdl-v3-coupled")
 
 
 def _fspm_peak(project: Path, start: date, end: date) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -45,9 +46,10 @@ def _fspm_peak(project: Path, start: date, end: date) -> tuple[dict[str, Any], d
     for index, forcing in enumerate(climate, 1):
         gdd += max(0.0, forcing["temp_c"] - 8.0)
         current = PlantToFieldAggregator.aggregate(
-            population.step(index, {**forcing, "gdd_c_day": gdd}, soil_moisture_vol=0.24),
-            soil_moisture_vol=0.24,
+            population.step(index, {**forcing, "gdd_c_day": gdd}, soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT),
+            soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT,
         )
+        current["soil_moisture_source"] = "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
         current_date = (start + timedelta(days=index - 1)).isoformat()
         if peak_lai is None or current["mean_LAI"] > peak_lai["mean_LAI"]:
             peak_lai, peak_dates["date_of_peak_LAI"] = current, current_date
@@ -197,7 +199,7 @@ def main() -> None:
     )
     hydrologic_outputs_changed = baseline.provenance.get("output_checksums") != coupled.provenance.get("output_checksums")
     report = {
-        "experiment_id": "south-fork-05451210-cdl-2019",
+        "experiment_id": "south-fork-05451210-cdl-2019-v3",
         "period": {"start": START.isoformat(), "end": END.isoformat(), "days": (END - START).days + 1},
         "warmup_period": 0,
         "period_note": "2019 full calendar-year evaluation; no preceding warm-up year was included in this bounded real-engine run",

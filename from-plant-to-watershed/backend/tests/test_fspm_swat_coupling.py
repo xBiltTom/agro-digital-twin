@@ -4,14 +4,16 @@ import pytest
 
 from app.services.swat_plant_parameter_mapper import SwatPlantParameterMapper
 from scientific_core import PlantPopulation, PlantToFieldAggregator
+from scientific_core.units import ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT
 
 
 FORCING = {"temp_c": 24.0, "solar_rad_mj": 18.0, "rh_percent": 65.0, "co2_ppm": 400.0, "gdd_c_day": 900.0}
 
 
 def _field(seed=42):
-    states = PlantPopulation(1000, seed).step(120, FORCING, .24)
-    field = PlantToFieldAggregator.aggregate(states, .24)
+    states = PlantPopulation(1000, seed).step(120, FORCING, ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
+    field = PlantToFieldAggregator.aggregate(states, ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
+    field["soil_moisture_source"] = "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
     field["swat_lai_contract"] = {
         "lai_pot": field["mean_LAI"], "frac_hu1": .18, "lai_max1": .16,
         "frac_hu2": .48, "lai_max2": .86, "hu_lai_decl": .76,
@@ -62,13 +64,17 @@ def test_field_to_documented_swat_inputs_emits_a_complete_manifest(tmp_path):
     assert traits["bm_e"]["source_value"] == 40.0
     assert "corn 6 .15 .15 .5 .95 .8 2.5 2 .65 40 corn" not in (tmp_path / "plants.plt").read_text(encoding="utf-8")
     assert {entry["variable"] for entry in manifest["not_coupled"]} >= {"actual_ET_mm_day", "water_stress", "root_distribution"}
+    assert manifest["soil_moisture_input"] == {
+        "value": 24.0, "unit": "volumetric percent",
+        "source": "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT", "swat_soil_water_feedback": "NOT_COUPLED",
+    }
 
 
 def test_seasonal_lai_contract_is_ordered_and_physically_bounded():
     states = PlantPopulation(1000, 8)
     trajectory = []
     for gdd in range(50, 1451, 50):
-        trajectory.append(PlantToFieldAggregator.aggregate(states.step(gdd, {**FORCING, "gdd_c_day": float(gdd)}, .24), .24))
+        trajectory.append(PlantToFieldAggregator.aggregate(states.step(gdd, {**FORCING, "gdd_c_day": float(gdd)}, ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT), ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT))
     contract = PlantToFieldAggregator.seasonal_lai_contract(trajectory)
     assert 0 < contract["frac_hu1"] < contract["frac_hu2"] < contract["hu_lai_decl"] <= 1
     assert 0 < contract["lai_max1"] < contract["lai_max2"] <= 1

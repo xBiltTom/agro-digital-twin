@@ -129,6 +129,7 @@ class MultiscaleSimulationOrchestrator:
         for forcing in weather:
             states = population.step(forcing["day_index"], forcing, twin_moisture)
             field = PlantToFieldAggregator.aggregate(states, twin_moisture)
+            field["soil_moisture_source"] = "SIMPLIFIED_HYDROLOGY_MODEL_OR_INITIAL_CONDITION"
             hru = coupler.couple(field)
             baseline_step = baseline_plant.compute_daily_plant_step(
                 forcing["temp_c"], forcing["solar_rad_mj"], forcing["rh_percent"], baseline_moisture, forcing["co2_ppm"]
@@ -167,7 +168,7 @@ class MultiscaleSimulationOrchestrator:
             rows.append({**forcing, **twin, "date_str": date_value.isoformat(),
                          "et0_mm": baseline_step["et0_mm"], "actual_transpiration_mm": field["mean_transpiration_mm"],
                          "root_water_uptake_mm": field["mean_transpiration_mm"], "cwsi_stress_index": field["mean_stress"],
-                         "sap_flow_velocity_cmh": 2.5 + field["mean_transpiration_mm"] / 6 * 18,
+                         "sap_flow_velocity_cmh": field["mean_transpiration_mm"] / 6 * 18,
                          "baseline_streamflow_m3s": baseline["streamflow_m3s"], "irrigation_mm": params["irrigation_mm_per_day"],
                          "hru_contributions": [{"hru_id": state["hru_id"], "area_fraction": state["area_fraction"],
                                                 "streamflow_m3s": output["streamflow_m3s"], "surface_runoff_mm": output["surface_runoff_mm"]}

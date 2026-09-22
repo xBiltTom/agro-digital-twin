@@ -13,6 +13,8 @@ from pathlib import Path
 from statistics import fmean
 from typing import Any
 
+from scientific_core.units import validate_soil_moisture_vol_percent
+
 
 class SwatPlantMappingError(ValueError):
     pass
@@ -230,6 +232,8 @@ class SwatPlantParameterMapper:
             raise SwatPlantMappingError(f"FieldAggregate value {dotted_name} is not numeric") from exc
 
     def apply(self, workspace: Path, field: dict[str, Any]) -> dict[str, Any]:
+        if "soil_moisture_vol" in field:
+            validate_soil_moisture_vol_percent(field["soil_moisture_vol"])
         plants = workspace / "plants.plt"
         if not plants.is_file():
             raise SwatPlantMappingError("plants.plt is required for real FSPM coupling")
@@ -265,4 +269,4 @@ class SwatPlantParameterMapper:
             lines[index] = "  ".join(values)
             plants.write_text("\n".join(lines) + "\n", encoding="utf-8")
         coupled_sha256 = self._sha256(plants)
-        return {"status": "APPLIED" if changed else "NO_PARAMETER_CHANGE", "target_plant_name": self.target_plant_name, "target_hrus": target_hrus, "parameter_updates": updates, "lineage": "PlantPopulation(1000 SIMPLIFIED_FSPM plants) -> PlantToFieldAggregator -> documented plants.plt crop record -> SWAT+ internal hydrology", "not_coupled": [{"variable": "actual_ET_mm_day", "reason": "NOT_COUPLED: SWAT+ recomputes transpiration internally; no ET input or output is edited"}, {"variable": "potential_ET_mm_day", "reason": "NOT_COUPLED: SWAT+ owns potential ET calculation"}, {"variable": "soil_water_uptake_mm_day", "reason": "NOT_COUPLED: SWAT+ computes root uptake from plant and soil state"}, {"variable": "water_stress", "reason": "NOT_COUPLED: simplified Feddes stress has no unit-compatible documented SWAT+ plant-table equivalent"}, {"variable": "stomatal_conductance_mmol", "reason": "NOT_COUPLED: FSPM mmol conductance is not converted to SWAT+ stcon_max m/s without a validated conductance conversion"}, {"variable": "thermal_maturity_gdd", "reason": "NOT_COUPLED: provided plants.plt has days_mat, not a GDD/PHU input; exact planted dates are not emitted by this project, so GDD is used only for documented LAI-curve fractions"}, {"variable": "estimated_yield_g_plant", "reason": "NOT_COUPLED: no harvest/output adjustment is made"}, {"variable": "root_distribution", "reason": "NOT_COUPLED: plants.plt exposes maximum root depth but no matching depth-distribution input"}], "workspace_input_files_modified": ["plants.plt"] if changed else [], "input_checksums": {"plants.plt": {"before_sha256": source_sha256, "after_sha256": coupled_sha256}}, "source_sha256": source_sha256, "coupled_sha256": coupled_sha256}
+        return {"status": "APPLIED" if changed else "NO_PARAMETER_CHANGE", "target_plant_name": self.target_plant_name, "target_hrus": target_hrus, "parameter_updates": updates, "lineage": "PlantPopulation(1000 SIMPLIFIED_FSPM plants) -> PlantToFieldAggregator -> documented plants.plt crop record -> SWAT+ internal hydrology", "soil_moisture_input": {"value": field.get("soil_moisture_vol"), "unit": "volumetric percent", "source": field.get("soil_moisture_source", "UNSPECIFIED"), "swat_soil_water_feedback": "NOT_COUPLED"}, "not_coupled": [{"variable": "actual_ET_mm_day", "reason": "NOT_COUPLED: SWAT+ recomputes transpiration internally; no ET input or output is edited"}, {"variable": "potential_ET_mm_day", "reason": "NOT_COUPLED: SWAT+ owns potential ET calculation"}, {"variable": "soil_water_uptake_mm_day", "reason": "NOT_COUPLED: SWAT+ computes root uptake from plant and soil state"}, {"variable": "water_stress", "reason": "NOT_COUPLED: simplified Feddes stress has no unit-compatible documented SWAT+ plant-table equivalent"}, {"variable": "stomatal_conductance_mmol", "reason": "NOT_COUPLED: FSPM mmol conductance is not converted to SWAT+ stcon_max m/s without a validated conductance conversion"}, {"variable": "thermal_maturity_gdd", "reason": "NOT_COUPLED: provided plants.plt has days_mat, not a GDD/PHU input; exact planted dates are not emitted by this project, so GDD is used only for documented LAI-curve fractions"}, {"variable": "estimated_yield_g_plant", "reason": "NOT_COUPLED: no harvest/output adjustment is made"}, {"variable": "root_distribution", "reason": "NOT_COUPLED: plants.plt exposes maximum root depth but no matching depth-distribution input"}], "workspace_input_files_modified": ["plants.plt"] if changed else [], "input_checksums": {"plants.plt": {"before_sha256": source_sha256, "after_sha256": coupled_sha256}}, "source_sha256": source_sha256, "coupled_sha256": coupled_sha256}
