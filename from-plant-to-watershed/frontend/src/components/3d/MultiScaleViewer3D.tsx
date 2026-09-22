@@ -36,6 +36,8 @@ interface MultiScaleViewer3DProps {
   showSoilHorizons?: boolean;
   showSensors?: boolean;
   showScientificLabels?: boolean;
+  currentDay?: number;
+  totalDays?: number;
 }
 
 /**
@@ -131,6 +133,8 @@ export default function MultiScaleViewer3D({
   showSoilHorizons = true,
   showSensors = true,
   showScientificLabels = true,
+  currentDay = 1,
+  totalDays = 365,
 }: MultiScaleViewer3DProps) {
   const controlsRef = useRef<any>(null);
 
@@ -297,6 +301,8 @@ export default function MultiScaleViewer3D({
             showHruBorders={showSoilHorizons}
             showHydrologyFlow={showHydrologyFlow}
             showScientificLabels={showScientificLabels}
+            currentDay={currentDay}
+            totalDays={totalDays}
           />
         )}
 
@@ -311,6 +317,9 @@ export default function MultiScaleViewer3D({
             onSelectPlant={() => onChangeScale("MICRO")}
             showSensors={showSensors}
             showScientificLabels={showScientificLabels}
+            currentDay={currentDay}
+            totalDays={totalDays}
+            precipMm={precipMm}
           />
         )}
 
@@ -331,6 +340,9 @@ export default function MultiScaleViewer3D({
             showHydrologyFlow={showHydrologyFlow}
             showSoilHorizons={showSoilHorizons}
             showScientificLabels={showScientificLabels}
+            currentDay={currentDay}
+            totalDays={totalDays}
+            precipMm={precipMm}
           />
         )}
 

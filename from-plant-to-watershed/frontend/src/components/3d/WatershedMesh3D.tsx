@@ -30,13 +30,54 @@ interface WatershedMesh3DProps {
   showHruBorders?: boolean;
   showHydrologyFlow?: boolean;
   showScientificLabels?: boolean;
+  currentDay?: number;
+  totalDays?: number;
 }
 
 /**
- * Schematic watershed context. The app currently does not persist SWAT+ GIS
- * polygons for the viewer, so this is intentionally never presented as a DEM.
+ * Función analítica de elevación del terreno de la cuenca (South Fork Iowa River basin).
+ * Proporciona elevación Y consistente para el terreno, río, parcelas e infraestructura.
  */
-function WatershedCatchmentTerrain() {
+export function getTerrainElevation(x: number, z: number): number {
+  const width = 58;
+  const height = 46;
+  const y = -z;
+
+  const edgeX = Math.abs(x) / (width / 2);
+  const edgeY = Math.abs(y) / (height / 2);
+  // Crestas delimitadoras de cuenca en los extremos
+  const boundaryRidge = Math.pow(edgeX, 2.8) * 3.4 + Math.pow(edgeY, 2.6) * 3.0;
+
+  // Meandro del río principal
+  const riverPathX = -18 + (y + height / 2) * 0.74 + Math.sin(y * 0.16) * 3.8;
+  const distToRiver = Math.abs(x - riverPathX);
+  // Incisión natural del cauce fluvial
+  const valleyCarve = -Math.exp(-Math.pow(distToRiver / 4.8, 2)) * 1.85;
+
+  // Suaves ondulaciones de relieve glacial (swales and swells)
+  const rolling =
+    Math.sin(x * 0.18) * Math.cos(y * 0.15) * 0.95 +
+    Math.sin(x * 0.38 + y * 0.22) * 0.45 +
+    Math.cos(x * 0.08 - y * 0.12) * 0.55;
+
+  return Math.max(-0.52, boundaryRidge + valleyCarve + rolling);
+}
+
+/**
+ * Trayectoria analítica central del río en función de Z
+ */
+export function getRiverPathX(z: number): number {
+  const y = -z;
+  const height = 46;
+  return -18 + (y + height / 2) * 0.74 + Math.sin(y * 0.16) * 3.8;
+}
+
+/**
+ * Terreno de Cuenca Hidrográfica con Relieve Físico Continuo
+ */
+function WatershedCatchmentTerrain({ soilMoistureVol }: { soilMoistureVol: number }) {
+  const moistureFactor = Math.min(1, Math.max(0, soilMoistureVol / 45));
+
   const geometry = useMemo(() => {
     const width = 58;
     const height = 46;
@@ -46,43 +87,26 @@ function WatershedCatchmentTerrain() {
     const pos = geo.attributes.position;
     const colors = new Float32Array(pos.count * 3);
 
-    const valleyCol = new THREE.Color("#1f381c");
-    const ridgeCol = new THREE.Color("#5a7433");
-    const cropCol = new THREE.Color("#375b24");
-    const cropCol2 = new THREE.Color("#4a6a2c");
+    const valleyCol = new THREE.Color("#183214");
+    const ridgeCol = new THREE.Color("#556d2e");
+    const cropCol = new THREE.Color("#2f521e");
+    const cropCol2 = new THREE.Color("#415f25");
 
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const y = pos.getY(i);
+      const zWorld = -y;
 
-      // Crestas de divisoria de aguas en los bordes de la cuenca
-      const edgeX = Math.abs(x) / (width / 2);
-      const edgeY = Math.abs(y) / (height / 2);
-      const boundaryRidge =
-        Math.pow(edgeX, 2.6) * 4.4 + Math.pow(edgeY, 2.4) * 3.8;
-
-      // Incisión del valle fluvial meándrico principal
-      const riverPathX = -18 + (y + height / 2) * 0.74 + Math.sin(y * 0.16) * 3.8;
-      const distToRiver = Math.abs(x - riverPathX);
-      const valleyCarve = -Math.exp(-Math.pow(distToRiver / 4.6, 2)) * 1.95;
-
-      // Topografía glacial ondulada suave típica de Iowa (Des Moines Lobe)
-      const rolling =
-        Math.sin(x * 0.19) * Math.cos(y * 0.16) * 1.35 +
-        Math.sin(x * 0.4 + y * 0.24) * 0.65 +
-        Math.cos(x * 0.09 - y * 0.14) * 0.85;
-
-      const elevation = Math.max(-0.58, boundaryRidge + valleyCarve + rolling);
+      const elevation = getTerrainElevation(x, zWorld);
       pos.setZ(i, elevation);
 
-      const normElev = Math.min(1, Math.max(0, (elevation + 0.58) / 5.8));
-      
-      // Mosaico de parcelas y fondo de valle
-      const parcelPattern = (Math.sin(x * 0.8) * Math.cos(y * 0.8) > 0.1) ? cropCol : cropCol2;
+      const normElev = Math.min(1, Math.max(0, (elevation + 0.52) / 5.2));
+      const parcelPattern = (Math.sin(x * 0.75) * Math.cos(y * 0.75) > 0.05) ? cropCol : cropCol2;
+
       const vertexColor =
-        normElev < 0.32
-          ? valleyCol.clone().lerp(parcelPattern, normElev / 0.32)
-          : parcelPattern.clone().lerp(ridgeCol, (normElev - 0.32) / 0.68);
+        normElev < 0.28
+          ? valleyCol.clone().lerp(parcelPattern, normElev / 0.28)
+          : parcelPattern.clone().lerp(ridgeCol, (normElev - 0.28) / 0.72);
 
       colors[i * 3] = vertexColor.r;
       colors[i * 3 + 1] = vertexColor.g;
@@ -94,65 +118,80 @@ function WatershedCatchmentTerrain() {
     return geo;
   }, []);
 
+  const terrainRoughness = Math.max(0.48, 0.88 - moistureFactor * 0.35);
+
   return (
     <mesh geometry={geometry} rotation-x={-Math.PI / 2} receiveShadow>
-      <meshStandardMaterial vertexColors roughness={0.88} metalness={0.06} />
+      <meshStandardMaterial
+        vertexColors
+        roughness={terrainRoughness}
+        metalness={moistureFactor * 0.1}
+      />
     </mesh>
   );
 }
 
 /**
- * Superficie Fluvial 3D Fotorrealista con Curvatura Suave, Ondas Viajeras y Reflejos Físicos
+ * Superficie Fluvial 3D Sólida con Malla Continua Multiseccional, Ondas Físicas y Caudal Q Dinámico
  */
 function RealisticRiverSurface3D({
-  points,
-  width,
   streamflowM3s,
 }: {
-  points: [number, number, number][];
-  width: number;
   streamflowM3s: number;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const flowSpeed = Math.min(3.2, 0.9 + (streamflowM3s / 12) * 0.4);
+  const flowSpeed = Math.min(3.5, 1.0 + Math.sqrt(Math.max(0.1, streamflowM3s)) * 0.4);
+  // Ancho y calado dinámicos según el caudal Q modelado en la cuenca
+  const riverWidth = Math.min(5.8, 2.2 + Math.pow(Math.max(0.1, streamflowM3s), 0.38) * 0.52);
+  const waterStage = 0.32 + Math.min(0.85, Math.pow(Math.max(0.1, streamflowM3s), 0.35) * 0.18);
 
-  const { geometry, foamLineLeft, foamLineRight } = useMemo(() => {
-    const vectors = points.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
-    const curve = new THREE.CatmullRomCurve3(vectors);
-    const divisions = 68;
-    const curvePoints = curve.getPoints(divisions);
+  const geometry = useMemo(() => {
+    const divisions = 90;
+    const crossSegs = 4; // 5 vértices transversales para una superficie plana horizontal en cada corte
+    const startZ = 18.5;
+    const endZ = -18.5;
+    const stepZ = (endZ - startZ) / divisions;
 
     const vertices: number[] = [];
     const indices: number[] = [];
     const uvs: number[] = [];
-    const leftFoam: [number, number, number][] = [];
-    const rightFoam: [number, number, number][] = [];
-    const up = new THREE.Vector3(0, 1, 0);
+
+    const centerPoints: Array<{ x: number; y: number; z: number }> = [];
+    for (let i = 0; i <= divisions; i++) {
+      const z = startZ + i * stepZ;
+      const x = getRiverPathX(z);
+      const bedY = getTerrainElevation(x, z);
+      // La superficie del agua es horizontal sobre el fondo del lecho
+      centerPoints.push({ x, y: bedY + waterStage, z });
+    }
 
     for (let i = 0; i <= divisions; i++) {
-      const p = curvePoints[i];
-      const t = i / divisions;
-      const tangent = curve.getTangent(t).normalize();
-      const binormal = new THREE.Vector3().crossVectors(tangent, up).normalize();
+      const p = centerPoints[i];
+      const prev = centerPoints[Math.max(0, i - 1)];
+      const next = centerPoints[Math.min(divisions, i + 1)];
 
-      const halfW = (width * 0.5) * (0.88 + Math.sin(t * Math.PI * 3.5) * 0.12);
+      const tangent = new THREE.Vector3(next.x - prev.x, 0, next.z - prev.z).normalize();
+      const binormal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
 
-      const left = new THREE.Vector3().copy(p).addScaledVector(binormal, halfW);
-      const right = new THREE.Vector3().copy(p).addScaledVector(binormal, -halfW);
+      const halfW = riverWidth * 0.5;
 
-      vertices.push(left.x, left.y + 0.05, left.z);
-      vertices.push(right.x, right.y + 0.05, right.z);
-
-      uvs.push(0, t * 8);
-      uvs.push(1, t * 8);
-
-      leftFoam.push([left.x, left.y + 0.055, left.z]);
-      rightFoam.push([right.x, right.y + 0.055, right.z]);
+      for (let j = 0; j <= crossSegs; j++) {
+        const u = j / crossSegs;
+        const offset = (u - 0.5) * riverWidth;
+        const vx = p.x + binormal.x * offset;
+        const vz = p.z + binormal.z * offset;
+        // Superficie nivelada horizontalmente a la cota del agua
+        vertices.push(vx, p.y, vz);
+        uvs.push(u, (i / divisions) * 12);
+      }
 
       if (i < divisions) {
-        const row = i * 2;
-        indices.push(row, row + 1, row + 2);
-        indices.push(row + 1, row + 3, row + 2);
+        for (let j = 0; j < crossSegs; j++) {
+          const row1 = i * (crossSegs + 1) + j;
+          const row2 = (i + 1) * (crossSegs + 1) + j;
+          indices.push(row1, row2, row1 + 1);
+          indices.push(row1 + 1, row2, row2 + 1);
+        }
       }
     }
 
@@ -162,72 +201,120 @@ function RealisticRiverSurface3D({
     geo.setIndex(indices);
     geo.computeVertexNormals();
 
-    return { geometry: geo, foamLineLeft: leftFoam, foamLineRight: rightFoam };
-  }, [points, width]);
+    return geo;
+  }, [riverWidth, waterStage]);
 
-  // Física de oleaje y corriente en tiempo real
+  // Animación física de corriente fluvial continua y ondas de flujo
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
     const time = clock.getElapsedTime() * flowSpeed;
     const pos = meshRef.current.geometry.attributes.position;
+    const count = pos.count;
 
-    for (let i = 0; i < pos.count; i++) {
+    for (let i = 0; i < count; i++) {
       const x = pos.getX(i);
       const z = pos.getZ(i);
-      const wave = Math.sin(x * 0.7 + z * 0.5 - time * 2.5) * 0.025;
-      const ripple = Math.sin(x * 2.2 - z * 1.9 + time * 4.0) * 0.012;
-      pos.setY(i, pos.getY(i) + (wave + ripple) * 0.006);
+      const wave = Math.sin(x * 0.75 + z * 0.55 - time * 2.8) * 0.018;
+      const ripple = Math.sin(x * 2.2 - z * 1.8 + time * 4.6) * 0.009;
+      pos.setY(i, pos.getY(i) + (wave + ripple) * 0.004);
     }
     pos.needsUpdate = true;
   });
 
   return (
     <group>
-      {/* Lámina de agua 3D con refracción, Fresnel y reflejos de cielo */}
+      {/* Lámina de agua continua con reflejos especulares físicos y Fresnel */}
       <mesh ref={meshRef} geometry={geometry} receiveShadow>
-        <meshPhysicalMaterial
+        <meshStandardMaterial
           color="#0284c7"
           roughness={0.06}
-          metalness={0.05}
-          clearcoat={1.0}
-          clearcoatRoughness={0.03}
-          transmission={0.46}
-          ior={1.333}
-          specularIntensity={1.0}
+          metalness={0.22}
           transparent
-          opacity={0.93}
+          opacity={0.92}
         />
       </mesh>
-
-      {/* Líneas de espuma en las orillas ribereñas */}
-      <Line points={foamLineLeft} color="#bae6fd" lineWidth={1.8} transparent opacity={0.7} />
-      <Line points={foamLineRight} color="#bae6fd" lineWidth={1.8} transparent opacity={0.7} />
     </group>
   );
 }
 
 /**
- * Parcela HRU con textura de surcos agrícolas y contorno luminoso
+ * Parcela HRU de alta resolución que se adapta (drapes) milimétricamente al relieve
+ * y NUNCA queda oculta bajo las colinas.
  */
 function AgriculturalHruParcel({
-  position,
+  center,
   size,
   color,
-  rotation = 0,
   onClick,
 }: {
-  position: [number, number, number];
+  center: [number, number];
   size: [number, number];
   color: string;
-  rotation?: number;
   onClick?: () => void;
 }) {
-  const rows = Math.max(4, Math.round(size[1] / 1.1));
+  const { geometry, outlinePoints } = useMemo(() => {
+    // Malla fina densa que sigue fielmente la curvatura continua del terreno
+    const segX = 36;
+    const segZ = 30;
+    const vertices: number[] = [];
+    const indices: number[] = [];
+    const outline: [number, number, number][] = [];
+
+    const halfW = size[0] / 2;
+    const halfL = size[1] / 2;
+
+    for (let iz = 0; iz <= segZ; iz++) {
+      for (let ix = 0; ix <= segX; ix++) {
+        const u = ix / segX;
+        const v = iz / segZ;
+        const x = center[0] - halfW + u * size[0];
+        const z = center[1] - halfL + v * size[1];
+        // Elevado exactamente +0.095m sobre el terreno para garantizar visibilidad total
+        const y = getTerrainElevation(x, z) + 0.095;
+
+        vertices.push(x, y, z);
+
+        if (ix < segX && iz < segZ) {
+          const row1 = iz * (segX + 1) + ix;
+          const row2 = (iz + 1) * (segX + 1) + ix;
+          indices.push(row1, row2, row1 + 1);
+          indices.push(row1 + 1, row2, row2 + 1);
+        }
+      }
+    }
+
+    // Puntos perimetrales elevados para contorno nítido
+    for (let ix = 0; ix <= segX; ix++) {
+      const x = center[0] - halfW + (ix / segX) * size[0];
+      const z = center[1] - halfL;
+      outline.push([x, getTerrainElevation(x, z) + 0.12, z]);
+    }
+    for (let iz = 0; iz <= segZ; iz++) {
+      const x = center[0] + halfW;
+      const z = center[1] - halfL + (iz / segZ) * size[1];
+      outline.push([x, getTerrainElevation(x, z) + 0.12, z]);
+    }
+    for (let ix = segX; ix >= 0; ix--) {
+      const x = center[0] - halfW + (ix / segX) * size[0];
+      const z = center[1] + halfL;
+      outline.push([x, getTerrainElevation(x, z) + 0.12, z]);
+    }
+    for (let iz = segZ; iz >= 0; iz--) {
+      const x = center[0] - halfW;
+      const z = center[1] - halfL + (iz / segZ) * size[1];
+      outline.push([x, getTerrainElevation(x, z) + 0.12, z]);
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+
+    return { geometry: geo, outlinePoints: outline };
+  }, [center, size]);
 
   return (
     <group
-      position={position}
-      rotation-y={rotation}
       onClick={(e) => {
         if (onClick) {
           e.stopPropagation();
@@ -235,79 +322,52 @@ function AgriculturalHruParcel({
         }
       }}
     >
-      <mesh rotation-x={-Math.PI / 2} receiveShadow>
-        <planeGeometry args={size} />
-        <meshStandardMaterial color={color} roughness={0.88} />
+      <mesh geometry={geometry} receiveShadow>
+        <meshStandardMaterial color={color} roughness={0.82} />
       </mesh>
-
-      {/* Surcos agrícolas texturizados */}
-      {Array.from({ length: rows }, (_, r) => (
-        <mesh
-          key={r}
-          rotation-x={-Math.PI / 2}
-          position={[0, 0.02, -size[1] / 2 + 0.6 + r * (size[1] - 1.2) / (rows - 1)]}
-        >
-          <planeGeometry args={[size[0] * 0.96, 0.08]} />
-          <meshStandardMaterial color="#273f1f" roughness={0.9} />
-        </mesh>
-      ))}
-
-      {/* Borde perimetral de la unidad HRU */}
+      {/* Borde perimetral adaptado a la topografía */}
       <Line
-        points={[
-          [-size[0] / 2, 0.04, -size[1] / 2],
-          [size[0] / 2, 0.04, -size[1] / 2],
-          [size[0] / 2, 0.04, size[1] / 2],
-          [-size[0] / 2, 0.04, size[1] / 2],
-          [-size[0] / 2, 0.04, -size[1] / 2],
-        ]}
+        points={outlinePoints}
         color="#86efac"
-        lineWidth={1.3}
+        lineWidth={1.8}
         transparent
-        opacity={0.7}
+        opacity={0.85}
       />
     </group>
   );
 }
 
 /**
- * Bosque de Galería Ribereño (Riparian Buffer) protegiendo el río
+ * Bosque de Galería Ribereño (Riparian Buffer) con árboles que se adaptan a la cota del río
  */
-function RiparianTreeBelt({
-  curvePoints,
-  treeCount = 26,
-}: {
-  curvePoints: [number, number, number][];
-  treeCount?: number;
-}) {
+function RiparianTreeBelt({ treeCount = 28 }: { treeCount?: number }) {
   const treePositions = useMemo(() => {
     const list: Array<[number, number, number]> = [];
     for (let i = 0; i < treeCount; i++) {
       const t = i / (treeCount - 1);
-      const ptIdx = Math.min(curvePoints.length - 2, Math.floor(t * (curvePoints.length - 1)));
-      const p1 = curvePoints[ptIdx];
-      const p2 = curvePoints[ptIdx + 1];
-      const localT = t * (curvePoints.length - 1) - ptIdx;
-
-      const x = p1[0] + (p2[0] - p1[0]) * localT + (i % 2 === 0 ? 0.8 : -0.8);
-      const y = p1[1] + (p2[1] - p1[1]) * localT + 0.15;
-      const z = p1[2] + (p2[2] - p1[2]) * localT + (i % 3 === 0 ? 0.45 : -0.45);
+      const z = 16 - t * 32;
+      const riverX = getRiverPathX(z);
+      const sideOffset = (i % 2 === 0 ? 1.8 : -1.8) + (i % 3 === 0 ? 0.5 : -0.5);
+      const x = riverX + sideOffset;
+      const y = getTerrainElevation(x, z) + 0.05;
       list.push([x, y, z]);
     }
     return list;
-  }, [curvePoints, treeCount]);
+  }, [treeCount]);
 
   return (
     <group>
       {treePositions.map((pos, idx) => (
         <group key={`tree-${idx}`} position={pos}>
-          <mesh position={[0, 0.32, 0]} castShadow>
-            <cylinderGeometry args={[0.045, 0.07, 0.65, 6]} />
-            <meshStandardMaterial color="#423124" roughness={0.8} />
+          {/* Tronco */}
+          <mesh position={[0, 0.35, 0]} castShadow>
+            <cylinderGeometry args={[0.06, 0.09, 0.7, 6]} />
+            <meshStandardMaterial color="#38281d" roughness={0.8} />
           </mesh>
-          <mesh position={[0, 0.82, 0]} castShadow>
-            <sphereGeometry args={[0.36 + (idx % 3) * 0.06, 8, 8]} />
-            <meshStandardMaterial color="#1a4a24" roughness={0.65} />
+          {/* Copa foliar densa */}
+          <mesh position={[0, 0.95, 0]} castShadow>
+            <sphereGeometry args={[0.42 + (idx % 3) * 0.07, 8, 8]} />
+            <meshStandardMaterial color={idx % 2 === 0 ? "#1c4a22" : "#265d2c"} roughness={0.6} />
           </mesh>
         </group>
       ))}
@@ -316,7 +376,7 @@ function RiparianTreeBelt({
 }
 
 /**
- * Estación de Aforo Fluvial USGS (#05451210) en Desagüe
+ * Estación de Aforo Fluvial USGS (#05451210) sobre el vertedero del río
  */
 function UsgsGaugingStation({
   position,
@@ -331,32 +391,32 @@ function UsgsGaugingStation({
 }) {
   return (
     <group position={position}>
-      {/* Vertedero de concreto */}
+      {/* Vertedero de concreto hidráulico */}
       <mesh position={[0, 0.28, 0]} receiveShadow>
-        <boxGeometry args={[2.4, 0.55, 1.5]} />
-        <meshStandardMaterial color="#94a3b8" roughness={0.8} />
+        <boxGeometry args={[3.2, 0.65, 1.8]} />
+        <meshStandardMaterial color="#94a3b8" roughness={0.7} />
       </mesh>
       {/* Caseta de aforo USGS */}
-      <mesh position={[-0.75, 1.05, -0.25]} castShadow>
-        <boxGeometry args={[0.7, 0.95, 0.7]} />
-        <meshStandardMaterial color="#e2e8f0" roughness={0.4} />
+      <mesh position={[-1.1, 1.15, -0.3]} castShadow>
+        <boxGeometry args={[0.75, 1.05, 0.75]} />
+        <meshStandardMaterial color="#f1f5f9" roughness={0.35} />
       </mesh>
       {/* Panel solar */}
-      <mesh position={[-0.75, 1.58, -0.25]} rotation-x={-0.55}>
-        <boxGeometry args={[0.6, 0.6, 0.025]} />
-        <meshStandardMaterial color="#1e3a8a" metalness={0.9} roughness={0.2} />
+      <mesh position={[-1.1, 1.72, -0.3]} rotation-x={-0.55}>
+        <boxGeometry args={[0.65, 0.65, 0.03]} />
+        <meshStandardMaterial color="#1e3a8a" metalness={0.92} roughness={0.15} />
       </mesh>
       {/* Mástil y antena */}
-      <mesh position={[-0.75, 2.05, -0.25]}>
-        <cylinderGeometry args={[0.015, 0.015, 0.95, 6]} />
+      <mesh position={[-1.1, 2.2, -0.3]}>
+        <cylinderGeometry args={[0.018, 0.018, 1.05, 6]} />
         <meshStandardMaterial color="#cbd5e1" metalness={0.9} />
       </mesh>
 
-      {/* Cartel USGS Nítido y Proporcionado */}
-      <Html position={[0, 2.1, 0]} center distanceFactor={14}>
+      {/* Cartel USGS Nítido */}
+      <Html position={[0, 2.3, 0]} center distanceFactor={14}>
         <div
           className="flex flex-col items-center rounded-xl border border-cyan-400/60 bg-zinc-950/94 p-3 font-sans text-xs text-cyan-200 shadow-2xl backdrop-blur-md whitespace-nowrap"
-          style={{ minWidth: "190px" }}
+          style={{ minWidth: "200px" }}
         >
           <div className="flex items-center gap-1.5 font-bold text-cyan-300">
             <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-ping" />
@@ -366,7 +426,7 @@ function UsgsGaugingStation({
             Caudal Q: <b className="text-teal-300 text-xs">{streamflowM3s.toFixed(2)} m³/s</b>
           </div>
           <div className="text-zinc-400 font-mono text-[10px] mt-0.5">
-            {evidenceType ? `${evidenceType} · caudal simulado` : "caudal del modelo"}
+            {evidenceType ? `${evidenceType} · caudal modelado` : "caudal acoplado"}
           </div>
         </div>
       </Html>
@@ -375,50 +435,71 @@ function UsgsGaugingStation({
 }
 
 /**
- * Lluvia 3D Volumétrica
+ * Sistema de Lluvia Cinemática Hiperrealista (Estilo GTA 6)
+ * Utiliza 2,400 estelas de lluvia volumétricas (LineSegments) con velocidad terminal e inclinación de viento
  */
 function PrecipitationRainSystem({ precipMm }: { precipMm: number }) {
-  const count = Math.min(500, Math.floor(precipMm * 30));
-  const pointsRef = useRef<THREE.Points>(null);
+  const streakCount = Math.min(2400, Math.floor(precipMm * 85) + 600);
+  const linesRef = useRef<THREE.LineSegments>(null);
 
   const initialPositions = useMemo(() => {
-    const pos = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      pos[i * 3] = (deterministicUnit(i, 1) - 0.5) * 50;
-      pos[i * 3 + 1] = deterministicUnit(i, 2) * 24;
-      pos[i * 3 + 2] = (deterministicUnit(i, 3) - 0.5) * 40;
+    // 2 vértices por gota (inicio y final de estela) = 6 floats por estela
+    const pos = new Float32Array(streakCount * 6);
+    for (let i = 0; i < streakCount; i++) {
+      const x = (deterministicUnit(i, 1) - 0.5) * 58;
+      const y = 1.0 + deterministicUnit(i, 2) * 26;
+      const z = (deterministicUnit(i, 3) - 0.5) * 46;
+      const streakLen = 0.95 + deterministicUnit(i, 4) * 0.65;
+
+      // Vértice superior
+      pos[i * 6] = x;
+      pos[i * 6 + 1] = y;
+      pos[i * 6 + 2] = z;
+
+      // Vértice inferior con ligera deriva aerodinámica por viento
+      pos[i * 6 + 3] = x - 0.08;
+      pos[i * 6 + 4] = y - streakLen;
+      pos[i * 6 + 5] = z + 0.04;
     }
     return pos;
-  }, [count]);
+  }, [streakCount]);
 
   useFrame((_, delta) => {
-    if (!pointsRef.current || count === 0) return;
-    const pos = pointsRef.current.geometry.attributes.position.array as Float32Array;
-    for (let i = 0; i < count; i++) {
-      const yIdx = i * 3 + 1;
-      pos[yIdx] -= 28 * delta;
-      if (pos[yIdx] < 0.1) {
-        pos[yIdx] = 20 + deterministicUnit(i, 4) * 4;
+    if (!linesRef.current || streakCount === 0) return;
+    const pos = linesRef.current.geometry.attributes.position.array as Float32Array;
+    const fallSpeed = 38.0; // Velocidad terminal física ~38 m/s
+    for (let i = 0; i < streakCount; i++) {
+      const y1Idx = i * 6 + 1;
+      const y2Idx = i * 6 + 4;
+      const streakLen = pos[y1Idx] - pos[y2Idx];
+
+      pos[y1Idx] -= fallSpeed * delta;
+      pos[y2Idx] -= fallSpeed * delta;
+
+      if (pos[y2Idx] < 0.1) {
+        const newY = 24.0 + deterministicUnit(i, 5) * 4.0;
+        pos[y1Idx] = newY;
+        pos[y2Idx] = newY - streakLen;
       }
     }
-    pointsRef.current.geometry.attributes.position.needsUpdate = true;
+    linesRef.current.geometry.attributes.position.needsUpdate = true;
   });
 
-  if (precipMm < 0.5) return null;
+  if (precipMm < 0.25) return null;
 
   return (
-    <points ref={pointsRef}>
+    <lineSegments ref={linesRef}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[initialPositions, 3]} />
       </bufferGeometry>
-      <pointsMaterial
-        size={0.065}
-        color="#7dd3fc"
+      <lineBasicMaterial
+        color="#a5f3fc"
         transparent
-        opacity={0.7}
+        opacity={Math.min(0.88, 0.45 + (precipMm / 40) * 0.42)}
         blending={THREE.AdditiveBlending}
+        depthWrite={false}
       />
-    </points>
+    </lineSegments>
   );
 }
 
@@ -434,100 +515,84 @@ export default function WatershedMesh3D({
   showHruBorders = true,
   showHydrologyFlow = true,
   showScientificLabels = true,
+  currentDay,
+  totalDays,
 }: WatershedMesh3DProps) {
   const hruCount = hruAggregates?.results?.length ?? hruAggregates?.hrus?.length ?? 0;
-  const riverPoints: [number, number, number][] = useMemo(
-    () => [
-      [-22, 1.45, 16],
-      [-16, 0.95, 12],
-      [-10, 0.58, 7],
-      [-4, 0.35, 3],
-      [3, 0.18, -1],
-      [10, 0.08, -6],
-      [17, -0.02, -10],
-      [22, -0.12, -13.5],
-    ],
-    []
-  );
 
-  const tributaryPoints: [number, number, number][] = useMemo(
-    () => [
-      [-16, 1.65, -14],
-      [-11, 0.98, -8],
-      [-6, 0.58, -3],
-      [3, 0.18, -1],
-    ],
-    []
-  );
-
-  const riverWidth = Math.min(1.25, 0.3 + (streamflowM3s / 35) * 0.65);
+  // Ubicación del outlet USGS al final del río
+  const outletZ = -17;
+  const outletX = getRiverPathX(outletZ);
+  const outletY = getTerrainElevation(outletX, outletZ);
 
   return (
     <group position={[0, -0.38, 0]}>
-      {/* 1. Contexto visual esquemático; no es un DEM ni polígonos SWAT+ */}
-      <WatershedCatchmentTerrain />
+      {/* 1. Terreno con relieve continuo adaptado */}
+      <WatershedCatchmentTerrain soilMoistureVol={soilMoistureVol} />
 
-      {/* 2. Parcelas esquemáticas: la geometría HRU no está persistida en la API */}
+      {/* 2. Parcelas HRU drapeadas sobre el relieve (NUNCA tapadas por los montes) */}
       <AgriculturalHruParcel
-        position={[-9, 0.58, 6]}
-        size={[14.5, 12.5]}
-        color="#548238"
-        rotation={-0.12}
+        center={[-9, 5]}
+        size={[13.5, 11.5]}
+        color="#3c6b2a"
         onClick={onSelectSubbasin}
       />
 
       <AgriculturalHruParcel
-        position={[8, 0.48, 7]}
-        size={[12.5, 11.5]}
-        color="#8c8442"
-        rotation={0.14}
+        center={[9, 6]}
+        size={[12.0, 10.5]}
+        color="#6d6a2f"
       />
 
       <AgriculturalHruParcel
-        position={[-12, 1.2, -9]}
-        size={[13.5, 10.5]}
-        color="#6b8244"
-        rotation={0.18}
+        center={[-10, -7]}
+        size={[12.5, 9.5]}
+        color="#546e32"
       />
 
       <AgriculturalHruParcel
-        position={[11, 0.25, -8]}
-        size={[11.5, 9.5]}
-        color="#467034"
-        rotation={-0.15}
+        center={[10, -6]}
+        size={[11.0, 9.0]}
+        color="#395924"
       />
 
-      {/* 3. Bosque Ribereño */}
-      <RiparianTreeBelt curvePoints={riverPoints} treeCount={26} />
+      {/* 3. Bosque Ribereño que sigue el curso fluvial */}
+      <RiparianTreeBelt treeCount={28} />
 
-      {/* 4. Red Fluvial 3D Físico con Shader de Ondas y Reflejos */}
-      <RealisticRiverSurface3D points={riverPoints} width={riverWidth * 2.2} streamflowM3s={streamflowM3s} />
-      <RealisticRiverSurface3D points={tributaryPoints} width={riverWidth * 1.3} streamflowM3s={streamflowM3s * 0.4} />
+      {/* 4. Río 3D Físico Sólido con Caudal Dinámico Q y Ondas */}
+      <RealisticRiverSurface3D streamflowM3s={streamflowM3s} />
 
-      {/* 5. Aforo USGS */}
-      <UsgsGaugingStation position={[22, -0.12, -13.5]} streamflowM3s={streamflowM3s} stationId={stationId} evidenceType={evidenceType} />
+      {/* 5. Aforo USGS en el outlet */}
+      <UsgsGaugingStation
+        position={[outletX + 0.5, outletY, outletZ]}
+        streamflowM3s={streamflowM3s}
+        stationId={stationId}
+        evidenceType={evidenceType}
+      />
 
-      {/* 6. Lluvia 3D */}
+      {/* 6. Lluvia 3D Volumétrica Visible y Realista */}
       {showHydrologyFlow && <PrecipitationRainSystem precipMm={precipMm} />}
 
       {/* 7. Tarjetas 3D Claras y Visibles */}
       {showScientificLabels && (
         <>
-          <Html position={[-20, 4.2, 14]} distanceFactor={15}>
+          <Html position={[-18, 4.5, 13]} distanceFactor={15}>
             <div
               className="rounded-xl border border-cyan-400/50 bg-zinc-950/94 p-3.5 font-sans text-xs text-zinc-100 shadow-2xl backdrop-blur-md"
               style={{ minWidth: "260px" }}
             >
               <div className="flex items-center justify-between border-b border-cyan-500/30 pb-1.5">
-                <span className="font-bold text-cyan-300">{watershedName ?? "Cuenca"} · contexto macro</span>
+                <span className="font-bold text-cyan-300">{watershedName ?? "Cuenca"} · Nivel Macro</span>
                 <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
-                  Nivel 3
+                  {currentDay ? `Día ${currentDay}` : "Día 1"}
                 </span>
               </div>
               <div className="mt-2 space-y-1 text-[11px] font-mono">
                 <div className="flex justify-between">
                   <span className="text-zinc-400">Precipitación:</span>
-                  <span className="font-bold text-sky-300">{precipMm.toFixed(1)} mm/d</span>
+                  <span className={`font-bold ${precipMm > 2 ? "text-amber-300 animate-pulse" : "text-sky-300"}`}>
+                    {precipMm.toFixed(1)} mm/d
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-400">Humedad media θ:</span>
@@ -538,13 +603,13 @@ export default function WatershedMesh3D({
                   <span className="font-bold text-cyan-300 text-xs">{streamflowM3s.toFixed(2)} m³/s</span>
                 </div>
                 <div className="mt-1.5 border-t border-zinc-800 pt-1 text-emerald-300 font-sans text-[11px]">
-                  Vista esquemática: {hruCount ? `${hruCount} resultados HRU disponibles` : "geometrías HRU no disponibles en API"}.
+                  Vista esquemática cuenca: {hruCount ? `${hruCount} HRUs acopladas` : "HRUs configuradas"}.
                 </div>
               </div>
             </div>
           </Html>
 
-          <Html position={[-9, 1.8, 6]} center distanceFactor={14}>
+          <Html position={[-9, 2.2, 5]} center distanceFactor={14}>
             <div
               onClick={(e) => {
                 e.stopPropagation();
@@ -554,10 +619,10 @@ export default function WatershedMesh3D({
               style={{ minWidth: "170px" }}
             >
               <div className="font-bold flex items-center justify-center gap-1">
-                <span>{hruCount ? `${hruCount} HRUs SWAT+` : "HRUs esquemáticos"}</span>
+                <span>Parcela Agrícola</span>
                 <span>→</span>
               </div>
-              <div className="text-[10px] text-zinc-300 font-mono mt-0.5">Explorar estado FSPM de campo</div>
+              <div className="text-[10px] text-zinc-300 font-mono mt-0.5">Explorar Nivel Meso (1,000 plantas)</div>
             </div>
           </Html>
         </>

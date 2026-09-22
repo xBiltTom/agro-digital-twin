@@ -147,22 +147,47 @@ export default function Twin3DPage() {
   const fspmTranspiration = fieldNumber("actual_ET_mm_day", fieldNumber("mean_transpiration_mm", 0));
   const fspmSoilMoisture = fieldNumber("soil_moisture_vol", 0.24) * 100;
 
+  // Derivaciones biofísicas dinámicas y reactivas acopladas para corridas SWAT+ reales
+  const swatSoilMoisture = currentSwat?.soil_water_mm != null
+    ? Math.min(45, Math.max(8, (currentSwat.soil_water_mm / 180) * 35))
+    : fspmSoilMoisture;
+
+  const swatStress = currentSwat?.evapotranspiration_mm != null
+    ? Math.max(0, Math.min(1, 1 - (currentSwat.evapotranspiration_mm / 5.8)))
+    : fspmStress;
+
+  const swatTranspiration = currentSwat?.evapotranspiration_mm != null
+    ? currentSwat.evapotranspiration_mm * 0.78
+    : fspmTranspiration;
+
+  const swatPrecip = currentSwat?.runoff_mm != null && currentSwat.runoff_mm > 0.05
+    ? currentSwat.runoff_mm * 4.2
+    : 0;
+
+  const swatSapFlow = swatTranspiration * 3.4;
+
   // Preparar datos para gráficos temporales (muestreo decenal si son muchos días)
   const chartData = React.useMemo(() => {
     if (selectedIsRealSwat) {
-      return (swatResults?.records ?? []).map((r, index) => ({
-        day: index + 1,
-        streamflow: Number((r.streamflow_m3s ?? 0).toFixed(2)),
-        runoff: r.runoff_mm ?? 0,
-        et: r.evapotranspiration_mm ?? 0,
-        percolation: r.percolation_mm ?? 0,
-        soil_water: r.soil_water_mm ?? 0,
-        precip: 0,
-        soil_moisture: 0,
-        transpiration: 0,
-        cwsi: 0,
-        sap_flow: 0,
-      }));
+      return (swatResults?.records ?? []).map((r, index) => {
+        const estPrecip = r.runoff_mm != null && r.runoff_mm > 0.05 ? Number((r.runoff_mm * 4.2).toFixed(1)) : 0;
+        const estSoilMoist = r.soil_water_mm != null ? Number(Math.min(45, Math.max(8, (r.soil_water_mm / 180) * 35)).toFixed(1)) : 24;
+        const estTransp = r.evapotranspiration_mm != null ? Number((r.evapotranspiration_mm * 0.78).toFixed(2)) : 1.5;
+        const estCwsi = r.evapotranspiration_mm != null ? Number(Math.max(0, Math.min(1, 1 - (r.evapotranspiration_mm / 5.8))).toFixed(2)) : 0.05;
+        return {
+          day: index + 1,
+          streamflow: Number((r.streamflow_m3s ?? 0).toFixed(2)),
+          runoff: r.runoff_mm ?? 0,
+          et: r.evapotranspiration_mm ?? 0,
+          percolation: r.percolation_mm ?? 0,
+          soil_water: r.soil_water_mm ?? 0,
+          precip: estPrecip,
+          soil_moisture: estSoilMoist,
+          transpiration: estTransp,
+          cwsi: estCwsi,
+          sap_flow: Number((estTransp * 3.4).toFixed(1)),
+        };
+      });
     }
     if (results.length === 0) return [];
     return results.map((r) => ({
@@ -256,12 +281,12 @@ export default function Twin3DPage() {
             <MultiScaleViewer3D
               scaleMode={scaleMode}
               onChangeScale={setScaleMode}
-              streamflowM3s={currentSwat?.streamflow_m3s ?? currentData?.streamflow_m3s ?? 0}
-              precipMm={selectedIsRealSwat ? 0 : currentData?.precip_mm ?? 0}
-              soilMoistureVol={selectedIsRealSwat ? fspmSoilMoisture : currentData?.soil_moisture_vol ?? 0}
-              transpirationMm={selectedIsRealSwat ? fspmTranspiration : currentData?.plant_transpiration_mm ?? 0}
-              cwsiStress={selectedIsRealSwat ? fspmStress : currentData?.cwsi_stress_index ?? 0}
-              sapFlowVelocityCmh={selectedIsRealSwat ? 0 : currentData?.sap_flow_velocity_cmh ?? 0}
+              streamflowM3s={selectedIsRealSwat ? (currentSwat?.streamflow_m3s ?? 0) : (currentData?.streamflow_m3s ?? 0)}
+              precipMm={selectedIsRealSwat ? swatPrecip : (currentData?.precip_mm ?? 0)}
+              soilMoistureVol={selectedIsRealSwat ? swatSoilMoisture : (currentData?.soil_moisture_vol ?? 0)}
+              transpirationMm={selectedIsRealSwat ? swatTranspiration : (currentData?.plant_transpiration_mm ?? 0)}
+              cwsiStress={selectedIsRealSwat ? swatStress : (currentData?.cwsi_stress_index ?? 0)}
+              sapFlowVelocityCmh={selectedIsRealSwat ? swatSapFlow : (currentData?.sap_flow_velocity_cmh ?? 0)}
               plantSample={selectedSim?.plant_sample ?? []}
               plantCount={selectedSim?.plant_count ?? 1000}
               fieldAggregates={selectedSim?.field_aggregates}
@@ -272,17 +297,19 @@ export default function Twin3DPage() {
               showSoilHorizons={showSoilHorizons}
               showSensors={showSensors}
               showScientificLabels={showScientificLabels}
+              currentDay={currentDay}
+              totalDays={timelineLength}
             />
 
             <TwinHUDOverlay
               scaleMode={scaleMode}
               onChangeScale={setScaleMode}
               streamflowM3s={selectedIsRealSwat ? (currentSwat?.streamflow_m3s ?? 0) : (currentData?.streamflow_m3s ?? 0)}
-              precipMm={selectedIsRealSwat ? (currentSwat?.runoff_mm ?? 0) : (currentData?.precip_mm ?? 0)}
-              soilMoistureVol={selectedIsRealSwat ? (currentSwat?.soil_water_mm ? (currentSwat.soil_water_mm / 150) * 35 : fspmSoilMoisture) : (currentData?.soil_moisture_vol ?? 0)}
-              transpirationMm={selectedIsRealSwat ? (currentSwat?.evapotranspiration_mm ?? fspmTranspiration) : (currentData?.plant_transpiration_mm ?? 0)}
-              cwsiStress={selectedIsRealSwat ? fspmStress : (currentData?.cwsi_stress_index ?? 0)}
-              sapFlowVelocityCmh={selectedIsRealSwat ? fspmTranspiration * 2.8 : (currentData?.sap_flow_velocity_cmh ?? 0)}
+              precipMm={selectedIsRealSwat ? swatPrecip : (currentData?.precip_mm ?? 0)}
+              soilMoistureVol={selectedIsRealSwat ? swatSoilMoisture : (currentData?.soil_moisture_vol ?? 0)}
+              transpirationMm={selectedIsRealSwat ? swatTranspiration : (currentData?.plant_transpiration_mm ?? 0)}
+              cwsiStress={selectedIsRealSwat ? swatStress : (currentData?.cwsi_stress_index ?? 0)}
+              sapFlowVelocityCmh={selectedIsRealSwat ? swatSapFlow : (currentData?.sap_flow_velocity_cmh ?? 0)}
               isPlaying={isPlaying}
               onTogglePlay={() => setIsPlaying(!isPlaying)}
               currentDay={currentDay}

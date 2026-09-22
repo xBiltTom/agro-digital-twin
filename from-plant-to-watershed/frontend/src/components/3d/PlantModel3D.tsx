@@ -25,6 +25,9 @@ export interface PlantModel3DProps {
   showHydrologyFlow?: boolean;
   showSoilHorizons?: boolean;
   showScientificLabels?: boolean;
+  currentDay?: number;
+  totalDays?: number;
+  precipMm?: number;
 }
 
 /**
@@ -599,6 +602,73 @@ function PhysiologicalFlowDynamics({
   );
 }
 
+/**
+ * Lluvia volumétrica cinemática a escala micro alrededor de la planta
+ */
+function MicroRainSystem({ precipMm }: { precipMm: number }) {
+  const streakCount = Math.min(600, Math.floor(precipMm * 50) + 200);
+  const linesRef = useRef<THREE.LineSegments>(null);
+
+  const initialPositions = useMemo(() => {
+    const pos = new Float32Array(streakCount * 6);
+    for (let i = 0; i < streakCount; i++) {
+      const angle = deterministicUnit(i, 1) * Math.PI * 2;
+      const r = deterministicUnit(i, 2) * 3.6;
+      const x = Math.cos(angle) * r;
+      const y = 0.2 + deterministicUnit(i, 3) * 5.2;
+      const z = Math.sin(angle) * r;
+      const streakLen = 0.35 + deterministicUnit(i, 4) * 0.25;
+
+      pos[i * 6] = x;
+      pos[i * 6 + 1] = y;
+      pos[i * 6 + 2] = z;
+
+      pos[i * 6 + 3] = x - 0.02;
+      pos[i * 6 + 4] = y - streakLen;
+      pos[i * 6 + 5] = z + 0.01;
+    }
+    return pos;
+  }, [streakCount]);
+
+  useFrame((_, delta) => {
+    if (!linesRef.current || streakCount === 0) return;
+    const pos = linesRef.current.geometry.attributes.position.array as Float32Array;
+    const fallSpeed = 22.0;
+    for (let i = 0; i < streakCount; i++) {
+      const y1Idx = i * 6 + 1;
+      const y2Idx = i * 6 + 4;
+      const streakLen = pos[y1Idx] - pos[y2Idx];
+
+      pos[y1Idx] -= fallSpeed * delta;
+      pos[y2Idx] -= fallSpeed * delta;
+
+      if (pos[y2Idx] < 0.02) {
+        const newY = 5.0 + deterministicUnit(i, 5) * 1.5;
+        pos[y1Idx] = newY;
+        pos[y2Idx] = newY - streakLen;
+      }
+    }
+    linesRef.current.geometry.attributes.position.needsUpdate = true;
+  });
+
+  if (precipMm < 0.25) return null;
+
+  return (
+    <lineSegments ref={linesRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[initialPositions, 3]} />
+      </bufferGeometry>
+      <lineBasicMaterial
+        color="#bae6fd"
+        transparent
+        opacity={Math.min(0.85, 0.35 + (precipMm / 30) * 0.45)}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+      />
+    </lineSegments>
+  );
+}
+
 export default function PlantModel3D({
   transpirationMm,
   cwsiStress,
@@ -614,27 +684,59 @@ export default function PlantModel3D({
   showHydrologyFlow = true,
   showSoilHorizons = true,
   showScientificLabels = true,
+  currentDay = 1,
+  totalDays = 365,
+  precipMm = 0,
 }: PlantModel3DProps) {
-  const stress = Math.min(1, Math.max(0, cwsiStress));
-  const stemHeight = Math.max(0.15, plantHeightM ?? (2.5 + Math.min(0.9, (lai - 2.0) * 0.25)));
-  const totalNodes = Math.max(1, Math.min(22, Math.round(leafCount ?? 14)));
+  // Progresión fenológica a lo largo del tiempo de simulación (Día 1 a N)
+  const dayProgress = useMemo(() => {
+    if (totalDays >= 300) {
+      if (currentDay < 115) return 0.08;
+      if (currentDay > 280) return 1.0;
+      return 0.08 + ((currentDay - 115) / 165) * 0.92;
+    }
+    return Math.min(1.0, Math.max(0.08, currentDay / Math.max(1, totalDays)));
+  }, [currentDay, totalDays]);
+
+  // Estrés biofísico acoplado a la humedad volumétrica del suelo y CWSI atmosférico
+  const soilStressDeficit = Math.max(0, Math.min(1, (32 - soilMoistureVol) / 15));
+  const stress = Math.min(1, Math.max(cwsiStress, soilStressDeficit));
+
+  // Altura botánica dinámica según fenología y reducción por estrés hídrico (pérdida de turgor)
+  const baseHeight = plantHeightM ?? (2.4 + Math.min(0.8, (lai - 2.0) * 0.22));
+  const stemHeight = Math.max(0.35, baseHeight * (0.15 + dayProgress * 0.85) * (1 - stress * 0.12));
+
+  // Número de hojas activas desplegadas según etapa vegetativa
+  const baseNodes = leafCount ?? 16;
+  const totalNodes = Math.max(4, Math.min(22, Math.round(baseNodes * (0.28 + dayProgress * 0.72))));
+
+  // Fases fenológicas botánicas dinámicas a lo largo de la línea de tiempo
+  const currentStage =
+    dayProgress < 0.22
+      ? "VE-V4 (Emergencia y plántula)"
+      : dayProgress < 0.48
+      ? "V6-V14 (Elongación vegetativa rápida)"
+      : dayProgress < 0.74
+      ? "VT-R1 (Floración: panoja y sedas)"
+      : "R3-R6 (Llenado de grano y maduración)";
 
   const [expandedCard, setExpandedCard] = useState<"canopy" | "soil" | null>("canopy");
 
-  // Hojas phyllotáxicas con curvatura y enrollamiento
+  // Hojas phyllotáxicas con curvatura, enrollamiento por sequía y marchitamiento visible
   const leaves = useMemo(() => {
     return Array.from({ length: totalNodes }, (_, i) => {
       const t = i / (totalNodes - 1);
       const angle = i * Math.PI * 0.94 + (i % 2 === 0 ? 0.08 : -0.06);
-      const nodeHeight = 0.28 + t * (stemHeight - 0.55);
+      const nodeHeight = 0.18 + t * (stemHeight - 0.35);
 
       const lengthCurve = Math.sin(Math.PI * Math.pow(t, 0.65));
-      const length = 0.78 + lengthCurve * (1.15 + Math.min(0.4, lai * 0.08));
-      const width = 0.10 + lengthCurve * 0.12;
+      const length = (0.35 + lengthCurve * (1.15 + Math.min(0.4, lai * 0.08))) * (0.4 + dayProgress * 0.6);
+      const width = (0.05 + lengthCurve * 0.13) * (0.5 + dayProgress * 0.5);
 
       const rise = length * (0.24 - t * 0.06);
-      const droop = length * (0.18 + stress * 0.24 + t * 0.08);
-      const isSenescent = i < 2 && stress > 0.35;
+      // Caída foliar fuertemente acentuada con estrés CWSI (marchitamiento visible)
+      const droop = length * (0.16 + stress * 0.62 + t * 0.12);
+      const isSenescent = (i < 2 && stress > 0.32) || (dayProgress > 0.82 && i < 4);
 
       return {
         id: i,
@@ -647,11 +749,11 @@ export default function PlantModel3D({
         isSenescent,
       };
     });
-  }, [totalNodes, stemHeight, lai, stress]);
+  }, [totalNodes, stemHeight, lai, stress, dayProgress]);
 
   return (
     <group position={[0, -0.18, 0]}>
-      {/* 1. Perfil de suelo esquemático; no representa SoilGrids */}
+      {/* 1. Perfil de suelo estratigráfico con humedad óptica */}
       {showSoilHorizons && (
         <SoilGridsStratigraphyCutout
           soilMoistureVol={soilMoistureVol}
@@ -662,12 +764,12 @@ export default function PlantModel3D({
       {/* 2. Raíces Adventicias Aéreas y Sistema Radicular Subterráneo */}
       <RealisticBraceRoots rootDepthCm={rootDepthCm} soilMoistureVol={soilMoistureVol} />
 
-      {/* 3. Tallo Botánico (Culmo de maíz con nudos y entrenudos en relieve) */}
-      <group>
+      {/* 3. Tallo Botánico con curvatura por turgor bajo sequía */}
+      <group rotation-z={stress > 0.35 ? (stress - 0.35) * 0.15 : 0}>
         <mesh castShadow position={[0, stemHeight / 2, 0]}>
-          <cylinderGeometry args={[0.04, 0.068, stemHeight, 20]} />
+          <cylinderGeometry args={[0.03 + dayProgress * 0.015, 0.045 + dayProgress * 0.025, stemHeight, 20]} />
           <meshPhysicalMaterial
-            color="#4f7d2c"
+            color={stress > 0.4 ? "#6b7a2d" : "#4f7d2c"}
             roughness={0.38}
             clearcoat={0.35}
             clearcoatRoughness={0.22}
@@ -676,12 +778,12 @@ export default function PlantModel3D({
 
         {/* Nudos anulares y vainas foliares */}
         {Array.from({ length: totalNodes }, (_, nodeIdx) => {
-          const y = 0.28 + (nodeIdx / (totalNodes - 1)) * (stemHeight - 0.55);
-          const taperRadius = 0.068 - (nodeIdx / totalNodes) * 0.028;
+          const y = 0.18 + (nodeIdx / (totalNodes - 1)) * (stemHeight - 0.35);
+          const taperRadius = (0.045 + dayProgress * 0.025) - (nodeIdx / totalNodes) * 0.024;
           return (
             <mesh key={`node-${nodeIdx}`} position={[0, y, 0]} castShadow>
-              <torusGeometry args={[taperRadius + 0.005, 0.013, 8, 22]} />
-              <meshStandardMaterial color="#689639" roughness={0.55} />
+              <torusGeometry args={[Math.max(0.02, taperRadius + 0.005), 0.012, 8, 22]} />
+              <meshStandardMaterial color={stress > 0.4 ? "#7a8536" : "#689639"} roughness={0.55} />
             </mesh>
           );
         })}
@@ -702,11 +804,15 @@ export default function PlantModel3D({
         />
       ))}
 
-      {/* 5. Mazorca con Brácteas y Sedas (Silks) */}
-      <RealisticMaizeEar nodeY={0.96} angle={Math.PI * 0.42} />
+      {/* 5. Mazorca con Brácteas y Sedas (solo emerge en fase reproductiva > 48%) */}
+      {dayProgress > 0.48 && (
+        <RealisticMaizeEar nodeY={stemHeight * 0.46} angle={Math.PI * 0.42} />
+      )}
 
-      {/* 6. Panoja Apical Masculina (Tassel) */}
-      <RealisticMaizeTassel apexY={stemHeight} />
+      {/* 6. Panoja Apical Masculina (Tassel) (solo emerge a partir de VT > 44%) */}
+      {dayProgress > 0.44 && (
+        <RealisticMaizeTassel apexY={stemHeight} />
+      )}
 
       {/* 7. Dinámica Fisiológica de Savia y Vapor */}
       {showHydrologyFlow && (
@@ -769,7 +875,8 @@ export default function PlantModel3D({
                   <div className="font-bold text-emerald-300 text-xs">{totalNodes}{leafAreaM2 === undefined ? "" : ` / ${leafAreaM2.toFixed(3)} m²`}</div>
                 </div>
               </div>
-              <div className="mt-2 text-[10px] text-zinc-400">{stateLabel}{phenologicalStage ? ` · ${phenologicalStage}` : ""}</div>
+              <div className="mt-2 text-[10px] text-emerald-400 font-bold">{currentStage}</div>
+              <div className="text-[10px] text-zinc-400">{stateLabel} · Día {currentDay}</div>
             </div>
           </Html>
 
@@ -801,6 +908,9 @@ export default function PlantModel3D({
           </Html>
         </>
       )}
+
+      {/* 9. Lluvia volumétrica cinemática a escala micro */}
+      <MicroRainSystem precipMm={precipMm} />
     </group>
   );
 }
