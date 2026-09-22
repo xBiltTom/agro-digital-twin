@@ -141,7 +141,7 @@ async def seed_legacy_demo_data(db: AsyncSession) -> None:
         {
             "email": "admin@digitaltwin.org",
             "password": "Admin123!",
-            "full_name": "LEGACY DEMO — Dr. Carlos Valdivia (Superadmin)",
+            "full_name": "Dr. Carlos Valdivia",
             "role": "SUPERADMIN",
             "institution": "Centro de Modelado Hidrológico y Cambio Climático",
             "specialty": "Ecohidrología y Gemelos Digitales"
@@ -149,7 +149,7 @@ async def seed_legacy_demo_data(db: AsyncSession) -> None:
         {
             "email": "investigador@digitaltwin.org",
             "password": "Investiga123!",
-            "full_name": "LEGACY DEMO — Dra. Elena Ramos (Investigadora)",
+            "full_name": "Dra. Elena Ramos",
             "role": "INVESTIGADOR_HIDROLOGO",
             "institution": "Instituto Nacional del Agua",
             "specialty": "Modelación SWAT y Proyecciones Climáticas"
@@ -157,7 +157,7 @@ async def seed_legacy_demo_data(db: AsyncSession) -> None:
         {
             "email": "operador@digitaltwin.org",
             "password": "Operador123!",
-            "full_name": "LEGACY DEMO — Ing. Mateo Morales (Operador)",
+            "full_name": "Ing. Mateo Morales",
             "role": "OPERADOR_AGROPECUARIO",
             "institution": "Distrito de Riego Cuenca Alta",
             "specialty": "Manejo Hídrico y Fisiología de Cultivos"
