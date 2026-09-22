@@ -69,8 +69,8 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 flex flex-col justify-between shrink-0 transition-colors duration-200">
-      <div className="p-5 flex flex-col gap-6">
+    <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 flex flex-col justify-between shrink-0 h-full overflow-hidden select-none transition-colors duration-200">
+      <div className="p-5 flex flex-col gap-6 flex-1 min-h-0 overflow-y-auto">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-[1px] shadow-lg shadow-emerald-500/20">
@@ -138,7 +138,7 @@ export default function Sidebar() {
       </div>
 
       {/* Footer Info */}
-      <div className="p-4 border-t border-zinc-200 dark:border-zinc-900 text-[11px] text-zinc-500 dark:text-zinc-400 flex flex-col gap-1.5">
+      <div className="p-4 shrink-0 border-t border-zinc-200 dark:border-zinc-900 text-[11px] text-zinc-500 dark:text-zinc-400 flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
           <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           <span className="font-mono text-zinc-700 dark:text-zinc-300">Piloto: South Fork Iowa River</span>

@@ -46,7 +46,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="h-16 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30 transition-colors duration-200">
+    <header className="h-16 shrink-0 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md px-6 flex items-center justify-between z-30 transition-colors duration-200">
       {/* Lado izquierdo: Título de Sección y Estado Activo */}
       <div className="flex items-center gap-3">
         <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight hidden sm:block">

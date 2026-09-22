@@ -37,11 +37,11 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-row transition-colors duration-200">
+    <div className="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-row transition-colors duration-200">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
         <Navbar />
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-100/60 dark:bg-gradient-to-b dark:from-zinc-950 dark:via-zinc-900/40 dark:to-zinc-950 transition-colors duration-200">
+        <main className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8 bg-slate-100/60 dark:bg-gradient-to-b dark:from-zinc-950 dark:via-zinc-900/40 dark:to-zinc-950 transition-colors duration-200">
           {children}
         </main>
       </div>
