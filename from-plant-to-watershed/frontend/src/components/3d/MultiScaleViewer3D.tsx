@@ -65,8 +65,8 @@ function CameraController({
   useEffect(() => {
     // Definir destinos de cámara y objetivos de rotación según la escala
     if (scaleMode === "MACRO") {
-      destPos.current.set(2, 28, 38);
-      destTarget.current.set(1, 0, -2);
+      destPos.current.set(0, 36, 42);
+      destTarget.current.set(0, 0, 0);
     } else if (scaleMode === "MESO") {
       destPos.current.set(0, 15, 21);
       destTarget.current.set(0, 0.5, 0);
@@ -154,7 +154,7 @@ export default function MultiScaleViewer3D({
     <div className="w-full h-full relative bg-gradient-to-b from-zinc-950 via-slate-950 to-zinc-950 overflow-hidden rounded-2xl">
       <Canvas
         shadows
-        camera={{ position: [2, 28, 38], fov: 42 }}
+        camera={{ position: [0, 36, 42], fov: 44 }}
         gl={{
           antialias: true,
           alpha: false,

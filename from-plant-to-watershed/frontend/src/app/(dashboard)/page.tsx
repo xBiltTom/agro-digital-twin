@@ -295,7 +295,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Veredicto de la Hipótesis en Lenguaje Natural */}
-          <div className="p-4 rounded-xl bg-white/90 dark:bg-zinc-950/90 border border-amber-300 dark:border-amber-800/80 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          {/*<div className="p-4 rounded-xl bg-white/90 dark:bg-zinc-950/90 border border-amber-300 dark:border-amber-800/80 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-start gap-3">
               <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div>
@@ -314,7 +314,7 @@ export default function DashboardPage() {
                 {currentResult?.hypothesis.conclusion ?? "EVALUADO V2"}
               </span>
             </div>
-          </div>
+          </div>*/}
         </div>
       </div>
 
