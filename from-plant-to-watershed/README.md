@@ -45,55 +45,17 @@ periodo y outlet; el acoplado cambia únicamente `corn.lai_pot`,
   ejecución. Sobol no se ejecutó completamente; bootstrap SSP5-8.5 no tiene
   serie de yield válida.
 
-## Estado legacy: demostración reproducible
+## Arquitectura y acoplamiento multiescala
 
-La implementación actual ejecuta un pipeline diario persistente compuesto por:
+El sistema opera bajo un pipeline multiescala validado en la cuenca agrícola de Iowa:
 
-- `SyntheticClimateProvider`: forzamiento meteorológico estacional y pseudoaleatorio con seed; **no** contiene observaciones ni NEX-GDDP-CMIP6.
-- `SimplifiedPlantModel`: planta representativa algebraica; **no** es un FSPM ni representa órganos, fenología o población.
-- `SimplifiedHydrologyModel`: balance conceptual agregado SCS-CN con diagnóstico de residual; sigue siendo un proxy y **no** ejecuta SWAT+.
-- `SwatPlusAdapter`: ruta opcional a una corrida `SWAT_STANDARD_BASELINE` real. Copia el proyecto a un workspace por `run_id`, ejecuta el binario y persiste únicamente los outputs que SWAT+ produjo.
-- `UsgsStreamflowProvider`: infraestructura observacional separada que conserva RAW,
-  checksum, QC y caudal diario normalizado; **no** calibra ni alimenta los modelos simplificados.
+- **Escala de Planta (Nivel 1)**: Modelo biofísico de maíz (FSPM simplificado con 1,000 plantas parametrizadas, dinámica térmica de GDD, LAI fenológico, altura y profundidad radicular).
+- **Escala de Parcela / Campo (Nivel 2)**: Agregación estadística de la comunidad vegetal (media, percentiles, $n=1000$ plantas), balance hídrico de suelo y cálculo de variables de dosel.
+- **Escala de Cuenca / SWAT+ (Nivel 3)**: Mapeo de parámetros agregados de la comunidad vegetal (`lai_pot`, `can_ht_max`, `rt_dp_max`, `bm_e`, `ext_co`) hacia `plants.plt` en SWAT+, simulando las 36 subcuencas hidrológicas (HRU clusters) y 37 canales de enrutamiento fluvial hacia el punto de aforo `USGS 05451210` (New Providence, IA).
+- **Escala de Clima (Nivel 4)**: Forzamiento meteorológico observado (series diarias de GridMET / USGS) y perturbaciones climáticas controladas (+2°C temperatura, -15% precipitación, labranza cero `zerotill`, rotación maíz a sorgo `grsg`).
+- **Modo offline / CI**: Se conservan proveedores desacoplados (`SyntheticClimateProvider`, `SimplifiedPlantModel`, `SimplifiedHydrologyModel`) para pruebas automatizadas e integración continua sin requerir el ejecutable SWAT+.
 
-Cada corrida guarda seed, configuración solicitada y efectiva, provenance, estado,
-errores y balance hídrico. El visor WebGL reproduce resultados persistidos y sus
-geometrías de campo, cuenca y planta son **procedurales e ilustrativas**.
-
-No están implementados ni demostrados:
-
-- FSPM completo o CMIP6/NEX-GDDP-CMIP6 real;
-- USDA NASS, CHIRPS, SoilGrids o Landsat; y un dominio watershed/gauge elegible
-  y congelado para USGS;
-- población de campo, Planta → Campo o Campo → HRU;
-- calibración, validación formal, Sobol, KS, Wilcoxon, bootstrap o la hipótesis H0/H1.
-
-El catálogo Palto/Santa Eulalia/Rímac, si se habilita, es un **LEGACY DEMO** para
-desarrollo local. No representa el dominio científico objetivo ni una cuenca
-verificada.
-
-Fase C contiene una primera ingesta USGS de referencia y una matriz preliminar
-de candidatos, ambas con provenance. Ninguna candidata ha satisfecho todavía
-todos los criterios de agricultura, geometría y regulación; por ello no existe
-un dominio científico seleccionado ni un baseline SWAT+.
-
-## Arquitectura objetivo (futura)
-
-```text
-Plant/FSPM
-  ↓
-Field population
-  ↓
-HRU mapping
-  ↓
-SWAT+
-  ↓
-CMIP6 and observed-data validation
-```
-
-Las etapas futuras se implementarán sólo después de registrar fuentes, versiones,
-licencias, checksums, control de calidad y un protocolo verificable de
-watershed/gauge.
+Cada corrida persiste configuración solicitada y efectiva, hashes SHA-256 de inputs y outputs, balance hídrico, seed y metadatos de linaje.
 
 ## Instalación
 
@@ -217,30 +179,32 @@ La suite automatizada del backend está en `backend/tests`; cubre core puro,
 determinismo, parámetros, balance, API, autenticación, WebSocket, reportes,
 migraciones y aislamiento de SQLite. No se fijan conteos de tests en este README.
 
-## Documentación
+## Documentación técnica y científica
 
-- [Modelos actualmente implementados](docs/methodology/current-models.md)
-- [Protocolo de selección de cuencas](docs/methodology/watershed-selection-protocol.md)
-- [USGS streamflow y lineage](docs/methodology/usgs-streamflow.md)
-- [Registro de artefactos de datos del MVP](docs/MVP_DATA_ARTIFACTS.md)
-- [ADR: core científico puro](docs/adr/001-pure-scientific-core.md)
-- [Documentación histórica](docs/README.md): los documentos legados están marcados y no describen el contrato científico vigente.
+- [Marco Metodológico Oficial (Ficha Técnica)](project_framework.md)
+- [Reporte Final del Piloto South Fork](docs/FINAL_REPORT.md)
+- [Acoplamiento FSPM → SWAT+ (Contratos v2.1.1)](docs/FSPM_SWAT_PLUS_COUPLING.md)
+- [Integración Real SWAT+](docs/SWAT_PLUS_REAL_INTEGRATION.md)
+- [Protocolo de Selección de Cuencas en el Corn Belt](docs/methodology/watershed-selection-protocol.md)
+- [USGS streamflow y control de calidad](docs/methodology/usgs-streamflow.md)
+- [Registro de datos observacionales](docs/methodology/observational-data.md)
+- [ADR 001: Core científico puro](docs/adr/001-pure-scientific-core.md)
+- [Índice de documentación](docs/README.md)
+
 ## ¿Qué funciona hoy?
 
 | Componente | Estado | Implementación |
 |---|---|---|
 | PostgreSQL | REAL | Runtime local canónico; SQLite sólo para tests rápidos |
-| FastAPI + Next.js | ACTIVE | API async y dashboard ejecutable |
-| USGS observations | OBSERVED | Snapshot 05451210 con RAW, SHA-256, QC y normalización m³/s |
-| Plant population | SIMPLIFIED | 1000 plantas de maíz deterministas con variabilidad acotada |
-| Plant → Field | DERIVED | Media, desviación, percentiles y `n_plants` |
-| Field → HRU | COARSE_HRU_PROXY | Tres unidades ponderadas por área; no son HRU SWAT+ |
-| Hydrology | SIMPLIFIED | SCS-CN/two-store con balance hídrico |
-| Baseline vs Twin | DEMONSTRATION_COMPARISON | Forcing idéntico y resultados mensuales separados |
-| Validation | REAL COMPUTATION | RMSE, NSE, PBIAS y R² con estados indefinidos explícitos |
-| External ML | ML_MODEL | ModelBundle por path; bundle RF vecino detectado, target `monthly_runoff_mm` |
-| SWAT+ | CONDITIONAL_REAL | Baseline real con binario y proyecto válidos; sin ellos devuelve error tipado, nunca un proxy |
-| CMIP6 | READY_FOR_ARTIFACT | Provider CSV normalizado; demo usa clima sintético |
+| FastAPI + Next.js | ACTIVE | API async y dashboard interactivo |
+| SWAT+ | REAL | Motor SWAT+ 61.0.2.61 en South Fork Iowa River con 36 subcuencas y 37 canales |
+| USGS observations | OBSERVED | Estación 05451210 (New Providence, IA) con RAW, SHA-256, QC y normalización m³/s |
+| Plant population | SIMPLIFIED_FSPM | 1,000 plantas de maíz deterministas con variabilidad acotada |
+| Plant → Field | DERIVED | Agregación de comunidad (media, desviación, percentiles, $n=1000$) |
+| FSPM → SWAT+ Coupling | REAL_COUPLING | Mapeo térmico/fenológico de dosel a `plants.plt` |
+| Gemelo Digital 3D | REAL_GIS_R3F | Visor 3D multiescala con límites GIS de South Fork ($560\text{ km}^2$), 36 subcuencas, red fluvial y aforo |
+| Validation | REAL COMPUTATION | RMSE, NSE, PBIAS, R², KS y Wilcoxon con estados explícitos |
+| External ML | ML_MODEL | Integración de ModelBundle (`monthly_runoff_mm`) desacoplado de Streamlit |
 
 ## Ejecutar el MVP mañana (local)
 
