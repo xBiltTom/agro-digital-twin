@@ -131,6 +131,7 @@ def test_normalized_climate_artifact_routes_a_complete_explicit_period(tmp_path:
     weather, provenance = NormalizedClimateFileProvider(artifact, metadata=metadata).forcing_for_period("2020-01-01", "2020-01-02")
     assert [row["day_index"] for row in weather] == [1, 2]
     assert weather[1]["precip_mm"] == 3
+    assert weather[0]["assumed_weather_variables"] == ["co2_ppm"]
     assert provenance["scenario"] == "ssp245"
 
 

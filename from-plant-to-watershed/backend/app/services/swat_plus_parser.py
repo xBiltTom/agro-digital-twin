@@ -86,9 +86,12 @@ def _date_from_row(columns: dict[str, int], values: list[str]) -> str | None:
         if year and month and day:
             return date(year, month, day).isoformat()
         if year and jday:
-            return (date(year, 1, 1) + timedelta(days=jday - 1)).isoformat()
+            candidate = date(year, 1, 1) + timedelta(days=jday - 1)
+            return candidate.isoformat() if jday >= 1 and candidate.year == year else None
         if year and month:
             return date(year, month, 1).isoformat()
+        if year:
+            return date(year, 1, 1).isoformat()
     except ValueError:
         return None
     return None
@@ -110,7 +113,8 @@ class SwatOutputParser:
         self._parse_warnings: list[dict[str, str]] = []
 
     def _files(self, run_directory: Path, stems: tuple[str, ...]) -> list[Path]:
-        files = sorted({path for stem in stems for path in run_directory.glob(f"{stem}*") if path.is_file()})
+        files = sorted({path for stem in stems for path in run_directory.glob(f"{stem}*")
+                        if path.is_file() and (path.stem == stem or path.stem.startswith(f"{stem}_"))})
         suffixes = {"DAILY": ("day", "daily"), "MONTHLY": ("mon", "month"), "ANNUAL": ("yr", "year", "annual")}[self.output_frequency]
         preferred = [path for path in files if any(f"_{suffix}" in path.stem.lower() for suffix in suffixes)]
         return preferred or files
@@ -161,6 +165,11 @@ class SwatOutputParser:
             period = _date_from_row(columns, values)
             if period is None:
                 continue
+            parsed_date = date.fromisoformat(period)
+            if self.output_frequency == "MONTHLY":
+                period = parsed_date.replace(day=1).isoformat()
+            elif self.output_frequency == "ANNUAL":
+                period = parsed_date.replace(month=1, day=1).isoformat()
             record: dict[str, Any] = {"period": period}
             if unit_index is not None and unit_index < len(values):
                 record["_unit"] = values[unit_index]
@@ -236,14 +245,23 @@ class SwatOutputParser:
         channel_rows = self._select_outlet(
             [row for path in channel_files for row in self._read(path, {"streamflow_m3s"})], "channel",
         )
+        for kind, rows in (("basin water-balance", water_balance_rows), ("outlet channel", channel_rows)):
+            periods = [row["period"] for row in rows]
+            if len(periods) != len(set(periods)):
+                raise ValueError(f"Duplicate {kind} output period")
         records = self._merge(water_balance_rows, channel_rows)
-        if start_date and end_date:
-            records = [row for row in records if start_date.isoformat() <= row["period"] <= end_date.isoformat()]
+        period_start = start_date.replace(day=1) if start_date and self.output_frequency == "MONTHLY" else start_date.replace(month=1, day=1) if start_date and self.output_frequency == "ANNUAL" else start_date
+        period_end = end_date.replace(day=1) if end_date and self.output_frequency == "MONTHLY" else end_date.replace(month=1, day=1) if end_date and self.output_frequency == "ANNUAL" else end_date
+        if period_start and period_end:
+            records = [row for row in records if period_start.isoformat() <= row["period"] <= period_end.isoformat()]
         if not records:
             raise ValueError("Recognized SWAT+ files had no dated output records")
         hru_results = [row for path in hru_files for row in self._read(path, {"runoff_mm", "evapotranspiration_mm", "soil_water_mm", "percolation_mm"})]
-        if start_date and end_date:
-            hru_results = [row for row in hru_results if start_date.isoformat() <= row["period"] <= end_date.isoformat()]
+        hru_keys = [(row["period"], row.get("_unit"), row.get("_gis_id")) for row in hru_results]
+        if len(hru_keys) != len(set(hru_keys)):
+            raise ValueError("Duplicate HRU output period and identifier")
+        if period_start and period_end:
+            hru_results = [row for row in hru_results if period_start.isoformat() <= row["period"] <= period_end.isoformat()]
         warnings = self._validate(records, start_date, end_date, self.output_frequency)
         warnings.extend({"code": warning["code"], "message": warning["message"]} for warning in self._parse_warnings if warning not in warnings)
         availability = {variable: "AVAILABLE" if any(row.get(variable) is not None for row in records) else "NOT_AVAILABLE" for variable in _VARIABLES}

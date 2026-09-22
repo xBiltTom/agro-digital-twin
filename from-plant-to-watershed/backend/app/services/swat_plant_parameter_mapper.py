@@ -7,8 +7,9 @@ the workspace HRU land-use/management inputs.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 import hashlib
+import math
 from pathlib import Path
 from statistics import fmean
 from typing import Any
@@ -30,21 +31,25 @@ class SwatClimateForcingReader:
     """
     project: Path
 
-    def _station_files(self) -> list[dict[str, Path]]:
+    def _station_files(self) -> list[dict[str, Path | None]]:
         station = self.project / "weather-sta.cli"
         if not station.is_file():
             raise SwatPlantMappingError("weather-sta.cli is required to derive FSPM forcing from the SWAT+ project")
         rows = [line.split() for line in station.read_text(encoding="utf-8", errors="strict").splitlines()[2:] if line.split()]
         if not rows or any(len(row) < 6 for row in rows):
             raise SwatPlantMappingError("weather-sta.cli does not contain a usable weather station")
-        stations: list[dict[str, Path]] = []
+        stations: list[dict[str, Path | None]] = []
         for row in rows:
-            files = {"name": Path(row[0]), "pcp": self.project / row[2], "tmp": self.project / row[3],
-                     "slr": self.project / row[4], "hmd": self.project / row[5]}
+            files = {"name": Path(row[0]), **{
+                kind: None if value.lower() in {"sim", "null"} else self.project / value
+                for kind, value in zip(("pcp", "tmp", "slr", "hmd", "wnd", "pet"), row[2:8])
+            }}
+            if files["pcp"] is None or files["tmp"] is None:
+                raise SwatPlantMappingError("SWAT_GENERATED_WEATHER_NOT_RECONSTRUCTABLE: direct precipitation and temperature files are required")
             # Existing SWAT+ examples sometimes declare *.tem while retaining *.tmp.
             if not files["tmp"].is_file() and files["tmp"].suffix == ".tem" and files["tmp"].with_suffix(".tmp").is_file():
                 files["tmp"] = files["tmp"].with_suffix(".tmp")
-            missing = [kind for kind, path in files.items() if kind != "name" and not path.is_file()]
+            missing = [kind for kind, path in files.items() if kind != "name" and path is not None and not path.is_file()]
             if missing:
                 raise SwatPlantMappingError(f"SWAT+ station {row[0]!r} is missing direct weather files: {', '.join(missing)}")
             stations.append(files)
@@ -53,7 +58,7 @@ class SwatClimateForcingReader:
     @staticmethod
     def _numeric_rows(path: Path, minimum: int) -> dict[tuple[int, int], list[float]]:
         output: dict[tuple[int, int], list[float]] = {}
-        for raw in path.read_text(encoding="utf-8", errors="strict").splitlines()[3:]:
+        for line_number, raw in enumerate(path.read_text(encoding="utf-8", errors="strict").splitlines()[3:], 4):
             pieces = raw.split()
             if len(pieces) < minimum:
                 continue
@@ -61,48 +66,76 @@ class SwatClimateForcingReader:
                 year, day = int(pieces[0]), int(pieces[1])
                 values = [float(value) for value in pieces[2:minimum]]
             except ValueError:
-                continue
+                raise SwatPlantMappingError(f"Invalid weather record in {path.name}:{line_number}") from None
+            if not 1 <= day <= 366 or (date(year, 1, 1) + timedelta(days=day - 1)).year != year:
+                raise SwatPlantMappingError(f"Invalid day of year in {path.name}:{line_number}")
+            if (year, day) in output:
+                raise SwatPlantMappingError(f"Duplicate weather date in {path.name}:{line_number}")
             output[(year, day)] = values
         return output
 
-    def for_period(self, start: date, end: date) -> tuple[list[dict[str, float]], dict[str, Any]]:
+    def for_period(self, start: date, end: date, *, require_fspm: bool = True) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """Return one explicitly dated row per day; missing primary data fail closed."""
+        if end < start:
+            raise SwatPlantMappingError("Weather interval end precedes start")
         stations = self._station_files()
         station_data = [
             {
                 "name": files["name"].name,
                 "pcp": self._numeric_rows(files["pcp"], 3),
                 "tmp": self._numeric_rows(files["tmp"], 4),
-                "slr": self._numeric_rows(files["slr"], 3),
-                "hmd": self._numeric_rows(files["hmd"], 3),
+                "slr": self._numeric_rows(files["slr"], 3) if files["slr"] else {},
+                "hmd": self._numeric_rows(files["hmd"], 3) if files["hmd"] else {},
+                "wnd": self._numeric_rows(files["wnd"], 3) if files.get("wnd") else {},
+                "pet": self._numeric_rows(files["pet"], 3) if files.get("pet") else {},
             }
             for files in stations
         ]
-        daily: list[dict[str, float]] = []
+        daily: list[dict[str, Any]] = []
         cursor = start
-        from datetime import timedelta
         while cursor <= end:
             key = (cursor.year, cursor.timetuple().tm_yday)
-            available = [row for row in station_data if key in row["tmp"] and row["tmp"][key][0] > -90 and row["tmp"][key][1] > -90]
-            if available:
-                # The source project does not expose an HRU-to-station weight.
-                # An equal-station mean is therefore a documented basin forcing
-                # summary, rather than silently selecting the first grid cell.
-                daily.append({
-                    "temp_c": fmean((row["tmp"][key][0] + row["tmp"][key][1]) / 2.0 for row in available),
-                    "precip_mm": fmean(max(0.0, row["pcp"].get(key, [0.0])[0]) for row in available),
-                    "solar_rad_mj": fmean(max(0.0, row["slr"].get(key, [0.0])[0]) for row in available),
-                    "rh_percent": fmean(max(0.0, row["hmd"].get(key, [0.0])[0]) * 100.0 for row in available),
-                    "co2_ppm": 400.0,
-                })
+            for row in station_data:
+                required = ("pcp", "tmp", "slr", "hmd") if require_fspm else ("pcp", "tmp")
+                for kind in required:
+                    if key not in row[kind]:
+                        raise SwatPlantMappingError(f"Missing {kind} at station {row['name']} on {cursor.isoformat()}; no day or station is silently skipped")
+            temperatures = [(values[0] + values[1]) / 2.0 for row in station_data
+                            if (values := row["tmp"].get(key)) and all(math.isfinite(v) and v > -90 for v in values)]
+            precipitation = [values[0] for row in station_data
+                             if (values := row["pcp"].get(key)) and math.isfinite(values[0]) and values[0] >= 0]
+            solar = [values[0] for row in station_data
+                     if (values := row["slr"].get(key)) and math.isfinite(values[0]) and values[0] >= 0]
+            humidity = [values[0] * 100.0 for row in station_data
+                        if (values := row["hmd"].get(key)) and math.isfinite(values[0]) and 0 <= values[0] <= 1]
+            wind = [values[0] for row in station_data
+                    if (values := row["wnd"].get(key)) and math.isfinite(values[0]) and values[0] >= 0]
+            pet = [values[0] for row in station_data
+                   if (values := row["pet"].get(key)) and math.isfinite(values[0]) and values[0] >= 0]
+            if len(temperatures) != len(station_data) or len(precipitation) != len(station_data) or (require_fspm and (len(solar) != len(station_data) or len(humidity) != len(station_data))):
+                raise SwatPlantMappingError(f"Missing required weather for {cursor.isoformat()}; no day is skipped or filled")
+            # Equal-station means are basin summaries, not point observations.
+            daily.append({"date": cursor.isoformat(), "temp_c": fmean(temperatures),
+                          "precip_mm": fmean(precipitation),
+                          "solar_rad_mj": fmean(solar) if len(solar) == len(station_data) else None,
+                          "rh_percent": fmean(humidity) if len(humidity) == len(station_data) else None,
+                          "wind_speed_ms": fmean(wind) if len(wind) == len(station_data) else None,
+                          "pet_mm": fmean(pet) if len(pet) == len(station_data) else None,
+                          "co2_ppm": 400.0 if require_fspm else None})
             cursor += timedelta(days=1)
-        if not daily:
-            raise SwatPlantMappingError("SWAT+ weather inputs contain no usable temperature records in the requested period")
         return daily, {
             "source": "SWAT+ weather-sta.cli direct station files",
+            "file_checksums_sha256": {
+                "weather-sta.cli": hashlib.sha256((self.project / "weather-sta.cli").read_bytes()).hexdigest(),
+                **{path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+                   for files in stations for kind, path in files.items() if kind != "name" and path is not None},
+            },
             "station_count": len(station_data),
             "station_aggregation": "equal_station_mean; HRU-to-station weights are not available in this TxtInOut",
-            "variables": ["pcp", "tmp", "slr", "hmd"], "days": len(daily),
-            "limitations": "The FSPM receives a basin forcing summary rather than an HRU-specific plant forcing.",
+            "variables": ["pcp", "tmp"] + [kind for kind in ("slr", "hmd", "wnd", "pet") if any(row[kind] for row in station_data)],
+            "days": len(daily), "start_date": start.isoformat(), "end_date": end.isoformat(),
+            "missing_policy": "FAIL_CLOSED_PER_STATION_PRIMARY_AND_FSPM_REQUIRED; OPTIONAL_SECONDARY_NULL",
+            "limitations": "Equal-station basin forcing summary; station availability can differ by variable and day. No HRU-to-station weights or USGS weather observations are implied.",
         }
 
 

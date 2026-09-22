@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -103,7 +103,8 @@ def test_sorghum_proxy_inherits_corn_schedule_but_uses_grsg_tmp_base(tmp_path, m
     )
     monkeypatch.setattr(runner, "SOURCE_PROJECT", tmp_path)
     start, end = date(2020, 1, 1), date(2020, 1, 11)
-    forcing = [{"temp_c": 20.0, "precip_mm": 1.0, "solar_rad_mj": 15.0, "rh_percent": 60.0, "co2_ppm": 400.0} for _ in range(11)]
+    forcing = [{"date": (start + timedelta(days=index)).isoformat(), "temp_c": 20.0, "precip_mm": 1.0,
+                "solar_rad_mj": 15.0, "rh_percent": 60.0, "co2_ppm": 400.0} for index in range(11)]
 
     season = SwatCropChainDiagnostic.auto_management_season(
         tmp_path, target_crop="corn", growth_temperature_crop="grsg"

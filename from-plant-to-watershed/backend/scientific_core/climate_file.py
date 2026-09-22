@@ -2,7 +2,7 @@
 
 import csv
 import json
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -30,11 +30,13 @@ class NormalizedClimateFileProvider:
         normalized: list[dict[str, Any]] = []
         for index, row in enumerate(rows, start=1):
             try:
+                assumed = [name for name in ("solar_rad_mj", "rh_percent", "co2_ppm") if not row.get(name)]
                 normalized.append({
                     "day_index": index, "date": row["date"], "precip_mm": float(row["precip_mm"]),
                     "temp_c": float(row["temp_c"]), "solar_rad_mj": float(row.get("solar_rad_mj") or metadata.get("default_solar_rad_mj", 18.5)),
                     "rh_percent": float(row.get("rh_percent") or metadata.get("default_rh_percent", 60.0)),
                     "co2_ppm": float(row.get("co2_ppm") or metadata.get("co2_ppm", 415.0)),
+                    "assumed_weather_variables": assumed,
                 })
             except (TypeError, ValueError) as exc:
                 raise ValueError(f"invalid normalized climate row {index}") from exc
@@ -48,6 +50,9 @@ class NormalizedClimateFileProvider:
             raise ValueError(f"climate artifact has {len(selected)} daily rows for requested period; expected {expected}")
         if len({row["date"] for row in selected}) != expected:
             raise ValueError("climate artifact contains duplicate daily dates")
+        expected_dates = [(date.fromisoformat(start_date) + timedelta(days=index)).isoformat() for index in range(expected)]
+        if [row["date"] for row in selected] != expected_dates:
+            raise ValueError("climate artifact dates are missing, out of order, or outside the requested daily sequence")
         return [{**row, "day_index": idx} for idx, row in enumerate(selected, start=1)], metadata
 
 

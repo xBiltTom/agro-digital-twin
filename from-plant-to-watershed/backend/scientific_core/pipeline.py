@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass
+from collections import Counter
 from datetime import timedelta
 from typing import Any
 
@@ -84,6 +85,7 @@ class MultiscaleRun:
     validation: dict[str, Any]
     effective_config: dict[str, Any]
     provenance: dict[str, Any]
+    playback_daily: tuple[dict[str, Any], ...] = ()
 
 
 class MultiscaleSimulationOrchestrator:
@@ -107,6 +109,10 @@ class MultiscaleSimulationOrchestrator:
             climate_provenance = SyntheticClimateProvider(config.seed).provenance.as_dict()
         if len(weather) != config.duration_days:
             raise ValueError("forcing length must match duration_days")
+        for index, forcing in enumerate(weather, start=1):
+            expected_date = (config.start_date + timedelta(days=index - 1)).isoformat()
+            if forcing.get("date", expected_date) != expected_date or forcing["day_index"] != index:
+                raise ValueError(f"forcing date/day_index mismatch at {expected_date}")
         population = PlantPopulation(plant_count, config.seed, base_kc=params["base_kc"],
                                      max_root_depth_cm=params["max_root_depth_cm"], crop=management["crop"])
         coupler = FieldToHRUCoupler(config.watershed_area_km2,
@@ -121,7 +127,7 @@ class MultiscaleSimulationOrchestrator:
             for hru in coupler.hrus
         }
         baseline_moisture = twin_moisture = params["initial_soil_moisture_vol"]
-        rows, monthly = [], {}
+        rows, monthly, playback_rows = [], {}, []
         final_field: dict[str, Any] = {}
         final_hru: dict[str, Any] = {}
         final_states = ()
@@ -129,7 +135,8 @@ class MultiscaleSimulationOrchestrator:
         for forcing in weather:
             states = population.step(forcing["day_index"], forcing, twin_moisture)
             field = PlantToFieldAggregator.aggregate(states, twin_moisture)
-            field["soil_moisture_source"] = "SIMPLIFIED_HYDROLOGY_MODEL_OR_INITIAL_CONDITION"
+            field["soil_moisture_source"] = ("ASSUMED_INITIAL_CONDITION" if forcing["day_index"] == 1
+                                              else "SIMPLIFIED_HYDROLOGY_MODEL_PREVIOUS_DAY")
             hru = coupler.couple(field)
             baseline_step = baseline_plant.compute_daily_plant_step(
                 forcing["temp_c"], forcing["solar_rad_mj"], forcing["rh_percent"], baseline_moisture, forcing["co2_ppm"]
@@ -183,6 +190,9 @@ class MultiscaleSimulationOrchestrator:
             }}
             field_lai.append(field["mean_lai"])
             field_stress.append(field["mean_stress"])
+            playback_rows.append({"date": date_value.isoformat(), "field": field,
+                                  "plants": states[:min(10, len(states))], "crop": management["crop"],
+                                  "phenological_stage": Counter(state.phenological_stage for state in states).most_common(1)[0][0]})
         monthly_rows = tuple({"month": key, "baseline_streamflow_m3s": sum(v["baseline"]) / len(v["baseline"]),
                               "twin_streamflow_m3s": sum(v["twin"]) / len(v["twin"]),
                               "observed_streamflow_m3s": None} for key, v in sorted(monthly.items()))
@@ -216,4 +226,5 @@ class MultiscaleSimulationOrchestrator:
                               "yield_proxy": {"evidence_type": "DERIVED", "unit": "t/ha",
                                               "statement": "Seasonal stress/LAI proxy; not observed USDA NASS yield."},
                               "comparison": "BASELINE_VS_MULTISCALE_SHARED_FORCING",
-                              "forcing_identity": "baseline and multiscale twin share the same forcing series"})
+                              "forcing_identity": "baseline and multiscale twin share the same forcing series"},
+                             tuple(playback_rows))

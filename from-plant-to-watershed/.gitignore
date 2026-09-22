@@ -38,6 +38,8 @@ digitaltwin.db
 *.db-wal
 *.db-shm
 backend/data/*.db
+backend/data/playback/
+data/playback/
 
 # Python & Testing Cache
 .pytest_cache/

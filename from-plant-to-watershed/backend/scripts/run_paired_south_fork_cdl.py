@@ -50,7 +50,7 @@ def _fspm_peak(project: Path, start: date, end: date) -> tuple[dict[str, Any], d
             soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT,
         )
         current["soil_moisture_source"] = "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
-        current_date = (start + timedelta(days=index - 1)).isoformat()
+        current_date = forcing["date"]
         if peak_lai is None or current["mean_LAI"] > peak_lai["mean_LAI"]:
             peak_lai, peak_dates["date_of_peak_LAI"] = current, current_date
         if peak_height is None or current["plant_height_mean_m"] > peak_height["plant_height_mean_m"]:

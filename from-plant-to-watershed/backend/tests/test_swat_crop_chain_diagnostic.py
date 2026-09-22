@@ -32,7 +32,7 @@ def test_fspm_reader_uses_all_direct_swat_weather_stations(tmp_path):
     }.items():
         (tmp_path / name).write_text(f"x\ny\nz\n{rows}", encoding="utf-8")
     rows, provenance = SwatClimateForcingReader(tmp_path).for_period(date(2019, 1, 1), date(2019, 1, 1))
-    assert rows == [{"temp_c": 17.0, "precip_mm": 3.0, "solar_rad_mj": 12.0, "rh_percent": 60.0, "co2_ppm": 400.0}]
+    assert rows == [{"date": "2019-01-01", "temp_c": 17.0, "precip_mm": 3.0, "solar_rad_mj": 12.0, "rh_percent": 60.0, "wind_speed_ms": None, "pet_mm": None, "co2_ppm": 400.0}]
     assert provenance["station_count"] == 2
 
 

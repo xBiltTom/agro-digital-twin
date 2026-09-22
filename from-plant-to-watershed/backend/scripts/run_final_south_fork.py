@@ -79,6 +79,8 @@ def _fspm_field(*, forcing: list[dict[str, float]] | None = None, forcing_proven
         provenance = dict(forcing_provenance or {})
     if len(forcing) != (end - start).days + 1:
         raise ValueError("FSPM forcing must contain one row per requested day")
+    if any(weather.get("date") != (start + timedelta(days=index)).isoformat() for index, weather in enumerate(forcing)):
+        raise ValueError("FSPM forcing dates must exactly cover the requested interval in order")
     growth_crop = growth_temperature_crop or target_plant_name
     season = SwatCropChainDiagnostic.auto_management_season(
         SOURCE_PROJECT, target_crop=management_crop, growth_temperature_crop=growth_crop,
@@ -98,7 +100,7 @@ def _fspm_field(*, forcing: list[dict[str, float]] | None = None, forcing_proven
     daily: dict[str, dict[str, float]] = {}
     fields_by_season: dict[str, list[dict[str, Any]]] = {}
     for index, weather in enumerate(forcing, 1):
-        current_date = date.fromordinal(start.toordinal() + index - 1)
+        current_date = date.fromisoformat(weather["date"])
         window = active_by_date.get(current_date)
         day = current_date.isoformat()
         if window is None:

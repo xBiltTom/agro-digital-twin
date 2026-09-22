@@ -1,4 +1,6 @@
 from typing import List
+from datetime import date
+from pathlib import Path
 import copy
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -20,6 +22,8 @@ from app.schemas.simulation import (
 )
 from app.api.deps import get_current_active_user, require_roles
 from app.services.twin_coupling_engine import TwinCouplingEngine
+from app.services.playback_artifact import PlaybackArtifactStore
+from app.schemas.playback import PlaybackPage, Resolution
 from scientific_core import RunConfig
 
 router = APIRouter(prefix="/simulations", tags=["Simulaciones simplificadas"])
@@ -299,3 +303,47 @@ async def get_swat_results(
         "water_balance": (sim.summary_metrics or {}).get("water_balance"),
         "provenance": sim.provenance,
     }
+
+
+@router.get("/{sim_id}/playback", response_model=PlaybackPage)
+async def get_simulation_playback(
+    sim_id: str,
+    on: date | None = Query(None, alias="date"),
+    resolution: Resolution | None = None,
+    start: date | None = None,
+    end: date | None = None,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Indexed, owner-scoped read of versioned dated scientific states."""
+    sim = await db.scalar(select(SimulationRun).where(SimulationRun.id == sim_id))
+    if sim is None or (sim.user_id != current_user.id and "SUPERADMIN" not in {role.name for role in current_user.roles}):
+        raise HTTPException(status_code=404, detail="Simulation not found")
+    if (on is not None and (start is not None or end is not None)) or (start and end and start > end):
+        raise HTTPException(status_code=422, detail="Use either date or a valid start/end interval")
+    manifest = (sim.provenance or {}).get("playback")
+    if sim.status != "COMPLETED" or not manifest:
+        return PlaybackPage(simulation_id=sim.id, simulation_status=sim.status,
+                            artifact_status="NOT_AVAILABLE", resolution=None, total=0, offset=offset,
+                            limit=limit, records=[], limitations=["No versioned playback artifact is available for this run"])
+    daily_manifest = (sim.provenance or {}).get("playback_daily_fspm")
+    available = [manifest["resolution"]] + (["DAILY"] if daily_manifest else [])
+    daily_requested = resolution == "DAILY" and manifest["resolution"] != "DAILY" and daily_manifest is not None
+    if resolution is not None and resolution not in available:
+        raise HTTPException(status_code=422, detail={"message": "Requested resolution is not available", "available_resolutions": available})
+    if daily_requested:
+        manifest = daily_manifest
+        store = PlaybackArtifactStore(Path(settings.DATA_ARTIFACT_ROOT) / "playback" / "v1" / "fspm-daily")
+    else:
+        store = PlaybackArtifactStore()
+    try:
+        total, records = store.page(sim.id, manifest, on=on, start=start, end=end, offset=offset, limit=limit)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=f"Playback artifact unavailable or invalid: {exc}") from exc
+    return PlaybackPage(simulation_id=sim.id, simulation_status=sim.status,
+                        artifact_status="AVAILABLE", resolution=manifest["resolution"], available_resolutions=available,
+                        total=total, offset=offset, limit=limit, records=records,
+                        variables=manifest.get("variables", {}), provenance=manifest.get("provenance", {}),
+                        limitations=manifest.get("limitations", []))
