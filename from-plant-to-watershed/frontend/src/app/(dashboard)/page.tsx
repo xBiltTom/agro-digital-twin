@@ -11,7 +11,6 @@ import {
   Mountain,
   SunMedium,
   ArrowRight,
-  Shield,
   Database,
   CheckCircle2,
   Box,
@@ -25,13 +24,12 @@ import {
   BarChart3,
   HelpCircle,
   Info,
-  ChevronDown,
-  ChevronUp,
   Thermometer,
   CloudRain,
   BookOpen,
   Sparkles,
   Waves,
+  AlertTriangle,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -40,19 +38,19 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   CartesianGrid,
-  ReferenceLine,
   Cell,
+  LabelList,
+  Legend,
 } from "recharts";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [backendHealth, setBackendHealth] = useState<string>("Verificando...");
   const [finalReport, setFinalReport] = useState<CurrentFinalScientificReportResponse | null>(null);
-  const [activeMetric, setActiveMetric] = useState<"streamflow" | "soil_water" | "et">("streamflow");
   const [showGlossary, setShowGlossary] = useState(false);
-  const [expandedModule, setExpandedModule] = useState<number | null>(null);
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string>("TEMP");
+  const [chartMode, setChartMode] = useState<"compare" | "all">("compare");
 
   useEffect(() => {
     fetch("http://localhost:8000/health")
@@ -66,46 +64,156 @@ export default function DashboardPage() {
   }, []);
 
   const currentResult = finalReport?.current_result;
-  const currentStatus = finalReport?.current_contract?.current_execution_status;
   const totals = currentResult?.runs?.baseline?.totals;
 
-  // Datos interactivos de los 4 escenarios de cambio climático
-  const scenarioChartData = [
+  // Datos intuitivos de los escenarios con simulación SWAT+ real (2018-2020)
+  const waterLitersData = [
+    {
+      id: "NORMAL",
+      name: "Situación Normal",
+      shortName: "Normal",
+      liters: 100,
+      soilPct: 100,
+      etPct: 100,
+      runoffPct: 100,
+      status: "Base Histórica",
+      color: "#10b981", // Verde esmeralda
+      tag: "100 L habituales",
+      deltaText: "Línea Base (100%)",
+      summary: "Condiciones de lluvia y temperatura normales medidas en Iowa.",
+      why: "Punto de referencia contra el que se evalúan todas las crisis.",
+      rawMetrics: {
+        streamflow: "1.61 m³/s",
+        soilWater: "302 mm",
+        et: "2,481 mm",
+        runoff: "300 mm",
+      },
+    },
     {
       id: "TEMP",
-      title: "Olas de Calor (+2°C)",
-      scenario: "+2°C Temp",
-      streamflow: -25.93,
-      soil_water: -7.93,
-      et: 2.60,
-      description: "El calor aumenta la evaporación de agua y hace caer el caudal del río en un 26%.",
+      name: "Calor (+2°C)",
+      shortName: "+2°C Calor",
+      liters: 74,
+      soilPct: 92,
+      etPct: 103,
+      runoffPct: 84,
+      status: "Pérdida moderada",
+      color: "#f59e0b", // Ámbar
+      tag: "Quedan 74 L (-26%)",
+      deltaText: "El río pierde 26 de cada 100 L",
+      summary: "Una ola de calor calienta el suelo y hace que el agua se evapore más rápido hacia la atmósfera.",
+      why: "El sol calienta las hojas del maíz y la tierra. La evaporación aumenta (+2.6%) y queda menos agua para que escurra hacia el río.",
+      rawMetrics: {
+        streamflow: "1.19 m³/s (-26%)",
+        soilWater: "278 mm (-8%)",
+        et: "2,546 mm (+3%)",
+        runoff: "251 mm (-16%)",
+      },
     },
     {
       id: "PRECIP",
-      title: "Sequía Severa (-15% Lluvia)",
-      scenario: "-15% Lluvia",
-      streamflow: -46.11,
-      soil_water: -39.21,
-      et: -7.82,
-      description: "La falta de precipitación golpea drásticamente al río (-46%) y deja los suelos secos (-39%).",
+      name: "Sequía (-15% Lluvia)",
+      shortName: "-15% Sequía",
+      liters: 54,
+      soilPct: 61,
+      etPct: 92,
+      runoffPct: 73,
+      status: "Impacto Severo",
+      color: "#ef4444", // Rojo alerta
+      tag: "Quedan 54 L (-46%)",
+      deltaText: "El río pierde casi la mitad (-46%)",
+      summary: "Una pequeña caída del 15% en lluvia provoca un colapso dramático en el caudal del río.",
+      why: "El suelo seco funciona como una esponja sedienta: absorbe toda la lluvia que cae y casi nada llega a los arroyos.",
+      rawMetrics: {
+        streamflow: "0.87 m³/s (-46%)",
+        soilWater: "184 mm (-39%)",
+        et: "2,287 mm (-8%)",
+        runoff: "218 mm (-27%)",
+      },
     },
     {
       id: "NOTILL",
-      title: "Siembra Directa (No-Till)",
-      scenario: "Siembra Directa",
-      streamflow: -0.01,
-      soil_water: -0.02,
-      et: -0.03,
-      description: "Práctica de labranza cero para conservar la estructura del suelo y reducir la erosión.",
+      name: "Siembra Directa",
+      shortName: "Siembra Directa",
+      liters: 100,
+      soilPct: 100,
+      etPct: 100,
+      runoffPct: 100,
+      status: "Caudal Estable",
+      color: "#06b6d4", // Cyan
+      tag: "Quedan 100 L (Estable)",
+      deltaText: "Caudal idéntico (100%)",
+      summary: "Los agricultores siembran sin meter tractores a arar la tierra, dejando rastrojos protectores.",
+      why: "¿Por qué no cambia el río? Porque esta práctica no altera el clima ni la lluvia; su objetivo es proteger el suelo para que no se erosione.",
+      rawMetrics: {
+        streamflow: "1.61 m³/s (0%)",
+        soilWater: "302 mm (0%)",
+        et: "2,481 mm (0%)",
+        runoff: "300 mm (0%)",
+      },
     },
     {
       id: "SORGHUM",
-      title: "Cambio de Cultivo (Sorgo)",
-      scenario: "Maíz → Sorgo",
-      streamflow: 0.0,
-      soil_water: 0.0,
-      et: 0.0,
-      description: "Sustitución de maíz por sorgo granífero, una especie más tolerante a estrés hídrico.",
+      name: "Maíz → Sorgo",
+      shortName: "Sorgo",
+      liters: 100,
+      soilPct: 100,
+      etPct: 100,
+      runoffPct: 100,
+      status: "Caudal Estable",
+      color: "#8b5cf6", // Púrpura
+      tag: "Quedan 100 L (Estable)",
+      deltaText: "Caudal idéntico (100%)",
+      summary: "Cambiar maíz por sorgo granífero, una planta prima mucho más resistente a la escasez de agua.",
+      why: "¿Por qué no cambia el río? Porque el sorgo gasta el agua de forma más eficiente para sobrevivir en sequías, manteniendo la cosecha.",
+      rawMetrics: {
+        streamflow: "1.61 m³/s (0%)",
+        soilWater: "302 mm (0%)",
+        et: "2,481 mm (0%)",
+        runoff: "300 mm (0%)",
+      },
+    },
+  ];
+
+  const activeScenario = waterLitersData.find((s) => s.id === selectedScenarioId) || waterLitersData[1];
+
+  // Datos comparativos interactivos Cara a Cara (Normal vs Seleccionado)
+  const comparisonData = [
+    {
+      metric: "Caudal Río",
+      normal: 100,
+      scenario: activeScenario.liters,
+      unit: "L",
+      normalRaw: "1.61 m³/s",
+      scenarioRaw: activeScenario.rawMetrics.streamflow,
+      desc: "Agua que llega al cauce del río",
+    },
+    {
+      metric: "Humedad Suelo",
+      normal: 100,
+      scenario: activeScenario.soilPct,
+      unit: "%",
+      normalRaw: "302 mm",
+      scenarioRaw: activeScenario.rawMetrics.soilWater,
+      desc: "Agua almacenada en la tierra",
+    },
+    {
+      metric: "Evaporación (ET)",
+      normal: 100,
+      scenario: activeScenario.etPct,
+      unit: "%",
+      normalRaw: "2,481 mm",
+      scenarioRaw: activeScenario.rawMetrics.et,
+      desc: "Agua que sube a la atmósfera",
+    },
+    {
+      metric: "Escorrentía",
+      normal: 100,
+      scenario: activeScenario.runoffPct,
+      unit: "%",
+      normalRaw: "300 mm",
+      scenarioRaw: activeScenario.rawMetrics.runoff,
+      desc: "Agua que corre sobre el suelo",
     },
   ];
 
@@ -210,7 +318,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. Botón de Glosario para No Hidrólogos */}
+      {/* 2. Glosario Didáctico para No Hidrólogos */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -227,7 +335,6 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Glosario Desplegable Didáctico */}
       {showGlossary && (
         <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-emerald-300 dark:border-emerald-800/60 text-xs grid grid-cols-1 md:grid-cols-3 gap-4 animate-fadeIn">
           <div className="space-y-1">
@@ -243,7 +350,7 @@ export default function DashboardPage() {
               <Droplets className="w-3.5 h-3.5" /> Evapotranspiración (ET)
             </span>
             <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              El agua total que vuelve a las nubes: una parte se evapora directamente del suelo húmedo y otra es "sudada" (transpirada) por las hojas del maíz.
+              El agua total que vuelve a las nubes: una parte se evapora directamente del suelo húmedo y otra es transpirada por las hojas del maíz.
             </p>
           </div>
           <div className="space-y-1">
@@ -254,34 +361,10 @@ export default function DashboardPage() {
               Zonas del mapa que comparten el mismo tipo de suelo, pendiente y cultivo. South Fork tiene 32 HRUs dedicadas a maíz.
             </p>
           </div>
-          <div className="space-y-1">
-            <span className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-              <Mountain className="w-3.5 h-3.5" /> Cuenca Hidrográfica
-            </span>
-            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Todo el territorio cuyas lluvias van a parar al mismo río principal. Si cae una gota dentro de los 580 km², terminará fluyendo hacia la estación de aforo.
-            </p>
-          </div>
-          <div className="space-y-1">
-            <span className="font-bold text-indigo-800 dark:text-indigo-300 flex items-center gap-1.5">
-              <FlaskConical className="w-3.5 h-3.5" /> FSPM (Modelo 3D de Planta)
-            </span>
-            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              <b>Functional-Structural Plant Model</b>: Simula matemáticamente cómo crece la planta, cómo sus raíces buscan agua y cómo sus hojas interceptan el sol.
-            </p>
-          </div>
-          <div className="space-y-1">
-            <span className="font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
-              <BarChart3 className="w-3.5 h-3.5" /> Calidad de Predicción (RMSE)
-            </span>
-            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Mide el error promedio entre lo que calculó la computadora y lo que midió el sensor del río. Cuanto más bajo sea el número, más exacto es el gemelo.
-            </p>
-          </div>
         </div>
       )}
 
-      {/* 3. Rejilla de 6 KPIs con Explicación Intuitiva */}
+      {/* 3. Rejilla de 6 KPIs con Metáforas Claras */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between">
           <div>
@@ -338,115 +421,373 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4. SECCIÓN VISUAL: Gráfico Interactivo de los 4 Escenarios de Cambio Climático */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+      {/* ========================================================================= */}
+      {/* PENDIENTE DE REVISIÓN: Simulación de Escenarios en Dashboard Principal   */}
+      {/* Deshabilitado temporalmente para destriparlo y simplificarlo a futuro.     */}
+      {/* ========================================================================= */}
+      {false && (
+      <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-6">
+        {/* Cabecera y controles superiores */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <SunMedium className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <Waves className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                ¿Qué le pasaría a la cuenca si cambia el clima? (Simulación de Escenarios)
+                ¿Cuánta agua queda en el río si cambia el clima? (Simulador Interactivo)
               </h3>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              Compara el impacto porcentual (%) de olas de calor, sequías y prácticas de manejo sobre el agua regional.
+              Haz clic en cualquier escenario para ver cómo <b>cambia y se transforma el gráfico</b> en tiempo real comparado con las condiciones normales.
             </p>
           </div>
 
-          {/* Selector de variable para el gráfico */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs">
+          {/* Selector de Modo: Cara a Cara vs Panorama Completo */}
+          <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl border border-zinc-200 dark:border-zinc-700/60 shrink-0 self-start md:self-auto">
             <button
-              onClick={() => setActiveMetric("streamflow")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
-                activeMetric === "streamflow"
-                  ? "bg-white dark:bg-zinc-800 text-teal-700 dark:text-teal-300 shadow-xs font-bold"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              onClick={() => setChartMode("compare")}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                chartMode === "compare"
+                  ? "bg-white dark:bg-zinc-900 text-teal-700 dark:text-teal-300 shadow-xs"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               }`}
             >
-              🌊 Caudal del Río
+              <Layers className="w-3.5 h-3.5" />
+              Cara a Cara (Normal vs {activeScenario.shortName})
             </button>
             <button
-              onClick={() => setActiveMetric("soil_water")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
-                activeMetric === "soil_water"
-                  ? "bg-white dark:bg-zinc-800 text-cyan-700 dark:text-cyan-300 shadow-xs font-bold"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              onClick={() => setChartMode("all")}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                chartMode === "all"
+                  ? "bg-white dark:bg-zinc-900 text-teal-700 dark:text-teal-300 shadow-xs"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               }`}
             >
-              💧 Humedad en Suelo
-            </button>
-            <button
-              onClick={() => setActiveMetric("et")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
-                activeMetric === "et"
-                  ? "bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-300 shadow-xs font-bold"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-              }`}
-            >
-              ☁️ Evaporación (ET)
+              <BarChart3 className="w-3.5 h-3.5" />
+              Panorama (Los 5 Juntos)
             </button>
           </div>
         </div>
 
-        {/* Gráfico de Barras Recharts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-          <div className="lg:col-span-2 h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={scenarioChartData} margin={{ top: 20, right: 20, left: -10, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#71717a" opacity={0.2} vertical={false} />
-                <XAxis dataKey="scenario" stroke="#71717a" fontSize={11} tickLine={false} />
-                <YAxis
-                  stroke="#71717a"
-                  fontSize={11}
-                  tickLine={false}
-                  unit="%"
-                  domain={[-55, 10]}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#09090b",
-                    borderColor: "#27272a",
-                    borderRadius: "10px",
-                    fontSize: "12px",
-                    color: "#f4f4f5",
-                  }}
-                  formatter={(val: any) => [`${Number(val).toFixed(2)}%`, activeMetric === "streamflow" ? "Variación Caudal" : activeMetric === "soil_water" ? "Variación Agua Suelo" : "Variación Evaporación"]}
-                />
-                <ReferenceLine y={0} stroke="#71717a" strokeWidth={1.5} />
-                <Bar dataKey={activeMetric} radius={[6, 6, 6, 6]}>
-                  {scenarioChartData.map((entry, index) => {
-                    const val = entry[activeMetric];
-                    const color = val < -20 ? "#ef4444" : val < 0 ? "#f97316" : "#10b981";
-                    return <Cell key={`cell-${index}`} fill={color} />;
-                  })}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Píldoras interactivas de selección rápida de escenarios */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
+          <span className="text-[11px] font-mono uppercase text-zinc-400 font-semibold mr-1">
+            Seleccionar Escenario:
+          </span>
+          {waterLitersData.map((s) => {
+            const isSelected = selectedScenarioId === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setSelectedScenarioId(s.id);
+                  setChartMode("compare"); // Cambia de inmediato el gráfico
+                }}
+                className={`text-xs font-medium px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-2 border ${
+                  isSelected
+                    ? "border-teal-500 bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-200 font-bold shadow-xs scale-102"
+                    : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
+                }`}
+              >
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                <span>{s.name}</span>
+                {isSelected && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-teal-500 text-white font-mono">
+                    Activo
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Gráfico y Ficha Explicativa */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          {/* Contenedor del Gráfico Dinámico */}
+          <div className="lg:col-span-7 h-80 w-full bg-zinc-50/50 dark:bg-zinc-950/40 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800/60">
+            {chartMode === "compare" ? (
+              // Vista Cara a Cara: Normal vs Escenario Seleccionado
+              <div className="h-full flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs px-2 mb-1">
+                  <span className="font-bold text-zinc-700 dark:text-zinc-300">
+                    Comparativa Directa: Situación Normal vs. {activeScenario.name}
+                  </span>
+                  <span className="text-[11px] text-zinc-500 font-mono">Valores relativos (Base = 100%)</span>
+                </div>
+                <div className="h-68 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={comparisonData}
+                      margin={{ top: 20, right: 10, left: -20, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#71717a" opacity={0.2} vertical={false} />
+                      <XAxis
+                        dataKey="metric"
+                        stroke="#71717a"
+                        fontSize={11}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        stroke="#71717a"
+                        fontSize={11}
+                        tickLine={false}
+                        domain={[0, 115]}
+                        unit="%"
+                      />
+                      <Tooltip
+                        cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const item = payload[0].payload;
+                            const diff = item.scenario - item.normal;
+                            return (
+                              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white shadow-xl space-y-2">
+                                <div className="font-bold border-b border-zinc-800 pb-1 flex items-center justify-between gap-4">
+                                  <span>{item.metric}</span>
+                                  <span className="text-[10px] text-zinc-400 font-normal">{item.desc}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 text-[11px]">
+                                  <div>
+                                    <span className="text-zinc-400 block text-[10px]">Situación Normal</span>
+                                    <span className="font-bold text-emerald-400">{item.normal}%</span>
+                                    <span className="text-[10px] text-zinc-500 block font-mono">({item.normalRaw})</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-zinc-400 block text-[10px]">{activeScenario.shortName}</span>
+                                    <span className="font-bold" style={{ color: activeScenario.color }}>
+                                      {item.scenario}%
+                                    </span>
+                                    <span className="text-[10px] text-zinc-500 block font-mono">({item.scenarioRaw})</span>
+                                  </div>
+                                </div>
+                                <div className="text-[10px] font-bold pt-1 border-t border-zinc-800 flex items-center gap-1">
+                                  {diff < 0 && (
+                                    <span className="text-rose-400 flex items-center gap-1">
+                                      <TrendingDown className="w-3 h-3" /> Caída de {Math.abs(diff)}%
+                                    </span>
+                                  )}
+                                  {diff > 0 && (
+                                    <span className="text-amber-400 flex items-center gap-1">
+                                      <TrendingUp className="w-3 h-3" /> Aumento de +{diff}%
+                                    </span>
+                                  )}
+                                  {diff === 0 && (
+                                    <span className="text-cyan-400">
+                                      = 100% Idéntico (Sin impacto macro en caudal)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        align="right"
+                        iconType="circle"
+                        wrapperStyle={{ paddingBottom: 6, fontSize: 11 }}
+                      />
+                      <Bar
+                        dataKey="normal"
+                        name="Situación Normal (100%)"
+                        fill="#10b981"
+                        radius={[6, 6, 0, 0]}
+                        animationDuration={500}
+                      >
+                        <LabelList
+                          dataKey="normal"
+                          position="top"
+                          formatter={(v: any) => `${v}%`}
+                          fill="#10b981"
+                          fontSize={10}
+                          fontWeight="bold"
+                        />
+                      </Bar>
+                      <Bar
+                        dataKey="scenario"
+                        name={activeScenario.name}
+                        fill={activeScenario.color}
+                        radius={[6, 6, 0, 0]}
+                        animationDuration={500}
+                      >
+                        <LabelList
+                          dataKey="scenario"
+                          position="top"
+                          formatter={(v: any) => `${v}%`}
+                          fill={activeScenario.color}
+                          fontSize={10}
+                          fontWeight="bold"
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : (
+              // Vista Panorama: Los 5 escenarios de río juntos
+              <div className="h-full flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs px-2 mb-1">
+                  <span className="font-bold text-zinc-700 dark:text-zinc-300">
+                    Panorama General: ¿Cuántos Litros de Río Quedan en Cada Crisis?
+                  </span>
+                  <span className="text-[11px] text-zinc-500 font-mono">Normal = 100 Litros</span>
+                </div>
+                <div className="h-68 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={waterLitersData}
+                      margin={{ top: 20, right: 10, left: -20, bottom: 20 }}
+                      onClick={(data: any) => {
+                        if (data && data.activePayload && data.activePayload.length > 0) {
+                          setSelectedScenarioId(data.activePayload[0].payload.id);
+                          setChartMode("compare");
+                        }
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#71717a" opacity={0.2} vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        stroke="#71717a"
+                        fontSize={11}
+                        tickLine={false}
+                        interval={0}
+                        angle={-12}
+                        textAnchor="end"
+                      />
+                      <YAxis
+                        stroke="#71717a"
+                        fontSize={11}
+                        tickLine={false}
+                        domain={[0, 110]}
+                        unit=" L"
+                      />
+                      <Tooltip
+                        cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const item = payload[0].payload;
+                            return (
+                              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white shadow-xl space-y-1">
+                                <div className="font-bold flex items-center justify-between gap-3">
+                                  <span>{item.name}</span>
+                                  <span className="font-mono text-emerald-400">{item.liters} L</span>
+                                </div>
+                                <div className="text-[11px] text-zinc-400">{item.deltaText}</div>
+                                <div className="text-[10px] text-teal-400 pt-1 border-t border-zinc-800 font-semibold">
+                                  Haz clic para ver comparativa Cara a Cara
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar
+                        dataKey="liters"
+                        radius={[8, 8, 0, 0]}
+                        className="cursor-pointer transition hover:opacity-80"
+                      >
+                        <LabelList
+                          dataKey="liters"
+                          position="top"
+                          formatter={(val: any) => `${val} L`}
+                          fill="#a1a1aa"
+                          fontSize={11}
+                          fontWeight="bold"
+                        />
+                        {waterLitersData.map((entry) => (
+                          <Cell
+                            key={entry.id}
+                            fill={entry.color}
+                            stroke={selectedScenarioId === entry.id ? "#ffffff" : "transparent"}
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Tarjeta explicativa del gráfico */}
-          <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-3 text-xs">
-            <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Interpretación para toma de decisiones:</span>
+          {/* Tarjeta Explicativa Dinámica del Escenario Seleccionado */}
+          <div className="lg:col-span-5 p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between gap-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                  {activeScenario.status}
+                </span>
+                <span className="text-base font-bold font-mono text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeScenario.color }} />
+                  {activeScenario.liters} de 100 Litros
+                </span>
+              </div>
+
+              <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mt-2">
+                {activeScenario.name}: {activeScenario.tag}
+              </h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1.5 leading-relaxed">
+                {activeScenario.summary}
+              </p>
+
+              {/* Indicadores numéricos reales medidos por SWAT+ */}
+              <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-800 text-xs">
+                <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                  <span className="text-[10px] text-zinc-400 block">Caudal del Río</span>
+                  <span className="font-bold font-mono text-zinc-800 dark:text-zinc-200">
+                    {activeScenario.rawMetrics.streamflow}
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                  <span className="text-[10px] text-zinc-400 block">Humedad en Suelo</span>
+                  <span className="font-bold font-mono text-zinc-800 dark:text-zinc-200">
+                    {activeScenario.rawMetrics.soilWater}
+                  </span>
+                </div>
+              </div>
+
+              {/* Explicación física */}
+              <div className="mt-3 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs">
+                <span className="font-bold text-zinc-800 dark:text-zinc-200 block text-[11px]">
+                  💡 ¿Por qué ocurre esto físicamente?
+                </span>
+                <p className="text-zinc-500 dark:text-zinc-400 text-[11px] mt-1 leading-relaxed">
+                  {activeScenario.why}
+                </p>
+              </div>
             </div>
-            <ul className="space-y-2 text-zinc-600 dark:text-zinc-400 text-[11px] leading-relaxed">
-              <li className="flex items-start gap-1.5">
-                <span className="text-rose-500 font-bold shrink-0">⚠️ Sequía (-15% lluvia):</span>
-                <span>Es el impacto más destructivo. Provoca que el río pierda <b>casi la mitad de su agua (-46%)</b> y el suelo quede seco (-39%).</span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="text-amber-500 font-bold shrink-0">☀️ Calor (+2°C):</span>
-                <span>Al hacer más calor, las plantas y el suelo evaporan más agua (+2.6%), lo que reduce el caudal del río en un <b>-26%</b>.</span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="text-emerald-500 font-bold shrink-0">🌱 Siembra Directa y Sorgo:</span>
-                <span>Alternativas de adaptación agrícola para retener humedad en el perfil y mitigar el estrés térmico.</span>
-              </li>
-            </ul>
+
+            {/* Mensaje al pie */}
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+              <span>{activeScenario.deltaText}</span>
+              <button
+                onClick={() => setChartMode(chartMode === "compare" ? "all" : "compare")}
+                className="text-teal-600 dark:text-teal-400 font-semibold hover:underline cursor-pointer"
+              >
+                {chartMode === "compare" ? "Ver panorama general →" : "Ver cara a cara →"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Explicación destacada: ¿Por qué Siembra Directa y Sorgo están en 100 L? */}
+        <div className="p-4 rounded-xl bg-cyan-50/60 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800/60 text-xs flex items-start gap-3">
+          <Sparkles className="w-5 h-5 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold text-cyan-950 dark:text-cyan-200">
+              ¿Por qué solo hay caídas en Calor y Lluvia, mientras que Siembra Directa y Sorgo están en 100 L?
+            </span>
+            <p className="text-zinc-600 dark:text-zinc-400 text-[11px] leading-relaxed">
+              Porque el <b>calor y las sequías</b> son perturbaciones del clima que alteran toda la lluvia y la evaporación de la atmósfera.
+              En cambio, la <b>Siembra Directa</b> y el <b>Sorgo</b> son prácticas de los agricultores: su función en este modelo no es "crear más agua" en el río,
+              sino <b>proteger la tierra fértil</b> y asegurar que la planta sobreviva con menos agua para no perder la cosecha.
+            </p>
           </div>
         </div>
       </div>
+      )}
 
       {/* 5. Los 5 Módulos Científicos Explicados Paso a Paso */}
       <div className="flex flex-col gap-3">
