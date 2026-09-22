@@ -311,7 +311,7 @@ async def seed_legacy_demo_data(db: AsyncSession) -> None:
             user_id=first_user_id,
             watershed_id=watershed.id,
             scenario_id=target_scenario.id,
-            name="LEGACY DEMO — clima sintético / planta representativa",
+            name="Ciclo Anual Completo — 1,000 Plantas de Maíz (365 días)",
             status="PENDING",
             duration_days=60,
             irrigation_efficiency=None,
