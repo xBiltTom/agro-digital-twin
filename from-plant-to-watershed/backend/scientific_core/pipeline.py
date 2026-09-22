@@ -110,6 +110,7 @@ class MultiscaleSimulationOrchestrator:
         population = PlantPopulation(plant_count, config.seed, base_kc=params["base_kc"],
                                      max_root_depth_cm=params["max_root_depth_cm"], crop=management["crop"])
         coupler = FieldToHRUCoupler(config.watershed_area_km2,
+                                    base_curve_number=params["curve_number"],
                                     curve_number_delta=management["curve_number_adjustment"], crop=management["crop"])
         baseline_plant = SimplifiedPlantModel(params["base_kc"], params["max_root_depth_cm"])
         baseline_hydro = SimplifiedHydrologyModel(config.watershed_area_km2, params["curve_number"],

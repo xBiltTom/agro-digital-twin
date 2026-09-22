@@ -269,11 +269,25 @@ class HRUProxy:
 class FieldToHRUCoupler:
     """Explicit area-weighted mapping; these are not SWAT+ HRUs."""
 
-    def __init__(self, watershed_area_km2: float, *, curve_number_delta: float = 0.0, crop: str = "maize"):
+    def __init__(self, watershed_area_km2: float, *, base_curve_number: float = 74.0,
+                 curve_number_delta: float = 0.0, crop: str = "maize"):
+        """Build the declared proxy HRUs from the run's CN baseline.
+
+        The crop proxy retains the requested CN; soy and other cover receive
+        stable relative offsets.  This ensures a run-level CN sensitivity
+        changes both the baseline and the multiscale branch, rather than only
+        the baseline control.
+        """
+        if not 30.0 <= base_curve_number <= 98.0:
+            raise ValueError("base_curve_number must be between 30 and 98")
+
+        def bounded_cn(offset: float) -> float:
+            return min(98.0, max(30.0, base_curve_number + offset + curve_number_delta))
+
         self.hrus = (
-            HRUProxy("proxy-crop", watershed_area_km2 * .60, .60, crop, "loam", 74.0 + curve_number_delta),
-            HRUProxy("proxy-soy", watershed_area_km2 * .25, .25, "soy_proxy", "loam", 72.0 + curve_number_delta),
-            HRUProxy("proxy-other", watershed_area_km2 * .15, .15, "other", "mixed", 70.0 + curve_number_delta),
+            HRUProxy("proxy-crop", watershed_area_km2 * .60, .60, crop, "loam", bounded_cn(0.0)),
+            HRUProxy("proxy-soy", watershed_area_km2 * .25, .25, "soy_proxy", "loam", bounded_cn(-2.0)),
+            HRUProxy("proxy-other", watershed_area_km2 * .15, .15, "other", "mixed", bounded_cn(-4.0)),
         )
 
     def couple(self, field: dict[str, Any]) -> dict[str, Any]:

@@ -291,7 +291,7 @@ export interface SimulationRun {
   validation?: Record<string, any>;
   ml_result?: Record<string, any>;
   management_scenario: "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM";
-  climate_source: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "OBSERVED_HYBRID";
+  climate_source: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "OBSERVED_HYBRID" | "SWAT_PROJECT";
   dataset_ids: string[];
   dataset_roles: Record<string, "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY">;
   station_id?: string | null;

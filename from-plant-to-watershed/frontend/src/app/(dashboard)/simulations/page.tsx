@@ -39,6 +39,8 @@ import {
   TrendingUp,
   Activity,
   Scale,
+  Info,
+  Leaf,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -54,6 +56,13 @@ import {
   Area,
   AreaChart
 } from "recharts";
+
+const DEFAULT_SIMPLIFIED_PARAMETERS = {
+  base_kc: 1.05,
+  max_root_depth_cm: 120,
+  curve_number: 74,
+  initial_soil_moisture_vol: 24.5,
+};
 
 export default function SimulationsPage() {
   const { hasAnyRole } = useAuth();
@@ -85,11 +94,12 @@ export default function SimulationsPage() {
   const [formStationId, setFormStationId] = useState("");
   const [formSeed, setFormSeed] = useState(42);
   const [formPlantCount, setFormPlantCount] = useState(1000);
-  const [formClimateSource, setFormClimateSource] = useState<"SYNTHETIC" | "CMIP6_FILE" | "OBSERVED">("SYNTHETIC");
+  const [formClimateSource, setFormClimateSource] = useState<"SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "SWAT_PROJECT">("SYNTHETIC");
   const [formHydrologyBackend, setFormHydrologyBackend] = useState<"SIMPLIFIED" | "SWAT_PLUS">("SIMPLIFIED");
   const [formSwatRunType, setFormSwatRunType] = useState<SwatRunType>("SWAT_MULTISCALE_COUPLED");
   const [formExternalModel, setFormExternalModel] = useState("");
   const [formManagement, setFormManagement] = useState<"BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM">("BASELINE");
+  const [formParameters, setFormParameters] = useState(DEFAULT_SIMPLIFIED_PARAMETERS);
   const [formDatasetIds, setFormDatasetIds] = useState<string[]>([]);
   const [formDatasetRoles, setFormDatasetRoles] = useState<Record<string, "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY">>({});
 
@@ -100,9 +110,23 @@ export default function SimulationsPage() {
   const wsRef = useRef<WebSocket | null>(null);
 
   const canRunSimulations = hasAnyRole(["SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO"]);
+  const usesSimplifiedModel = formHydrologyBackend === "SIMPLIFIED";
   const isRealSwat = (sim: SimulationRun) => {
     const evidence = (sim.provenance as { evidence_type?: string } | undefined)?.evidence_type;
     return sim.hydrology_backend === "SWAT_PLUS" && ["REAL_SWAT_PLUS", "REAL_SWAT_PLUS_COUPLED"].includes(evidence ?? "");
+  };
+
+  const changeHydrologyBackend = (backend: "SIMPLIFIED" | "SWAT_PLUS") => {
+    setFormHydrologyBackend(backend);
+    if (backend === "SWAT_PLUS") {
+      // These switches are not applied by the current SWAT+ adapter.
+      setFormManagement("BASELINE");
+      setFormClimateSource("SWAT_PROJECT");
+      setFormExternalModel("");
+      setFormDatasetRoles((current) => Object.fromEntries(Object.keys(current).map((id) => [id, "CONTEXT_ONLY"])) as typeof current);
+    } else if (formClimateSource === "SWAT_PROJECT") {
+      setFormClimateSource("SYNTHETIC");
+    }
   };
 
   // Carga inicial de datos
@@ -183,6 +207,12 @@ export default function SimulationsPage() {
       setFeedbackMsg({ type: "error", text: "Selecciona un periodo inicial y final válido." });
       return;
     }
+    const selectedScenario = scenarios.find((scenario) => scenario.id === formScenarioId);
+    const usesExternalForcing = formClimateSource === "OBSERVED" || formClimateSource === "CMIP6_FILE";
+    if (usesExternalForcing && selectedScenario && (selectedScenario.temp_anomaly_c !== 0 || selectedScenario.precip_factor !== 1)) {
+      setFeedbackMsg({ type: "error", text: "El forcing externo ya contiene su señal climática. Selecciona un escenario neutro (0 °C, precipitación ×1) hasta implementar transformaciones climáticas." });
+      return;
+    }
     setIsSubmitting(true);
     setFeedbackMsg(null);
 
@@ -193,7 +223,9 @@ export default function SimulationsPage() {
         scenario_id: formScenarioId,
         duration_days: durationDays,
         seed: formSeed,
-        parameters: {},
+        // The simplified route consumes these values. SWAT+ has its own
+        // documented mapper and must not receive inert controls from this form.
+        parameters: usesSimplifiedModel ? formParameters : {},
         mode: formHydrologyBackend === "SWAT_PLUS" ? "SWAT_PLUS" : "RESEARCH_MULTISCALE",
         plant_count: formPlantCount,
         hydrology_backend: formHydrologyBackend,
@@ -287,7 +319,7 @@ export default function SimulationsPage() {
             </h1>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-            Clima → población de maíz → campo → HRU → hidrología. Cada corrida declara si usa el proxy legado o SWAT+ real.
+            Configura una corrida, revisa qué datos se usaron y entiende cómo los cambios en el cultivo llegan al agua de la cuenca.
           </p>
         </div>
 
@@ -330,7 +362,7 @@ export default function SimulationsPage() {
           }`}
         >
           <Play className="w-3.5 h-3.5" />
-          <span>Simulador y Corridas Activas</span>
+          <span>Corridas y resultados</span>
         </button>
         <button
           onClick={() => setActiveTab("VALIDATION")}
@@ -369,20 +401,23 @@ export default function SimulationsPage() {
 
       {activeTab === "RUNS" && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-        {Object.entries(capabilities).map(([name, item]) => (
-          <div key={name} className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 bg-white dark:bg-zinc-950">
-            <div className="text-[10px] uppercase font-mono text-zinc-500">{name.replaceAll("_", " ")}</div>
-            <div className={`text-[11px] mt-1 font-bold ${item.status === "ACTIVE" ? "text-emerald-600" : "text-amber-600"}`}>{item.status}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
-        {[`CLIMATE · ${selectedSim?.climate_source ?? "NOT_SELECTED"}`, `PLANT ×${selectedSim?.plant_count ?? 1000} · ${isSelectedRealSwat ? "FSPM" : "SIMPLIFIED"}`, "FIELD · DERIVED", `HRU · ${isSelectedRealSwat ? "SWAT+ REAL" : "COARSE PROXY"}`, `HYDROLOGY · ${selectedSim?.hydrology_backend ?? "NOT_SELECTED"}`, `USGS · ${selectedSim?.validation?.status ?? "NOT_LINKED"}`].map((stage, index) => (
-          <React.Fragment key={stage}><span className="px-3 py-2 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30">{stage}</span>{index < 5 && <span>→</span>}</React.Fragment>
-        ))}
-      </div>
+          <section className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/70 dark:bg-emerald-950/20">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-zinc-100"><Leaf className="h-4 w-4 text-emerald-600" /> Cómo viaja el efecto de una corrida</h2>
+                <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">El clima afecta la planta; la planta modifica el consumo de agua; el resultado se agrega hasta el caudal de la cuenca.</p>
+              </div>
+              <details className="text-xs text-zinc-600 dark:text-zinc-400">
+                <summary className="cursor-pointer font-medium">Estado técnico del sistema</summary>
+                <div className="mt-2 flex max-w-md flex-wrap gap-1.5">{Object.entries(capabilities).map(([name, item]) => <span key={name} className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[10px] dark:border-zinc-700 dark:bg-zinc-900">{name.replaceAll("_", " ")}: <b>{item.status}</b></span>)}</div>
+              </details>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px]">
+              {[`Clima: ${selectedSim?.climate_source ?? "sin seleccionar"}`, `Cultivo: ${selectedSim?.plant_count ?? 1000} plantas`, "Campo", isSelectedRealSwat ? "SWAT+" : "HRU simplificadas", "Cuenca"].map((stage, index, stages) => (
+                <React.Fragment key={stage}><span className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-zinc-700 dark:border-emerald-900 dark:bg-zinc-900 dark:text-zinc-200">{stage}</span>{index < stages.length - 1 && <span className="text-emerald-600">→</span>}</React.Fragment>
+              ))}
+            </div>
+          </section>
 
       {/* Grid: Simulations List (Left) + Detail & Charts (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -639,8 +674,8 @@ export default function SimulationsPage() {
                   </div>
                   <p className="mt-2 text-zinc-600 dark:text-zinc-400">
                     {isRealSwat(selectedSim)
-                      ? "Corrida física con SWAT+ 61.0.2 real sobre cuenca South Fork Iowa River con 32 HRUs de maíz informadas por FSPM."
-                      : "Corrida con motor hidrológico integrado. Las corridas de validación de cuenca ejecutan el backend SWAT+ con acoplamiento FSPM."}
+                      ? "Corrida física de SWAT+ sobre South Fork. La población vegetal simplificada informa parámetros de cultivo en las HRU de maíz."
+                      : "Corrida exploratoria con población vegetal simplificada y un balance hídrico por HRU simplificada."}
                   </p>
                 </details>
               </div>
@@ -829,10 +864,10 @@ export default function SimulationsPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                    Configurar Experimento Multiescala
+                    Crear una corrida
                   </h3>
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Define las variables de clima, planta FSPM y cuenca hidrográfica SWAT+
+                    Primero elige cómo calcular; luego verás solamente las opciones que sí se aplican.
                   </p>
                 </div>
               </div>
@@ -886,7 +921,7 @@ export default function SimulationsPage() {
 
                 <div>
                   <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                    Escenario de perturbación
+                    Escenario de clima {usesSimplifiedModel ? "" : "(solo registro)"}
                   </label>
                   <select
                     value={formScenarioId}
@@ -899,30 +934,31 @@ export default function SimulationsPage() {
                       </option>
                     ))}
                   </select>
+                  {!usesSimplifiedModel && <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">En SWAT+ el proyecto configurado conserva su forcing; esta elección queda en el manifiesto, pero no altera el motor.</p>}
                 </div>
               </div>
 
               {formHydrologyBackend === "SWAT_PLUS" && (
                 <div className="rounded-xl border border-teal-300 bg-teal-50/70 p-3 dark:border-teal-800 dark:bg-teal-950/20">
                   <label className="block font-mono uppercase text-[10px] text-teal-800 dark:text-teal-300 font-semibold">
-                    Modo de experimento SWAT+
+                    Tipo de corrida SWAT+
                   </label>
                   <select
                     value={formSwatRunType}
                     onChange={(e) => setFormSwatRunType(e.target.value as SwatRunType)}
                     className="mt-2 w-full rounded-lg border border-teal-300 bg-white px-3 py-2.5 text-xs text-zinc-900 dark:border-teal-800 dark:bg-zinc-950 dark:text-zinc-200"
                   >
-                    <option value="SWAT_MULTISCALE_COUPLED">SWAT_MULTISCALE_COUPLED — crea primero el baseline pareado</option>
-                    <option value="SWAT_STANDARD_BASELINE">SWAT_STANDARD_BASELINE — control SWAT+ sin FSPM</option>
+                    <option value="SWAT_MULTISCALE_COUPLED">Comparar cultivo acoplado contra un control</option>
+                    <option value="SWAT_STANDARD_BASELINE">Solo control SWAT+ (sin población vegetal)</option>
                   </select>
                   <p className="mt-2 text-[10px] text-teal-800 dark:text-teal-300">
-                    Se usa el proyecto, engine y workspace configurados en el servidor. El modo acoplado conserva forcing y periodo y solo modifica `plants.plt` dentro de una copia aislada.
+                    La comparación crea automáticamente un baseline y una corrida acoplada. El acoplamiento modifica parámetros de cultivo en una copia aislada de <code>plants.plt</code>.
                   </p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                {usesSimplifiedModel ? <div>
                   <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
                     Fuente climática
                   </label>
@@ -939,19 +975,22 @@ export default function SimulationsPage() {
                       CMIP6_FILE — {hasCmip6Forcing ? "FORCING disponible" : "NOT_AVAILABLE: falta NEX-GDDP normalizado"}
                     </option>
                   </select>
-                </div>
+                </div> : <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                  <div className="flex items-center gap-1.5 font-semibold"><Info className="h-3.5 w-3.5" /> Clima de la corrida SWAT+</div>
+                  <p className="mt-1">SWAT+ usa el forcing incluido en el proyecto configurado en el servidor. El selector de clima y los artefactos externos no modifican todavía esta ruta.</p>
+                </div>}
                 <div>
                   <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                    Backend hidrológico
+                    Método de cálculo
                   </label>
                   <select
                     value={formHydrologyBackend}
-                    onChange={(e) => setFormHydrologyBackend(e.target.value as "SIMPLIFIED" | "SWAT_PLUS")}
+                    onChange={(e) => changeHydrologyBackend(e.target.value as "SIMPLIFIED" | "SWAT_PLUS")}
                     className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
                   >
-                    <option value="SIMPLIFIED">SIMPLIFIED — por HRU proxy</option>
+                    <option value="SIMPLIFIED">Exploración rápida (modelo simplificado)</option>
                     <option value="SWAT_PLUS" disabled={capabilities.swat_plus?.status !== "ACTIVE"}>
-                      SWAT_PLUS — {capabilities.swat_plus?.status ?? "NOT_AVAILABLE"}
+                      Ejecución física SWAT+ — {capabilities.swat_plus?.status ?? "No disponible"}
                     </option>
                   </select>
                 </div>
@@ -1013,7 +1052,7 @@ export default function SimulationsPage() {
                 </div>
                 <div>
                   <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                    Plantas FSPM ({formPlantCount})
+                    Plantas representadas ({formPlantCount})
                   </label>
                   <input
                     type="number"
@@ -1026,27 +1065,49 @@ export default function SimulationsPage() {
                 </div>
               </div>
 
-              <div>
+              {usesSimplifiedModel && <details className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+                <summary className="cursor-pointer text-xs font-semibold text-zinc-800 dark:text-zinc-200">Ajustes avanzados del modelo simplificado</summary>
+                <p className="mt-1 text-[11px] text-zinc-500">Estos valores sí llegan al cálculo de planta, HRU y balance hídrico. Úsalos para explorar sensibilidad, no como calibración SWAT+.</p>
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {[
+                    ["base_kc", "Demanda de agua del cultivo", "0.1–2.0", 0.01],
+                    ["max_root_depth_cm", "Profundidad máxima de raíz (cm)", "1–500", 1],
+                    ["curve_number", "Escorrentía del suelo (CN)", "30–98", 1],
+                    ["initial_soil_moisture_vol", "Humedad inicial del suelo (%)", "0–44", 0.1],
+                  ].map(([key, label, range, step]) => (
+                    <label key={key as string} className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                      <span className="block font-medium text-zinc-700 dark:text-zinc-300">{label as string}</span>
+                      <span className="text-[10px]">Rango permitido: {range as string}</span>
+                      <input type="number" step={step as number} value={formParameters[key as keyof typeof formParameters]} onChange={(event) => setFormParameters((current) => ({ ...current, [key]: Number(event.target.value) }))} className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-xs dark:border-zinc-700 dark:bg-zinc-900" />
+                    </label>
+                  ))}
+                </div>
+              </details>}
+
+              {usesSimplifiedModel ? <div>
                 <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                  Manejo agrícola MVP
+                  Manejo agrícola
                 </label>
                 <select
                   value={formManagement}
                   onChange={(e) => setFormManagement(e.target.value as "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM")}
                   className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
                 >
-                  <option value="BASELINE">BASELINE — maíz convencional</option>
-                  <option value="NO_TILL">NO_TILL — siembra directa (proxy CN −4)</option>
-                  <option value="MAIZE_TO_SORGHUM">MAIZE_TO_SORGHUM — sustitución por sorgo</option>
+                  <option value="BASELINE">Maíz convencional</option>
+                  <option value="NO_TILL">Siembra directa — reduce escorrentía estimada</option>
+                  <option value="MAIZE_TO_SORGHUM">Cambiar maíz por sorgo — cambia demanda y raíces</option>
                 </select>
                 <p className="mt-1 text-[10px] text-zinc-500">
-                  Los ajustes son proxies reproducibles del MVP; no operaciones calibradas de SWAT+.
+                  Son aproximaciones reproducibles del modelo simplificado; no operaciones calibradas de SWAT+.
                 </p>
-              </div>
+              </div> : <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                <div className="flex items-center gap-1.5 font-semibold"><Info className="h-3.5 w-3.5" /> Manejo agrícola</div>
+                <p className="mt-1">SWAT+ usa el manejo ya incluido en su proyecto. Siembra directa y cambio a sorgo todavía no se escriben en sus archivos de manejo, así que no se ofrecen como controles de esta ruta.</p>
+              </div>}
 
               <fieldset className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 bg-zinc-50/50 dark:bg-zinc-950/40">
                 <legend className="px-1.5 font-mono uppercase text-[10px] text-zinc-600 dark:text-zinc-400 font-semibold">
-                  Artefactos y rol dentro del experimento
+                  Datos vinculados a la corrida
                 </legend>
                 {datasets.length === 0 ? (
                   <p className="text-[11px] text-zinc-500">
@@ -1072,7 +1133,9 @@ export default function SimulationsPage() {
                           }}
                         />
                         <span className="flex-1 truncate">{dataset.provider}: {dataset.dataset_name} · {dataset.evidence_type}</span>
-                        {formDatasetIds.includes(dataset.id) && (
+                        {formDatasetIds.includes(dataset.id) && (formHydrologyBackend === "SWAT_PLUS" ? (
+                          <span className="text-[10px] font-mono text-zinc-500">EVIDENCIA</span>
+                        ) : (
                           <select
                             value={formDatasetRoles[dataset.id] ?? "CONTEXT_ONLY"}
                             onChange={(event) =>
@@ -1086,28 +1149,26 @@ export default function SimulationsPage() {
                             <option value="FORCING">FORCING</option>
                             <option value="OBSERVATION">OBSERVATION</option>
                             <option value="VALIDATION">VALIDATION</option>
-                            <option value="SOIL_INPUT">SOIL_INPUT</option>
-                            <option value="LAND_COVER">LAND_COVER</option>
-                            <option value="YIELD_OBSERVATION">YIELD_OBSERVATION</option>
                             <option value="CONTEXT_ONLY">CONTEXT_ONLY</option>
                           </select>
-                        )}
+                        ))}
                       </div>
                     ))}
                   </div>
                 )}
                 <p className="mt-2 text-[10px] text-amber-700 dark:text-amber-400">
-                  OBSERVED y CMIP6_FILE requieren exactamente un artefacto FORCING normalizado. USGS debe ser OBSERVATION o VALIDATION.
+                  {usesSimplifiedModel ? "Para usar clima observado o CMIP6 selecciona exactamente un FORCING normalizado. Para comparar con USGS, asígnalo como OBSERVATION o VALIDATION." : "En esta versión SWAT+ estos datos se guardan como evidencia; el forcing se lee del proyecto SWAT+."}
                 </p>
               </fieldset>
 
               <div>
                 <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-medium">
-                  ModelBundle externo opcional
+                  Estimador ML opcional {usesSimplifiedModel ? "" : "(no se ejecuta con SWAT+)"}
                 </label>
                 <select
                   value={formExternalModel}
                   onChange={(e) => setFormExternalModel(e.target.value)}
+                  disabled={!usesSimplifiedModel}
                   className="w-full px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
                 >
                   <option value="">No usar modelo externo</option>
@@ -1121,12 +1182,12 @@ export default function SimulationsPage() {
 
               <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 flex flex-col gap-1">
                 <span className="font-semibold text-zinc-800 dark:text-zinc-300">
-                  {formHydrologyBackend === "SWAT_PLUS" ? "Acoplamiento Multiescala FSPM → SWAT+" : "Población FSPM de maíz y balance hídrico"}
+                  {formHydrologyBackend === "SWAT_PLUS" ? "Lo que se ejecutará: cultivo simplificado → SWAT+" : "Lo que se ejecutará: plantas → campo → HRU simplificadas → cuenca"}
                 </span>
                 <span>
                   {formHydrologyBackend === "SWAT_PLUS"
-                    ? "Calcula la población FSPM (1000 plantas), mapea parámetros fenológicos a plants.plt en un workspace aislado y ejecuta el modelo físico SWAT+."
-                    : "Calcula la población de plantas y ejecuta el balance ecohidrológico acoplado."}
+                    ? `Calcula una población vegetal simplificada de ${formPlantCount} plantas, deriva parámetros fenológicos, actualiza una copia de plants.plt y ejecuta SWAT+.`
+                    : `Calcula una población vegetal simplificada de ${formPlantCount} plantas y usa los ajustes elegidos para estimar el balance hídrico de la cuenca.`}
                 </span>
               </div>
             </form>

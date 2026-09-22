@@ -28,6 +28,15 @@ def test_plant_to_field_and_field_to_hru_are_explicit():
     assert hru["area_fraction_sum"] == pytest.approx(1)
 
 
+def test_run_curve_number_is_used_by_the_multiscale_hru_branch():
+    low_cn = FieldToHRUCoupler(100, base_curve_number=55)
+    high_cn = FieldToHRUCoupler(100, base_curve_number=85)
+    assert low_cn.hrus[0].curve_number == 55
+    assert high_cn.hrus[0].curve_number == 85
+    assert low_cn.hrus[1].curve_number == 53
+    assert high_cn.hrus[2].curve_number == 81
+
+
 def test_multiscale_baseline_and_twin_use_identical_forcing():
     run = MultiscaleSimulationOrchestrator().execute(
         RunConfig("mvp", 5, 35, 100, start_date=date(2020, 1, 1), end_date=date(2020, 2, 4)), 1000

@@ -8,7 +8,9 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.watershed import Watershed
 from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
-from app.models.observation import Dataset
+from app.models.observation import Dataset, DatasetArtifact
+from app.core.config import settings
+from app.services.swat_plus_adapter import SwatPlusAdapter
 from app.schemas.simulation import (
     SimulationRunCreate,
     SimulationRunResponse,
@@ -52,6 +54,72 @@ async def list_simulations(
     stmt = select(SimulationRun).order_by(desc(SimulationRun.created_at)).offset(skip).limit(limit)
     res = await db.execute(stmt)
     return res.scalars().all()
+
+
+@router.post("/preflight")
+async def preflight_simulation(
+    sim_in: SimulationRunCreate,
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_roles("SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO")),
+):
+    """Return the executable contract without creating a run or touching SWAT+.
+
+    This is deliberately a read-only gate for a UI or client before it starts
+    a potentially long real-SWAT+ experiment.
+    """
+    watershed = await db.scalar(select(Watershed).where(Watershed.id == sim_in.watershed_id))
+    scenario = await db.scalar(select(ClimateScenario).where(ClimateScenario.id == sim_in.scenario_id))
+    if not watershed or not scenario:
+        raise HTTPException(status_code=404, detail="Watershed or climate scenario not found")
+
+    datasets = []
+    artifacts = []
+    if sim_in.dataset_ids:
+        datasets = list((await db.execute(select(Dataset).where(Dataset.id.in_(sim_in.dataset_ids)))).scalars().all())
+        found = {dataset.id for dataset in datasets}
+        if missing := set(sim_in.dataset_ids) - found:
+            raise HTTPException(status_code=422, detail=f"Datasets not found: {', '.join(sorted(missing))}")
+        artifacts = list((await db.execute(select(DatasetArtifact).where(DatasetArtifact.dataset_id.in_(found)))).scalars().all())
+
+    is_swat = sim_in.hydrology_backend == "SWAT_PLUS"
+    if is_swat:
+        capability = SwatPlusAdapter(
+            executable=settings.SWAT_PLUS_EXECUTABLE,
+            project_dir=settings.SWAT_PLUS_PROJECT_DIR,
+            working_directory=settings.SWAT_PLUS_WORKING_DIRECTORY,
+        ).capability()
+        ready = capability["status"] == "ACTIVE"
+        return {
+            "status": "READY" if ready else "BLOCKED",
+            "backend": "SWAT_PLUS",
+            "run_type": sim_in.swat_plus.run_type,
+            "estimated_executions": 2 if sim_in.swat_plus.run_type == "SWAT_MULTISCALE_COUPLED" else 1,
+            "will_consume": ["SWAT+ project forcing", "SWAT+ project HRUs/soils/management", "start_date", "end_date", "seed", "plant_count"] + (["plant population -> plants.plt"] if sim_in.swat_plus.run_type == "SWAT_MULTISCALE_COUPLED" else []),
+            "provenance_only": [dataset.dataset_name for dataset in datasets],
+            "resource_status": capability,
+            "watershed": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
+            "scenario": {"id": scenario.id, "code": scenario.code, "application": "CONTEXT_ONLY; SWAT+ forcing comes from the configured project"},
+        }
+
+    forcing_dataset = next((dataset for dataset in datasets if sim_in.dataset_roles.get(dataset.id) == "FORCING"), None)
+    normalized = [artifact for artifact in artifacts if forcing_dataset and artifact.dataset_id == forcing_dataset.id and artifact.artifact_kind == "NORMALIZED"]
+    needs_forcing = sim_in.climate_source in {"CMIP6_FILE", "OBSERVED"}
+    blockers = []
+    if needs_forcing and len(normalized) != 1:
+        blockers.append("Exactly one NORMALIZED forcing artifact is required")
+    if needs_forcing and (scenario.temp_anomaly_c != 0 or scenario.precip_factor != 1):
+        blockers.append("External forcing requires a neutral catalog scenario until climate transformations are implemented")
+    ready = not blockers
+    return {
+        "status": "READY" if ready else "BLOCKED",
+        "backend": "SIMPLIFIED",
+        "blockers": blockers,
+        "will_consume": ["watershed area", "climate forcing", "seed", "plant_count", "base_kc", "max_root_depth_cm", "curve_number", "initial_soil_moisture_vol", "management scenario"],
+        "provenance_only": [dataset.dataset_name for dataset in datasets if dataset != forcing_dataset],
+        "forcing": {"source": sim_in.climate_source, "dataset_id": forcing_dataset.id if forcing_dataset else None, "normalized_artifact_count": len(normalized)},
+        "watershed": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2, "hru_representation": "COARSE_HRU_PROXY"},
+        "scenario": {"id": scenario.id, "code": scenario.code, "application": "APPLIED only when climate_source=SYNTHETIC"},
+    }
 
 @router.post("", response_model=SimulationRunResponse, status_code=status.HTTP_201_CREATED)
 async def create_and_run_simulation(
@@ -98,8 +166,13 @@ async def create_and_run_simulation(
         missing = set(sim_in.dataset_ids) - found
         if missing:
             raise HTTPException(status_code=422, detail=f"Datasets not found: {', '.join(sorted(missing))}")
-    if sim_in.climate_source != "SYNTHETIC" and not any(sim_in.dataset_roles.get(item.id) == "FORCING" for item in datasets):
+    if sim_in.climate_source in {"CMIP6_FILE", "OBSERVED", "OBSERVED_HYBRID"} and not any(sim_in.dataset_roles.get(item.id) == "FORCING" for item in datasets):
         raise HTTPException(status_code=422, detail="Selected climate_source requires a registered FORCING dataset")
+    if sim_in.climate_source != "SYNTHETIC" and (scenario.temp_anomaly_c != 0 or scenario.precip_factor != 1):
+        raise HTTPException(
+            status_code=422,
+            detail="External climate forcing already defines its climate signal; select a neutral scenario (0 C, precipitation factor 1) until scenario transformations are implemented",
+        )
 
     new_sim = SimulationRun(
         user_id=current_user.id,

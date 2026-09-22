@@ -37,6 +37,8 @@ class TwinCouplingEngine:
         """Route an explicit forcing artifact without silently substituting synthetic weather."""
         if sim_run.climate_source == "SYNTHETIC":
             return None, None
+        if sim_run.climate_source == "SWAT_PROJECT":
+            raise RuntimeError("SWAT_PROJECT forcing is only valid for the SWAT_PLUS backend")
         forcing_ids = {dataset_id for dataset_id, role in (sim_run.dataset_roles or {}).items() if role == "FORCING"}
         forcing_datasets = [item for item in datasets if item.id in forcing_ids]
         if len(forcing_datasets) != 1:

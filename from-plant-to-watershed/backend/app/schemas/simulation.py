@@ -90,7 +90,7 @@ class SimulationRunCreate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     management_scenario: Literal["BASELINE", "NO_TILL", "MAIZE_TO_SORGHUM"] = "BASELINE"
-    climate_source: Literal["SYNTHETIC", "CMIP6_FILE", "OBSERVED", "OBSERVED_HYBRID"] = "SYNTHETIC"
+    climate_source: Literal["SYNTHETIC", "CMIP6_FILE", "OBSERVED", "OBSERVED_HYBRID", "SWAT_PROJECT"] = "SYNTHETIC"
     dataset_ids: List[str] = Field(default_factory=list, max_length=20)
     dataset_roles: Dict[str, Literal["FORCING", "OBSERVATION", "SOIL_INPUT", "LAND_COVER", "YIELD_OBSERVATION", "VALIDATION", "CONTEXT_ONLY"]] = Field(default_factory=dict)
     swat_plus: Optional[SwatPlusConfiguration] = None
@@ -115,11 +115,31 @@ class SimulationRunCreate(BaseModel):
             raise ValueError("duration_days must equal the inclusive start_date/end_date period")
         if unknown_role_ids := set(self.dataset_roles) - set(self.dataset_ids):
             raise ValueError(f"dataset_roles reference unselected datasets: {', '.join(sorted(unknown_role_ids))}")
-        if self.climate_source != "SYNTHETIC" and "FORCING" not in self.dataset_roles.values():
+        requires_external_forcing = self.climate_source in {"CMIP6_FILE", "OBSERVED", "OBSERVED_HYBRID"}
+        if requires_external_forcing and "FORCING" not in self.dataset_roles.values():
             raise ValueError("a non-synthetic climate_source requires one selected FORCING dataset")
+        if self.climate_source == "OBSERVED_HYBRID":
+            raise ValueError("OBSERVED_HYBRID is not implemented; use OBSERVED until a documented hybrid forcing transformation exists")
         if is_swat:
             if self.hydrology_backend != "SWAT_PLUS" or self.mode != "SWAT_PLUS":
                 raise ValueError("SWAT+ runs require both hydrology_backend and mode to be SWAT_PLUS")
+            if self.swat_plus is None:
+                raise ValueError("SWAT+ runs require a swat_plus configuration")
+            if self.parameters:
+                raise ValueError("parameters are only implemented by the SIMPLIFIED backend; SWAT+ uses its documented crop mapper")
+            if self.management_scenario != "BASELINE":
+                raise ValueError("management_scenario is not yet implemented for SWAT+ runs")
+            if self.external_model_id:
+                raise ValueError("external_model_id is only implemented by the SIMPLIFIED backend")
+            if self.climate_source != "SWAT_PROJECT":
+                raise ValueError("SWAT+ runs require climate_source=SWAT_PROJECT because forcing is read from the configured SWAT+ project")
+            invalid_swat_dataset_roles = set(self.dataset_roles.values()) - {"CONTEXT_ONLY"}
+            if invalid_swat_dataset_roles:
+                raise ValueError("SWAT+ dataset attachments are provenance-only until input mappers are implemented; use CONTEXT_ONLY")
+        else:
+            unsupported_input_roles = set(self.dataset_roles.values()) & {"SOIL_INPUT", "LAND_COVER", "YIELD_OBSERVATION"}
+            if unsupported_input_roles:
+                raise ValueError("SOIL_INPUT, LAND_COVER and YIELD_OBSERVATION are not yet consumed by the SIMPLIFIED backend; attach them as CONTEXT_ONLY")
         return self
 
 class SimulationResultResponse(BaseModel):
