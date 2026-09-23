@@ -6,13 +6,21 @@ import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, CartesianG
 import { api } from "../../../lib/api";
 import { chartPointFromRecord, periodLabel, sceneFromRecord } from "../../../lib/playback-scene";
 import { useTwinPlayback } from "../../../hooks/useTwinPlayback";
+import { useHistoricalCharts } from "../../../hooks/useHistoricalCharts";
 import type { PlaybackResolution } from "../../../types/playback";
 import type { SimulationRun } from "../../../types/simulation";
 import MultiScaleViewer3D, { type ScaleMode } from "../../../components/3d/MultiScaleViewer3D";
 import TwinHUDOverlay from "../../../components/3d/TwinHUDOverlay";
+import HistoricalTwinCharts from "../../../components/3d/HistoricalTwinCharts";
+import HistoricalContext3D from "../../../components/3d/HistoricalContext3D";
+import { useAuth } from "../../../context/AuthContext";
+import { accessibleSimulations } from "../../../lib/simulation-access";
+import { historicalFallbackEligible } from "../../../lib/historical-charts";
 
 export default function Twin3DPage() {
+  const { user } = useAuth();
   const [simulations, setSimulations] = useState<SimulationRun[]>([]);
+  const [simulationsLoaded, setSimulationsLoaded] = useState(false);
   const [simulationId, setSimulationId] = useState<string | null>(null);
   const [simError, setSimError] = useState<string | null>(null);
   const [scaleMode, setScaleMode] = useState<ScaleMode>("MACRO");
@@ -27,20 +35,27 @@ export default function Twin3DPage() {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const playback = useTwinPlayback(simulationId);
   const simulation = simulations.find((item) => item.id === simulationId) ?? null;
+  const historical = useHistoricalCharts(simulation, playback.page?.artifact_status ?? null);
   const record = playback.record;
   const scene = useMemo(() => record ? sceneFromRecord(record, plantId) : null, [record, plantId]);
 
   useEffect(() => {
+    if (!user) return;
     const controller = new AbortController();
     api.getSimulations().then((runs) => {
       if (controller.signal.aborted) return;
-      setSimulations(runs);
-      setSimulationId(runs[0]?.id ?? null);
+      const accessible = accessibleSimulations(runs, user);
+      setSimulations(accessible);
+      setSimulationId(accessible[0]?.id ?? null);
+      setSimulationsLoaded(true);
     }).catch((cause: unknown) => {
-      if (!controller.signal.aborted) setSimError(cause instanceof Error ? cause.message : "No se pudieron cargar simulaciones");
+      if (!controller.signal.aborted) {
+        setSimError(cause instanceof Error ? cause.message : "No se pudieron cargar simulaciones");
+        setSimulationsLoaded(true);
+      }
     });
     return () => controller.abort();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const sync = () => setIsFullscreen(Boolean(document.fullscreenElement));
@@ -128,13 +143,19 @@ export default function Twin3DPage() {
             if (document.fullscreenElement) void document.exitFullscreen();
             else void viewerRef.current?.requestFullscreen();
           }} />
-      </> : <div className="flex h-full flex-col items-center justify-center gap-3 bg-zinc-950 p-8 text-center text-zinc-300">
-        {playback.loading || (!simError && !playback.page && !playback.error) ? <Loader2 className="h-8 w-8 animate-spin text-cyan-400" /> : <AlertCircle className="h-8 w-8 text-amber-400" />}
-        <strong>{playback.loading ? "Cargando periodo…" : playback.page?.artifact_status === "NOT_AVAILABLE"
+      </> : historical.status === "ready" && simulation ? <HistoricalContext3D simulation={simulation}
+        onToggleFullscreen={() => {
+          if (document.fullscreenElement) void document.exitFullscreen();
+          else void viewerRef.current?.requestFullscreen();
+        }} /> : <div className="flex h-full flex-col items-center justify-center gap-3 bg-zinc-950 p-8 text-center text-zinc-300">
+        {!simulationsLoaded || playback.loading ? <Loader2 className="h-8 w-8 animate-spin text-cyan-400" /> : <AlertCircle className="h-8 w-8 text-amber-400" />}
+        <strong>{!simulationsLoaded ? "Cargando simulaciones…" : playback.loading ? "Cargando periodo…" :
+          simulations.length === 0 ? "No hay simulaciones accesibles" : playback.page?.artifact_status === "NOT_AVAILABLE"
           ? "Reproducción científica no disponible para esta corrida" : "No hay estado temporal para mostrar"}</strong>
         <p className="max-w-xl text-xs text-zinc-400">{simError ?? playback.error ??
           playback.page?.limitations.join(" · ") ?? "Se requiere un artefacto twin-playback-v1. No se generan estados vegetales o meteorológicos sustitutos."}</p>
         {playback.page && <span className="text-xs">Estado de simulación: {playback.page.simulation_status}</span>}
+        {historical.status === "ready" && <span className="text-xs text-cyan-300">Los gráficos históricos de esta corrida están debajo del visor.</span>}
       </div>}
     </div>
 
@@ -177,5 +198,15 @@ export default function Twin3DPage() {
         <p className="mt-1 text-amber-600">La ventana de siembra/cosecha es una aproximación PHU, no un evento agrícola observado.</p>}
       {[...record.limitations, ...(playback.page?.limitations ?? [])].map((item, index) => <p key={index} className="mt-1">• {item}</p>)}
     </div>}
+    {simulation && historicalFallbackEligible(simulation.status, playback.page?.artifact_status ?? null) && <>
+      {historical.status === "loading" && <p className="text-sm text-zinc-500">Cargando gráficos históricos…</p>}
+      {historical.status === "error" && <p className="rounded-xl border border-rose-500/30 p-4 text-sm text-rose-600">No se pudieron cargar los gráficos históricos: {historical.data?.error}</p>}
+      {historical.status === "ready" && historical.data && <HistoricalTwinCharts
+        points={historical.data.points} kind={historical.data.kind}
+        frequency={simulation.hydrology_backend === "SWAT_PLUS"
+          ? typeof simulation.effective_config?.output_frequency === "string" ? simulation.effective_config.output_frequency : null
+          : "DAILY"}
+        truncated={historical.data.truncated} />}
+    </>}
   </div>;
 }

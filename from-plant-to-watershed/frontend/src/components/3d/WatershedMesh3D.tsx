@@ -29,7 +29,7 @@ interface WatershedMesh3DProps {
   watershedName?: string;
   stationId?: string | null;
   evidenceType?: string;
-  onSelectSubbasin: () => void;
+  onSelectSubbasin?: () => void;
   showHruBorders?: boolean;
   showHydrologyFlow?: boolean;
   showScientificLabels?: boolean;
@@ -208,7 +208,7 @@ function SubbasinHruMeshes({
     centroid: [number, number];
     polygon: Array<[number, number]>;
   }>;
-  onSelectSubbasin: () => void;
+  onSelectSubbasin?: () => void;
   showBorders?: boolean;
   hoveredSubbasin: number | null;
   setHoveredSubbasin: (id: number | null) => void;
@@ -269,7 +269,7 @@ function SubbasinHruMeshes({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              onSelectSubbasin();
+              onSelectSubbasin?.();
             }}
           >
             <mesh geometry={item.geometry} receiveShadow>
@@ -306,7 +306,7 @@ function SubbasinHruMeshes({
             <div className="pointer-events-none rounded-xl border border-emerald-400 bg-zinc-950/95 px-3 py-2 font-sans text-xs text-zinc-100 shadow-2xl backdrop-blur-md whitespace-nowrap">
               <div className="font-bold text-emerald-300">Sector contextual #{sub.sub_id}</div>
               <div className="mt-0.5 text-[11px] font-mono text-zinc-300">Sin correspondencia HRU→polígono verificada</div>
-              <div className="text-[10px] text-zinc-400 mt-0.5">Abrir campo FSPM no georreferenciado</div>
+              {onSelectSubbasin && <div className="text-[10px] text-zinc-400 mt-0.5">Abrir campo FSPM no georreferenciado</div>}
             </div>
           </Html>
         );
@@ -321,6 +321,7 @@ function SubbasinHruMeshes({
  */
 function SouthForkRiverNetwork3D({
   channels,
+  animate,
 }: {
   channels: Array<{
     link_id: number;
@@ -331,6 +332,7 @@ function SouthForkRiverNetwork3D({
     elev_max_m: number;
     points: Array<[number, number, number]>;
   }>;
+  animate: boolean;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
@@ -388,7 +390,7 @@ function SouthForkRiverNetwork3D({
 
   // Animación física de corriente fluvial continua
   useFrame(({ clock }) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || !animate) return;
     const time = clock.getElapsedTime();
     const pos = meshRef.current.geometry.attributes.position;
     const count = pos.count;
@@ -645,7 +647,7 @@ export default function WatershedMesh3D({
       />
 
       {/* 4. Red Fluvial Completa de 37 Canales y Tributarios de South Fork Iowa */}
-      <SouthForkRiverNetwork3D channels={channels} />
+      <SouthForkRiverNetwork3D channels={channels} animate={showHydrologyFlow && streamflowM3s !== null} />
 
       {/* 5. Bosque de Galería y Corredor de Amortiguación Ribereña */}
       <RiparianVegetationBelt channels={channels} />
@@ -698,7 +700,7 @@ export default function WatershedMesh3D({
                 <span className="font-bold text-emerald-300">Contexto esquemático</span>
               </div>
             </div>
-            <button
+            {onSelectSubbasin && <button
               onClick={(e) => {
                 e.stopPropagation();
                 onSelectSubbasin();
@@ -706,7 +708,7 @@ export default function WatershedMesh3D({
               className="mt-2.5 w-full cursor-pointer rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 py-1 text-[11px] font-bold text-cyan-200 transition text-center"
             >
               Ver campo FSPM disponible (Meso) →
-            </button>
+            </button>}
           </div>
         </Html>
       )}

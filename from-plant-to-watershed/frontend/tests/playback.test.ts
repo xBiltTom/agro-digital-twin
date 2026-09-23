@@ -2,7 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { rainIntensity, sceneFromRecord, periodLabel, variableText, chartPointFromRecord, hasSouthForkContext } from "../src/lib/playback-scene.ts";
 import { PlaybackClient } from "../src/lib/playback-client.ts";
+import { historicalFallbackEligible, simplifiedHistoricalPoints, swatHistoricalPoints } from "../src/lib/historical-charts.ts";
+import { accessibleSimulations } from "../src/lib/simulation-access.ts";
 import type { PlaybackPage, PlaybackRecord, VariableState } from "../src/types/playback.ts";
+import type { SimulationResult, SimulationRun } from "../src/types/simulation.ts";
+import type { User } from "../src/types/auth.ts";
 
 function variable(value: number | string | null, unit: string, evidence: VariableState["evidence"] = "SIMPLIFIED_FSPM"): VariableState {
   return { value, unit, evidence: value === null ? "NOT_AVAILABLE" : evidence, source: "fixture",
@@ -142,4 +146,46 @@ test("date lookup resolves a day inside a monthly period without fetching the wh
   assert.equal(client.recordAt(1)?.date, "2020-02-01");
   assert.equal(await client.findDate("2020-04-01", 3), null);
   assert.equal(calls, 3);
+});
+
+test("historical SWAT+ charts retain real stored variables without rainfall or FSPM proxies", () => {
+  const point = swatHistoricalPoints([{ period: "2020-02-01", runoff_mm: 0,
+    streamflow_m3s: 4.2, evapotranspiration_mm: 6, soil_water_mm: 170 }])[0];
+  assert.equal(point.period, "2020-02-01");
+  assert.equal(point.runoff, 0);
+  assert.equal(point.precipitation, null);
+  assert.equal(point.stress, null);
+  assert.equal(point.transpiration, null);
+  assert.equal(point.soilWater, 170);
+});
+
+test("historical simplified charts use persisted daily values and keep absent SWAT storage null", () => {
+  const row: SimulationResult = {
+    day_index: 1, date_str: "2020-02-29", precip_mm: 0, temp_c: 12,
+    solar_rad_mj: 15, potential_et_mm: 2, actual_et_mm: 1.5,
+    surface_runoff_mm: 0.2, percolation_mm: 0.4, streamflow_m3s: 3,
+    soil_moisture_vol: 24, plant_transpiration_mm: 0.8, root_water_uptake_mm: 0.7,
+    cwsi_stress_index: 0.6, sap_flow_velocity_cmh: 1, water_balance_residual_mm: 0,
+  };
+  const point = simplifiedHistoricalPoints([row])[0];
+  assert.equal(point.period, "2020-02-29");
+  assert.equal(point.precipitation, 0);
+  assert.equal(point.stress, 0.6);
+  assert.equal(point.transpiration, 0.8);
+  assert.equal(point.soilWater, null);
+});
+
+test("playback selector excludes runs the current user cannot open", () => {
+  const runs = [{ id: "own", user_id: "u1" }, { id: "other", user_id: "u2" }] as SimulationRun[];
+  const researcher = { id: "u1", roles: [{ id: "r", name: "INVESTIGADOR_HIDROLOGO" }] } as User;
+  const admin = { id: "admin", roles: [{ id: "a", name: "SUPERADMIN" }] } as User;
+  assert.deepEqual(accessibleSimulations(runs, researcher).map((run) => run.id), ["own"]);
+  assert.deepEqual(accessibleSimulations(runs, admin).map((run) => run.id), ["own", "other"]);
+});
+
+test("historical charts appear only for completed runs without a playback artifact", () => {
+  assert.equal(historicalFallbackEligible("COMPLETED", "NOT_AVAILABLE"), true);
+  assert.equal(historicalFallbackEligible("COMPLETED", "AVAILABLE"), false);
+  assert.equal(historicalFallbackEligible("RUNNING", "NOT_AVAILABLE"), false);
+  assert.equal(historicalFallbackEligible(undefined, null), false);
 });
