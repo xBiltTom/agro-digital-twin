@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "lint:playback": "eslint 'src/app/(dashboard)/twin-3d/page.tsx' src/components/3d/MultiScaleViewer3D.tsx src/components/3d/PlantModel3D.tsx src/components/3d/FieldPlotMesh3D.tsx src/components/3d/WatershedMesh3D.tsx src/components/3d/TwinHUDOverlay.tsx src/lib/playback-client.ts src/lib/playback-scene.ts src/hooks/useTwinPlayback.ts src/types/playback.ts tests/playback.test.ts",
+    "test": "node --experimental-strip-types tests/playback.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

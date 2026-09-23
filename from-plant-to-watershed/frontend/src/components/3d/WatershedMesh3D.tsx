@@ -20,9 +20,11 @@ export interface HruSummary {
 }
 
 interface WatershedMesh3DProps {
-  streamflowM3s: number;
-  precipMm: number;
-  soilMoistureVol: number;
+  streamflowM3s: number | null;
+  precipMm: number | null;
+  rainEffectMm: number | null;
+  precipitationUnit: string;
+  periodLabel: string;
   hruAggregates?: { hrus?: HruSummary[]; results?: HruSummary[] };
   watershedName?: string;
   stationId?: string | null;
@@ -31,13 +33,10 @@ interface WatershedMesh3DProps {
   showHruBorders?: boolean;
   showHydrologyFlow?: boolean;
   showScientificLabels?: boolean;
-  currentDay?: number;
-  totalDays?: number;
 }
 
 /**
- * Topografía analítica de la cuenca South Fork Iowa River (Des Moines Lobe glacial drift, IA).
- * Caída regional de cabeceras en Hamilton Co. (~369m s.n.m.) hacia el aforo USGS en New Providence (~286m s.n.m.).
+ * Relieve contextual esquemático de South Fork Iowa; no reproduce un DEM validado.
  */
 export function getTerrainElevation(x: number, z: number): number {
   const xNorm = (x + 28) / 56;
@@ -57,8 +56,9 @@ export function getTerrainElevation(x: number, z: number): number {
 /**
  * Terreno base regional de Iowa con textura de suelos Mollisols y parcelación agrícola
  */
-function IowaCatchmentTerrain({ soilMoistureVol }: { soilMoistureVol: number }) {
-  const moistureFactor = Math.min(1, Math.max(0, soilMoistureVol / 45));
+function IowaCatchmentTerrain() {
+  // Contextual material: no verified basin-wide volumetric moisture is available.
+  const moistureFactor = 0.5;
 
   const geometry = useMemo(() => {
     const width = 68;
@@ -81,7 +81,6 @@ function IowaCatchmentTerrain({ soilMoistureVol }: { soilMoistureVol: number }) 
       const elev = getTerrainElevation(x, zWorld);
       pos.setZ(i, elev);
 
-      const normElev = Math.min(1, Math.max(0, elev / 3.2));
       const agriculturalGrid =
         (Math.sin(x * 0.65) * Math.cos(zWorld * 0.65) > 0.08) ? fertileSoil : ridgeSoil;
 
@@ -184,7 +183,7 @@ function WatershedDivideBoundary({
         <Html position={[northPeak[0], northPeak[1] + 1.8, northPeak[2]]} center distanceFactor={14}>
           <div className="flex items-center gap-1.5 rounded-xl border border-cyan-400/80 bg-zinc-950/95 px-3 py-1.5 font-mono text-[11px] text-cyan-200 shadow-2xl backdrop-blur-md whitespace-nowrap">
             <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span>Divisoria Hidrográfica · Cuenca South Fork Iowa (560.9 km²)</span>
+            <span>Contorno contextual · South Fork Iowa (no reconstrucción GIS validada)</span>
           </div>
         </Html>
       )}
@@ -193,8 +192,7 @@ function WatershedDivideBoundary({
 }
 
 /**
- * Las 36 Subcuencas SWAT+ Delineadas de la Cuenca South Fork Iowa River
- * Cada polígono representa una subcuenca hidrológica real con su tipo de cultivo y área.
+ * Polígonos contextuales heredados. No se asocian con HRU ni cultivos del registro temporal.
  */
 function SubbasinHruMeshes({
   subbasins,
@@ -215,14 +213,6 @@ function SubbasinHruMeshes({
   hoveredSubbasin: number | null;
   setHoveredSubbasin: (id: number | null) => void;
 }) {
-  const cropColors: Record<string, string> = {
-    Corn: "#2d5e22",
-    Soybean: "#526e2e",
-    "Corn-Soybean Rotation": "#3e6428",
-    "Conservation Corn": "#365624",
-    "Riparian Grass": "#1e4d29",
-  };
-
   const geometries = useMemo(() => {
     return subbasins.map((sub) => {
       const pts = sub.polygon;
@@ -263,7 +253,7 @@ function SubbasinHruMeshes({
         if (!item || !item.geometry) return null;
 
         const isHovered = hoveredSubbasin === sub.sub_id;
-        const baseColor = cropColors[sub.crop] || "#345e26";
+        const baseColor = "#345e26";
         const finalColor = isHovered ? "#4ade80" : baseColor;
 
         return (
@@ -314,11 +304,9 @@ function SubbasinHruMeshes({
         return (
           <Html position={[sub.centroid[0], cy, sub.centroid[1]]} center distanceFactor={10}>
             <div className="pointer-events-none rounded-xl border border-emerald-400 bg-zinc-950/95 px-3 py-2 font-sans text-xs text-zinc-100 shadow-2xl backdrop-blur-md whitespace-nowrap">
-              <div className="font-bold text-emerald-300">Subcuenca SWAT+ #{sub.sub_id}</div>
-              <div className="mt-0.5 text-[11px] font-mono text-zinc-300">
-                Área: <b>{sub.area_km2} km²</b> · Cultivo: <span className="text-amber-300">{sub.crop}</span>
-              </div>
-              <div className="text-[10px] text-zinc-400 mt-0.5">Click para zoom al nivel de campo (Meso)</div>
+              <div className="font-bold text-emerald-300">Sector contextual #{sub.sub_id}</div>
+              <div className="mt-0.5 text-[11px] font-mono text-zinc-300">Sin correspondencia HRU→polígono verificada</div>
+              <div className="text-[10px] text-zinc-400 mt-0.5">Abrir campo FSPM no georreferenciado</div>
             </div>
           </Html>
         );
@@ -333,7 +321,6 @@ function SubbasinHruMeshes({
  */
 function SouthForkRiverNetwork3D({
   channels,
-  streamflowM3s,
 }: {
   channels: Array<{
     link_id: number;
@@ -344,10 +331,8 @@ function SouthForkRiverNetwork3D({
     elev_max_m: number;
     points: Array<[number, number, number]>;
   }>;
-  streamflowM3s: number;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const flowFactor = Math.min(3.0, 1.0 + Math.sqrt(Math.max(0.1, streamflowM3s)) * 0.35);
 
   const combinedGeometry = useMemo(() => {
     const vertices: number[] = [];
@@ -360,7 +345,7 @@ function SouthForkRiverNetwork3D({
       if (pts.length < 2) return;
 
       // Ancho escalado: canales pequeños 0.22m, canal principal hasta 1.8m
-      const baseWidth = Math.max(0.24, Math.min(1.8, (ch.width_m / 24.0) * (0.85 + Math.sqrt(streamflowM3s) * 0.12)));
+      const baseWidth = Math.max(0.24, Math.min(1.8, ch.width_m / 24.0));
 
       for (let i = 0; i < pts.length; i++) {
         const p = pts[i];
@@ -399,12 +384,12 @@ function SouthForkRiverNetwork3D({
     geo.computeVertexNormals();
 
     return geo;
-  }, [channels, streamflowM3s]);
+  }, [channels]);
 
   // Animación física de corriente fluvial continua
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
-    const time = clock.getElapsedTime() * flowFactor;
+    const time = clock.getElapsedTime();
     const pos = meshRef.current.geometry.attributes.position;
     const count = pos.count;
 
@@ -487,7 +472,7 @@ function UsgsGaugingStation({
   evidenceType,
 }: {
   position: [number, number, number];
-  streamflowM3s: number;
+  streamflowM3s: number | null;
   stationId?: string | null;
   evidenceType?: string;
 }) {
@@ -517,24 +502,24 @@ function UsgsGaugingStation({
         <meshStandardMaterial color="#cbd5e1" metalness={0.9} />
       </mesh>
 
-      {/* Cartel USGS Nítido con telemetría en tiempo real */}
+      {/* Punto de referencia espacial; el caudal es el del registro de playback. */}
       <Html position={[0, 2.2, 0]} center distanceFactor={14}>
         <div
           className="flex flex-col items-center rounded-xl border border-cyan-400/80 bg-zinc-950/95 p-3 font-sans text-xs text-cyan-200 shadow-2xl backdrop-blur-md whitespace-nowrap"
           style={{ minWidth: "220px" }}
         >
           <div className="flex items-center gap-1.5 font-bold text-cyan-300">
-            <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-ping" />
-            <span>USGS Gage #{stationId || "05451210"}</span>
+            <span className="h-2.5 w-2.5 rounded-full bg-cyan-400" />
+            <span>Outlet · referencia USGS #{stationId || "05451210"}</span>
           </div>
           <div className="mt-1 text-zinc-100 font-mono text-[11px]">
-            Caudal Q: <b className="text-teal-300 text-xs">{streamflowM3s.toFixed(2)} m³/s</b>
+            Q {evidenceType === "OBSERVED" ? "observado" : "modelado"}: <b className="text-teal-300 text-xs">{streamflowM3s === null ? "No disponible" : `${streamflowM3s.toFixed(2)} m³/s`}</b>
           </div>
           <div className="text-zinc-400 font-mono text-[10px] mt-0.5">
             South Fork Iowa River at New Providence, IA
           </div>
           <div className="text-emerald-400 font-mono text-[10px] mt-0.5">
-            {evidenceType ? `${evidenceType} · acoplado` : "Drenaje 560.9 km²"}
+            {evidenceType ?? "NOT_AVAILABLE"} · salida de cuenca
           </div>
         </div>
       </Html>
@@ -543,10 +528,10 @@ function UsgsGaugingStation({
 }
 
 /**
- * Lluvia volumétrica cinemática sobre la cuenca hidrográfica (LineSegments hiperrealistas)
+ * Partículas ilustrativas proporcionales al dato diario disponible; no son una medición espacial.
  */
 function PrecipitationRainSystem({ precipMm }: { precipMm: number }) {
-  const streakCount = Math.min(2400, Math.floor(precipMm * 85) + 600);
+  const streakCount = Math.min(2400, Math.max(8, Math.floor(precipMm * 85)));
   const linesRef = useRef<THREE.LineSegments>(null);
 
   const initialPositions = useMemo(() => {
@@ -589,7 +574,7 @@ function PrecipitationRainSystem({ precipMm }: { precipMm: number }) {
     linesRef.current.geometry.attributes.position.needsUpdate = true;
   });
 
-  if (precipMm < 0.25) return null;
+  if (precipMm <= 0) return null;
 
   return (
     <lineSegments ref={linesRef}>
@@ -610,20 +595,19 @@ function PrecipitationRainSystem({ precipMm }: { precipMm: number }) {
 export default function WatershedMesh3D({
   streamflowM3s,
   precipMm,
-  soilMoistureVol,
-  watershedName,
+  rainEffectMm,
+  precipitationUnit,
+  periodLabel,
   stationId,
   evidenceType,
   onSelectSubbasin,
   showHruBorders = true,
   showHydrologyFlow = true,
   showScientificLabels = true,
-  currentDay = 1,
-  totalDays = 365,
 }: WatershedMesh3DProps) {
   const [hoveredSubbasin, setHoveredSubbasin] = useState<number | null>(null);
 
-  // Datos reales GIS de la cuenca South Fork Iowa River
+  // Datos contextuales heredados; el contrato no valida su correspondencia GIS con las HRU.
   const boundary = southForkData.boundary as Array<[number, number]>;
   const subbasins = southForkData.subbasins as Array<{
     sub_id: number;
@@ -646,12 +630,12 @@ export default function WatershedMesh3D({
   return (
     <group position={[0, -0.35, 0]}>
       {/* 1. Terreno Regional de Iowa (Des Moines Lobe Glacial Plain) */}
-      <IowaCatchmentTerrain soilMoistureVol={soilMoistureVol} />
+      <IowaCatchmentTerrain />
 
       {/* 2. Divisoria Hidrográfica Exterior (Watershed Drainage Divide) */}
       <WatershedDivideBoundary boundary={boundary} showLabels={showScientificLabels} />
 
-      {/* 3. Las 36 Subcuencas SWAT+ reales de South Fork Iowa con parcelación de cultivos */}
+      {/* 3. Polígonos contextuales sin asignación HRU o cultivo del registro */}
       <SubbasinHruMeshes
         subbasins={subbasins}
         onSelectSubbasin={onSelectSubbasin}
@@ -661,7 +645,7 @@ export default function WatershedMesh3D({
       />
 
       {/* 4. Red Fluvial Completa de 37 Canales y Tributarios de South Fork Iowa */}
-      <SouthForkRiverNetwork3D channels={channels} streamflowM3s={streamflowM3s} />
+      <SouthForkRiverNetwork3D channels={channels} />
 
       {/* 5. Bosque de Galería y Corredor de Amortiguación Ribereña */}
       <RiparianVegetationBelt channels={channels} />
@@ -675,7 +659,7 @@ export default function WatershedMesh3D({
       />
 
       {/* 7. Lluvia volumétrica activa (precipitación sobre la cuenca) */}
-      {showHydrologyFlow && <PrecipitationRainSystem precipMm={precipMm} />}
+      {showHydrologyFlow && rainEffectMm !== null && rainEffectMm > 0 && <PrecipitationRainSystem precipMm={rainEffectMm} />}
 
       {/* 8. Tarjeta Informativa Científica de la Cuenca South Fork Iowa */}
       {showScientificLabels && (
@@ -687,7 +671,7 @@ export default function WatershedMesh3D({
             <div className="flex items-center justify-between border-b border-cyan-500/30 pb-1.5">
               <span className="font-bold text-cyan-300">Cuenca South Fork Iowa River</span>
               <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
-                {currentDay ? `Día ${currentDay}` : "Día 1"} / {totalDays}
+                {periodLabel}
               </span>
             </div>
             <div className="mt-2 space-y-1 text-[11px] font-mono">
@@ -696,22 +680,22 @@ export default function WatershedMesh3D({
                 <span className="font-bold text-teal-300">05451210 · HUC-12</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-400">Área hidrológica:</span>
-                <span className="font-bold text-teal-200">560.9 km² (36 subcuencas)</span>
+                <span className="text-zinc-400">Cobertura espacial:</span>
+                <span className="font-bold text-teal-200">Contexto esquemático</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">Precipitación:</span>
-                <span className={`font-bold ${precipMm > 2 ? "text-amber-300 animate-pulse" : "text-sky-300"}`}>
-                  {precipMm.toFixed(1)} mm/d
+                <span className="font-bold text-sky-300">
+                  {precipMm === null ? "No disponible" : `${precipMm.toFixed(1)} ${precipitationUnit}`}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">Caudal en outlet Q:</span>
-                <span className="font-bold text-teal-300">{streamflowM3s.toFixed(2)} m³/s</span>
+                <span className="font-bold text-teal-300">{streamflowM3s === null ? "No disponible" : `${streamflowM3s.toFixed(2)} m³/s`}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-400">Humedad de suelo θ:</span>
-                <span className="font-bold text-emerald-300">{soilMoistureVol.toFixed(1)}%</span>
+                <span className="text-zinc-400">Terreno / canales:</span>
+                <span className="font-bold text-emerald-300">Contexto esquemático</span>
               </div>
             </div>
             <button
@@ -721,7 +705,7 @@ export default function WatershedMesh3D({
               }}
               className="mt-2.5 w-full cursor-pointer rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 py-1 text-[11px] font-bold text-cyan-200 transition text-center"
             >
-              Inspeccionar Parcela de Maíz (Meso) →
+              Ver campo FSPM disponible (Meso) →
             </button>
           </div>
         </Html>

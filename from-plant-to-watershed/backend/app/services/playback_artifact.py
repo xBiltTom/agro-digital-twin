@@ -8,7 +8,9 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import threading
 from typing import Iterable
+from uuid import uuid4
 
 from app.core.config import settings
 from app.schemas.playback import PlaybackRecord, SCHEMA_VERSION
@@ -18,6 +20,9 @@ _SAFE_RUN_ID = re.compile(r"[A-Za-z0-9_-]{1,100}\Z")
 
 
 class PlaybackArtifactStore:
+    _verified: dict[tuple[str, str], tuple[int, int, int, int, int]] = {}
+    _verification_lock = threading.Lock()
+
     def __init__(self, root: Path | None = None):
         self.root = (root or Path(settings.DATA_ARTIFACT_ROOT) / "playback" / "v1").resolve()
 
@@ -25,6 +30,33 @@ class PlaybackArtifactStore:
         if not _SAFE_RUN_ID.fullmatch(simulation_id):
             raise ValueError("Invalid simulation id for playback artifact")
         return self.root / f"{simulation_id}.sqlite"
+
+    def _manifest_path(self, simulation_id: str, manifest: dict) -> Path:
+        self._path(simulation_id)  # validates the simulation identifier
+        name = manifest.get("artifact_file", "")
+        if not isinstance(name, str) or not re.fullmatch(rf"{re.escape(simulation_id)}(?:\.[0-9a-f]{{32}})?\.sqlite", name):
+            raise ValueError("Playback manifest does not match this simulation")
+        return self.root / name
+
+    @staticmethod
+    def _signature(path: Path) -> tuple[int, int, int, int, int]:
+        stat = path.stat()
+        return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
+
+    def _verify_manifest_hash(self, path: Path, manifest: dict) -> tuple[int, int, int, int, int]:
+        expected = manifest.get("sha256")
+        if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
+            raise ValueError("Playback manifest has no valid SHA-256 checksum")
+        signature = self._signature(path)
+        key = str(path), expected
+        with self._verification_lock:
+            if self._verified.get(key) == signature:
+                return signature
+        if self._sha256(path) != expected or self._signature(path) != signature:
+            raise ValueError("Playback artifact SHA-256 mismatch")
+        with self._verification_lock:
+            self._verified[key] = signature
+        return signature
 
     @staticmethod
     def _sha256(path: Path) -> str:
@@ -37,13 +69,10 @@ class PlaybackArtifactStore:
     def write(self, simulation_id: str, records: Iterable[PlaybackRecord], *,
               provenance: dict, limitations: list[str] | None = None) -> dict:
         """Atomically publish a read-only SQLite series with a date index."""
-        path = self._path(simulation_id)
+        self._path(simulation_id)
+        path = self.root / f"{simulation_id}.{uuid4().hex}.sqlite"
         self.root.mkdir(parents=True, exist_ok=True)
-        if path.exists():
-            raise FileExistsError(f"Playback artifact already exists for {simulation_id}")
         temporary = path.with_suffix(".tmp")
-        if temporary.exists():
-            raise FileExistsError(f"Temporary playback artifact already exists for {simulation_id}")
         count = 0
         first_date = last_date = resolution = None
         variables: dict[str, dict] = {}
@@ -93,22 +122,32 @@ class PlaybackArtifactStore:
     def page(self, simulation_id: str, manifest: dict, *, start: date | None = None,
              end: date | None = None, on: date | None = None,
              offset: int = 0, limit: int = 100) -> tuple[int, list[PlaybackRecord]]:
-        path = self._path(simulation_id)
-        if manifest.get("schema_version") != SCHEMA_VERSION or manifest.get("artifact_file") != path.name:
+        path = self._manifest_path(simulation_id, manifest)
+        if manifest.get("schema_version") != SCHEMA_VERSION:
             raise ValueError("Playback manifest does not match this simulation and schema")
         if not path.is_file():
             raise FileNotFoundError(path)
+        signature = self._verify_manifest_hash(path, manifest)
+        resolution = manifest.get("resolution")
+        if resolution not in {"DAILY", "MONTHLY", "ANNUAL"}:
+            raise ValueError("Playback manifest has no supported temporal resolution")
+        def period_start(day: date) -> date:
+            if resolution == "MONTHLY":
+                return day.replace(day=1)
+            if resolution == "ANNUAL":
+                return day.replace(month=1, day=1)
+            return day
         conditions: list[str] = []
         parameters: list[str | int] = []
         if on is not None:
             conditions.append("date = ?")
-            parameters.append(on.isoformat())
+            parameters.append(period_start(on).isoformat())
         if start is not None:
             conditions.append("date >= ?")
-            parameters.append(start.isoformat())
+            parameters.append(period_start(start).isoformat())
         if end is not None:
             conditions.append("date <= ?")
-            parameters.append(end.isoformat())
+            parameters.append(period_start(end).isoformat())
         where = " WHERE " + " AND ".join(conditions) if conditions else ""
         with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as connection:
             total = connection.execute("SELECT COUNT(*) FROM frames" + where, parameters).fetchone()[0]
@@ -116,6 +155,8 @@ class PlaybackArtifactStore:
                 "SELECT payload, sha256 FROM frames" + where + " ORDER BY date LIMIT ? OFFSET ?",
                 [*parameters, limit, offset],
             ).fetchall()
+        if self._signature(path) != signature:
+            raise ValueError("Playback artifact changed during query")
         records = []
         for payload, digest in rows:
             if hashlib.sha256(payload.encode("utf-8")).hexdigest() != digest:

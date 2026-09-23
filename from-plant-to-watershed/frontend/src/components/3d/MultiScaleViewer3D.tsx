@@ -2,42 +2,28 @@
 
 import React, { useRef, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Sky, Stars, ContactShadows, Environment, Lightformer } from "@react-three/drei";
+import { OrbitControls, Sky, Stars, ContactShadows, Environment, Lightformer, Html } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
 
-type OrbitControlsImpl = {
-  target: THREE.Vector3;
-  update: () => void;
-};
+type OrbitControlsImpl = React.ComponentRef<typeof OrbitControls>;
 import WatershedMesh3D from "./WatershedMesh3D";
-import FieldPlotMesh3D, { PlantSample3D } from "./FieldPlotMesh3D";
+import FieldPlotMesh3D from "./FieldPlotMesh3D";
 import PlantModel3D from "./PlantModel3D";
+import { hasSouthForkContext, periodLabel, type SceneState } from "../../lib/playback-scene";
 
 export type ScaleMode = "MACRO" | "MESO" | "MICRO";
 
 interface MultiScaleViewer3DProps {
   scaleMode: ScaleMode;
   onChangeScale: (scale: ScaleMode) => void;
-  streamflowM3s: number;
-  precipMm: number;
-  soilMoistureVol: number;
-  transpirationMm: number;
-  cwsiStress: number;
-  sapFlowVelocityCmh: number;
-  plantSample?: PlantSample3D[];
-  plantCount?: number;
-  fieldAggregates?: Record<string, unknown>;
-  hruAggregates?: { hrus?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }>; results?: Array<{ hru_id?: string; hru_number?: number; area_fraction?: number; crop?: string }> };
+  scene: SceneState;
   watershedName?: string;
   stationId?: string | null;
-  evidenceType?: string;
   showHydrologyFlow?: boolean;
   showSoilHorizons?: boolean;
   showSensors?: boolean;
   showScientificLabels?: boolean;
-  currentDay?: number;
-  totalDays?: number;
 }
 
 /**
@@ -51,7 +37,7 @@ function CameraController({
   controlsRef,
 }: {
   scaleMode: ScaleMode;
-  controlsRef: React.RefObject<any>;
+  controlsRef: React.RefObject<OrbitControlsImpl | null>;
 }) {
   const { camera } = useThree();
 
@@ -113,30 +99,34 @@ function CameraController({
   return null;
 }
 
+function GenericRain({ intensity }: { intensity: number }) {
+  const group = useRef<THREE.Group>(null);
+  const count = Math.max(8, Math.floor(intensity * 700));
+  useFrame((_, delta) => { if (group.current) group.current.position.y = (group.current.position.y - delta * 10 + 20) % 20; });
+  return <group ref={group}>{Array.from({ length: count }, (_, i) =>
+    <mesh key={i} position={[
+      (((i * 73) % 701) / 701 - 0.5) * 42,
+      ((i * 47) % 211) / 211 * 20,
+      (((i * 137) % 709) / 709 - 0.5) * 32,
+    ]}>
+      <boxGeometry args={[0.025, 0.4, 0.025]} />
+      <meshBasicMaterial color="#9bdaf6" transparent opacity={0.5} />
+    </mesh>)}</group>;
+}
+
 export default function MultiScaleViewer3D({
   scaleMode,
   onChangeScale,
-  streamflowM3s,
-  precipMm,
-  soilMoistureVol,
-  transpirationMm,
-  cwsiStress,
-  sapFlowVelocityCmh,
-  plantSample = [],
-  plantCount = 1000,
-  fieldAggregates,
-  hruAggregates,
+  scene,
   watershedName,
   stationId,
-  evidenceType,
   showHydrologyFlow = true,
   showSoilHorizons = true,
   showSensors = true,
   showScientificLabels = true,
-  currentDay = 1,
-  totalDays = 365,
 }: MultiScaleViewer3DProps) {
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
+  const southForkContext = hasSouthForkContext(scene.record, stationId);
 
   // Iluminación solar física ajustada por escala
   const sunPosition: [number, number, number] =
@@ -288,61 +278,54 @@ export default function MultiScaleViewer3D({
         )}
 
         {/* Escala MACRO: Cuenca SWAT+, Red Fluvial, HRUs, USGS */}
-        {scaleMode === "MACRO" && (
+        {scaleMode === "MACRO" && southForkContext && (
           <WatershedMesh3D
-            streamflowM3s={streamflowM3s}
-            precipMm={precipMm}
-            soilMoistureVol={soilMoistureVol}
-            hruAggregates={hruAggregates}
+            streamflowM3s={scene.streamflowM3s}
+            precipMm={scene.rainMm}
+            rainEffectMm={scene.record.resolution === "DAILY" ? scene.rainMm : null}
+            precipitationUnit={scene.record.weather.precipitation_mm?.unit ?? "mm"}
+            periodLabel={periodLabel(scene.record)}
             watershedName={watershedName}
             stationId={stationId}
-            evidenceType={evidenceType}
+            evidenceType={scene.record.hydrology.streamflow_m3s?.evidence}
             onSelectSubbasin={() => onChangeScale("MESO")}
             showHruBorders={showSoilHorizons}
             showHydrologyFlow={showHydrologyFlow}
             showScientificLabels={showScientificLabels}
-            currentDay={currentDay}
-            totalDays={totalDays}
           />
         )}
+        {scaleMode === "MACRO" && !southForkContext && <group>
+          <mesh receiveShadow rotation-x={-Math.PI / 2}>
+            <planeGeometry args={[45, 35]} />
+            <meshStandardMaterial color="#264133" roughness={0.9} />
+          </mesh>
+          <Html position={[0, 4, 0]} center distanceFactor={16}>
+            <div className="rounded-xl border border-cyan-500/40 bg-zinc-950/95 p-3 text-xs text-zinc-200">
+              <b>Cuenca {scene.record.watershed_code ?? scene.record.watershed_id}</b>
+              <p>Geometría espacial no disponible para esta corrida. Los valores del outlet se muestran en el HUD.</p>
+            </div>
+          </Html>
+          {showHydrologyFlow && scene.rainIntensity !== null && scene.rainIntensity > 0 && <GenericRain intensity={scene.rainIntensity} />}
+        </group>}
 
         {/* Escala MESO: campo FSPM agregado y muestra de planta persistida */}
         {scaleMode === "MESO" && (
           <FieldPlotMesh3D
-            soilMoistureVol={soilMoistureVol}
-            cwsiStress={cwsiStress}
-            plantSample={plantSample}
-            plantCount={plantCount}
-            fieldAggregate={fieldAggregates}
+            scene={scene}
             onSelectPlant={() => onChangeScale("MICRO")}
             showSensors={showSensors}
             showScientificLabels={showScientificLabels}
-            currentDay={currentDay}
-            totalDays={totalDays}
-            precipMm={precipMm}
+            showHydrologyFlow={showHydrologyFlow}
           />
         )}
 
         {/* Escala MICRO: Zea mays L. FSPM Nivel 1 */}
         {scaleMode === "MICRO" && (
           <PlantModel3D
-            transpirationMm={transpirationMm}
-            cwsiStress={cwsiStress}
-            sapFlowVelocityCmh={sapFlowVelocityCmh}
-            soilMoistureVol={soilMoistureVol}
-            lai={Number(fieldAggregates?.mean_LAI ?? fieldAggregates?.mean_lai) || undefined}
-            rootDepthCm={plantSample[0]?.root_depth_cm}
-            plantHeightM={plantSample[0]?.plant_height_m ?? (Number(fieldAggregates?.plant_height_mean_m) || undefined)}
-            leafCount={plantSample[0]?.leaf_count}
-            leafAreaM2={plantSample[0]?.leaf_area_m2}
-            phenologicalStage={plantSample[0]?.phenological_stage}
-            stateLabel={plantSample.length > 0 ? "Muestra FSPM persistida" : "Agregado de campo FSPM"}
+            scene={scene}
             showHydrologyFlow={showHydrologyFlow}
             showSoilHorizons={showSoilHorizons}
             showScientificLabels={showScientificLabels}
-            currentDay={currentDay}
-            totalDays={totalDays}
-            precipMm={precipMm}
           />
         )}
 

@@ -3,6 +3,7 @@
 from datetime import date
 import hashlib
 from pathlib import Path
+import sqlite3
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -167,7 +168,7 @@ def test_seeded_daily_fspm_field_trajectory_and_date_alignment(tmp_path):
     total, page = store.page("run-4", manifest, start=date(2020, 2, 29), end=date(2020, 3, 1), limit=1)
     assert total == 2 and [item.date.isoformat() for item in page] == ["2020-02-29"]
     assert store.page("run-4", manifest, start=date(2020, 2, 29), end=date(2020, 3, 1), offset=1, limit=1)[1][0].date.isoformat() == "2020-03-01"
-    assert manifest["sha256"] == hashlib.sha256((tmp_path / "playback" / "run-4.sqlite").read_bytes()).hexdigest()
+    assert manifest["sha256"] == hashlib.sha256((tmp_path / "playback" / manifest["artifact_file"]).read_bytes()).hexdigest()
     with pytest.raises(ValueError, match="do not align"):
         list(simplified_frames(simulation_id="run-4", watershed_id="basin", rows=first.results,
                                daily_fields=tuple(reversed(first.playback_daily)), climate_source="SYNTHETIC"))
@@ -286,6 +287,58 @@ def test_historical_v2_report_is_not_touched_by_playback_artifacts(tmp_path):
                          forcing=None, forcing_source="unavailable")
     PlaybackArtifactStore(tmp_path).write("history-fixture", frames, provenance={"fixture": True})
     assert hashlib.sha256(report.read_bytes()).hexdigest() == before
+
+
+def test_manifest_checksum_is_cached_then_invalidated_on_change(tmp_path, monkeypatch):
+    store = PlaybackArtifactStore(tmp_path)
+    frame = next(iter(swat_frames(simulation_id="integrity", watershed_id="basin",
+                                  run_type="SWAT_STANDARD_BASELINE", resolution="DAILY",
+                                  records=[{"period": "2020-02-29", "runoff_mm": 1.}], hru_results=[],
+                                  forcing=None, forcing_source="unavailable")))
+    manifest = store.write("integrity", [frame], provenance={})
+    original = store._sha256
+    calls = []
+    def counting_hash(path):
+        calls.append(path)
+        return original(path)
+    monkeypatch.setattr(store, "_sha256", counting_hash)
+    assert store.page("integrity", manifest, on=date(2020, 2, 29))[0] == 1
+    assert store.page("integrity", manifest, on=date(2020, 2, 29))[0] == 1
+    assert len(calls) == 1
+    path = tmp_path / manifest["artifact_file"]
+    with sqlite3.connect(path) as connection:
+        connection.execute("UPDATE frames SET payload = ?, sha256 = ? WHERE date = ?", ("{}", hashlib.sha256(b"{}").hexdigest(), "2020-02-29"))
+    with pytest.raises(ValueError, match="artifact SHA-256 mismatch"):
+        store.page("integrity", manifest, on=date(2020, 2, 29))
+    assert len(calls) == 2
+
+
+def test_retry_publication_keeps_published_artifact_immutable(tmp_path):
+    store = PlaybackArtifactStore(tmp_path)
+    def frame(runoff):
+        return next(iter(swat_frames(simulation_id="retry-run", watershed_id="basin",
+                                     run_type="SWAT_STANDARD_BASELINE", resolution="DAILY",
+                                     records=[{"period": "2020-01-01", "runoff_mm": runoff}], hru_results=[],
+                                     forcing=None, forcing_source="unavailable")))
+    first = store.write("retry-run", [frame(1.)], provenance={"attempt": 1})
+    second = store.write("retry-run", [frame(2.)], provenance={"attempt": 2})
+    assert first["artifact_file"] != second["artifact_file"]
+    assert store.page("retry-run", first)[1][0].hydrology["runoff_mm"].value == 1.
+    assert store.page("retry-run", second)[1][0].hydrology["runoff_mm"].value == 2.
+
+
+@pytest.mark.parametrize("resolution,period,on,start,end", [
+    ("MONTHLY", "2020-02-01", date(2020, 2, 28), date(2020, 2, 28), date(2020, 2, 29)),
+    ("ANNUAL", "2020-01-01", date(2020, 8, 1), date(2020, 8, 1), date(2020, 8, 2)),
+])
+def test_period_queries_match_overlapping_dates(tmp_path, resolution, period, on, start, end):
+    store = PlaybackArtifactStore(tmp_path)
+    frames = swat_frames(simulation_id="period-run", watershed_id="basin", run_type="SWAT_STANDARD_BASELINE",
+                         resolution=resolution, records=[{"period": period, "runoff_mm": 3.}],
+                         hru_results=[], forcing=None, forcing_source="unavailable")
+    manifest = store.write("period-run", frames, provenance={})
+    assert store.page("period-run", manifest, on=on)[1][0].date.isoformat() == period
+    assert store.page("period-run", manifest, start=start, end=end)[0] == 1
 
 
 @pytest.mark.asyncio

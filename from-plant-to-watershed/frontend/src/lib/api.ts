@@ -16,6 +16,7 @@ import {
   SimulationResult, SwatPlusConfiguration, SwatResultsResponse
   , ExternalModelInfo, DatasetInfo, CurrentFinalScientificReportResponse
 } from "../types/simulation";
+import { PlaybackPage, PlaybackQuery } from "../types/playback";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -146,6 +147,15 @@ class ApiService {
 
   async getSwatResults(id: string): Promise<SwatResultsResponse> {
     return this.request<SwatResultsResponse>(`/simulations/${id}/swat-results`);
+  }
+
+  async getPlayback(id: string, query: PlaybackQuery = {}, signal?: AbortSignal): Promise<PlaybackPage> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined) params.set(key, String(value));
+    }
+    const suffix = params.size ? `?${params}` : "";
+    return this.request<PlaybackPage>(`/simulations/${encodeURIComponent(id)}/playback${suffix}`, { signal });
   }
 
   async createSimulation(data: {
