@@ -26,9 +26,21 @@ from app.services.twin_coupling_engine import TwinCouplingEngine
 from app.services.playback_artifact import PlaybackArtifactStore
 from app.services.ai_insights import AICopilotService
 from app.schemas.playback import PlaybackPage, Resolution
+from app.schemas.playback_diagnostic import SimulationAvailability
+from app.services.playback_diagnostic import diagnose_simulation
 from scientific_core import RunConfig
 
 router = APIRouter(prefix="/simulations", tags=["Simulaciones simplificadas"])
+
+
+async def _visible_simulation(db: AsyncSession, sim_id: str, user: User) -> SimulationRun:
+    stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
+    if "SUPERADMIN" not in {role.name for role in user.roles}:
+        stmt = stmt.where(SimulationRun.user_id == user.id)
+    sim = await db.scalar(stmt)
+    if sim is None:
+        raise HTTPException(status_code=404, detail="Simulation not found")
+    return sim
 
 @router.get("/scenarios/all", response_model=List[ClimateScenarioResponse])
 async def list_climate_scenarios(
@@ -57,7 +69,10 @@ async def list_simulations(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):
-    stmt = select(SimulationRun).order_by(desc(SimulationRun.created_at)).offset(skip).limit(limit)
+    stmt = select(SimulationRun)
+    if "SUPERADMIN" not in {role.name for role in _user.roles}:
+        stmt = stmt.where(SimulationRun.user_id == _user.id)
+    stmt = stmt.order_by(desc(SimulationRun.created_at), desc(SimulationRun.id)).offset(skip).limit(limit)
     res = await db.execute(stmt)
     return res.scalars().all()
 
@@ -261,12 +276,7 @@ async def get_simulation_detail(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):
-    stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
-    res = await db.execute(stmt)
-    sim = res.scalar_one_or_none()
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulación no encontrada")
-    return sim
+    return await _visible_simulation(db, sim_id, _user)
 
 @router.get("/{sim_id}/results", response_model=List[SimulationResultResponse])
 async def get_simulation_results(
@@ -275,9 +285,7 @@ async def get_simulation_results(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):
-    exists = await db.scalar(select(SimulationRun.id).where(SimulationRun.id == sim_id))
-    if not exists:
-        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+    await _visible_simulation(db, sim_id, _user)
     stmt = (
         select(SimulationResult)
         .where(SimulationResult.simulation_run_id == sim_id)
@@ -294,9 +302,7 @@ async def get_swat_results(
     _user: User = Depends(get_current_active_user),
 ):
     """Return persisted normalized SWAT+ records without proxy/FSPM fields."""
-    sim = await db.scalar(select(SimulationRun).where(SimulationRun.id == sim_id))
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+    sim = await _visible_simulation(db, sim_id, _user)
     if (sim.provenance or {}).get("evidence_type") not in {"REAL_SWAT_PLUS", "REAL_SWAT_PLUS_COUPLED"}:
         raise HTTPException(status_code=409, detail={"type": "NOT_AVAILABLE", "message": "This run is not a completed real SWAT+ execution"})
     return {
@@ -305,6 +311,17 @@ async def get_swat_results(
         "water_balance": (sim.summary_metrics or {}).get("water_balance"),
         "provenance": sim.provenance,
     }
+
+
+@router.get("/{sim_id}/availability", response_model=SimulationAvailability)
+async def get_simulation_availability(
+    sim_id: str,
+    on: date | None = Query(None, alias="date"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    sim = await _visible_simulation(db, sim_id, current_user)
+    return diagnose_simulation(sim, on=on)
 
 
 @router.get("/{sim_id}/playback", response_model=PlaybackPage)
@@ -320,9 +337,7 @@ async def get_simulation_playback(
     current_user: User = Depends(get_current_active_user),
 ):
     """Indexed, owner-scoped read of versioned dated scientific states."""
-    sim = await db.scalar(select(SimulationRun).where(SimulationRun.id == sim_id))
-    if sim is None or (sim.user_id != current_user.id and "SUPERADMIN" not in {role.name for role in current_user.roles}):
-        raise HTTPException(status_code=404, detail="Simulation not found")
+    sim = await _visible_simulation(db, sim_id, current_user)
     if (on is not None and (start is not None or end is not None)) or (start and end and start > end):
         raise HTTPException(status_code=422, detail="Use either date or a valid start/end interval")
     manifest = (sim.provenance or {}).get("playback")
@@ -358,11 +373,7 @@ async def get_simulation_ai_insights(
     _user: User = Depends(get_current_active_user),
 ):
     """Retrieve or compute AI scientific insights for a simulation run."""
-    stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
-    res = await db.execute(stmt)
-    sim = res.scalar_one_or_none()
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+    sim = await _visible_simulation(db, sim_id, _user)
 
     # Return cached insights if already computed
     cached = (sim.provenance or {}).get("ai_insights")
@@ -404,11 +415,7 @@ async def generate_simulation_ai_insights(
     _user: User = Depends(get_current_active_user),
 ):
     """Force re-generate AI scientific insights for a simulation run using LangChain."""
-    stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
-    res = await db.execute(stmt)
-    sim = res.scalar_one_or_none()
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+    sim = await _visible_simulation(db, sim_id, _user)
 
     watershed_name = None
     if sim.watershed_id:
@@ -436,4 +443,3 @@ async def generate_simulation_ai_insights(
     await db.commit()
 
     return insights
-

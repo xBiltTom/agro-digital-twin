@@ -1,5 +1,7 @@
 # Contrato temporal del gemelo — `twin-playback-v1`
 
+El contrato oficial de disponibilidad y adaptación para la fase 3.2 está en [GEMINI_3D_HANDOFF.md](GEMINI_3D_HANDOFF.md). `GET /api/v1/simulations/{id}/availability` resume todas las resoluciones y primeras fechas con cultivo/campo/muestras sin transferir la serie; acepta `?date=` para evaluar un periodo. El listado `/simulations` filtra por dueño (salvo `SUPERADMIN`) antes de paginar; la paginación `skip`/`limit` permanece. Los artefactos inexistentes, ausentes y dañados tienen diagnósticos distintos. La acción de navegación a cultivo es explícita y no cambia automáticamente la fecha seleccionada.
+
 ## Inventario y alcance
 
 | Fuente | Disponibilidad anterior | Estado de reproducción |

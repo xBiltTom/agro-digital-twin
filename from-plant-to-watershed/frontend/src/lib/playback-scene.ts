@@ -1,4 +1,5 @@
 import type { PlaybackRecord, PlantSample, VariableState } from "../types/playback";
+import { adaptPlaybackVisual, type TwinVisualState } from "./playback-visual-adapter.ts";
 
 export function numeric(state: VariableState | undefined): number | null {
   return state?.availability === "AVAILABLE" && typeof state.value === "number" && Number.isFinite(state.value)
@@ -32,10 +33,11 @@ export function activePlantSample(record: PlaybackRecord, selectedId: string | n
   const crop = record.crop?.crop?.toLowerCase() ?? "";
   if (!record.crop?.active || !(crop.includes("maize") || crop.includes("corn") || crop.includes("maíz") || crop.includes("maiz"))) return null;
   if (selectedId !== null) return record.plant_samples.find((sample) => sample.plant_id === selectedId) ?? null;
-  return record.plant_samples[0] ?? null;
+  return record.plant_samples.find((sample) => numeric(sample.variables.height_m) !== null) ?? record.plant_samples[0] ?? null;
 }
 
 export interface SceneState {
+  visual: TwinVisualState;
   record: PlaybackRecord;
   rainMm: number | null;
   rainIntensity: number | null;
@@ -54,10 +56,12 @@ export interface SceneState {
 }
 
 export function sceneFromRecord(record: PlaybackRecord, selectedPlantId: string | null): SceneState {
-  const cropActive = record.crop?.active === true;
+  const visual = adaptPlaybackVisual(record, { simulationId: record.simulation_id, selectedPlantId });
+  const cropActive = visual.activeCrop === true;
   const cropName = record.crop?.crop?.toLowerCase() ?? "";
   const cropSupported = cropName.includes("maize") || cropName.includes("corn") || cropName.includes("maíz") || cropName.includes("maiz");
   return {
+    visual,
     record,
     rainMm: numeric(record.weather.precipitation_mm),
     rainIntensity: rainIntensity(record),

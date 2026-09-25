@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { PlaybackClient, PLAYBACK_PAGE_SIZE } from "../lib/playback-client";
 import type { PlaybackPage, PlaybackResolution } from "../types/playback";
+import type { SimulationAvailability } from "../types/playback-availability";
 
 export function useTwinPlayback(simulationId: string | null) {
   const client = useMemo(() => new PlaybackClient((id, query, signal) => api.getPlayback(id, query, signal)), []);
@@ -13,6 +14,7 @@ export function useTwinPlayback(simulationId: string | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [availability, setAvailability] = useState<SimulationAvailability | null>(null);
   const requestNumber = useRef(0);
   const dateRequestNumber = useRef(0);
   const total = page?.total ?? 0;
@@ -20,6 +22,17 @@ export function useTwinPlayback(simulationId: string | null) {
   // Read the stateful page first so the initial record appears when fetch resolves.
   const currentRecord = page && index >= page.offset && index < page.offset + page.records.length
     ? page.records[index - page.offset] : client.recordAt(index);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    queueMicrotask(() => setAvailability(null));
+    if (simulationId) {
+      api.getPlaybackAvailability(simulationId, undefined, controller.signal)
+        .then((result) => { if (!controller.signal.aborted) setAvailability(result); })
+        .catch(() => { if (!controller.signal.aborted) setAvailability(null); });
+    }
+    return () => controller.abort();
+  }, [simulationId]);
 
   useEffect(() => {
     client.select(simulationId, resolution);
@@ -100,13 +113,20 @@ export function useTwinPlayback(simulationId: string | null) {
     }
   }, [client, total]);
 
+  const jumpToFirstCrop = useCallback(async (): Promise<boolean> => {
+    const effective = resolution ?? page?.resolution;
+    const first = availability?.resolutions.find((item) => item.resolution === effective)?.first_representable_field;
+    return first ? jumpToDate(first) : false;
+  }, [availability, resolution, page?.resolution, jumpToDate]);
+
   const loadedPage = client.loadedPage(index);
   const candidatePage = loadedPage ?? page;
   const safePage = candidatePage?.simulation_id === simulationId && (!resolution || candidatePage.resolution === resolution) ? candidatePage : null;
   const safeRecord = currentRecord?.simulation_id === simulationId && (!resolution || currentRecord.resolution === resolution) ? currentRecord : null;
 
   return {
-    record: safeRecord, page: safePage, index, seek, jumpToDate, resolution: safePage?.resolution ?? resolution,
+    record: safeRecord, page: safePage, availability, index, seek, jumpToDate, jumpToFirstCrop,
+    resolution: safePage?.resolution ?? resolution,
     setResolution, loading, error, playing, setPlaying,
     recordsForChart: safePage?.records ?? [],
   };

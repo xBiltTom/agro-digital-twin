@@ -18,6 +18,8 @@ import {
   AIInsightsResponse
 } from "../types/simulation";
 import { PlaybackPage, PlaybackQuery } from "../types/playback";
+import type { SimulationAvailability } from "../types/playback-availability";
+import { collectSimulationPages } from "./simulation-access";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -135,7 +137,8 @@ class ApiService {
   }
 
   async getSimulations(): Promise<SimulationRun[]> {
-    return this.request<SimulationRun[]>("/simulations");
+    return collectSimulationPages((skip, limit) =>
+      this.request<SimulationRun[]>(`/simulations?skip=${skip}&limit=${limit}`));
   }
 
   async getSimulation(id: string): Promise<SimulationRun> {
@@ -167,6 +170,11 @@ class ApiService {
     }
     const suffix = params.size ? `?${params}` : "";
     return this.request<PlaybackPage>(`/simulations/${encodeURIComponent(id)}/playback${suffix}`, { signal });
+  }
+
+  async getPlaybackAvailability(id: string, date?: string, signal?: AbortSignal): Promise<SimulationAvailability> {
+    const suffix = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.request<SimulationAvailability>(`/simulations/${encodeURIComponent(id)}/availability${suffix}`, { signal });
   }
 
   async createSimulation(data: {
@@ -242,7 +250,10 @@ class ApiService {
     a.remove();
   }
 
+  // Legacy report consumers still use an untyped response.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getReportsHistory(): Promise<any[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.request<any[]>("/reports/history");
   }
 

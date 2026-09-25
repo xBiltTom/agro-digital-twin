@@ -163,3 +163,19 @@ class PlaybackArtifactStore:
                 raise ValueError("Playback frame checksum mismatch")
             records.append(PlaybackRecord.model_validate_json(payload))
         return total, records
+
+    def iter_records(self, simulation_id: str, manifest: dict) -> Iterable[PlaybackRecord]:
+        """Verify the whole sidecar, then stream frames for server-side diagnostics."""
+        path = self._manifest_path(simulation_id, manifest)
+        if manifest.get("schema_version") != SCHEMA_VERSION:
+            raise ValueError("Unsupported playback schema")
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        signature = self._verify_manifest_hash(path, manifest)
+        with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as connection:
+            for payload, digest in connection.execute("SELECT payload, sha256 FROM frames ORDER BY date"):
+                if hashlib.sha256(payload.encode("utf-8")).hexdigest() != digest:
+                    raise ValueError("Playback frame checksum mismatch")
+                yield PlaybackRecord.model_validate_json(payload)
+        if self._signature(path) != signature:
+            raise ValueError("Playback artifact changed during diagnostic")

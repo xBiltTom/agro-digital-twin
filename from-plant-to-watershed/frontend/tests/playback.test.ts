@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import { rainIntensity, sceneFromRecord, periodLabel, variableText, chartPointFromRecord, hasSouthForkContext } from "../src/lib/playback-scene.ts";
 import { PlaybackClient } from "../src/lib/playback-client.ts";
 import { historicalFallbackEligible, simplifiedHistoricalPoints, swatHistoricalPoints } from "../src/lib/historical-charts.ts";
-import { accessibleSimulations } from "../src/lib/simulation-access.ts";
+import { accessibleSimulations, collectSimulationPages } from "../src/lib/simulation-access.ts";
 import { fieldCanopyAvailable, maizeFromScene, maizeReproductive } from "../src/lib/visual-state.ts";
 import type { PlaybackPage, PlaybackRecord, VariableState } from "../src/types/playback.ts";
 import type { SimulationResult, SimulationRun } from "../src/types/simulation.ts";
 import type { User } from "../src/types/auth.ts";
+import { adaptPlaybackVisual } from "../src/lib/playback-visual-adapter.ts";
+import { readFileSync } from "node:fs";
 
 function variable(value: number | string | null, unit: string, evidence: VariableState["evidence"] = "SIMPLIFIED_FSPM"): VariableState {
   return { value, unit, evidence: value === null ? "NOT_AVAILABLE" : evidence, source: "fixture",
@@ -209,9 +211,58 @@ test("playback selector excludes runs the current user cannot open", () => {
   assert.deepEqual(accessibleSimulations(runs, admin).map((run) => run.id), ["own", "other"]);
 });
 
+test("simulation selector follows server pagination past the former 50-run window", async () => {
+  const runs = Array.from({ length: 101 }, (_, index) => ({ id: `run-${index}` } as SimulationRun));
+  const offsets: number[] = [];
+  const result = await collectSimulationPages(async (skip, limit) => {
+    offsets.push(skip);
+    return runs.slice(skip, skip + limit);
+  });
+  assert.equal(result.length, 101);
+  assert.deepEqual(offsets, [0, 100]);
+});
+
 test("historical charts appear only for completed runs without a playback artifact", () => {
   assert.equal(historicalFallbackEligible("COMPLETED", "NOT_AVAILABLE"), true);
   assert.equal(historicalFallbackEligible("COMPLETED", "AVAILABLE"), false);
   assert.equal(historicalFallbackEligible("RUNNING", "NOT_AVAILABLE"), false);
   assert.equal(historicalFallbackEligible(undefined, null), false);
+});
+
+test("Pydantic generated fixtures feed the official visual adapter and current 3D inputs", () => {
+  const data = JSON.parse(readFileSync(new URL("./fixtures/twin-visual-fixtures.json", import.meta.url), "utf8"));
+  assert.equal(data.test_only, true);
+  const pages = data.pages as Record<string, PlaybackPage>;
+  const [young, mature, fallow] = pages.coupled_daily.records;
+  const first = adaptPlaybackVisual(young, { simulationId: young.simulation_id, selectedPlantId: "test-plant-1" });
+  const second = adaptPlaybackVisual(mature, { simulationId: mature.simulation_id, selectedPlantId: "test-plant-1" });
+  assert.equal(first.mode, "SCIENTIFIC_ACTIVE");
+  assert.equal(first.height?.value, 0.2);
+  assert.equal(first.precipitation?.value, 0);
+  assert.equal(first.fspmMoisturePercent?.unit, "volumetric percent");
+  assert.equal(first.swatSoilWaterMm?.unit, "mm");
+  assert.equal(first.biomass?.unit, "g/plant");
+  assert.equal(second.phenologicalStage, "REPRODUCTIVE");
+  assert.equal(second.precipitation?.value, null);
+  assert.equal(adaptPlaybackVisual(fallow, { simulationId: fallow.simulation_id }).mode, "SCIENTIFIC_FALLOW");
+  assert.equal(adaptPlaybackVisual(pages.baseline.records[0], { simulationId: "fixture-baseline" }).mode, "HYDROLOGY_ONLY");
+  assert.equal(adaptPlaybackVisual(null, { simulationId: "fixture-historical", availability: {
+    simulation_id: "fixture-historical", simulation_name: "Historical", simulation_status: "COMPLETED",
+    run_type: "SWAT_MULTISCALE_COUPLED", origin: "HISTORICAL_IMPORT",
+    stored_hydrology_available: true, stored_fspm_summary_available: true, available_resolutions: [],
+    resolutions: [], codes: ["HISTORICAL_REFERENCE"], limitations: [],
+  } }).mode, "HISTORICAL_REFERENCE");
+  const incomplete = adaptPlaybackVisual(pages.incomplete.records[0], { simulationId: "fixture-incomplete" });
+  assert.equal(incomplete.mode, "DATA_UNAVAILABLE");
+  assert.ok(incomplete.missingVariables.includes("field.height_m"));
+  assert.equal(incomplete.height?.value, null);
+  assert.equal(incomplete.lai?.value, 1.2);
+  const monthly = adaptPlaybackVisual(pages.coupled_monthly.records[0], { simulationId: "fixture-coupled" });
+  assert.equal(monthly.mode, "HYDROLOGY_ONLY");
+  assert.equal(monthly.resolution, "MONTHLY");
+  assert.equal(monthly.periodEnd, "2020-05-31");
+  assert.equal(sceneFromRecord(young, "test-plant-1").visual.mode, "SCIENTIFIC_ACTIVE");
+  assert.equal(maizeFromScene(sceneFromRecord(young, "test-plant-1")).heightM, 0.2);
+  assert.equal(fieldCanopyAvailable(sceneFromRecord(young, null)), true);
+  assert.equal(fieldCanopyAvailable(sceneFromRecord(fallow, null)), false);
 });

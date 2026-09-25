@@ -1,0 +1,730 @@
+{
+  "fixture_version": 1,
+  "test_only": true,
+  "disclaimer": "Synthetic deterministic contract inputs; no validated South Fork result",
+  "pages": {
+    "coupled_daily": {
+      "schema_version": "twin-playback-v1",
+      "simulation_id": "fixture-coupled",
+      "simulation_status": "COMPLETED",
+      "artifact_status": "AVAILABLE",
+      "resolution": "DAILY",
+      "available_resolutions": [
+        "MONTHLY",
+        "DAILY"
+      ],
+      "total": 3,
+      "offset": 0,
+      "limit": 100,
+      "records": [
+        {
+          "schema_version": "twin-playback-v1",
+          "simulation_id": "fixture-coupled",
+          "date": "2020-05-10",
+          "resolution": "DAILY",
+          "run_type": "SWAT_MULTISCALE_COUPLED",
+          "watershed_id": "TEST_BASIN_ONLY",
+          "watershed_code": "TEST_NOT_SOUTH_FORK",
+          "outlet_unit": null,
+          "spatial_support": "TEST_FIXTURE",
+          "weather": {
+            "precipitation_mm": {
+              "value": 0.0,
+              "unit": "mm/day",
+              "evidence": "SYNTHETIC",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "crop": {
+            "active": true,
+            "crop": "maize",
+            "season_id": "TEST_SEASON",
+            "phenological_stage": "V2",
+            "window_status": "APPROXIMATE_PLANTING_WINDOW",
+            "source": "DETERMINISTIC_TEST_FIXTURE",
+            "limitation": null
+          },
+          "field": {
+            "height_m": {
+              "value": 0.2,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "lai": {
+              "value": 0.4,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "root_depth_m": {
+              "value": 0.1,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "biomass_g_plant": {
+              "value": 12.0,
+              "unit": "g/plant",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "canopy_cover_fraction": {
+              "value": 0.1,
+              "unit": "fraction",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "water_stress": {
+              "value": 0.2,
+              "unit": "fraction [0, 1]",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "actual_transpiration_mm_day": {
+              "value": 1.0,
+              "unit": "mm/day",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "soil_moisture_vol_percent": {
+              "value": 24.0,
+              "unit": "volumetric percent",
+              "evidence": "ASSUMED",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "plant_samples": [
+            {
+              "plant_id": "test-plant-1",
+              "x_m": 0.5,
+              "y_m": 1.0,
+              "variables": {
+                "height_m": {
+                  "value": 0.2,
+                  "unit": "m",
+                  "evidence": "SIMPLIFIED_FSPM",
+                  "source": "DETERMINISTIC_TEST_FIXTURE",
+                  "availability": "AVAILABLE",
+                  "limitation": "Synthetic contract input, not a South Fork result"
+                },
+                "lai": {
+                  "value": 0.4,
+                  "unit": "m2_leaf/m2_ground",
+                  "evidence": "SIMPLIFIED_FSPM",
+                  "source": "DETERMINISTIC_TEST_FIXTURE",
+                  "availability": "AVAILABLE",
+                  "limitation": "Synthetic contract input, not a South Fork result"
+                },
+                "phenological_stage": {
+                  "value": "V2",
+                  "unit": "category",
+                  "evidence": "SIMPLIFIED_FSPM",
+                  "source": "DETERMINISTIC_TEST_FIXTURE",
+                  "availability": "AVAILABLE",
+                  "limitation": "Synthetic contract input, not a South Fork result"
+                }
+              }
+            }
+          ],
+          "hydrology": {
+            "streamflow_m3s": {
+              "value": 2.0,
+              "unit": "m3/s",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "soil_water_mm": {
+              "value": 140.0,
+              "unit": "mm",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "hru_results": [],
+          "availability": {
+            "weather": "AVAILABLE",
+            "field": "AVAILABLE",
+            "plant_samples": "AVAILABLE",
+            "hydrology": "AVAILABLE",
+            "hru_results": "NOT_AVAILABLE"
+          },
+          "limitations": [
+            "DETERMINISTIC TEST FIXTURE; not a scientific South Fork result"
+          ]
+        },
+        {
+          "schema_version": "twin-playback-v1",
+          "simulation_id": "fixture-coupled",
+          "date": "2020-08-10",
+          "resolution": "DAILY",
+          "run_type": "SWAT_MULTISCALE_COUPLED",
+          "watershed_id": "TEST_BASIN_ONLY",
+          "watershed_code": "TEST_NOT_SOUTH_FORK",
+          "outlet_unit": null,
+          "spatial_support": "TEST_FIXTURE",
+          "weather": {
+            "precipitation_mm": {
+              "value": null,
+              "unit": "mm/day",
+              "evidence": "NOT_AVAILABLE",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "NOT_AVAILABLE",
+              "limitation": "No test value"
+            }
+          },
+          "crop": {
+            "active": true,
+            "crop": "maize",
+            "season_id": "TEST_SEASON",
+            "phenological_stage": "REPRODUCTIVE",
+            "window_status": "APPROXIMATE_PLANTING_WINDOW",
+            "source": "DETERMINISTIC_TEST_FIXTURE",
+            "limitation": null
+          },
+          "field": {
+            "height_m": {
+              "value": 2.1,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "lai": {
+              "value": 4.2,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "root_depth_m": {
+              "value": 0.9,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "biomass_g_plant": {
+              "value": 650.0,
+              "unit": "g/plant",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "canopy_cover_fraction": {
+              "value": 0.8,
+              "unit": "fraction",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "water_stress": {
+              "value": 0.2,
+              "unit": "fraction [0, 1]",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "actual_transpiration_mm_day": {
+              "value": 1.0,
+              "unit": "mm/day",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "soil_moisture_vol_percent": {
+              "value": 24.0,
+              "unit": "volumetric percent",
+              "evidence": "ASSUMED",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "plant_samples": [
+            {
+              "plant_id": "test-plant-1",
+              "x_m": 0.5,
+              "y_m": 1.0,
+              "variables": {
+                "height_m": {
+                  "value": 2.1,
+                  "unit": "m",
+                  "evidence": "SIMPLIFIED_FSPM",
+                  "source": "DETERMINISTIC_TEST_FIXTURE",
+                  "availability": "AVAILABLE",
+                  "limitation": "Synthetic contract input, not a South Fork result"
+                },
+                "lai": {
+                  "value": 4.2,
+                  "unit": "m2_leaf/m2_ground",
+                  "evidence": "SIMPLIFIED_FSPM",
+                  "source": "DETERMINISTIC_TEST_FIXTURE",
+                  "availability": "AVAILABLE",
+                  "limitation": "Synthetic contract input, not a South Fork result"
+                },
+                "phenological_stage": {
+                  "value": "REPRODUCTIVE",
+                  "unit": "category",
+                  "evidence": "SIMPLIFIED_FSPM",
+                  "source": "DETERMINISTIC_TEST_FIXTURE",
+                  "availability": "AVAILABLE",
+                  "limitation": "Synthetic contract input, not a South Fork result"
+                }
+              }
+            }
+          ],
+          "hydrology": {
+            "streamflow_m3s": {
+              "value": 2.0,
+              "unit": "m3/s",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "soil_water_mm": {
+              "value": 140.0,
+              "unit": "mm",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "hru_results": [],
+          "availability": {
+            "weather": "NOT_AVAILABLE",
+            "field": "AVAILABLE",
+            "plant_samples": "AVAILABLE",
+            "hydrology": "AVAILABLE",
+            "hru_results": "NOT_AVAILABLE"
+          },
+          "limitations": [
+            "DETERMINISTIC TEST FIXTURE; not a scientific South Fork result"
+          ]
+        },
+        {
+          "schema_version": "twin-playback-v1",
+          "simulation_id": "fixture-coupled",
+          "date": "2020-11-10",
+          "resolution": "DAILY",
+          "run_type": "SWAT_MULTISCALE_COUPLED",
+          "watershed_id": "TEST_BASIN_ONLY",
+          "watershed_code": "TEST_NOT_SOUTH_FORK",
+          "outlet_unit": null,
+          "spatial_support": "TEST_FIXTURE",
+          "weather": {
+            "precipitation_mm": {
+              "value": 0.0,
+              "unit": "mm/day",
+              "evidence": "SYNTHETIC",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "crop": {
+            "active": false,
+            "crop": null,
+            "season_id": null,
+            "phenological_stage": null,
+            "window_status": "APPROXIMATE_PLANTING_WINDOW",
+            "source": "DETERMINISTIC_TEST_FIXTURE",
+            "limitation": null
+          },
+          "field": {},
+          "plant_samples": [],
+          "hydrology": {
+            "streamflow_m3s": {
+              "value": 2.0,
+              "unit": "m3/s",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "soil_water_mm": {
+              "value": 140.0,
+              "unit": "mm",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "hru_results": [],
+          "availability": {
+            "weather": "AVAILABLE",
+            "field": "NOT_AVAILABLE",
+            "plant_samples": "NOT_AVAILABLE",
+            "hydrology": "AVAILABLE",
+            "hru_results": "NOT_AVAILABLE"
+          },
+          "limitations": [
+            "DETERMINISTIC TEST FIXTURE; not a scientific South Fork result"
+          ]
+        }
+      ],
+      "variables": {},
+      "provenance": {
+        "fixture": true,
+        "scientific_result": false
+      },
+      "limitations": [
+        "Synthetic deterministic contract fixture; not South Fork data"
+      ]
+    },
+    "baseline": {
+      "schema_version": "twin-playback-v1",
+      "simulation_id": "fixture-baseline",
+      "simulation_status": "COMPLETED",
+      "artifact_status": "AVAILABLE",
+      "resolution": "DAILY",
+      "available_resolutions": [
+        "DAILY"
+      ],
+      "total": 1,
+      "offset": 0,
+      "limit": 100,
+      "records": [
+        {
+          "schema_version": "twin-playback-v1",
+          "simulation_id": "fixture-baseline",
+          "date": "2020-05-10",
+          "resolution": "DAILY",
+          "run_type": "SWAT_STANDARD_BASELINE",
+          "watershed_id": "TEST_BASIN_ONLY",
+          "watershed_code": "TEST_NOT_SOUTH_FORK",
+          "outlet_unit": null,
+          "spatial_support": "TEST_FIXTURE",
+          "weather": {
+            "precipitation_mm": {
+              "value": 3.0,
+              "unit": "mm/day",
+              "evidence": "SYNTHETIC",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "crop": null,
+          "field": {},
+          "plant_samples": [],
+          "hydrology": {
+            "streamflow_m3s": {
+              "value": 2.0,
+              "unit": "m3/s",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "soil_water_mm": {
+              "value": 140.0,
+              "unit": "mm",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "hru_results": [],
+          "availability": {
+            "weather": "AVAILABLE",
+            "field": "NOT_AVAILABLE",
+            "plant_samples": "NOT_AVAILABLE",
+            "hydrology": "AVAILABLE",
+            "hru_results": "NOT_AVAILABLE"
+          },
+          "limitations": [
+            "DETERMINISTIC TEST FIXTURE; not a scientific South Fork result"
+          ]
+        }
+      ],
+      "variables": {},
+      "provenance": {
+        "fixture": true,
+        "scientific_result": false
+      },
+      "limitations": [
+        "Synthetic deterministic contract fixture; not South Fork data"
+      ]
+    },
+    "historical": {
+      "schema_version": "twin-playback-v1",
+      "simulation_id": "fixture-historical",
+      "simulation_status": "COMPLETED",
+      "artifact_status": "NOT_AVAILABLE",
+      "resolution": null,
+      "available_resolutions": [],
+      "total": 0,
+      "offset": 0,
+      "limit": 100,
+      "records": [],
+      "variables": {},
+      "provenance": {
+        "fixture": true,
+        "scientific_result": false
+      },
+      "limitations": [
+        "Synthetic deterministic contract fixture; not South Fork data"
+      ]
+    },
+    "incomplete": {
+      "schema_version": "twin-playback-v1",
+      "simulation_id": "fixture-incomplete",
+      "simulation_status": "COMPLETED",
+      "artifact_status": "AVAILABLE",
+      "resolution": "DAILY",
+      "available_resolutions": [
+        "DAILY"
+      ],
+      "total": 1,
+      "offset": 0,
+      "limit": 100,
+      "records": [
+        {
+          "schema_version": "twin-playback-v1",
+          "simulation_id": "fixture-incomplete",
+          "date": "2020-06-10",
+          "resolution": "DAILY",
+          "run_type": "SWAT_MULTISCALE_COUPLED",
+          "watershed_id": "TEST_BASIN_ONLY",
+          "watershed_code": "TEST_NOT_SOUTH_FORK",
+          "outlet_unit": null,
+          "spatial_support": "TEST_FIXTURE",
+          "weather": {
+            "precipitation_mm": {
+              "value": 0.0,
+              "unit": "mm/day",
+              "evidence": "SYNTHETIC",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "crop": {
+            "active": true,
+            "crop": "maize",
+            "season_id": "TEST_SEASON",
+            "phenological_stage": "REPRODUCTIVE",
+            "window_status": "APPROXIMATE_PLANTING_WINDOW",
+            "source": "DETERMINISTIC_TEST_FIXTURE",
+            "limitation": null
+          },
+          "field": {
+            "height_m": {
+              "value": null,
+              "unit": "m",
+              "evidence": "NOT_AVAILABLE",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "NOT_AVAILABLE",
+              "limitation": "No test value"
+            },
+            "lai": {
+              "value": 1.2,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "root_depth_m": {
+              "value": 0.9,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "biomass_g_plant": {
+              "value": 650.0,
+              "unit": "g/plant",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "canopy_cover_fraction": {
+              "value": 0.8,
+              "unit": "fraction",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "water_stress": {
+              "value": 0.2,
+              "unit": "fraction [0, 1]",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "actual_transpiration_mm_day": {
+              "value": 1.0,
+              "unit": "mm/day",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "soil_moisture_vol_percent": {
+              "value": 24.0,
+              "unit": "volumetric percent",
+              "evidence": "ASSUMED",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "plant_samples": [],
+          "hydrology": {
+            "streamflow_m3s": {
+              "value": 2.0,
+              "unit": "m3/s",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "soil_water_mm": {
+              "value": 140.0,
+              "unit": "mm",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "hru_results": [],
+          "availability": {
+            "weather": "AVAILABLE",
+            "field": "AVAILABLE",
+            "plant_samples": "NOT_AVAILABLE",
+            "hydrology": "AVAILABLE",
+            "hru_results": "NOT_AVAILABLE"
+          },
+          "limitations": [
+            "DETERMINISTIC TEST FIXTURE; not a scientific South Fork result"
+          ]
+        }
+      ],
+      "variables": {},
+      "provenance": {
+        "fixture": true,
+        "scientific_result": false
+      },
+      "limitations": [
+        "Synthetic deterministic contract fixture; not South Fork data"
+      ]
+    },
+    "coupled_monthly": {
+      "schema_version": "twin-playback-v1",
+      "simulation_id": "fixture-coupled",
+      "simulation_status": "COMPLETED",
+      "artifact_status": "AVAILABLE",
+      "resolution": "MONTHLY",
+      "available_resolutions": [
+        "MONTHLY",
+        "DAILY"
+      ],
+      "total": 1,
+      "offset": 0,
+      "limit": 100,
+      "records": [
+        {
+          "schema_version": "twin-playback-v1",
+          "simulation_id": "fixture-coupled",
+          "date": "2020-05-01",
+          "resolution": "MONTHLY",
+          "run_type": "SWAT_MULTISCALE_COUPLED",
+          "watershed_id": "TEST_BASIN_ONLY",
+          "watershed_code": "TEST_NOT_SOUTH_FORK",
+          "outlet_unit": null,
+          "spatial_support": "TEST_FIXTURE",
+          "weather": {
+            "precipitation_mm": {
+              "value": 54.0,
+              "unit": "mm/period",
+              "evidence": "SYNTHETIC",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "crop": null,
+          "field": {},
+          "plant_samples": [],
+          "hydrology": {
+            "streamflow_m3s": {
+              "value": 2.0,
+              "unit": "m3/s",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "soil_water_mm": {
+              "value": 140.0,
+              "unit": "mm",
+              "evidence": "MODELLED_SWAT_PLUS",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            }
+          },
+          "hru_results": [],
+          "availability": {
+            "weather": "AVAILABLE",
+            "field": "NOT_AVAILABLE",
+            "plant_samples": "NOT_AVAILABLE",
+            "hydrology": "AVAILABLE",
+            "hru_results": "NOT_AVAILABLE"
+          },
+          "limitations": [
+            "DETERMINISTIC TEST FIXTURE; not a scientific South Fork result"
+          ]
+        }
+      ],
+      "variables": {},
+      "provenance": {
+        "fixture": true,
+        "scientific_result": false
+      },
+      "limitations": [
+        "Synthetic deterministic contract fixture; not South Fork data"
+      ]
+    }
+  }
+}
