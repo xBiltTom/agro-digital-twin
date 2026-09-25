@@ -323,6 +323,7 @@ function SubbasinHruMeshes({
 function SouthForkRiverNetwork3D({
   channels,
   animate,
+  streamflowM3s,
 }: {
   channels: Array<{
     link_id: number;
@@ -334,6 +335,7 @@ function SouthForkRiverNetwork3D({
     points: Array<[number, number, number]>;
   }>;
   animate: boolean;
+  streamflowM3s?: number | null;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
@@ -389,17 +391,18 @@ function SouthForkRiverNetwork3D({
     return geo;
   }, [channels]);
 
-  // Animación física de corriente fluvial continua
+  // Animación física de corriente fluvial continua con velocidad relativa ilustrativa
   useFrame(({ clock }) => {
     if (!meshRef.current || !animate) return;
     const time = clock.getElapsedTime();
+    const flowSpeed = 2.2 + Math.min(3.2, ((streamflowM3s ?? 5) / 10) * 1.5);
     const pos = meshRef.current.geometry.attributes.position;
     const count = pos.count;
 
     for (let i = 0; i < count; i += 2) {
       const x = pos.getX(i);
       const z = pos.getZ(i);
-      const ripple = Math.sin(x * 1.8 + z * 1.4 - time * 3.5) * 0.006;
+      const ripple = Math.sin(x * 1.8 + z * 1.4 - time * flowSpeed) * 0.006;
       pos.setY(i, pos.getY(i) + ripple * 0.003);
     }
     pos.needsUpdate = true;
@@ -407,12 +410,16 @@ function SouthForkRiverNetwork3D({
 
   return (
     <mesh ref={meshRef} geometry={combinedGeometry} receiveShadow>
-      <meshStandardMaterial
+      <meshPhysicalMaterial
         color="#0284c7"
-        roughness={0.06}
-        metalness={0.28}
+        roughness={0.05}
+        metalness={0.16}
+        clearcoat={0.92}
+        clearcoatRoughness={0.12}
+        transmission={0.22}
+        ior={1.333}
         transparent
-        opacity={0.94}
+        opacity={0.93}
       />
     </mesh>
   );
@@ -649,7 +656,7 @@ export default function WatershedMesh3D({
       />
 
       {/* 4. Red Fluvial Completa de 37 Canales y Tributarios de South Fork Iowa */}
-      <SouthForkRiverNetwork3D channels={channels} animate={showHydrologyFlow && streamflowM3s !== null} />
+      <SouthForkRiverNetwork3D channels={channels} animate={showHydrologyFlow} streamflowM3s={streamflowM3s} />
 
       {/* 5. Bosque de Galería y Corredor de Amortiguación Ribereña */}
       <RiparianVegetationBelt channels={channels} />
@@ -667,7 +674,7 @@ export default function WatershedMesh3D({
 
       {/* 8. Tarjeta Informativa Científica de la Cuenca South Fork Iowa */}
       {showScientificLabels && (
-        <Html position={[-21, 4.8, 12]} distanceFactor={15}>
+        <Html position={[-18, 8.5, 2]} distanceFactor={15}>
           <div
             className="rounded-xl border border-cyan-400/50 bg-zinc-950/94 p-3.5 font-sans text-xs text-zinc-100 shadow-2xl backdrop-blur-md"
             style={{ minWidth: "270px" }}

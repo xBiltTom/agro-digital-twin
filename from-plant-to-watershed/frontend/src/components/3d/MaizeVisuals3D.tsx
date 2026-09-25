@@ -310,8 +310,9 @@ export function RealisticMaizeEar({ nodeY, angle }: { nodeY: number; angle: numb
 /**
  * Raíces Adventicias Aéreas de Anclaje (Brace Roots) y Sistema Radicular Subterráneo
  */
-export function RealisticBraceRoots({ rootDepthCm }: { rootDepthCm: number }) {
+export function RealisticBraceRoots({ rootDepthCm, stemHeight = 1.8 }: { rootDepthCm: number; stemHeight?: number }) {
   const depthM = Math.min(1.8, Math.max(0.01, rootDepthCm / 100));
+  const baseScale = Math.min(1, Math.max(0.25, stemHeight / 1.5));
 
   const rootTubes = useMemo(() => {
     const list: Array<[number, number, number][]> = [];
@@ -319,17 +320,17 @@ export function RealisticBraceRoots({ rootDepthCm }: { rootDepthCm: number }) {
     for (let i = 0; i < count; i++) {
       const rad = (i / count) * Math.PI * 2;
       const isUpper = i % 2 === 0;
-      const startY = isUpper ? 0.26 : 0.14;
-      const groundRadius = isUpper ? 0.44 : 0.29;
+      const startY = (isUpper ? 0.26 : 0.14) * baseScale;
+      const groundRadius = (isUpper ? 0.44 : 0.29) * baseScale;
       list.push([
-        [Math.cos(rad) * 0.065, startY, Math.sin(rad) * 0.065],
+        [Math.cos(rad) * 0.065 * baseScale, startY, Math.sin(rad) * 0.065 * baseScale],
         [Math.cos(rad) * groundRadius * 0.55, startY * 0.35, Math.sin(rad) * groundRadius * 0.55],
         [Math.cos(rad) * groundRadius, 0.0, Math.sin(rad) * groundRadius],
-        [Math.cos(rad) * (groundRadius + 0.14), -0.22, Math.sin(rad) * (groundRadius + 0.14)],
+        [Math.cos(rad) * (groundRadius + 0.14 * baseScale), -0.22 * baseScale, Math.sin(rad) * (groundRadius + 0.14 * baseScale)],
       ]);
     }
     return list;
-  }, []);
+  }, [baseScale]);
 
   // Raíces primarias y laterales en el perfil de suelo
   const subterraneanRoots = useMemo(() => {
@@ -356,7 +357,7 @@ export function RealisticBraceRoots({ rootDepthCm }: { rootDepthCm: number }) {
         <group key={`brace-${idx}`}>
           <Line points={pts} color="#c89358" lineWidth={3.4} />
           <mesh position={pts[pts.length - 1]}>
-            <sphereGeometry args={[0.024, 6, 6]} />
+            <sphereGeometry args={[0.024 * baseScale, 6, 6]} />
             <meshStandardMaterial color="#8e532b" roughness={0.75} />
           </mesh>
         </group>
@@ -378,6 +379,201 @@ export function RealisticBraceRoots({ rootDepthCm }: { rootDepthCm: number }) {
           </mesh>
         </group>
       ))}
+    </group>
+  );
+}
+
+/**
+ * Corte de suelo estratigráfico con reactividad óptica a la humedad volumétrica θ
+ * y niveles horizontales Ap (0-30cm), Bt (30-65cm) y C (>65cm).
+ */
+export function SoilGridsStratigraphyCutout({
+  soilMoistureVol,
+  rootDepthCm,
+}: {
+  soilMoistureVol: number | null;
+  rootDepthCm: number | null;
+}) {
+  const depthM = Math.min(2.0, Math.max(0.25, (rootDepthCm ?? 100) / 100));
+  const moistureFactor = Math.min(1, Math.max(0, (soilMoistureVol ?? 24) / 45));
+
+  const apColor = moistureFactor > 0.5 ? "#22140a" : "#382314";
+  const btColor = moistureFactor > 0.5 ? "#3a2211" : "#4e301a";
+  const cColor = moistureFactor > 0.5 ? "#563820" : "#6c482c";
+
+  const soilRoughness = Math.max(0.42, 0.95 - moistureFactor * 0.5);
+  const soilMetalness = moistureFactor * 0.12;
+
+  return (
+    <group position={[0, 0, 0]}>
+      {/* Superficie arable (horizonte Ap superior) con textura y brillo de tierra fértil */}
+      <mesh receiveShadow rotation-x={-Math.PI / 2} position={[0, 0.002, 0]}>
+        <circleGeometry args={[2.9, 64]} />
+        <meshStandardMaterial
+          color={apColor}
+          roughness={soilRoughness}
+          metalness={soilMetalness}
+        />
+      </mesh>
+
+      {/* Horizonte Ap: 0 a -0.30 m */}
+      <mesh position={[0, -0.15, 0]}>
+        <cylinderGeometry args={[2.88, 2.88, 0.3, 48, 1, true]} />
+        <meshPhysicalMaterial
+          color={apColor}
+          transparent
+          opacity={0.52}
+          side={THREE.DoubleSide}
+          roughness={soilRoughness}
+          metalness={soilMetalness}
+        />
+      </mesh>
+
+      {/* Horizonte Bt: -0.30 a -0.65 m */}
+      <mesh position={[0, -0.475, 0]}>
+        <cylinderGeometry args={[2.86, 2.86, 0.35, 48, 1, true]} />
+        <meshPhysicalMaterial
+          color={btColor}
+          transparent
+          opacity={0.46}
+          side={THREE.DoubleSide}
+          roughness={0.78}
+        />
+      </mesh>
+
+      {/* Horizonte C: -0.65 a -depthM */}
+      <mesh position={[0, -0.65 - Math.max(0.1, depthM - 0.65) / 2, 0]}>
+        <cylinderGeometry args={[2.84, 2.84, Math.max(0.1, depthM - 0.65), 48, 1, true]} />
+        <meshPhysicalMaterial
+          color={cColor}
+          transparent
+          opacity={0.38}
+          side={THREE.DoubleSide}
+          roughness={0.82}
+        />
+      </mesh>
+
+      {/* Franja capilar / nivel freático base */}
+      <mesh position={[0, -depthM, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[2.84, 48]} />
+        <meshStandardMaterial color="#38bdf8" roughness={0.6} transparent opacity={0.65} />
+      </mesh>
+
+      {/* Anillos divisores de horizontes edáficos */}
+      <mesh position={[0, -0.3, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[2.82, 2.88, 48]} />
+        <meshBasicMaterial color="#e2b170" transparent opacity={0.55} />
+      </mesh>
+      <mesh position={[0, -0.65, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[2.80, 2.86, 48]} />
+        <meshBasicMaterial color="#c29858" transparent opacity={0.45} />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * Dinámica Fisiológica:
+ * Partículas luminosas de savia en ascenso xilemático y vapor de transpiración en canopeo.
+ * Efecto ilustrativo de transporte hídrico vegetal gobernado por transpiración y estrés CWSI.
+ */
+export function PhysiologicalFlowDynamics({
+  transpirationMm,
+  cwsiStress,
+  stemHeight,
+}: {
+  transpirationMm: number;
+  cwsiStress: number;
+  stemHeight: number;
+}) {
+  const pointsRef = useRef<THREE.Points>(null);
+  const vaporRef = useRef<THREE.Points>(null);
+
+  const particleCount = 50;
+  const initialPositions = useMemo(() => {
+    const pos = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i * 1.37) % (Math.PI * 2);
+      const r = deterministicUnit(i, 1) * 0.035;
+      pos[i * 3] = Math.cos(angle) * r;
+      pos[i * 3 + 1] = -0.3 + deterministicUnit(i, 2) * (stemHeight + 0.3);
+      pos[i * 3 + 2] = Math.sin(angle) * r;
+    }
+    return pos;
+  }, [particleCount, stemHeight]);
+
+  const vaporCount = 35;
+  const vaporPositions = useMemo(() => {
+    const pos = new Float32Array(vaporCount * 3);
+    for (let i = 0; i < vaporCount; i++) {
+      const angle = (i * 2.1) % (Math.PI * 2);
+      const r = 0.15 + deterministicUnit(i, 3) * 0.65;
+      pos[i * 3] = Math.cos(angle) * r;
+      pos[i * 3 + 1] = Math.max(0.4, stemHeight * 0.45) + deterministicUnit(i, 4) * (stemHeight * 0.6);
+      pos[i * 3 + 2] = Math.sin(angle) * r;
+    }
+    return pos;
+  }, [vaporCount, stemHeight]);
+
+  useFrame((_, delta) => {
+    const speed = Math.max(0.12, (transpirationMm / 4) * 1.2);
+    if (pointsRef.current) {
+      const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
+      for (let i = 0; i < particleCount; i++) {
+        const yIndex = i * 3 + 1;
+        positions[yIndex] += speed * delta;
+        if (positions[yIndex] > stemHeight + 0.05) {
+          positions[yIndex] = -0.35;
+        }
+      }
+      pointsRef.current.geometry.attributes.position.needsUpdate = true;
+    }
+
+    if (vaporRef.current) {
+      const vPos = vaporRef.current.geometry.attributes.position.array as Float32Array;
+      const vSpeed = 0.3 + (transpirationMm / 6) * 0.4;
+      for (let j = 0; j < vaporCount; j++) {
+        const yIndex = j * 3 + 1;
+        vPos[yIndex] += vSpeed * delta;
+        if (vPos[yIndex] > stemHeight + 1.1) {
+          vPos[yIndex] = Math.max(0.3, stemHeight * 0.4) + deterministicUnit(j, 5) * 0.3;
+        }
+      }
+      vaporRef.current.geometry.attributes.position.needsUpdate = true;
+    }
+  });
+
+  const sapColor = cwsiStress > 0.45 ? "#f59e0b" : "#38bdf8";
+
+  return (
+    <group>
+      <points ref={pointsRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[initialPositions, 3]} />
+        </bufferGeometry>
+        <pointsMaterial
+          size={0.045}
+          color={sapColor}
+          transparent
+          opacity={0.88}
+          blending={THREE.AdditiveBlending}
+        />
+      </points>
+
+      {transpirationMm > 0.1 && (
+        <points ref={vaporRef}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[vaporPositions, 3]} />
+          </bufferGeometry>
+          <pointsMaterial
+            size={0.055}
+            color="#a7f3d0"
+            transparent
+            opacity={Math.min(0.72, 0.2 + (transpirationMm / 6) * 0.5)}
+            blending={THREE.AdditiveBlending}
+          />
+        </points>
+      )}
     </group>
   );
 }

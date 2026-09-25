@@ -27,18 +27,22 @@ interface MultiScaleViewer3DProps {
   onSelectPlant?: (plantId?: string) => void;
 }
 
+import { maizeFromScene } from "../../lib/visual-state";
+
 /**
  * Controlador de transición cinemática suave:
- * IMPORTANTE: Solo anima durante el cambio de escala (~1.1 segundos).
- * Una vez finalizada la transición, cede el 100% del control a OrbitControls
- * para que el zoom y la rotación NO reboten ni vuelvan a su posición inicial.
+ * IMPORTANTE: Solo anima durante el cambio de escala (~1.1 segundos) o ajuste
+ * de encuadre en Micro. Cede el 100% del control a OrbitControls para que
+ * el usuario mantenga libertad total de órbita y zoom.
  */
 function CameraController({
   scaleMode,
   controlsRef,
+  targetHeight,
 }: {
   scaleMode: ScaleMode;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
+  targetHeight?: number;
 }) {
   const { camera } = useThree();
 
@@ -48,8 +52,17 @@ function CameraController({
   const startTarget = useRef(new THREE.Vector3());
   const destPos = useRef(new THREE.Vector3());
   const destTarget = useRef(new THREE.Vector3());
+  const lastScale = useRef<ScaleMode | null>(null);
+  const lastHeight = useRef<number | undefined>(undefined);
 
   useEffect(() => {
+    const scaleChanged = scaleMode !== lastScale.current;
+    const heightChanged = scaleMode === "MICRO" && Math.abs((lastHeight.current ?? 1.8) - (targetHeight ?? 1.8)) > 0.35;
+
+    if (!scaleChanged && !heightChanged && lastScale.current !== null) return;
+    lastScale.current = scaleMode;
+    lastHeight.current = targetHeight;
+
     // Definir destinos de cámara y objetivos de rotación según la escala
     if (scaleMode === "MACRO") {
       destPos.current.set(0, 36, 42);
@@ -58,8 +71,15 @@ function CameraController({
       destPos.current.set(0, 15, 21);
       destTarget.current.set(0, 0.5, 0);
     } else if (scaleMode === "MICRO") {
-      destPos.current.set(2.8, 1.8, 3.4);
-      destTarget.current.set(0, 1.1, 0);
+      if (targetHeight && targetHeight > 0 && targetHeight < 0.9) {
+        // Maíz joven / plántula: encuadrar más cerca y centrado
+        destPos.current.set(1.5, 0.75, 1.8);
+        destTarget.current.set(0, Math.max(0.12, targetHeight * 0.5), 0);
+      } else {
+        // Maíz desarrollado y referencia: encuadre canónico completo
+        destPos.current.set(2.8, 1.8, 3.4);
+        destTarget.current.set(0, 1.1, 0);
+      }
     }
 
     startPos.current.copy(camera.position);
@@ -69,7 +89,7 @@ function CameraController({
 
     transitionProgress.current = 0;
     isTransitioning.current = true;
-  }, [scaleMode, camera, controlsRef]);
+  }, [scaleMode, camera, controlsRef, targetHeight]);
 
   useFrame((_, delta) => {
     if (!isTransitioning.current) return;
@@ -129,6 +149,8 @@ export default function MultiScaleViewer3D({
 }: MultiScaleViewer3DProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const southForkContext = scene ? hasSouthForkContext(scene.record, stationId) : stationId === "05451210";
+  const plant = maizeFromScene(scene);
+  const targetPlantHeight = plant.heightM ?? (plant.reference ? 2.1 : undefined);
 
   // Iluminación solar física ajustada por escala
   const sunPosition: [number, number, number] =
@@ -139,8 +161,8 @@ export default function MultiScaleViewer3D({
       : [12, 22, 15];
 
   // Distancias de zoom adaptadas para evitar que el usuario se pierda
-  const minDistance = scaleMode === "MICRO" ? 0.7 : scaleMode === "MESO" ? 2.5 : 8;
-  const maxDistance = scaleMode === "MICRO" ? 12 : scaleMode === "MESO" ? 42 : 85;
+  const minDistance = scaleMode === "MICRO" ? 0.35 : scaleMode === "MESO" ? 2.5 : 8;
+  const maxDistance = scaleMode === "MICRO" ? 14 : scaleMode === "MESO" ? 45 : 95;
 
   return (
     <div className="w-full h-full relative bg-gradient-to-b from-zinc-950 via-slate-950 to-zinc-950 overflow-hidden rounded-2xl">
@@ -251,7 +273,7 @@ export default function MultiScaleViewer3D({
         />
 
         {/* Controlador cinemático que NO interfiere con el OrbitControls */}
-        <CameraController scaleMode={scaleMode} controlsRef={controlsRef} />
+        <CameraController scaleMode={scaleMode} controlsRef={controlsRef} targetHeight={targetPlantHeight} />
 
         {/* Controles de órbita completamente libres y suaves */}
         <OrbitControls

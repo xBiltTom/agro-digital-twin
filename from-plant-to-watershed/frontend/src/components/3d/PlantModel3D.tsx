@@ -1,10 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { Html } from "@react-three/drei";
-import * as THREE from "three";
 import type { SceneState } from "../../lib/playback-scene";
-import { maizeFromScene, maizeReproductive } from "../../lib/visual-state";
-import { MicroRainSystem, RealisticBraceRoots, RealisticMaizeEar, RealisticMaizeLeaf, RealisticMaizeTassel } from "./MaizeVisuals3D";
+import { maizeFromScene, maizeReproductive, REFERENCE_MAIZE } from "../../lib/visual-state";
+import {
+  MicroRainSystem,
+  PhysiologicalFlowDynamics,
+  RealisticBraceRoots,
+  RealisticMaizeEar,
+  RealisticMaizeLeaf,
+  RealisticMaizeTassel,
+  SoilGridsStratigraphyCutout,
+} from "./MaizeVisuals3D";
 
 interface Props {
   scene: SceneState | null;
@@ -14,16 +22,24 @@ interface Props {
 }
 
 /** The sample's measured/modelled height maps directly to scene metres; leaf anatomy is illustrative. */
-export default function PlantModel3D({ scene, showSoilHorizons = true, showScientificLabels = true,
-  showHydrologyFlow = true }: Props) {
+export default function PlantModel3D({
+  scene,
+  showSoilHorizons = true,
+  showScientificLabels = true,
+  showHydrologyFlow = true,
+}: Props) {
+  const [showReferencePlant, setShowReferencePlant] = useState(false);
   const plant = maizeFromScene(scene);
-  const height = plant.heightM === null ? null : Math.max(0, Math.min(3.2, plant.heightM));
-  const lai = plant.lai;
-  const stress = plant.stress;
+
+  // If no sample is available in the scientific record, allow explicit exploration of reference maize
+  const isDisplayingReference = plant.reference || (plant.heightM === null && showReferencePlant);
+  const activePlant = isDisplayingReference ? REFERENCE_MAIZE : plant;
+
+  const height = activePlant.heightM === null ? null : Math.max(0.05, Math.min(3.4, activePlant.heightM));
+  const lai = activePlant.lai;
+  const stress = activePlant.stress;
   const leafCount = lai === null || lai <= 0 ? 0 : Math.max(2, Math.min(18, Math.round(lai * 2.7 + 2)));
-  const soilColor = plant.soilMoisturePercent === null ? "#382618" :
-    new THREE.Color("#53351c").lerp(new THREE.Color("#21160e"),
-      Math.max(0, Math.min(1, plant.soilMoisturePercent / 45)));
+
   const leaves = height === null ? [] : Array.from({ length: leafCount }, (_, i) => {
     const t = (i + 1) / (leafCount + 1);
     const spread = Math.min(1, Math.max(0.08, (lai ?? 0) / 4));
@@ -37,58 +53,169 @@ export default function PlantModel3D({ scene, showSoilHorizons = true, showScien
       droop: length * (0.16 + (stress ?? 0) * 0.46 + t * 0.1),
     };
   });
-  const reproductive = maizeReproductive(plant.stage);
-  const showRain = Boolean(scene && showHydrologyFlow && scene.rainIntensity !== null && scene.rainMm !== null && scene.rainMm > 0);
 
-  return <group position={[0, -0.18, 0]}>
-    {/* Contextual soil layers; their depths and stratigraphy are illustrative. */}
-    <mesh rotation-x={-Math.PI / 2} receiveShadow position={[0, 0.003, 0]}>
-      <circleGeometry args={[2.9, 64]} /><meshStandardMaterial color={soilColor} roughness={0.82} />
-    </mesh>
-    {showSoilHorizons && <group>
-      <mesh position={[0, -0.16, 0]}><cylinderGeometry args={[2.88, 2.88, 0.32, 48, 1, true]} />
-        <meshPhysicalMaterial color="#56371e" transparent opacity={0.55} side={THREE.DoubleSide} /></mesh>
-      <mesh position={[0, -0.49, 0]}><cylinderGeometry args={[2.86, 2.86, 0.34, 48, 1, true]} />
-        <meshPhysicalMaterial color="#704524" transparent opacity={0.46} side={THREE.DoubleSide} /></mesh>
-      <mesh position={[0, -0.94, 0]}><cylinderGeometry args={[2.84, 2.84, 0.56, 48, 1, true]} />
-        <meshPhysicalMaterial color="#8b603b" transparent opacity={0.37} side={THREE.DoubleSide} /></mesh>
-      {[-0.32, -0.66].map((y) => <mesh key={y} position={[0, y, 0]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[2.82, 2.88, 48]} /><meshBasicMaterial color="#c7a574" transparent opacity={0.6} />
-      </mesh>)}
-    </group>}
-    {height !== null && height > 0 && <group data-testid="detailed-maize-plant">
-      {/* One scene unit is one metre; no additional calendar growth multiplier. */}
-      <mesh castShadow position={[0, height / 2, 0]}>
-        <cylinderGeometry args={[0.03, 0.07, height, 20]} />
-        <meshPhysicalMaterial color={stress !== null && stress > 0.5 ? "#717a2f" : "#4f7d2c"}
-          roughness={0.38} clearcoat={0.35} clearcoatRoughness={0.22} />
-      </mesh>
-      {leaves.map((leaf, i) => <group key={i}>
-        <mesh position={[0, leaf.nodeHeight, 0]} rotation-x={Math.PI / 2} castShadow>
-          <torusGeometry args={[0.044, 0.011, 8, 20]} /><meshStandardMaterial color="#6a9537" /></mesh>
-        <RealisticMaizeLeaf {...leaf} stress={stress ?? 0} />
-      </group>)}
-      {plant.rootDepthM !== null && plant.rootDepthM > 0 && <RealisticBraceRoots rootDepthCm={plant.rootDepthM * 100} />}
-      {reproductive && <>
-        <RealisticMaizeEar nodeY={height * 0.48} angle={Math.PI * 0.42} />
-        <RealisticMaizeTassel apexY={Math.max(0, height - 0.76)} />
-      </>}
-    </group>}
-    {showRain && <MicroRainSystem precipMm={scene!.rainMm!} />}
-    {showScientificLabels && <Html position={[1.5, 2.4, 0]} distanceFactor={1.8}>
-      <div className="w-64 rounded-xl border border-emerald-500/40 bg-zinc-950/95 p-3 text-xs text-zinc-100 shadow-2xl">
-        <b className="text-emerald-300">{plant.reference ? "Maíz de referencia · ilustrativo" : `Muestra FSPM ${plant.sampleId ?? "no disponible"}`}</b>
-        <p className="mt-1">{scene?.record.date ?? "Sin fecha científica"} · {plant.reference ? "Anatomía reproductiva ilustrativa" : plant.stage ?? "Etapa no disponible"}</p>
-        <p>Altura: {plant.reference ? "Referencia visual" : height === null ? "No disponible" : `${height.toFixed(2)} m`}</p>
-        <p>LAI: {plant.reference ? "Referencia visual" : lai === null ? "No disponible" : lai.toFixed(2)}</p>
-        <p>Raíz: {plant.reference ? "Referencia visual" : plant.rootDepthM === null ? "No disponible" : `${plant.rootDepthM.toFixed(2)} m`}</p>
-        <p>Estrés: {stress === null ? "No disponible" : stress.toFixed(2)}</p>
-        <p>Transpiración: {plant.transpirationMmDay === null ? "No disponible" : `${plant.transpirationMmDay.toFixed(2)} mm/día`}</p>
-        {scene?.sample && <p className="text-cyan-300">{scene.sample.variables.height_m?.evidence ?? "NOT_AVAILABLE"} · {scene.sample.variables.height_m?.source ?? "Sin fuente"}</p>}
-        <p className="mt-1 text-zinc-400">Hojas, mazorca, raíces laterales y perfil del suelo son ilustrativos.</p>
-        {!scene && <p className="text-amber-300">Sin trayectoria individual persistida.</p>}
-        {scene && !scene.sample && <p className="text-amber-300">Esta corrida/fecha no contiene muestra FSPM activa.</p>}
-      </div>
-    </Html>}
-  </group>;
+  const reproductive = maizeReproductive(activePlant.stage);
+  const showRain = Boolean(scene && showHydrologyFlow && scene.rainIntensity !== null && scene.rainMm !== null && scene.rainMm > 0);
+  const rootDepthM = activePlant.rootDepthM ?? (isDisplayingReference ? 1.0 : null);
+  const transpirationVal = activePlant.transpirationMmDay ?? (isDisplayingReference ? 1.4 : null);
+
+  return (
+    <group position={[0, -0.18, 0]}>
+      {/* 1. Perfil estratigráfico del suelo (Ap, Bt, C) con brillo óptico según humedad volumétrica */}
+      {showSoilHorizons && (
+        <SoilGridsStratigraphyCutout
+          soilMoistureVol={activePlant.soilMoisturePercent}
+          rootDepthCm={rootDepthM !== null ? rootDepthM * 100 : null}
+        />
+      )}
+
+      {/* 2. Modelo anatómico del maíz Zea mays L. */}
+      {height !== null && height > 0 && (
+        <group data-testid="detailed-maize-plant">
+          {/* Tallo 3D con nudos anulares y curvatura bajo estrés de sequía */}
+          <group rotation-z={stress !== null && stress > 0.35 ? (stress - 0.35) * 0.15 : 0}>
+            {/* Tallo ahusado principal */}
+            <mesh castShadow position={[0, height / 2, 0]}>
+              <cylinderGeometry args={[0.024 + Math.min(0.015, height * 0.008), 0.038 + Math.min(0.02, height * 0.012), height, 20]} />
+              <meshPhysicalMaterial
+                color={stress !== null && stress > 0.4 ? "#6b7a2d" : "#4f7d2c"}
+                roughness={0.38}
+                clearcoat={0.35}
+                clearcoatRoughness={0.22}
+              />
+            </mesh>
+
+            {/* Nudos anulares y vainas foliares a lo largo del tallo */}
+            {leaves.map((leaf, nodeIdx) => (
+              <mesh key={`node-${nodeIdx}`} position={[0, leaf.nodeHeight, 0]} rotation-x={Math.PI / 2} castShadow>
+                <torusGeometry args={[0.038 + (1 - (nodeIdx / leafCount)) * 0.012, 0.011, 8, 22]} />
+                <meshStandardMaterial
+                  color={stress !== null && stress > 0.4 ? "#7a8536" : "#689639"}
+                  roughness={0.55}
+                />
+              </mesh>
+            ))}
+          </group>
+
+          {/* Hojas phyllotáxicas curvas con nervadura central, textura cuticular y física de viento */}
+          {leaves.map((leaf, i) => (
+            <RealisticMaizeLeaf key={i} {...leaf} stress={stress ?? 0} />
+          ))}
+
+          {/* Raíces adventicias de anclaje (brace roots) y red radicular subterránea */}
+          {rootDepthM !== null && rootDepthM > 0 && (
+            <RealisticBraceRoots
+              rootDepthCm={rootDepthM * 100}
+              stemHeight={height}
+            />
+          )}
+
+          {/* Estructuras reproductivas: mazorca con sedas doradas y panoja apical masculina */}
+          {reproductive && (
+            <>
+              <RealisticMaizeEar nodeY={height * 0.46} angle={Math.PI * 0.42} />
+              <RealisticMaizeTassel apexY={height} />
+            </>
+          )}
+
+          {/* Dinámica fisiológica: savia xilemática en ascenso y vapor de transpiración ilustrativos */}
+          {showHydrologyFlow && transpirationVal !== null && (
+            <PhysiologicalFlowDynamics
+              transpirationMm={transpirationVal}
+              cwsiStress={stress ?? 0}
+              stemHeight={height}
+            />
+          )}
+        </group>
+      )}
+
+      {/* 3. Lluvia volumétrica activa a escala micro */}
+      {showRain && <MicroRainSystem precipMm={scene!.rainMm!} />}
+
+      {/* 4. Tarjeta Informativa Científica de la Planta FSPM */}
+      {showScientificLabels && (
+        <Html
+          position={[
+            height !== null && height < 0.9 ? 0.9 : 1.5,
+            height !== null && height < 0.9 ? 0.6 : 2.4,
+            0,
+          ]}
+          distanceFactor={1.8}
+        >
+          <div className="w-68 rounded-xl border border-emerald-500/40 bg-zinc-950/95 p-3.5 text-xs text-zinc-100 shadow-2xl backdrop-blur-md">
+            <div className="flex items-center justify-between border-b border-emerald-500/30 pb-1.5">
+              <span className="font-bold text-emerald-300">
+                {isDisplayingReference ? "Maíz de referencia · ilustrativo" : `Muestra FSPM ${plant.sampleId ?? "no disponible"}`}
+              </span>
+              <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-mono text-emerald-300">
+                Micro
+              </span>
+            </div>
+            <div className="mt-1.5 text-[11px] font-mono text-zinc-300">
+              {scene?.record.date ?? "Sin fecha científica"} · {isDisplayingReference ? "Anatomía reproductiva ilustrativa" : plant.stage ?? "Etapa no disponible"}
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] font-mono">
+              <div>
+                <span className="text-zinc-400">Altura:</span>{" "}
+                <b className="text-emerald-300">
+                  {isDisplayingReference ? "Referencia visual" : height === null ? "No disponible" : `${height.toFixed(2)} m`}
+                </b>
+              </div>
+              <div>
+                <span className="text-zinc-400">LAI:</span>{" "}
+                <b className="text-emerald-300">
+                  {isDisplayingReference ? "Referencia visual" : lai === null ? "No disponible" : lai.toFixed(2)}
+                </b>
+              </div>
+              <div>
+                <span className="text-zinc-400">Raíz:</span>{" "}
+                <b className="text-teal-300">
+                  {isDisplayingReference ? "Referencia visual" : plant.rootDepthM === null ? "No disponible" : `${plant.rootDepthM.toFixed(2)} m`}
+                </b>
+              </div>
+              <div>
+                <span className="text-zinc-400">Estrés:</span>{" "}
+                <b className={stress !== null && stress > 0.4 ? "text-amber-400" : "text-emerald-300"}>
+                  {stress === null ? "No disponible" : stress.toFixed(2)}
+                </b>
+              </div>
+              <div className="col-span-2">
+                <span className="text-zinc-400">Transpiración:</span>{" "}
+                <b className="text-cyan-300">
+                  {transpirationVal === null ? "No disponible" : `${transpirationVal.toFixed(2)} mm/día`}
+                </b>
+              </div>
+            </div>
+
+            {scene?.sample && (
+              <div className="mt-1.5 text-[10px] text-cyan-300 font-mono">
+                {scene.sample.variables.height_m?.evidence ?? "NOT_AVAILABLE"} · {scene.sample.variables.height_m?.source ?? "Sin fuente"}
+              </div>
+            )}
+
+            <div className="mt-1.5 text-[10px] text-zinc-400">
+              Hojas, mazorca, raíces laterales y perfil del suelo son ilustrativos.
+            </div>
+
+            {!scene && <p className="mt-1 text-amber-300 text-[10px]">Sin trayectoria individual persistida.</p>}
+
+            {scene && !scene.sample && (
+              <p className="mt-1 text-amber-300 text-[10px]">Esta corrida/fecha no contiene muestra FSPM activa.</p>
+            )}
+
+            {/* Toggle de exploración explícita de planta de referencia cuando no hay muestra */}
+            {scene && !scene.sample && (
+              <button
+                type="button"
+                onClick={() => setShowReferencePlant((prev) => !prev)}
+                className="mt-2 w-full cursor-pointer rounded-lg bg-emerald-700/60 hover:bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white transition text-center"
+              >
+                {showReferencePlant ? "Ocultar maqueta de referencia" : "Explorar maíz de referencia (ilustrativo) →"}
+              </button>
+            )}
+          </div>
+        </Html>
+      )}
+    </group>
+  );
 }
