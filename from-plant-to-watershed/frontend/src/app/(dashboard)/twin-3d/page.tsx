@@ -69,6 +69,7 @@ export default function Twin3DPage() {
     playback.setPlaying(false);
     playback.setResolution(undefined);
     setPlantId(null);
+    setScaleMode("MACRO");
     setDateMessage(null);
     setSimulationId(id);
   };
@@ -129,6 +130,7 @@ export default function Twin3DPage() {
       {scene && playback.page?.artifact_status === "AVAILABLE" ? <>
         <MultiScaleViewer3D scaleMode={scaleMode} onChangeScale={setScaleMode} scene={scene}
           stationId={simulation?.station_id}
+          onSelectPlant={(id) => { if (id) setPlantId(id); }}
           showHydrologyFlow={showHydrologyFlow} showSoilHorizons={showSoilHorizons}
           showSensors={showSensors} showScientificLabels={showScientificLabels} />
         <TwinHUDOverlay record={record!} simulationName={simulation?.name ?? record!.simulation_id}
@@ -143,7 +145,8 @@ export default function Twin3DPage() {
             if (document.fullscreenElement) void document.exitFullscreen();
             else void viewerRef.current?.requestFullscreen();
           }} />
-      </> : historical.status === "ready" && simulation ? <HistoricalContext3D simulation={simulation}
+      </> : simulation && historicalFallbackEligible(simulation.status, playback.page?.artifact_status ?? null) ? <HistoricalContext3D simulation={simulation}
+        scaleMode={scaleMode} onChangeScale={setScaleMode}
         onToggleFullscreen={() => {
           if (document.fullscreenElement) void document.exitFullscreen();
           else void viewerRef.current?.requestFullscreen();

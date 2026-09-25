@@ -74,7 +74,7 @@ export default function TwinHUDOverlay({ record, simulationName, scaleMode, onCh
     </div>
 
     <div className="flex flex-col gap-2 pointer-events-auto">
-      <div className="max-w-3xl rounded-xl border border-zinc-700 bg-zinc-950/90 p-3 shadow-xl">
+      <div className="max-h-44 max-w-3xl overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-950/90 p-3 shadow-xl">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">
           <strong className="text-cyan-200">{period} · {record.resolution}</strong>
           <span>{simulationName}</span>

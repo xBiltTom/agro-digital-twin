@@ -4,6 +4,7 @@ import { rainIntensity, sceneFromRecord, periodLabel, variableText, chartPointFr
 import { PlaybackClient } from "../src/lib/playback-client.ts";
 import { historicalFallbackEligible, simplifiedHistoricalPoints, swatHistoricalPoints } from "../src/lib/historical-charts.ts";
 import { accessibleSimulations } from "../src/lib/simulation-access.ts";
+import { fieldCanopyAvailable, maizeFromScene, maizeReproductive } from "../src/lib/visual-state.ts";
 import type { PlaybackPage, PlaybackRecord, VariableState } from "../src/types/playback.ts";
 import type { SimulationResult, SimulationRun } from "../src/types/simulation.ts";
 import type { User } from "../src/types/auth.ts";
@@ -60,6 +61,31 @@ test("FSPM growth follows recorded samples and resets at season boundary", () =>
   assert.equal(newSeason.fieldHeightM, 0.15);
   assert.equal(newSeason.record.crop?.season_id, "two");
   assert.equal(sceneFromRecord(record("2021-05-02", { season: "two" }), "missing-id").sample, null);
+});
+
+test("rich plant geometry receives exactly the selected sample dimensions and phenology", () => {
+  const early = maizeFromScene(sceneFromRecord(record("2020-05-01", { height: 0.2 }), "p-7"));
+  const matureRecord = record("2020-08-01", { height: 2.1 });
+  matureRecord.plant_samples[0].variables.phenological_stage = variable("REPRODUCTIVE", "category");
+  const mature = maizeFromScene(sceneFromRecord(matureRecord, "p-7"));
+  assert.equal(early.heightM, 0.2);
+  assert.equal(mature.heightM, 2.1);
+  assert.equal(maizeReproductive(early.stage), false);
+  assert.equal(maizeReproductive(mature.stage), true);
+  assert.equal(mature.sampleId, "p-7");
+  assert.equal(mature.reference, false);
+});
+
+test("fallow and baseline hide the scientific canopy; historical mode stays labelled reference", () => {
+  const fallow = sceneFromRecord(record("2020-11-01", { crop: false }), "p-7");
+  const baseline = sceneFromRecord({ ...record("2020-06-01"), crop: null, field: {}, plant_samples: [] }, null);
+  assert.equal(fieldCanopyAvailable(fallow), false);
+  assert.equal(fieldCanopyAvailable(baseline), false);
+  assert.equal(maizeFromScene(fallow).heightM, null);
+  assert.equal(maizeFromScene(baseline).reference, false);
+  assert.equal(fieldCanopyAvailable(null), true);
+  assert.equal(maizeFromScene(null).reference, true);
+  assert.equal(maizeFromScene(null).soilMoisturePercent, null);
 });
 
 test("baseline has no FSPM; soil-water mm is distinct from assumed volumetric percent", () => {

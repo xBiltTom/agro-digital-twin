@@ -2,108 +2,145 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { Html } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { SceneState } from "../../lib/playback-scene";
+import { fieldCanopyAvailable, maizeReproductive } from "../../lib/visual-state";
+import { createCurvedMaizeLeafGeometry, EddyCovarianceTower, MesoRainSystem, SoilMoistureProbeStation } from "./FieldVisuals3D";
 
 interface Props {
-  scene: SceneState;
-  onSelectPlant: () => void;
+  scene: SceneState | null;
+  onSelectPlant: (plantId?: string) => void;
   showSensors?: boolean;
   showScientificLabels?: boolean;
   showHydrologyFlow?: boolean;
 }
 
-/** Instances represent field means; they are not independent simulated plants. */
-function AggregateCanopy({ heightM, lai, cover, stress }: {
-  heightM: number; lai: number; cover: number | null; stress: number | null;
+/** 26 × 39 decorative maize meshes, driven by the field mean. They are not persisted individual trajectories. */
+function RichCanopy({ heightM, lai, cover, stress, stage }: {
+  heightM: number; lai: number; cover: number | null; stress: number | null; stage: string | null;
 }) {
   const stems = useRef<THREE.InstancedMesh>(null);
-  const leaves = useRef<THREE.InstancedMesh>(null);
-  const columns = 22;
-  const rows = 18;
-  const count = columns * rows;
-  const canopyRadius = Math.max(0.08, Math.min(0.48, 0.12 + lai * 0.055)) *
-    (cover === null ? 1 : Math.max(0.35, Math.min(1, cover * 1.4)));
-  const visualHeight = Math.max(0.03, Math.min(3.2, heightM)); // 1 scene unit/m, bounded.
-  const color = useMemo(() => stress === null ? new THREE.Color("#63885a") :
-    new THREE.Color("#258a3d").lerp(new THREE.Color("#a6a33c"), Math.max(0, Math.min(1, stress))), [stress]);
+  const lower = useRef<THREE.InstancedMesh>(null);
+  const middle = useRef<THREE.InstancedMesh>(null);
+  const upper = useRef<THREE.InstancedMesh>(null);
+  const tassels = useRef<THREE.InstancedMesh>(null);
+  const rows = 26, columns = 39, count = rows * columns;
+  const leafGeoA = useMemo(() => createCurvedMaizeLeafGeometry(0.88, 0.17, 0.35), []);
+  const leafGeoB = useMemo(() => createCurvedMaizeLeafGeometry(0.82, 0.15, 0.28), []);
+  const leafGeoC = useMemo(() => createCurvedMaizeLeafGeometry(0.68, 0.13, 0.20), []);
+  useEffect(() => () => { leafGeoA.dispose(); leafGeoB.dispose(); leafGeoC.dispose(); }, [leafGeoA, leafGeoB, leafGeoC]);
 
   useEffect(() => {
-    const matrix = new THREE.Matrix4();
-    const position = new THREE.Vector3();
-    const rotation = new THREE.Quaternion();
-    const scale = new THREE.Vector3();
+    const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), scale = new THREE.Vector3();
+    const rotation = new THREE.Euler(), quaternion = new THREE.Quaternion();
+    const height = Math.max(0.005, Math.min(3.2, heightM)); // metre for metre
+    const leafScale = Math.max(0, Math.min(1.2, lai / 3.8)) *
+      (cover === null ? 1 : Math.max(0, Math.min(1, cover)));
+    const color = stress === null ? new THREE.Color("#467938") :
+      new THREE.Color("#22631a").lerp(new THREE.Color("#989e30"), Math.max(0, Math.min(1, stress)));
     for (let i = 0; i < count; i++) {
-      const x = (i % columns - (columns - 1) / 2) * 0.85;
-      const z = (Math.floor(i / columns) - (rows - 1) / 2) * 0.9;
-      position.set(x, visualHeight / 2, z);
-      scale.set(1, visualHeight, 1);
-      matrix.compose(position, rotation, scale);
+      const x = (i % columns - (columns - 1) / 2) * 0.54;
+      const z = (Math.floor(i / columns) - (rows - 1) / 2) * 0.82;
+      const turn = i * 0.73;
+      position.set(x, height / 2, z); rotation.set(0, turn, 0); scale.set(1, height, 1);
+      matrix.compose(position, quaternion.setFromEuler(rotation), scale);
       stems.current?.setMatrixAt(i, matrix);
-      position.set(x, visualHeight * 0.67, z);
-      scale.set(canopyRadius, Math.max(0.05, visualHeight * 0.62), canopyRadius);
-      matrix.compose(position, rotation, scale);
-      leaves.current?.setMatrixAt(i, matrix);
+      stems.current?.setColorAt(i, new THREE.Color("#416a24"));
+      [lower, middle, upper].forEach((ref, layer) => {
+        position.set(x, height * (0.34 + layer * 0.24), z);
+        rotation.set(0, turn + layer * Math.PI / 2, (stress ?? 0) * 0.25);
+        const horizontal = leafScale * (layer === 2 ? 0.72 : 1);
+        scale.set(horizontal, horizontal, horizontal * (0.5 + height * 0.3));
+        matrix.compose(position, quaternion.setFromEuler(rotation), scale);
+        ref.current?.setMatrixAt(i, matrix);
+        ref.current?.setColorAt(i, color);
+      });
+      position.set(x, height - (maizeReproductive(stage) ? 0.10 : 0), z);
+      rotation.set(0, turn, 0);
+      const tasselSize = maizeReproductive(stage) ? 0.7 : 0.001;
+      scale.set(tasselSize, tasselSize, tasselSize);
+      matrix.compose(position, quaternion.setFromEuler(rotation), scale);
+      tassels.current?.setMatrixAt(i, matrix);
     }
-    if (stems.current) stems.current.instanceMatrix.needsUpdate = true;
-    if (leaves.current) leaves.current.instanceMatrix.needsUpdate = true;
-  }, [count, visualHeight, canopyRadius]);
+    [stems, lower, middle, upper, tassels].forEach((ref) => {
+      if (ref.current) {
+        ref.current.instanceMatrix.needsUpdate = true;
+        if (ref.current.instanceColor) ref.current.instanceColor.needsUpdate = true;
+      }
+    });
+  }, [heightM, lai, cover, stress, stage, count]);
 
-  return <group>
+  return <group data-testid="rich-field-canopy">
     <instancedMesh ref={stems} args={[undefined, undefined, count]} castShadow>
-      <cylinderGeometry args={[0.035, 0.055, 1, 6]} />
-      <meshStandardMaterial color="#5d8d36" roughness={0.85} />
+      <cylinderGeometry args={[0.022, 0.038, 1, 8]} /><meshPhysicalMaterial roughness={0.4} clearcoat={0.35} />
     </instancedMesh>
-    <instancedMesh ref={leaves} args={[undefined, undefined, count]} castShadow>
-      <coneGeometry args={[1, 1, 5]} />
-      <meshStandardMaterial color={color} roughness={0.65} side={THREE.DoubleSide} />
+    {[ [lower, leafGeoA], [middle, leafGeoB], [upper, leafGeoC] ].map(([ref, geometry], index) =>
+      <instancedMesh key={index} ref={ref as React.RefObject<THREE.InstancedMesh>}
+        args={[geometry as THREE.BufferGeometry, undefined, count]} castShadow receiveShadow>
+        <meshPhysicalMaterial side={THREE.DoubleSide} roughness={0.28} clearcoat={0.72} clearcoatRoughness={0.18} />
+      </instancedMesh>)}
+    <instancedMesh ref={tassels} args={[undefined, undefined, count]} castShadow>
+      <coneGeometry args={[0.08, 0.32, 6]} /><meshStandardMaterial color="#e5ce79" roughness={0.55} />
     </instancedMesh>
   </group>;
 }
 
-function FieldRain({ intensity }: { intensity: number }) {
-  const group = useRef<THREE.Group>(null);
-  const count = Math.max(8, Math.floor(intensity * 400));
-  const points = useMemo(() => Array.from({ length: count }, (_, i) => {
-    const x = (((i * 73) % 397) / 397 - 0.5) * 22;
-    const z = (((i * 163) % 401) / 401 - 0.5) * 20;
-    const y = ((i * 47) % 101) / 101 * 10;
-    return [x, y, z] as const;
-  }), [count]);
-  useFrame((_, delta) => { if (group.current) group.current.position.y = (group.current.position.y - delta * 7 + 10) % 10; });
-  return <group ref={group}>{points.map(([x, y, z], i) =>
-    <mesh key={i} position={[x, y, z]}><boxGeometry args={[0.015, 0.32, 0.015]} /><meshBasicMaterial color="#9de5fa" transparent opacity={0.55} /></mesh>
-  )}</group>;
-}
-
 export default function FieldPlotMesh3D({ scene, onSelectPlant, showSensors = true,
   showScientificLabels = true, showHydrologyFlow = true }: Props) {
-  const showCrop = scene.cropActive && scene.cropSupported && scene.fieldHeightM !== null && scene.fieldLai !== null;
-  return <group position={[0, -0.18, 0]}>
+  const reference = scene === null;
+  const showCrop = fieldCanopyAvailable(scene);
+  const height = reference ? 2.1 : scene?.fieldHeightM ?? null;
+  const lai = reference ? 3.5 : scene?.fieldLai ?? null;
+  const soilColor = scene?.soilMoisturePercent === null || !scene ? "#422b18" :
+    new THREE.Color("#53351c").lerp(new THREE.Color("#22140a"), Math.max(0, Math.min(1, scene.soilMoisturePercent / 45)));
+  const sampleMarkers = scene?.cropActive && scene.cropSupported ? scene.record.plant_samples : [];
+  return <group position={[0, -0.12, 0]}>
     <mesh receiveShadow rotation-x={-Math.PI / 2}>
-      <planeGeometry args={[23, 21]} />
-      <meshStandardMaterial color="#584434" roughness={0.95} />
+      <planeGeometry args={[24, 24, 32, 32]} /><meshStandardMaterial color={soilColor} roughness={0.85} />
     </mesh>
-    <gridHelper args={[22, 22, "#765e48", "#574532"]} position={[0, 0.005, 0]} />
-    {showCrop && <group onClick={() => { if (scene.sample) onSelectPlant(); }}>
-      <AggregateCanopy heightM={scene.fieldHeightM!} lai={scene.fieldLai!}
-        cover={scene.canopyCover} stress={scene.stress} />
-    </group>}
-    {showSensors && <mesh position={[-10, 1, -9]}><cylinderGeometry args={[0.035, 0.035, 2, 8]} /><meshStandardMaterial color="#94a3b8" /></mesh>}
-    {showHydrologyFlow && scene.rainIntensity !== null && scene.rainIntensity > 0 &&
-      <FieldRain intensity={scene.rainIntensity} />}
-    {showScientificLabels && <Html position={[-10, 4, 0]} distanceFactor={12}>
-      <div className="w-64 rounded-xl border border-emerald-500/40 bg-zinc-950/95 p-3 text-xs text-zinc-100 shadow-2xl">
-        <b className="text-emerald-300">Campo FSPM · {scene.record.date}</b>
-        <p className="mt-1">{scene.cropActive ? `${scene.record.crop?.crop ?? "Cultivo"} · ${scene.record.crop?.phenological_stage ?? "Etapa no disponible"}` : "Sin cultivo activo"}</p>
-        {scene.cropActive && !scene.cropSupported && <p className="text-amber-300">Geometría de este cultivo no disponible.</p>}
-        {scene.cropActive && scene.cropSupported && !showCrop && <p className="text-amber-300">Altura o LAI no disponibles para dibujar el dosel.</p>}
-        <p>LAI: {scene.fieldLai === null ? "No disponible" : scene.fieldLai.toFixed(2)}</p>
-        <p>Altura: {scene.fieldHeightM === null ? "No disponible" : `${scene.fieldHeightM.toFixed(2)} m`}</p>
-        <p className="mt-1 text-zinc-400">Geometría decorativa basada en promedios; {scene.record.plant_samples.length} muestras individuales registradas.</p>
-        {scene.record.crop?.window_status === "APPROXIMATE_PLANTING_WINDOW" && <p className="text-amber-300">Ventana agrícola aproximada por PHU</p>}
-        {scene.sample && <button className="mt-2 text-emerald-300 underline" onClick={onSelectPlant}>Ver muestra {scene.sample.plant_id}</button>}
+    {Array.from({ length: 26 }, (_, row) => <group key={row} position={[0, 0.012, (row - 12.5) * 0.82]}>
+      <mesh rotation-x={-Math.PI / 2}><planeGeometry args={[22.5, 0.16]} />
+        <meshStandardMaterial color="#170c06" roughness={0.8} /></mesh>
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.005, 0.38]}>
+        <planeGeometry args={[22, 0.32]} /><meshStandardMaterial color="#8a7650" transparent opacity={0.82} roughness={0.88} /></mesh>
+    </group>)}
+    {showCrop && height !== null && lai !== null && <RichCanopy heightM={height} lai={lai}
+      cover={reference ? null : scene!.canopyCover} stress={reference ? null : scene!.stress}
+      stage={reference ? "REPRODUCTIVE" : scene!.record.crop?.phenological_stage ?? null} />}
+    {showSensors && <>
+      <EddyCovarianceTower position={[-9.5, 0, -8.5]} />
+      <SoilMoistureProbeStation position={[8.2, 0, 7.5]} label="Sonda contextual"
+        valuePercent={null} />
+      <SoilMoistureProbeStation position={[-7.5, 0, 8.2]} label="Sonda contextual"
+        valuePercent={null} />
+    </>}
+    {sampleMarkers.map((sample) => Number.isFinite(sample.x_m) && Number.isFinite(sample.y_m) ?
+      <group key={sample.plant_id} position={[sample.x_m - 11.6, 0.035, sample.y_m - 3.1]}>
+        <mesh rotation-x={-Math.PI / 2} onClick={(event) => { event.stopPropagation(); onSelectPlant(sample.plant_id); }}>
+          <ringGeometry args={[0.18, 0.28, 24]} /><meshBasicMaterial color="#00f5b2" side={THREE.DoubleSide} />
+        </mesh>
+        {showScientificLabels && <Html position={[0, 0.35, 0]} center distanceFactor={12}>
+          <button className="rounded border border-emerald-400/50 bg-zinc-950/90 px-1.5 py-0.5 text-[9px] text-emerald-200"
+            onClick={() => onSelectPlant(sample.plant_id)}>{sample.plant_id}</button>
+        </Html>}
+      </group> : null)}
+    {showHydrologyFlow && scene?.rainMm !== null && scene?.rainMm !== undefined && scene.rainIntensity !== null && scene.rainMm > 0 &&
+      <MesoRainSystem precipMm={scene.rainMm} />}
+    {showScientificLabels && <Html position={[-10.8, 4.2, -9.5]} distanceFactor={18}>
+      <div className="w-64 rounded-xl border border-teal-400/50 bg-zinc-950/95 p-3 text-xs text-zinc-100 shadow-2xl">
+        <b className="text-teal-300">{reference ? "Parcela de referencia · ilustrativa" : `Campo FSPM · ${scene.record.date}`}</b>
+        <p className="mt-1">{reference ? "Vegetación y surcos contextuales" : scene.cropActive ?
+          `${scene.record.crop?.crop ?? "Cultivo"} · ${scene.record.crop?.phenological_stage ?? "Etapa no disponible"}` : "Sin cultivo activo"}</p>
+        {!reference && scene.cropActive && !scene.cropSupported && <p className="text-amber-300">Geometría de este cultivo no disponible.</p>}
+        {!reference && scene.cropActive && scene.cropSupported && !showCrop && <p className="text-amber-300">Altura o LAI no disponibles.</p>}
+        <p>LAI: {reference ? "Referencia visual" : lai === null ? "No disponible" : lai.toFixed(2)}</p>
+        <p>Altura: {reference ? "Referencia visual" : height === null ? "No disponible" : `${height.toFixed(2)} m`}</p>
+        <p className="mt-1 text-zinc-400">Las instancias son vegetación decorativa; {sampleMarkers.length} muestras FSPM persistidas con ID propio.</p>
+        {scene?.record.crop?.window_status === "APPROXIMATE_PLANTING_WINDOW" && <p className="text-amber-300">Ventana agrícola aproximada por PHU.</p>}
+        {scene?.sample && <button className="mt-2 text-emerald-300 underline" onClick={() => onSelectPlant(scene.sample!.plant_id)}>
+          Ver muestra {scene.sample.plant_id}</button>}
+        {reference && <button className="mt-2 text-emerald-300 underline" onClick={() => onSelectPlant()}>
+          Explorar planta de referencia</button>}
       </div>
     </Html>}
   </group>;

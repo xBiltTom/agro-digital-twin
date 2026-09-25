@@ -17,13 +17,14 @@ export type ScaleMode = "MACRO" | "MESO" | "MICRO";
 interface MultiScaleViewer3DProps {
   scaleMode: ScaleMode;
   onChangeScale: (scale: ScaleMode) => void;
-  scene: SceneState;
+  scene: SceneState | null;
   watershedName?: string;
   stationId?: string | null;
   showHydrologyFlow?: boolean;
   showSoilHorizons?: boolean;
   showSensors?: boolean;
   showScientificLabels?: boolean;
+  onSelectPlant?: (plantId?: string) => void;
 }
 
 /**
@@ -124,9 +125,10 @@ export default function MultiScaleViewer3D({
   showSoilHorizons = true,
   showSensors = true,
   showScientificLabels = true,
+  onSelectPlant,
 }: MultiScaleViewer3DProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
-  const southForkContext = hasSouthForkContext(scene.record, stationId);
+  const southForkContext = scene ? hasSouthForkContext(scene.record, stationId) : stationId === "05451210";
 
   // Iluminación solar física ajustada por escala
   const sunPosition: [number, number, number] =
@@ -280,15 +282,17 @@ export default function MultiScaleViewer3D({
         {/* Escala MACRO: Cuenca SWAT+, Red Fluvial, HRUs, USGS */}
         {scaleMode === "MACRO" && southForkContext && (
           <WatershedMesh3D
-            streamflowM3s={scene.streamflowM3s}
-            precipMm={scene.rainMm}
-            rainEffectMm={scene.record.resolution === "DAILY" ? scene.rainMm : null}
-            precipitationUnit={scene.record.weather.precipitation_mm?.unit ?? "mm"}
-            periodLabel={periodLabel(scene.record)}
+            streamflowM3s={scene?.streamflowM3s ?? null}
+            precipMm={scene?.rainMm ?? null}
+            rainEffectMm={scene?.record.resolution === "DAILY" ? scene.rainMm : null}
+            precipitationUnit={scene?.record.weather.precipitation_mm?.unit ?? "mm"}
+            periodLabel={scene ? periodLabel(scene.record) : "Referencia visual sin fecha científica"}
             watershedName={watershedName}
             stationId={stationId}
-            evidenceType={scene.record.hydrology.streamflow_m3s?.evidence}
+            evidenceType={scene?.record.hydrology.streamflow_m3s?.evidence ?? "NOT_AVAILABLE"}
             onSelectSubbasin={() => onChangeScale("MESO")}
+            fieldNavigationLabel={!scene ? "Explorar parcela de referencia (Meso)" :
+              scene.cropActive && scene.cropSupported ? "Ver campo FSPM (Meso)" : "Explorar parcela contextual (Meso)"}
             showHruBorders={showSoilHorizons}
             showHydrologyFlow={showHydrologyFlow}
             showScientificLabels={showScientificLabels}
@@ -301,18 +305,19 @@ export default function MultiScaleViewer3D({
           </mesh>
           <Html position={[0, 4, 0]} center distanceFactor={16}>
             <div className="rounded-xl border border-cyan-500/40 bg-zinc-950/95 p-3 text-xs text-zinc-200">
-              <b>Cuenca {scene.record.watershed_code ?? scene.record.watershed_id}</b>
-              <p>Geometría espacial no disponible para esta corrida. Los valores del outlet se muestran en el HUD.</p>
+              <b>Cuenca {scene?.record.watershed_code ?? scene?.record.watershed_id ?? watershedName ?? "contextual"}</b>
+              <p>{scene ? "Geometría espacial no disponible para esta corrida. Los valores del outlet se muestran en el HUD." :
+                "Referencia visual sin geometría de cuenca verificada ni registro temporal."}</p>
             </div>
           </Html>
-          {showHydrologyFlow && scene.rainIntensity !== null && scene.rainIntensity > 0 && <GenericRain intensity={scene.rainIntensity} />}
+          {showHydrologyFlow && scene?.rainIntensity !== null && scene?.rainIntensity !== undefined && scene.rainIntensity > 0 && <GenericRain intensity={scene.rainIntensity} />}
         </group>}
 
         {/* Escala MESO: campo FSPM agregado y muestra de planta persistida */}
         {scaleMode === "MESO" && (
           <FieldPlotMesh3D
             scene={scene}
-            onSelectPlant={() => onChangeScale("MICRO")}
+            onSelectPlant={(plantId) => { onSelectPlant?.(plantId); onChangeScale("MICRO"); }}
             showSensors={showSensors}
             showScientificLabels={showScientificLabels}
             showHydrologyFlow={showHydrologyFlow}

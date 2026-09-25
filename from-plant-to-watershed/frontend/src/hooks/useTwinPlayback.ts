@@ -16,7 +16,10 @@ export function useTwinPlayback(simulationId: string | null) {
   const requestNumber = useRef(0);
   const dateRequestNumber = useRef(0);
   const total = page?.total ?? 0;
-  const currentRecord = client.recordAt(index);
+  // A mutable client cache alone is invisible to React's render dependencies.
+  // Read the stateful page first so the initial record appears when fetch resolves.
+  const currentRecord = page && index >= page.offset && index < page.offset + page.records.length
+    ? page.records[index - page.offset] : client.recordAt(index);
 
   useEffect(() => {
     client.select(simulationId, resolution);

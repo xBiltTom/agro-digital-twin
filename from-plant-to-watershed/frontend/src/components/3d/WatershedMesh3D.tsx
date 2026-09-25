@@ -30,6 +30,7 @@ interface WatershedMesh3DProps {
   stationId?: string | null;
   evidenceType?: string;
   onSelectSubbasin?: () => void;
+  fieldNavigationLabel?: string;
   showHruBorders?: boolean;
   showHydrologyFlow?: boolean;
   showScientificLabels?: boolean;
@@ -603,6 +604,7 @@ export default function WatershedMesh3D({
   stationId,
   evidenceType,
   onSelectSubbasin,
+  fieldNavigationLabel = "Explorar campo (Meso)",
   showHruBorders = true,
   showHydrologyFlow = true,
   showScientificLabels = true,
@@ -707,7 +709,7 @@ export default function WatershedMesh3D({
               }}
               className="mt-2.5 w-full cursor-pointer rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 py-1 text-[11px] font-bold text-cyan-200 transition text-center"
             >
-              Ver campo FSPM disponible (Meso) →
+              {fieldNavigationLabel} →
             </button>}
           </div>
         </Html>

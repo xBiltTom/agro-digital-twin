@@ -1,89 +1,93 @@
 "use client";
 
 import { Html } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { numeric, type SceneState } from "../../lib/playback-scene";
+import type { SceneState } from "../../lib/playback-scene";
+import { maizeFromScene, maizeReproductive } from "../../lib/visual-state";
+import { MicroRainSystem, RealisticBraceRoots, RealisticMaizeEar, RealisticMaizeLeaf, RealisticMaizeTassel } from "./MaizeVisuals3D";
 
 interface Props {
-  scene: SceneState;
+  scene: SceneState | null;
   showSoilHorizons?: boolean;
   showScientificLabels?: boolean;
   showHydrologyFlow?: boolean;
 }
 
-function MicroRain({ intensity }: { intensity: number }) {
-  const group = useRef<THREE.Group>(null);
-  const count = Math.max(4, Math.floor(intensity * 150));
-  const points = useMemo(() => Array.from({ length: count }, (_, i) => [
-    (((i * 31) % 151) / 151 - 0.5) * 6,
-    ((i * 47) % 113) / 113 * 5,
-    (((i * 67) % 157) / 157 - 0.5) * 6,
-  ] as const), [count]);
-  useFrame((_, delta) => { if (group.current) group.current.position.y = (group.current.position.y - delta * 5 + 5) % 5; });
-  return <group ref={group}>{points.map(([x, y, z], i) =>
-    <mesh key={i} position={[x, y, z]}><boxGeometry args={[0.01, 0.18, 0.01]} /><meshBasicMaterial color="#a6e9fb" transparent opacity={0.6} /></mesh>
-  )}</group>;
-}
-
-/** Schematic maize architecture. Stem height maps 1 m to 1 scene unit; leaf count is graphic only. */
+/** The sample's measured/modelled height maps directly to scene metres; leaf anatomy is illustrative. */
 export default function PlantModel3D({ scene, showSoilHorizons = true, showScientificLabels = true,
   showHydrologyFlow = true }: Props) {
-  const sample = scene.sample;
-  const height = sample ? numeric(sample.variables.height_m) : null;
-  const lai = sample ? numeric(sample.variables.lai) : null;
-  const rootDepth = sample ? numeric(sample.variables.root_depth_m) : null;
-  const stress = sample ? numeric(sample.variables.water_stress) : null;
-  const stage = sample?.variables.phenological_stage?.availability === "AVAILABLE"
-    ? String(sample.variables.phenological_stage.value) : scene.record.crop?.phenological_stage;
-  const visualHeight = height === null ? null : Math.min(3.2, Math.max(0.03, height));
-  const leafCount = lai === null ? 0 : Math.max(1, Math.min(14, Math.round(lai * 2.5)));
-  const leafColor = new THREE.Color("#2e8d39").lerp(new THREE.Color("#a0a238"),
-    stress === null ? 0 : Math.max(0, Math.min(1, stress)));
+  const plant = maizeFromScene(scene);
+  const height = plant.heightM === null ? null : Math.max(0, Math.min(3.2, plant.heightM));
+  const lai = plant.lai;
+  const stress = plant.stress;
+  const leafCount = lai === null || lai <= 0 ? 0 : Math.max(2, Math.min(18, Math.round(lai * 2.7 + 2)));
+  const soilColor = plant.soilMoisturePercent === null ? "#382618" :
+    new THREE.Color("#53351c").lerp(new THREE.Color("#21160e"),
+      Math.max(0, Math.min(1, plant.soilMoisturePercent / 45)));
+  const leaves = height === null ? [] : Array.from({ length: leafCount }, (_, i) => {
+    const t = (i + 1) / (leafCount + 1);
+    const spread = Math.min(1, Math.max(0.08, (lai ?? 0) / 4));
+    const length = (0.28 + 1.14 * Math.sin(Math.PI * t)) * spread;
+    return {
+      angle: i * Math.PI * 0.94 + (i % 2 === 0 ? 0.08 : -0.06),
+      nodeHeight: height * t,
+      length,
+      width: (0.045 + 0.14 * Math.sin(Math.PI * t)) * spread,
+      rise: length * (0.23 - t * 0.06),
+      droop: length * (0.16 + (stress ?? 0) * 0.46 + t * 0.1),
+    };
+  });
+  const reproductive = maizeReproductive(plant.stage);
+  const showRain = Boolean(scene && showHydrologyFlow && scene.rainIntensity !== null && scene.rainMm !== null && scene.rainMm > 0);
 
   return <group position={[0, -0.18, 0]}>
-    <mesh receiveShadow rotation-x={-Math.PI / 2}>
-      <planeGeometry args={[6, 6]} />
-      <meshStandardMaterial color="#594537" roughness={0.93} />
+    {/* Contextual soil layers; their depths and stratigraphy are illustrative. */}
+    <mesh rotation-x={-Math.PI / 2} receiveShadow position={[0, 0.003, 0]}>
+      <circleGeometry args={[2.9, 64]} /><meshStandardMaterial color={soilColor} roughness={0.82} />
     </mesh>
-    {showSoilHorizons && <mesh position={[0, -0.25, 0]}>
-      <boxGeometry args={[3.2, 0.5, 3.2]} />
-      <meshStandardMaterial color="#6b4934" roughness={1} />
-    </mesh>}
-    {visualHeight !== null && <group>
-      <mesh castShadow position={[0, visualHeight / 2, 0]}>
-        <cylinderGeometry args={[0.03, 0.065, visualHeight, 9]} />
-        <meshStandardMaterial color="#6a9a37" roughness={0.72} />
-      </mesh>
-      {Array.from({ length: leafCount }, (_, i) => {
-        const fraction = (i + 1) / (leafCount + 1);
-        const angle = i * 2.39996;
-        const length = Math.min(0.9, 0.18 + (lai ?? 0) * 0.14) * Math.sin(Math.PI * fraction);
-        return <group key={i} position={[0, visualHeight * fraction, 0]} rotation-y={angle}>
-          <mesh castShadow position={[length / 2, 0.02, 0]} rotation-z={-0.14} scale={[Math.max(0.08, length), 0.025, Math.max(0.025, length * 0.12)]}>
-            <sphereGeometry args={[1, 8, 5]} />
-            <meshStandardMaterial color={leafColor} side={THREE.DoubleSide} roughness={0.55} />
-          </mesh>
-        </group>;
-      })}
-      {rootDepth !== null && Array.from({ length: 8 }, (_, i) =>
-        <mesh key={i} position={[Math.cos(i * Math.PI / 4) * 0.1, -Math.min(0.45, rootDepth) / 2, Math.sin(i * Math.PI / 4) * 0.1]}
-          rotation-z={Math.cos(i * Math.PI / 4) * 0.2}>
-          <cylinderGeometry args={[0.003, 0.012, Math.min(0.9, rootDepth), 5]} />
-          <meshStandardMaterial color="#d4b884" />
-        </mesh>)}
+    {showSoilHorizons && <group>
+      <mesh position={[0, -0.16, 0]}><cylinderGeometry args={[2.88, 2.88, 0.32, 48, 1, true]} />
+        <meshPhysicalMaterial color="#56371e" transparent opacity={0.55} side={THREE.DoubleSide} /></mesh>
+      <mesh position={[0, -0.49, 0]}><cylinderGeometry args={[2.86, 2.86, 0.34, 48, 1, true]} />
+        <meshPhysicalMaterial color="#704524" transparent opacity={0.46} side={THREE.DoubleSide} /></mesh>
+      <mesh position={[0, -0.94, 0]}><cylinderGeometry args={[2.84, 2.84, 0.56, 48, 1, true]} />
+        <meshPhysicalMaterial color="#8b603b" transparent opacity={0.37} side={THREE.DoubleSide} /></mesh>
+      {[-0.32, -0.66].map((y) => <mesh key={y} position={[0, y, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[2.82, 2.88, 48]} /><meshBasicMaterial color="#c7a574" transparent opacity={0.6} />
+      </mesh>)}
     </group>}
-    {showHydrologyFlow && scene.rainIntensity !== null && scene.rainIntensity > 0 && <MicroRain intensity={scene.rainIntensity} />}
-    {showScientificLabels && <Html position={[1.7, 2.7, 0]} distanceFactor={7}>
+    {height !== null && height > 0 && <group data-testid="detailed-maize-plant">
+      {/* One scene unit is one metre; no additional calendar growth multiplier. */}
+      <mesh castShadow position={[0, height / 2, 0]}>
+        <cylinderGeometry args={[0.03, 0.07, height, 20]} />
+        <meshPhysicalMaterial color={stress !== null && stress > 0.5 ? "#717a2f" : "#4f7d2c"}
+          roughness={0.38} clearcoat={0.35} clearcoatRoughness={0.22} />
+      </mesh>
+      {leaves.map((leaf, i) => <group key={i}>
+        <mesh position={[0, leaf.nodeHeight, 0]} rotation-x={Math.PI / 2} castShadow>
+          <torusGeometry args={[0.044, 0.011, 8, 20]} /><meshStandardMaterial color="#6a9537" /></mesh>
+        <RealisticMaizeLeaf {...leaf} stress={stress ?? 0} />
+      </group>)}
+      {plant.rootDepthM !== null && plant.rootDepthM > 0 && <RealisticBraceRoots rootDepthCm={plant.rootDepthM * 100} />}
+      {reproductive && <>
+        <RealisticMaizeEar nodeY={height * 0.48} angle={Math.PI * 0.42} />
+        <RealisticMaizeTassel apexY={Math.max(0, height - 0.76)} />
+      </>}
+    </group>}
+    {showRain && <MicroRainSystem precipMm={scene!.rainMm!} />}
+    {showScientificLabels && <Html position={[1.5, 2.4, 0]} distanceFactor={1.8}>
       <div className="w-64 rounded-xl border border-emerald-500/40 bg-zinc-950/95 p-3 text-xs text-zinc-100 shadow-2xl">
-        <b className="text-emerald-300">Muestra FSPM {sample?.plant_id ?? "no disponible"}</b>
-        <p className="mt-1">{scene.record.date} · {stage ?? "Etapa no disponible"}</p>
-        <p>Altura: {height === null ? "No disponible" : `${height.toFixed(2)} m`}</p>
-        <p>LAI: {lai === null ? "No disponible" : lai.toFixed(2)}</p>
-        <p>Raíz: {rootDepth === null ? "No disponible" : `${rootDepth.toFixed(2)} m`}</p>
+        <b className="text-emerald-300">{plant.reference ? "Maíz de referencia · ilustrativo" : `Muestra FSPM ${plant.sampleId ?? "no disponible"}`}</b>
+        <p className="mt-1">{scene?.record.date ?? "Sin fecha científica"} · {plant.reference ? "Anatomía reproductiva ilustrativa" : plant.stage ?? "Etapa no disponible"}</p>
+        <p>Altura: {plant.reference ? "Referencia visual" : height === null ? "No disponible" : `${height.toFixed(2)} m`}</p>
+        <p>LAI: {plant.reference ? "Referencia visual" : lai === null ? "No disponible" : lai.toFixed(2)}</p>
+        <p>Raíz: {plant.reference ? "Referencia visual" : plant.rootDepthM === null ? "No disponible" : `${plant.rootDepthM.toFixed(2)} m`}</p>
         <p>Estrés: {stress === null ? "No disponible" : stress.toFixed(2)}</p>
-        <p className="mt-1 text-zinc-400">Geometría ilustrativa; dimensiones foliares y raíces no son una reconstrucción 3D validada.</p>
+        <p>Transpiración: {plant.transpirationMmDay === null ? "No disponible" : `${plant.transpirationMmDay.toFixed(2)} mm/día`}</p>
+        {scene?.sample && <p className="text-cyan-300">{scene.sample.variables.height_m?.evidence ?? "NOT_AVAILABLE"} · {scene.sample.variables.height_m?.source ?? "Sin fuente"}</p>}
+        <p className="mt-1 text-zinc-400">Hojas, mazorca, raíces laterales y perfil del suelo son ilustrativos.</p>
+        {!scene && <p className="text-amber-300">Sin trayectoria individual persistida.</p>}
+        {scene && !scene.sample && <p className="text-amber-300">Esta corrida/fecha no contiene muestra FSPM activa.</p>}
       </div>
     </Html>}
   </group>;
