@@ -14,7 +14,8 @@ import {
   Watershed,
   SimulationRun,
   SimulationResult, SwatPlusConfiguration, SwatResultsResponse
-  , ExternalModelInfo, DatasetInfo, CurrentFinalScientificReportResponse
+  , ExternalModelInfo, DatasetInfo, CurrentFinalScientificReportResponse,
+  AIInsightsResponse
 } from "../types/simulation";
 import { PlaybackPage, PlaybackQuery } from "../types/playback";
 
@@ -147,6 +148,16 @@ class ApiService {
 
   async getSwatResults(id: string): Promise<SwatResultsResponse> {
     return this.request<SwatResultsResponse>(`/simulations/${id}/swat-results`);
+  }
+
+  async getSimulationAIInsights(id: string): Promise<AIInsightsResponse> {
+    return this.request<AIInsightsResponse>(`/simulations/${encodeURIComponent(id)}/ai-insights`);
+  }
+
+  async generateSimulationAIInsights(id: string): Promise<AIInsightsResponse> {
+    return this.request<AIInsightsResponse>(`/simulations/${encodeURIComponent(id)}/ai-insights`, {
+      method: "POST",
+    });
   }
 
   async getPlayback(id: string, query: PlaybackQuery = {}, signal?: AbortSignal): Promise<PlaybackPage> {

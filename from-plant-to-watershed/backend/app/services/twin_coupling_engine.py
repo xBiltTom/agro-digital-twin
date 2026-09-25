@@ -103,7 +103,7 @@ class TwinCouplingEngine:
             watershed_id=watershed.code, run_id=sim_run.id,
             timeout_seconds=requested_swat.get("timeout_seconds", settings.SWAT_PLUS_TIMEOUT_SECONDS),
             run_type=requested_swat.get("run_type", "SWAT_STANDARD_BASELINE"),
-            outlet_unit=requested_swat.get("outlet_unit"),
+            outlet_unit=requested_swat.get("outlet_unit") or ("153" if "05451210" in (watershed.code or "") else None),
         )
         result = SwatPlusAdapter().run(config)
         climate, climate_provenance = TwinCouplingEngine._baseline_forcing(Path(result.workspace), sim_run.start_date, sim_run.end_date)
@@ -145,9 +145,17 @@ class TwinCouplingEngine:
         sim_run.plant_sample = []
         sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "SWAT baseline output integrity only; observational alignment is not part of this run"}
         totals = result.water_balance.get("totals_mm", {})
+        mean_q = (result.water_balance or {}).get("mean_streamflow_m3s")
+        days = (sim_run.end_date - sim_run.start_date).days + 1 if sim_run.start_date and sim_run.end_date else (sim_run.duration_days or len(result.records))
+        discharge_hm3 = round((mean_q * days * 86400.0) / 1_000_000.0, 3) if mean_q else None
+        precip_mm = round(sum(float(row.get("precip_mm") or row.get("precipitation_mm") or 0.0) for row in (climate or ())), 2) if climate else None
         sim_run.summary_metrics = {
-            "evidence_type": "REAL_SWAT_PLUS", "period_count": len(result.records),
-            "total_runoff_mm": totals.get("runoff_mm"), "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"),
+            "evidence_type": "REAL_SWAT_PLUS",
+            "period_count": len(result.records),
+            "total_precip_mm": precip_mm,
+            "total_discharge_hm3": discharge_hm3,
+            "total_runoff_mm": totals.get("runoff_mm"),
+            "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"),
             "total_percolation_mm": totals.get("percolation_mm"),
             "water_balance": result.water_balance,
         }
@@ -238,7 +246,9 @@ class TwinCouplingEngine:
             working_directory=Path(requested_swat.get("working_directory") or settings.SWAT_PLUS_WORKING_DIRECTORY),
             simulation_start=sim_run.start_date, simulation_end=sim_run.end_date, warmup_period=requested_swat.get("warmup_period", 0),
             output_frequency=requested_swat.get("output_frequency", "DAILY"), watershed_id=watershed.code, run_id=sim_run.id,
-            timeout_seconds=requested_swat.get("timeout_seconds", settings.SWAT_PLUS_TIMEOUT_SECONDS), run_type="SWAT_MULTISCALE_COUPLED", outlet_unit=requested_swat.get("outlet_unit"),
+            timeout_seconds=requested_swat.get("timeout_seconds", settings.SWAT_PLUS_TIMEOUT_SECONDS),
+            run_type="SWAT_MULTISCALE_COUPLED",
+            outlet_unit=requested_swat.get("outlet_unit") or ("153" if "05451210" in (watershed.code or "") else None),
         )
         result = SwatPlusAdapter().run(config, workspace_mutator=lambda workspace: mapper.apply(workspace, field))
         effective_climate, _ = TwinCouplingEngine._baseline_forcing(Path(result.workspace), sim_run.start_date, sim_run.end_date)
@@ -290,7 +300,21 @@ class TwinCouplingEngine:
         sim_run.plant_sample = [vars(plant) for plant in plants[:min(10, len(plants))]]
         sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "coupled run is an input-response experiment, not an observational validation"}
         totals = result.water_balance.get("totals_mm", {})
-        sim_run.summary_metrics = {"evidence_type": "REAL_SWAT_PLUS_COUPLED", "period_count": len(result.records), "total_runoff_mm": totals.get("runoff_mm"), "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"), "total_percolation_mm": totals.get("percolation_mm"), "water_balance": result.water_balance}
+        mean_q = (result.water_balance or {}).get("mean_streamflow_m3s")
+        days = (sim_run.end_date - sim_run.start_date).days + 1 if sim_run.start_date and sim_run.end_date else (sim_run.duration_days or len(result.records))
+        discharge_hm3 = round((mean_q * days * 86400.0) / 1_000_000.0, 3) if mean_q else None
+        precip_mm = round(sum(float(row.get("precip_mm") or row.get("precipitation_mm") or 0.0) for row in (climate or ())), 2) if climate else None
+        sim_run.summary_metrics = {
+            "evidence_type": "REAL_SWAT_PLUS_COUPLED",
+            "period_count": len(result.records),
+            "total_precip_mm": precip_mm,
+            "total_discharge_hm3": discharge_hm3,
+            "mean_cwsi": round(float(field.get("mean_water_stress") or field.get("cwsi_mean") or 0.0), 3) if field else None,
+            "total_runoff_mm": totals.get("runoff_mm"),
+            "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"),
+            "total_percolation_mm": totals.get("percolation_mm"),
+            "water_balance": result.water_balance,
+        }
 
     @staticmethod
     async def execute_simulation_run(db: AsyncSession, simulation_run_id: str) -> SimulationRun:

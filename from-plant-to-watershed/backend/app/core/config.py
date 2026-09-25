@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     DATA_ARTIFACT_ROOT: str = "data"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 horas
+
+    # AI / LLM Configuration (LangChain)
+    GEMINI_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    AI_MODEL_NAME: str = "gemini-2.5-flash"
     
     # Database
     # SQLite remains a local/test fallback. Docker Compose sets canonical PostgreSQL.

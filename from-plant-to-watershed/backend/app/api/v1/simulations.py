@@ -18,11 +18,13 @@ from app.schemas.simulation import (
     SimulationRunResponse,
     SimulationResultResponse,
     ClimateScenarioResponse,
-    WatershedResponse
+    WatershedResponse,
+    AIInsightsResponse,
 )
 from app.api.deps import get_current_active_user, require_roles
 from app.services.twin_coupling_engine import TwinCouplingEngine
 from app.services.playback_artifact import PlaybackArtifactStore
+from app.services.ai_insights import AICopilotService
 from app.schemas.playback import PlaybackPage, Resolution
 from scientific_core import RunConfig
 
@@ -347,3 +349,91 @@ async def get_simulation_playback(
                         total=total, offset=offset, limit=limit, records=records,
                         variables=manifest.get("variables", {}), provenance=manifest.get("provenance", {}),
                         limitations=manifest.get("limitations", []))
+
+
+@router.get("/{sim_id}/ai-insights", response_model=AIInsightsResponse)
+async def get_simulation_ai_insights(
+    sim_id: str,
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user),
+):
+    """Retrieve or compute AI scientific insights for a simulation run."""
+    stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
+    res = await db.execute(stmt)
+    sim = res.scalar_one_or_none()
+    if not sim:
+        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+
+    # Return cached insights if already computed
+    cached = (sim.provenance or {}).get("ai_insights")
+    if cached and isinstance(cached, dict) and "executive_summary" in cached:
+        return cached
+
+    watershed_name = None
+    if sim.watershed_id:
+        w_stmt = select(Watershed.name).where(Watershed.id == sim.watershed_id)
+        watershed_name = await db.scalar(w_stmt)
+
+    sim_data = {
+        "id": sim.id,
+        "name": sim.name,
+        "duration_days": sim.duration_days,
+        "management_scenario": sim.management_scenario,
+        "climate_source": sim.climate_source,
+        "summary_metrics": sim.summary_metrics or {},
+        "field_aggregates": sim.field_aggregates or {},
+        "validation": sim.validation or {},
+        "scenario": sim.scenario.__dict__ if hasattr(sim.scenario, "__dict__") else {},
+        "watershed_name": watershed_name,
+    }
+
+    insights = await AICopilotService.analyze_simulation(sim_data)
+
+    new_prov = dict(sim.provenance or {})
+    new_prov["ai_insights"] = insights
+    sim.provenance = new_prov
+    await db.commit()
+
+    return insights
+
+
+@router.post("/{sim_id}/ai-insights", response_model=AIInsightsResponse)
+async def generate_simulation_ai_insights(
+    sim_id: str,
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user),
+):
+    """Force re-generate AI scientific insights for a simulation run using LangChain."""
+    stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
+    res = await db.execute(stmt)
+    sim = res.scalar_one_or_none()
+    if not sim:
+        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+
+    watershed_name = None
+    if sim.watershed_id:
+        w_stmt = select(Watershed.name).where(Watershed.id == sim.watershed_id)
+        watershed_name = await db.scalar(w_stmt)
+
+    sim_data = {
+        "id": sim.id,
+        "name": sim.name,
+        "duration_days": sim.duration_days,
+        "management_scenario": sim.management_scenario,
+        "climate_source": sim.climate_source,
+        "summary_metrics": sim.summary_metrics or {},
+        "field_aggregates": sim.field_aggregates or {},
+        "validation": sim.validation or {},
+        "scenario": sim.scenario.__dict__ if hasattr(sim.scenario, "__dict__") else {},
+        "watershed_name": watershed_name,
+    }
+
+    insights = await AICopilotService.analyze_simulation(sim_data)
+
+    new_prov = dict(sim.provenance or {})
+    new_prov["ai_insights"] = insights
+    sim.provenance = new_prov
+    await db.commit()
+
+    return insights
+

@@ -363,3 +363,21 @@ export interface TwinWebSocketTick {
     actual_et_mm: number;
   };
 }
+
+export interface AIInsightsResponse {
+  simulation_id?: string;
+  simulation_name?: string;
+  provider: string;
+  generated_at: string;
+  executive_summary: string;
+  multiscale_biophysical_diagnosis: {
+    micro_scale_plant: string;
+    meso_scale_field: string;
+    macro_scale_watershed: string;
+  };
+  climate_resilience_assessment: string;
+  policy_recommendations: string[];
+  limitations_and_uncertainty: string;
+  raw_metrics_analyzed?: Record<string, unknown>;
+}
+
