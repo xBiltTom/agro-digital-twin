@@ -7,11 +7,12 @@ import type { HistoricalChartPoint } from "../../lib/historical-charts";
 interface Props {
   points: HistoricalChartPoint[];
   kind: "SWAT_PLUS" | "SIMPLIFIED";
+  origin?: "EXECUTED" | "HISTORICAL_IMPORT" | "SIMPLIFIED_STORED" | null;
   frequency: string | null;
   truncated: boolean;
 }
 
-export default function HistoricalTwinCharts({ points, kind, frequency, truncated }: Props) {
+export default function HistoricalTwinCharts({ points, kind, origin, frequency, truncated }: Props) {
   const swat = kind === "SWAT_PLUS";
   if (!points.length) return <div className="rounded-xl border border-zinc-700 p-5 text-sm text-zinc-500">
     Esta corrida no tiene resultados históricos graficables.
@@ -19,7 +20,10 @@ export default function HistoricalTwinCharts({ points, kind, frequency, truncate
 
   return <section className="space-y-4" aria-label="Gráficos históricos sin contrato temporal">
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">
-      <strong>Gráficos históricos · sin artefacto twin-playback-v1.</strong> Se muestran los resultados persistidos de esta corrida.
+      <strong>Gráficos históricos · sin artefacto twin-playback-v1.</strong>{" "}
+      {origin === "HISTORICAL_IMPORT" ? "Importación histórica v2; no representa una nueva ejecución SWAT+ ni una validación v3. " :
+        origin === "EXECUTED" ? "Resultados persistidos de una ejecución SWAT+ registrada. " :
+          "Se muestran los resultados persistidos disponibles. "}
       No se usan para reconstruir estados meteorológicos o vegetales del visor 3D.
       {swat && " SWAT+ no proporciona aquí una serie de precipitación recuperable ni una trayectoria FSPM diaria."}
       {!swat && " Las variables FSPM históricas conservan su semántica original; este visor no reinterpreta ni corrige sus valores."}

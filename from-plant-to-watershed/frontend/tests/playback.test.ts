@@ -7,9 +7,12 @@ import { accessibleSimulations, collectSimulationPages } from "../src/lib/simula
 import { fieldCanopyAvailable, maizeFromScene, maizeReproductive } from "../src/lib/visual-state.ts";
 import type { PlaybackPage, PlaybackRecord, VariableState } from "../src/types/playback.ts";
 import type { SimulationResult, SimulationRun } from "../src/types/simulation.ts";
+import type { SwatResultsResponse } from "../src/types/simulation.ts";
 import type { User } from "../src/types/auth.ts";
 import { adaptPlaybackVisual } from "../src/lib/playback-visual-adapter.ts";
 import { readFileSync } from "node:fs";
+import { firstCropNavigation } from "../src/lib/playback-navigation.ts";
+import type { SimulationAvailability } from "../src/types/playback-availability.ts";
 
 function variable(value: number | string | null, unit: string, evidence: VariableState["evidence"] = "SIMPLIFIED_FSPM"): VariableState {
   return { value, unit, evidence: value === null ? "NOT_AVAILABLE" : evidence, source: "fixture",
@@ -229,6 +232,53 @@ test("historical charts appear only for completed runs without a playback artifa
   assert.equal(historicalFallbackEligible(undefined, null), false);
 });
 
+test("historical SWAT import charts preserve stored periods and identify the import origin", () => {
+  const response: SwatResultsResponse = {
+    status: "COMPLETED", origin: "HISTORICAL_IMPORT", run_id: "historical-v2",
+    temporal_resolution: "monthly", records: [{ period: "2018-01-01", streamflow_m3s: 0, runoff_mm: 1.2,
+      evapotranspiration_mm: 3.4, percolation_mm: null, soil_water_mm: 158 }],
+    hru_results: [], water_balance: null,
+    provenance: { source_kind: "HISTORICAL_IMPORT", schema_version: "south-fork-final-v2" },
+  };
+  const points = swatHistoricalPoints(response.records);
+  assert.equal(response.origin, "HISTORICAL_IMPORT");
+  assert.equal(response.temporal_resolution, "monthly");
+  assert.equal(points[0].period, "2018-01-01");
+  assert.equal(points[0].streamflow, 0);
+  assert.equal(points[0].precipitation, null);
+  assert.equal(points[0].percolation, null);
+});
+
+test("first-crop navigation uses only the selected resolution's representable stored date", () => {
+  const availability: SimulationAvailability = {
+    simulation_id: "fixture-coupled", simulation_name: "fixture", simulation_status: "COMPLETED",
+    run_type: "SWAT_MULTISCALE_COUPLED", origin: "EXECUTED" as const,
+    stored_hydrology_available: true, stored_fspm_summary_available: true,
+    stored_fspm_trajectory_available: true, stored_fspm_samples_available: true, fspm_results_available: true,
+    available_resolutions: ["MONTHLY", "DAILY"], codes: [], limitations: [],
+    resolutions: [
+      { resolution: "MONTHLY" as const, artifact_status: "AVAILABLE" as const, record_count: 12,
+        first_record: "2020-01-01", last_record: "2020-12-01", first_active_crop: null,
+        first_representable_field: null, first_plant_samples: null, crop_intervals: [],
+        hydrology_available: true, fspm_trajectory_available: false, plant_samples_available: false,
+        hru_ids: [], selected_date: null, codes: [] },
+      { resolution: "DAILY" as const, artifact_status: "AVAILABLE" as const, record_count: 365,
+        first_record: "2020-01-01", last_record: "2020-12-31", first_active_crop: "2020-05-01",
+        first_representable_field: "2020-05-03", first_plant_samples: "2020-05-03", crop_intervals: [],
+        hydrology_available: false, fspm_trajectory_available: true, plant_samples_available: true,
+        hru_ids: [], selected_date: null, codes: [] },
+    ],
+  };
+  assert.deepEqual(firstCropNavigation(availability, "DAILY"), { status: "READY", date: "2020-05-03" });
+  assert.deepEqual(firstCropNavigation(availability, "MONTHLY"), { status: "SELECT_DAILY" });
+  const baseline = { ...availability, run_type: "SWAT_STANDARD_BASELINE",
+    stored_fspm_summary_available: false, stored_fspm_trajectory_available: false,
+    stored_fspm_samples_available: false, fspm_results_available: false,
+    resolutions: [{ ...availability.resolutions[0], first_representable_field: null,
+      fspm_trajectory_available: false, plant_samples_available: false }] };
+  assert.deepEqual(firstCropNavigation(baseline, "MONTHLY"), { status: "UNAVAILABLE" });
+});
+
 test("Pydantic generated fixtures feed the official visual adapter and current 3D inputs", () => {
   const data = JSON.parse(readFileSync(new URL("./fixtures/twin-visual-fixtures.json", import.meta.url), "utf8"));
   assert.equal(data.test_only, true);
@@ -249,7 +299,9 @@ test("Pydantic generated fixtures feed the official visual adapter and current 3
   assert.equal(adaptPlaybackVisual(null, { simulationId: "fixture-historical", availability: {
     simulation_id: "fixture-historical", simulation_name: "Historical", simulation_status: "COMPLETED",
     run_type: "SWAT_MULTISCALE_COUPLED", origin: "HISTORICAL_IMPORT",
-    stored_hydrology_available: true, stored_fspm_summary_available: true, available_resolutions: [],
+    stored_hydrology_available: true, stored_fspm_summary_available: true,
+    stored_fspm_trajectory_available: false, stored_fspm_samples_available: false,
+    fspm_results_available: true, available_resolutions: [],
     resolutions: [], codes: ["HISTORICAL_REFERENCE"], limitations: [],
   } }).mode, "HISTORICAL_REFERENCE");
   const incomplete = adaptPlaybackVisual(pages.incomplete.records[0], { simulationId: "fixture-incomplete" });

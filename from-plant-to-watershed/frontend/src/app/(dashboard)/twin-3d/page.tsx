@@ -16,6 +16,7 @@ import HistoricalContext3D from "../../../components/3d/HistoricalContext3D";
 import { useAuth } from "../../../context/AuthContext";
 import { accessibleSimulations } from "../../../lib/simulation-access";
 import { historicalFallbackEligible } from "../../../lib/historical-charts";
+import { firstCropNavigation } from "../../../lib/playback-navigation";
 
 export default function Twin3DPage() {
   const { user } = useAuth();
@@ -31,6 +32,7 @@ export default function Twin3DPage() {
   const [showScientificLabels, setShowScientificLabels] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dateMessage, setDateMessage] = useState<string | null>(null);
+  const [navigatingToCrop, setNavigatingToCrop] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const playback = useTwinPlayback(simulationId);
@@ -38,6 +40,10 @@ export default function Twin3DPage() {
   const historical = useHistoricalCharts(simulation, playback.page?.artifact_status ?? null);
   const record = playback.record;
   const scene = useMemo(() => record ? sceneFromRecord(record, plantId) : null, [record, plantId]);
+  const currentAvailability = playback.availability?.simulation_id === simulationId ? playback.availability : null;
+  const selectedResolution = playback.resolution ?? playback.page?.resolution ?? undefined;
+  const cropNavigation = firstCropNavigation(currentAvailability, selectedResolution);
+  const playbackReadyForResolution = Boolean(playback.page && playback.page.resolution === selectedResolution);
 
   useEffect(() => {
     if (!user) return;
@@ -108,9 +114,23 @@ export default function Twin3DPage() {
             className="rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-zinc-100" />
           <button type="submit" className="rounded-lg bg-cyan-700 px-2 py-1.5 text-white">Ir</button>
         </form>}
+        {cropNavigation.status === "READY" && <button type="button"
+          disabled={playback.availabilityLoading || playback.loading || !playbackReadyForResolution || navigatingToCrop}
+          onClick={() => {
+            setNavigatingToCrop(true);
+            playback.setPlaying(false);
+            void playback.jumpToFirstCrop().then((found) => {
+              setDateMessage(found ? null : "No se pudo cargar la primera fecha con campo FSPM representable.");
+            }).finally(() => setNavigatingToCrop(false));
+          }}
+          className="rounded-lg bg-emerald-700 px-2 py-1.5 text-xs text-white disabled:cursor-not-allowed disabled:opacity-50">
+          {navigatingToCrop ? "Buscando cultivo…" : "Ir al primer cultivo"}
+        </button>}
       </div>
     </header>
     {dateMessage && <p className="text-xs text-amber-600">{dateMessage}</p>}
+    {cropNavigation.status === "SELECT_DAILY" && <p className="text-xs text-amber-600">La trayectoria vegetal está disponible en DAILY. Selecciona esa resolución para ir al primer cultivo.</p>}
+    {playback.availabilityLoading && <p className="text-xs text-zinc-500">Consultando disponibilidad FSPM…</p>}
     {playback.error && record && <p className="text-xs text-rose-600">Error de reproducción: {playback.error}</p>}
 
     {record?.plant_samples.length ? <div className="flex items-center gap-3 text-xs text-zinc-500">
@@ -205,10 +225,8 @@ export default function Twin3DPage() {
       {historical.status === "loading" && <p className="text-sm text-zinc-500">Cargando gráficos históricos…</p>}
       {historical.status === "error" && <p className="rounded-xl border border-rose-500/30 p-4 text-sm text-rose-600">No se pudieron cargar los gráficos históricos: {historical.data?.error}</p>}
       {historical.status === "ready" && historical.data && <HistoricalTwinCharts
-        points={historical.data.points} kind={historical.data.kind}
-        frequency={simulation.hydrology_backend === "SWAT_PLUS"
-          ? typeof simulation.effective_config?.output_frequency === "string" ? simulation.effective_config.output_frequency : null
-          : "DAILY"}
+        points={historical.data.points} kind={historical.data.kind} origin={historical.data.origin}
+        frequency={historical.data.frequency}
         truncated={historical.data.truncated} />}
     </>}
   </div>;

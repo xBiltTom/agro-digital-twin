@@ -32,6 +32,7 @@ export interface ResolutionAvailability {
   crop_intervals: { start: string; end: string; season_id: string | null; approximate: boolean }[];
   hydrology_available: boolean;
   fspm_trajectory_available: boolean;
+  plant_samples_available: boolean;
   hru_ids: string[];
   selected_date: DateAvailability | null;
   codes: AvailabilityCode[];
@@ -45,6 +46,9 @@ export interface SimulationAvailability {
   origin: "EXECUTED" | "HISTORICAL_IMPORT" | "UNKNOWN";
   stored_hydrology_available: boolean;
   stored_fspm_summary_available: boolean;
+  stored_fspm_trajectory_available: boolean;
+  stored_fspm_samples_available: boolean;
+  fspm_results_available: boolean;
   available_resolutions: PlaybackResolution[];
   resolutions: ResolutionAvailability[];
   codes: AvailabilityCode[];

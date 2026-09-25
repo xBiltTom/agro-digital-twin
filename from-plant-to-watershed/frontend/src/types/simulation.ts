@@ -202,7 +202,7 @@ export interface PairedComparison {
 }
 
 export interface SwatRunProvenance {
-  evidence_type: SwatEvidenceType;
+  evidence_type?: SwatEvidenceType;
   engine?: string;
   executable_version?: string;
   executable_sha256?: string;
@@ -227,7 +227,9 @@ export interface SwatRunProvenance {
 
 export interface SwatResultsResponse {
   status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+  origin: "EXECUTED" | "HISTORICAL_IMPORT";
   run_id: string;
+  temporal_resolution: string | null;
   records: SwatRecord[];
   hru_results: Array<Record<string, unknown>>;
   water_balance: {
@@ -380,4 +382,3 @@ export interface AIInsightsResponse {
   limitations_and_uncertainty: string;
   raw_metrics_analyzed?: Record<string, unknown>;
 }
-

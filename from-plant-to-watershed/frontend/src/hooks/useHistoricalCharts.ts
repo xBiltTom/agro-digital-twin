@@ -8,6 +8,8 @@ import type { SimulationRun } from "../types/simulation";
 interface LoadedSeries {
   simulationId: string;
   kind: "SWAT_PLUS" | "SIMPLIFIED";
+  origin: "EXECUTED" | "HISTORICAL_IMPORT" | "SIMPLIFIED_STORED" | null;
+  frequency: string | null;
   points: HistoricalChartPoint[];
   truncated: boolean;
   error: string | null;
@@ -27,16 +29,16 @@ export function useHistoricalCharts(simulation: SimulationRun | null, artifactSt
       try {
         if (backend === "SWAT_PLUS") {
           const result = await api.getSwatResults(simulationId!);
-          if (!cancelled) setLoaded({ simulationId: simulationId!, kind: "SWAT_PLUS",
-            points: swatHistoricalPoints(result.records), truncated: false, error: null });
+          if (!cancelled) setLoaded({ simulationId: simulationId!, kind: "SWAT_PLUS", origin: result.origin,
+            frequency: result.temporal_resolution, points: swatHistoricalPoints(result.records), truncated: false, error: null });
         } else {
           const result = await api.getSimulationResults(simulationId!, Math.min(Math.max(duration, 1), 1000));
-          if (!cancelled) setLoaded({ simulationId: simulationId!, kind: "SIMPLIFIED",
-            points: simplifiedHistoricalPoints(result), truncated: duration > 1000, error: null });
+          if (!cancelled) setLoaded({ simulationId: simulationId!, kind: "SIMPLIFIED", origin: "SIMPLIFIED_STORED",
+            frequency: "DAILY", points: simplifiedHistoricalPoints(result), truncated: duration > 1000, error: null });
         }
       } catch (cause) {
         if (!cancelled) setLoaded({ simulationId: simulationId!, kind: backend === "SWAT_PLUS" ? "SWAT_PLUS" : "SIMPLIFIED",
-          points: [], truncated: false,
+          origin: null, frequency: null, points: [], truncated: false,
           error: cause instanceof Error ? cause.message : "No se pudieron cargar los resultados históricos" });
       }
     }

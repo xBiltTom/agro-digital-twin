@@ -56,6 +56,7 @@ class ResolutionAvailability(BaseModel):
     crop_intervals: list[DateInterval] = Field(default_factory=list)
     hydrology_available: bool = False
     fspm_trajectory_available: bool = False
+    plant_samples_available: bool = False
     hru_ids: list[str] = Field(default_factory=list)
     selected_date: DateAvailability | None = None
     codes: list[AvailabilityCode] = Field(default_factory=list)
@@ -69,6 +70,9 @@ class SimulationAvailability(BaseModel):
     origin: Literal["EXECUTED", "HISTORICAL_IMPORT", "UNKNOWN"]
     stored_hydrology_available: bool = False
     stored_fspm_summary_available: bool = False
+    stored_fspm_trajectory_available: bool = False
+    stored_fspm_samples_available: bool = False
+    fspm_results_available: bool = False
     available_resolutions: list[Resolution] = Field(default_factory=list)
     resolutions: list[ResolutionAvailability] = Field(default_factory=list)
     codes: list[AvailabilityCode] = Field(default_factory=list)

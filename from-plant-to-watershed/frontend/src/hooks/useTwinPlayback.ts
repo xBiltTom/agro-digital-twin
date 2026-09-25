@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { PlaybackClient, PLAYBACK_PAGE_SIZE } from "../lib/playback-client";
+import { firstCropNavigation } from "../lib/playback-navigation";
 import type { PlaybackPage, PlaybackResolution } from "../types/playback";
 import type { SimulationAvailability } from "../types/playback-availability";
 
@@ -15,6 +16,7 @@ export function useTwinPlayback(simulationId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [availability, setAvailability] = useState<SimulationAvailability | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const requestNumber = useRef(0);
   const dateRequestNumber = useRef(0);
   const total = page?.total ?? 0;
@@ -25,11 +27,16 @@ export function useTwinPlayback(simulationId: string | null) {
 
   useEffect(() => {
     const controller = new AbortController();
-    queueMicrotask(() => setAvailability(null));
+    queueMicrotask(() => {
+      if (controller.signal.aborted) return;
+      setAvailability(null);
+      setAvailabilityLoading(Boolean(simulationId));
+    });
     if (simulationId) {
       api.getPlaybackAvailability(simulationId, undefined, controller.signal)
         .then((result) => { if (!controller.signal.aborted) setAvailability(result); })
-        .catch(() => { if (!controller.signal.aborted) setAvailability(null); });
+        .catch(() => { if (!controller.signal.aborted) setAvailability(null); })
+        .finally(() => { if (!controller.signal.aborted) setAvailabilityLoading(false); });
     }
     return () => controller.abort();
   }, [simulationId]);
@@ -114,9 +121,9 @@ export function useTwinPlayback(simulationId: string | null) {
   }, [client, total]);
 
   const jumpToFirstCrop = useCallback(async (): Promise<boolean> => {
-    const effective = resolution ?? page?.resolution;
-    const first = availability?.resolutions.find((item) => item.resolution === effective)?.first_representable_field;
-    return first ? jumpToDate(first) : false;
+    const effective = resolution ?? page?.resolution ?? undefined;
+    const target = firstCropNavigation(availability, effective);
+    return target.status === "READY" ? jumpToDate(target.date) : false;
   }, [availability, resolution, page?.resolution, jumpToDate]);
 
   const loadedPage = client.loadedPage(index);
@@ -125,7 +132,7 @@ export function useTwinPlayback(simulationId: string | null) {
   const safeRecord = currentRecord?.simulation_id === simulationId && (!resolution || currentRecord.resolution === resolution) ? currentRecord : null;
 
   return {
-    record: safeRecord, page: safePage, availability, index, seek, jumpToDate, jumpToFirstCrop,
+    record: safeRecord, page: safePage, availability, availabilityLoading, index, seek, jumpToDate, jumpToFirstCrop,
     resolution: safePage?.resolution ?? resolution,
     setResolution, loading, error, playing, setPlaying,
     recordsForChart: safePage?.records ?? [],

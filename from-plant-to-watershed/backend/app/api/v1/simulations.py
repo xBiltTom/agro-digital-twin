@@ -301,15 +301,35 @@ async def get_swat_results(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user),
 ):
-    """Return persisted normalized SWAT+ records without proxy/FSPM fields."""
+    """Return persisted SWAT+ output with its executed or imported origin intact."""
     sim = await _visible_simulation(db, sim_id, _user)
-    if (sim.provenance or {}).get("evidence_type") not in {"REAL_SWAT_PLUS", "REAL_SWAT_PLUS_COUPLED"}:
-        raise HTTPException(status_code=409, detail={"type": "NOT_AVAILABLE", "message": "This run is not a completed real SWAT+ execution"})
+    provenance = sim.provenance or {}
+    imported = provenance.get("source_kind") == "HISTORICAL_IMPORT"
+    executed = provenance.get("evidence_type") in {"REAL_SWAT_PLUS", "REAL_SWAT_PLUS_COUPLED"}
+    if imported:
+        records = sim.monthly_outputs or []
+        if not records:
+            raise HTTPException(status_code=409, detail={
+                "type": "HISTORICAL_RESULTS_NOT_AVAILABLE",
+                "message": "This historical import has no persisted hydrological records",
+            })
+        origin = "HISTORICAL_IMPORT"
+    elif executed:
+        records = sim.monthly_outputs or []
+        origin = "EXECUTED"
+    else:
+        raise HTTPException(status_code=409, detail={"type": "NOT_AVAILABLE", "message": "This run has no supported SWAT+ result provenance"})
+    effective = sim.effective_config or {}
+    requested = sim.requested_config or {}
+    temporal_resolution = ((sim.validation or {}).get("temporal_resolution")
+                           or effective.get("output_frequency")
+                           or (requested.get("swat_plus") or {}).get("output_frequency"))
     return {
-        "status": sim.status, "run_id": sim.id, "records": sim.monthly_outputs or [],
+        "status": sim.status, "origin": origin, "run_id": sim.id,
+        "temporal_resolution": temporal_resolution, "records": records,
         "hru_results": (sim.hru_aggregates or {}).get("results", []),
         "water_balance": (sim.summary_metrics or {}).get("water_balance"),
-        "provenance": sim.provenance,
+        "provenance": provenance,
     }
 
 
