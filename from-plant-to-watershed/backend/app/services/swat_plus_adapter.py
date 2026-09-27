@@ -283,6 +283,120 @@ class SwatPlusAdapter:
             return {"status": "NOT_AVAILABLE", "executable": str(self.executable),
                     "project_dir": str(self.project_dir), "reason": f"{exc.code}: {exc}"}
 
+    def preflight(self, config: SwatPlusRunConfig, *, target_crop: str = "corn") -> dict[str, Any]:
+        """Read-only validation of the exact requested run configuration.
+
+        A present executable and ``file.cio`` are not enough to establish that
+        a coupled run can execute. The coupled path also needs the target crop
+        to be used by active HRU management and dated direct FSPM forcing.
+        """
+        blockers: list[dict[str, str]] = []
+        checks: dict[str, Any] = {
+            "executable": False,
+            "project_and_declared_inputs": False,
+            "control_files": False,
+            "working_directory": False,
+        }
+        input_directory: Path | None = None
+        try:
+            input_directory = self._validate_resources(config)
+            checks["executable"] = True
+            checks["project_and_declared_inputs"] = True
+            checks["control_files"] = all((input_directory / name).is_file() for name in ("time.sim", "print.prt"))
+            if not checks["control_files"]:
+                blockers.append({"code": "SWAT_CONTROL_FILES_MISSING", "message": "SWAT+ input requires time.sim and print.prt"})
+        except SwatPlusError as exc:
+            blockers.append({"code": exc.code, "message": str(exc)})
+
+        work_directory = config.working_directory.expanduser().resolve()
+        probe = work_directory
+        while not probe.exists() and probe != probe.parent:
+            probe = probe.parent
+        checks["working_directory"] = probe.is_dir() and os.access(probe, os.W_OK)
+        if not checks["working_directory"]:
+            blockers.append({"code": "SWAT_WORK_DIRECTORY_NOT_WRITABLE", "message": "SWAT+ workspace parent is not writable"})
+
+        estimated_executions = 2 if config.run_type == "SWAT_MULTISCALE_COUPLED" else 1
+        # FSPM and SWAT+ are two model components in a coupled run, but only
+        # SWAT+ receives an isolated copy of the project directory.
+        workspace_project_copies = 1
+        source_bytes = 0
+        if config.project_path.is_dir():
+            source_bytes = sum(path.stat().st_size for path in config.project_path.rglob("*") if path.is_file())
+        free_bytes = shutil.disk_usage(probe).free if probe.is_dir() else None
+        minimum_workspace_bytes = source_bytes * workspace_project_copies
+        if free_bytes is not None and free_bytes < minimum_workspace_bytes:
+            blockers.append({"code": "SWAT_WORKSPACE_DISK_SPACE_LOW", "message": "Free disk is below the minimum source-project copy estimate"})
+
+        crop_window_count: int | None = None
+        active_hru_count: int | None = None
+        if config.run_type == "SWAT_MULTISCALE_COUPLED" and input_directory is not None and checks["project_and_declared_inputs"]:
+            checks["coupled_crop_management"] = None
+            checks["dated_fspm_forcing"] = None
+            checks["approximate_crop_window"] = None
+            active_hrus: list[str] | None = None
+            forcing: list[dict[str, Any]] | None = None
+            try:
+                from app.services.swat_plant_parameter_mapper import SwatClimateForcingReader, SwatPlantParameterMapper
+                from app.services.swat_crop_chain_diagnostic import SwatCropChainDiagnostic
+
+                active_hrus = SwatPlantParameterMapper._active_hrus(input_directory, target_crop)
+                active_hru_count = len(active_hrus)
+                checks["coupled_crop_management"] = active_hru_count > 0
+            except (OSError, ValueError) as exc:
+                checks["coupled_crop_management"] = False
+                blockers.append({"code": "COUPLED_CROP_CONFIGURATION_INVALID", "message": str(exc)})
+
+            try:
+                from app.services.swat_plant_parameter_mapper import SwatClimateForcingReader
+
+                forcing, _ = SwatClimateForcingReader(input_directory).for_period(
+                    config.simulation_start, config.simulation_end, require_fspm=True
+                )
+                checks["dated_fspm_forcing"] = len(forcing) == (config.simulation_end - config.simulation_start).days + 1
+            except (OSError, ValueError) as exc:
+                checks["dated_fspm_forcing"] = False
+                blockers.append({"code": "COUPLED_FSPM_FORCING_INVALID", "message": str(exc)})
+
+            # Only derive a PHU window after the target crop has been found in
+            # the active HRU management chain. Do not report a generic crop
+            # schedule as a maize window when this check fails.
+            if active_hrus and forcing and checks["dated_fspm_forcing"]:
+                try:
+                    from app.services.swat_crop_chain_diagnostic import SwatCropChainDiagnostic
+                    from scientific_core import PlantPopulation
+
+                    season = SwatCropChainDiagnostic.auto_management_season(input_directory, target_crop=target_crop)
+                    windows = season.windows(
+                        config.simulation_start, config.simulation_end,
+                        (row["temp_c"] for row in forcing),
+                        thermal_maturity_gdd=PlantPopulation().thermal_maturity_gdd,
+                    )
+                    crop_window_count = len(windows)
+                    checks["approximate_crop_window"] = crop_window_count > 0
+                    if not crop_window_count:
+                        blockers.append({"code": "COUPLING_NO_ACTIVE_CROP_WINDOW", "message": "The requested period has no PHU-based approximate crop window"})
+                except (OSError, ValueError) as exc:
+                    checks["approximate_crop_window"] = False
+                    blockers.append({"code": "COUPLED_CROP_SEASON_INVALID", "message": str(exc)})
+
+        return {
+            "status": "READY" if not blockers else "BLOCKED",
+            "run_type": config.run_type,
+            "estimated_executions": estimated_executions,
+            "checks": checks,
+            "blockers": blockers,
+            "storage_estimate": {
+                "source_project_bytes": source_bytes,
+                "workspace_project_copy_count": workspace_project_copies,
+                "minimum_workspace_copy_bytes": minimum_workspace_bytes,
+                "free_disk_bytes": free_bytes,
+                "note": "Lower bound for isolated source copies; SWAT+ output growth and runtime depend on the requested period and print frequency.",
+            },
+            "active_target_hru_count": active_hru_count,
+            "approximate_crop_window_count": crop_window_count,
+        }
+
     @staticmethod
     def _version_from_stdout(stdout: str) -> str | None:
         """Extract a banner when available without ever invoking SWAT+ twice."""

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -18,13 +19,15 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-SYSTEM_PROMPT = """Eres el Copiloto Científico de "From Plant to Watershed", un framework de gemelo digital agrícola multiescala que acopla:
-1. Nivel 1 (Micro / Planta): Modelo fisiológico de maíz (FSPM simplificado con 1,000 plantas, dinámica de GDD, LAI dinámico, profundidad de raíces y transpiración).
-2. Nivel 2 (Meso / Parcela): Comunidad vegetal, balance de agua en horizontes de suelo y demanda evapotranspirativa de cultivo.
-3. Nivel 3 (Macro / Cuenca): Modelo SWAT+ distribuido en 36 subcuencas hidrológicas sobre South Fork Iowa River (USGS 05451210) con 37 canales de enrutamiento fluvial.
-4. Nivel 4 (Clima y Manejo): Forzamientos meteorológicos diarios y escenarios de perturbación climática (+2°C, -15% precipitación, siembra directa zerotill, rotación a sorgo).
+def _first_not_none(*values: Any) -> Any:
+    return next((value for value in values if value is not None), None)
 
-Tu tarea es analizar los resultados numéricos de la simulación provista y emitir un diagnóstico científico estructurado en español técnico, riguroso y conciso, orientado a investigadores y gestores de cuenca.
+
+SYSTEM_PROMPT = """Eres el Copiloto Científico de "From Plant to Watershed". La solicitud contiene únicamente metadatos y métricas que el backend pudo recuperar para una corrida concreta; puede ser FSPM, SWAT+, histórica o incompleta.
+
+Analiza solo los valores y metadatos explícitos en el payload. No asumas cuenca, estación, cantidad de HRU/plantas, calibración, observación, cierre de balance, resolución ni variables ausentes. No derives procesos que no estén calculados. Si un valor es null o falta, decláralo no disponible. Distingue FSPM simplificado, SWAT+ modelado, observación e importación histórica por su evidencia. Mantén unidades y frecuencia originales. No confundas almacenamiento SWAT+ en mm con humedad volumétrica.
+
+Emite un diagnóstico científico estructurado en español técnico, riguroso y conciso, orientado a investigadores y gestores de cuenca.
 
 Debes responder EXCLUSIVAMENTE un objeto JSON válido con las siguientes claves:
 {
@@ -41,7 +44,7 @@ Debes responder EXCLUSIVAMENTE un objeto JSON válido con las siguientes claves:
     "Recomendación 3...",
     "Recomendación 4..."
   ],
-  "limitations_and_uncertainty": "Nota honesta sobre supuestos del modelo, incertidumbre y calibración."
+  "limitations_and_uncertainty": "Nota honesta sobre supuestos, variables no disponibles, incertidumbre y validación."
 }"""
 
 
@@ -57,15 +60,21 @@ class AICopilotService:
         field = sim_data.get("field_aggregates") or {}
         validation = sim_data.get("validation") or {}
         scenario = sim_data.get("scenario") or {}
-        management = sim_data.get("management_scenario", "BASELINE")
-        watershed_name = sim_data.get("watershed_name") or "South Fork Iowa River (USGS 05451210)"
+        management = sim_data.get("management_scenario")
+        watershed_name = sim_data.get("watershed_name") or "cuenca no especificada"
 
-        duration = sim_data.get("duration_days", 365) or 365
+        duration = sim_data.get("duration_days")
         discharge_hm3 = summary.get("total_discharge_hm3")
         calculated_mean_q = (
             (discharge_hm3 * 1_000_000.0) / (duration * 86400.0)
-            if discharge_hm3 and duration > 0
+            if discharge_hm3 is not None and duration is not None and duration > 0
             else None
+        )
+        closure_error = water_balance.get("closure_error_mm")
+        closure_verified = water_balance.get("closure_metric_verified") is True
+        closure_is_finite = isinstance(closure_error, (int, float)) and math.isfinite(closure_error)
+        water_balance_closed = (
+            abs(closure_error) < 0.1 if closure_verified and closure_is_finite else None
         )
 
         context_payload = {
@@ -74,29 +83,30 @@ class AICopilotService:
             "watershed": watershed_name,
             "duration_days": duration,
             "scenario": {
-                "name": scenario.get("name") or sim_data.get("scenario_name") or "Histórico / Baseline",
-                "temp_anomaly_c": scenario.get("temp_anomaly_c", 0.0),
-                "precip_factor": scenario.get("precip_factor", 1.0),
-                "co2_ppm": scenario.get("co2_ppm", 415.0),
+                "name": scenario.get("name") or sim_data.get("scenario_name"),
+                "temp_anomaly_c": scenario.get("temp_anomaly_c"),
+                "precip_factor": scenario.get("precip_factor"),
+                "co2_ppm": scenario.get("co2_ppm"),
                 "management": management,
             },
             "water_balance_summary": {
-                "total_precipitation_mm": summary.get("total_precipitation_mm") or summary.get("total_precip_mm"),
-                "total_runoff_mm": summary.get("total_runoff_mm") or summary.get("total_surface_runoff_mm"),
-                "total_evapotranspiration_mm": summary.get("total_evapotranspiration_mm") or summary.get("total_actual_et_mm"),
-                "mean_soil_moisture_percent": summary.get("mean_soil_moisture_percent") or field.get("soil_moisture_vol"),
-                "mean_streamflow_m3s": water_balance.get("mean_streamflow_m3s") or calculated_mean_q,
-                "peak_streamflow_m3s": water_balance.get("peak_streamflow_m3s") or summary.get("peak_streamflow_m3s"),
-                "water_balance_closed": water_balance.get("closure_error_mm", 0.0) < 0.1,
+                "total_precipitation_mm": _first_not_none(summary.get("total_precipitation_mm"), summary.get("total_precip_mm")),
+                "total_runoff_mm": _first_not_none(summary.get("total_runoff_mm"), summary.get("total_surface_runoff_mm")),
+                "total_evapotranspiration_mm": _first_not_none(summary.get("total_evapotranspiration_mm"), summary.get("total_actual_et_mm")),
+                "mean_soil_moisture_percent": _first_not_none(summary.get("mean_soil_moisture_percent"), field.get("soil_moisture_vol")),
+                "mean_streamflow_m3s": _first_not_none(water_balance.get("mean_streamflow_m3s"), calculated_mean_q),
+                "peak_streamflow_m3s": _first_not_none(water_balance.get("peak_streamflow_m3s"), summary.get("peak_streamflow_m3s")),
+                "water_balance_closed": water_balance_closed,
+                "water_balance_closure_limitation": None if closure_verified and closure_is_finite else "No verified physical closure residual is available",
             },
             "paired_comparison_deltas": paired,
             "field_canopy_aggregates": {
-                "mean_lai": field.get("mean_lai") or field.get("lai_mean") or field.get("mean_LAI"),
-                "mean_root_depth_m": field.get("mean_root_depth_m") or field.get("root_depth_mean_m") or (
-                    field.get("mean_root_depth_cm") / 100.0 if field.get("mean_root_depth_cm") else None
-                ),
-                "mean_transpiration_mm": field.get("mean_transpiration_mm") or field.get("transpiration_mean_mm") or field.get("transpiration_mm_day"),
-                "mean_water_stress": field.get("mean_water_stress") or field.get("water_stress_mean") or field.get("mean_stress") or summary.get("mean_cwsi"),
+                "mean_lai": _first_not_none(field.get("mean_lai"), field.get("lai_mean"), field.get("mean_LAI")),
+                "mean_root_depth_m": _first_not_none(field.get("mean_root_depth_m"), field.get("root_depth_mean_m"), (
+                    field.get("mean_root_depth_cm") / 100.0 if field.get("mean_root_depth_cm") is not None else None
+                )),
+                "mean_transpiration_mm": _first_not_none(field.get("mean_transpiration_mm"), field.get("transpiration_mean_mm"), field.get("transpiration_mm_day")),
+                "mean_water_stress": _first_not_none(field.get("mean_water_stress"), field.get("water_stress_mean"), field.get("mean_stress"), summary.get("mean_cwsi")),
             },
             "statistical_validation": validation,
         }
@@ -184,66 +194,76 @@ class AICopilotService:
         paired = ctx.get("paired_comparison_deltas", {})
         field = ctx.get("field_canopy_aggregates", {})
 
-        precip = wb.get("total_precipitation_mm") or 850.0
-        runoff = wb.get("total_runoff_mm") or 110.0
-        et = wb.get("total_evapotranspiration_mm") or 620.0
-        sm = wb.get("mean_soil_moisture_percent") or 28.5
-        q_mean = wb.get("mean_streamflow_m3s") or 6.8
+        precip = wb.get("total_precipitation_mm")
+        runoff = wb.get("total_runoff_mm")
+        et = wb.get("total_evapotranspiration_mm")
+        sm = wb.get("mean_soil_moisture_percent")
+        q_mean = wb.get("mean_streamflow_m3s")
+        runoff_ratio = (runoff / precip) * 100 if runoff is not None and precip is not None and precip > 0 else None
+        et_ratio = (et / precip) * 100 if et is not None and precip is not None and precip > 0 else None
 
-        runoff_ratio = (runoff / precip) * 100 if precip > 0 else 12.0
-        et_ratio = (et / precip) * 100 if precip > 0 else 73.0
+        temp_anom = scen.get("temp_anomaly_c")
+        precip_fac = scen.get("precip_factor")
+        mgmt = scen.get("management")
 
-        temp_anom = scen.get("temp_anomaly_c", 0.0)
-        precip_fac = scen.get("precip_factor", 1.0)
-        mgmt = scen.get("management", "BASELINE")
-
-        # Scenario interpretation
-        if temp_anom > 1.5:
+        # Scenario metadata is not evidence of a simulated response.
+        if isinstance(temp_anom, (int, float)) and temp_anom > 1.5:
             scen_desc = f"un incremento térmico de +{temp_anom}°C"
-            resilience_note = "Elevada vulnerabilidad hídrica por incremento en la demanda evaporativa atmosférica y aceleración de la senescencia foliar."
-        elif precip_fac < 0.9:
+        elif isinstance(precip_fac, (int, float)) and precip_fac < 0.9:
             scen_desc = f"una reducción pluviométrica del {(1.0 - precip_fac)*100:.0f}%"
-            resilience_note = "Vulnerabilidad hídrica crítica en estiaje; el caudal fluvial en New Providence experimenta una desaceleración no lineal respecto al déficit pluviométrico."
         elif mgmt == "NO_TILL":
             scen_desc = "la adopción de siembra directa (labranza de conservación zerotill)"
-            resilience_note = "Aumento de resiliencia agronómica. La cobertura de residuos mejora la capacidad de retención de humedad en el perfil superficial y mitiga picos de escorrentía rápida."
         elif mgmt == "MAIZE_TO_SORGHUM":
             scen_desc = "la sustitución de maíz por sorgo granífero (grsg)"
-            resilience_note = "Alta resiliencia ante sequía. La menor tasa de transpiración y mayor eficiencia en el uso del agua del sorgo reducen la extracción consuntiva de la cuenca."
         else:
-            scen_desc = "condiciones históricas de referencia calibradas"
-            resilience_note = "Balance hidrológico en equilibrio dinámico para la región agrícola del Des Moines Lobe (Iowa)."
+            scen_desc = "el escenario registrado sin perturbación explícita"
 
+        def metric(label: str, value: Any, unit: str, digits: int = 1) -> str:
+            if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
+                return f"{label}: no disponible"
+            return f"{label}: {value:.{digits}f} {unit}"
+
+        summary_items = [
+            metric("precipitación acumulada", precip, "mm"),
+            metric("evapotranspiración", et, "mm"),
+            metric("escorrentía", runoff, "mm"),
+            metric("caudal medio", q_mean, "m³/s", 2),
+            metric("humedad volumétrica", sm, "%"),
+        ]
+        if et_ratio is not None:
+            summary_items.append(f"ET/precipitación: {et_ratio:.1f}%")
+        if runoff_ratio is not None:
+            summary_items.append(f"escorrentía/precipitación: {runoff_ratio:.1f}%")
         exec_summary = (
-            f"La simulación sobre la cuenca del South Fork Iowa River (560.89 km²) bajo {scen_desc} "
-            f"arrojó una precipitación acumulada de {precip:.1f} mm, con una evapotranspiración real de {et:.1f} mm ({et_ratio:.1f}% de la lámina incidente) "
-            f"y una escorrentía neta de {runoff:.1f} mm ({runoff_ratio:.1f}% de rendimiento hídrico). "
-            f"El caudal promedio modelado en la estación hidrométrica USGS 05451210 en New Providence, IA se situó en {q_mean:.2f} m³/s con un suelo en nivel medio de {sm:.1f}% de humedad volumétrica."
+            f"La corrida para {ctx.get('watershed') or 'cuenca no especificada'} declara {scen_desc}. "
+            + "; ".join(summary_items)
+            + ". Los valores ausentes no se completaron con referencias ni promedios supuestos."
         )
 
-        micro_diag = (
-            f"En la escala individual de planta (1,000 instancias FSPM), la comunidad de maíz "
-            f"desarrolló un índice de área foliar (LAI) medio estimado en {field.get('mean_lai', 3.8):.2f}, con una profundidad radicular activa de {field.get('mean_root_depth_m', 1.25):.2f} m. "
-            f"La demanda de transpiración acumulada promedió {field.get('mean_transpiration_mm', 420.0):.1f} mm, operando bajo un factor de estrés hídrico de Feddes controlado."
-        )
+        micro_diag = "; ".join((
+            metric("LAI medio de campo", field.get("mean_lai"), "m²/m²", 2),
+            metric("profundidad radicular media", field.get("mean_root_depth_m"), "m", 2),
+            metric("transpiración FSPM", field.get("mean_transpiration_mm"), "mm/día"),
+            metric("estrés hídrico FSPM", field.get("mean_water_stress"), "fracción", 3),
+        ))
 
         meso_diag = (
-            f"A nivel de parcela y unidades HRU, el horizonte superficial (0-30 cm) mantuvo una tasa de infiltración "
-            f"estable, regulada por el número de curva CN hidrológico. La humedad volumétrica media de {sm:.1f}% "
-            f"garantizó que la conductividad hidráulica del suelo no colapsara hacia el punto de marchitez permanente."
+            "No hay agregados de campo disponibles para describir infiltración o perfil del suelo."
+            if sm is None else metric("humedad volumétrica disponible", sm, "%")
         )
-
-        macro_diag = (
-            f"En la escala de cuenca completa (SWAT+ con 36 subcuencas y 37 canales fluviales), la red de drenaje "
-            f"mostró un amortiguamiento hidráulico característico de los suelos de origen glaciar de Iowa. "
-            f"La relación escorrentía/precipitación del {runoff_ratio:.1f}% refleja un régimen dominado por flujo subterráneo somero y drenaje artificial agrícola."
+        macro_items = [metric("caudal medio de salida", q_mean, "m³/s", 2)]
+        if runoff_ratio is not None:
+            macro_items.append(f"relación escorrentía/precipitación: {runoff_ratio:.1f}%")
+        macro_diag = "; ".join(macro_items) + ". No se infieren procesos espaciales o subcuencas sin esas salidas."
+        resilience_note = (
+            "La resiliencia no puede evaluarse solo con metadatos del escenario; requiere respuestas modeladas completas y una comparación de referencia."
         )
 
         recommendations = [
-            "Fomentar la siembra directa (no-till) en subcuencas con pendientes superiores al 3% para reducir la pérdida de humedad edáfica por evaporación directa.",
-            "Establecer franjas riparias de amortiguación (buffer strips) a lo largo de los 37 canales de afluencia para ralentizar el tiempo de concentración hidrológico.",
-            "Evaluar esquemas de rotación maíz-sorgo o maíz-soya como medida preventiva en escenarios de reducción de lluvias mayor al 15%.",
-            "Monitorear los niveles de extracción en los acuíferos aluviales someros de Hamilton y Hardin County durante las fases fenológicas de llenado de grano (VT-R3)."
+            "Verificar cobertura temporal completa antes de calcular totales hidrológicos.",
+            "No declarar cierre del balance sin un residual físico calculado y documentado.",
+            "Conservar unidades, frecuencia y evidencia al comparar variables FSPM y SWAT+.",
+            "Obtener observaciones independientes antes de atribuir calibración o validación a una corrida.",
         ]
 
         if paired and paired.get("streamflow_m3s", {}).get("delta_percentage") is not None:
@@ -264,8 +284,8 @@ class AICopilotService:
             "climate_resilience_assessment": resilience_note,
             "policy_recommendations": recommendations,
             "limitations_and_uncertainty": (
-                "Este diagnóstico fue sintetizado analizando las salidas deterministas del modelo SWAT+ y FSPM. "
-                "Para activar el razonamiento semántico libre mediante LLM (Gemini o GPT-4o-mini), configure GEMINI_API_KEY u OPENAI_API_KEY en el archivo backend/.env."
+                "Este resumen heurístico solo describe métricas persistidas. Los datos faltantes, la resolución temporal, las suposiciones y la procedencia limitan cualquier interpretación. "
+                "No declara calibración, cierre físico, observaciones ni procesos espaciales que no estén documentados."
             ),
             "raw_metrics_analyzed": ctx,
         }

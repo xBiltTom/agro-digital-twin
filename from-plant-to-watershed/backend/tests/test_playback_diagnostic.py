@@ -13,7 +13,7 @@ from app.main import app
 from app.models.simulation import ClimateScenario, SimulationRun
 from app.models.user import User, Role
 from app.models.watershed import Watershed
-from app.schemas.playback import PlaybackPage
+from app.schemas.playback import PlaybackPage, VariableState
 from app.services.playback_artifact import PlaybackArtifactStore
 from app.services.playback_diagnostic import diagnose_record, diagnose_simulation
 from scripts.generate_visual_fixtures import OUT, generate
@@ -109,6 +109,12 @@ def test_fspm_summary_trajectory_samples_and_daily_representability_are_distinct
         plant_sample=[{"plant_id": "legacy-1", "plant_height_m": 1.2}]))
     assert historical_samples.stored_fspm_samples_available is True
     assert historical_samples.stored_fspm_trajectory_available is False
+    status_only_sample = diagnose_simulation(_run("status-only-sample", historical=True,
+        plant_sample=[{"plant_id": "legacy-2", "variables": {"status": "NOT_AVAILABLE"}}]))
+    assert status_only_sample.stored_fspm_samples_available is False
+    zero_sample = diagnose_simulation(_run("zero-sample", historical=True,
+        plant_sample=[{"plant_id": "legacy-3", "variables": {"height_m": 0.0}}]))
+    assert zero_sample.stored_fspm_samples_available is True
 
     page = PlaybackPage.model_validate(generate()["pages"]["coupled_daily"])
     records = [record.model_copy(update={"simulation_id": "coupled-diagnostic"}) for record in page.records[:2]]
@@ -123,6 +129,23 @@ def test_fspm_summary_trajectory_samples_and_daily_representability_are_distinct
     assert daily.plant_samples_available is True
     assert daily.first_representable_field == records[0].date
     assert daily.selected_date.field_representable is True
+
+    unavailable = VariableState(value=None, unit="m", evidence="NOT_AVAILABLE", source="empty fixture",
+                                availability="NOT_AVAILABLE", limitation="No calculated height")
+    empty_state = records[0].model_copy(update={
+        "field": {},
+        "plant_samples": [records[0].plant_samples[0].model_copy(update={"variables": {"height_m": unavailable}})],
+    })
+    empty_manifest = PlaybackArtifactStore().write("empty-trajectory", [
+        empty_state.model_copy(update={"simulation_id": "empty-trajectory"})
+    ], provenance={"fixture": True})
+    empty_trajectory = diagnose_simulation(_run("empty-trajectory", empty_manifest,
+        plant_sample=[{"plant_id": "sample-with-no-measurements"}]), on=empty_state.date)
+    assert empty_trajectory.stored_fspm_samples_available is False
+    assert empty_trajectory.stored_fspm_trajectory_available is False
+    assert empty_trajectory.resolutions[0].plant_samples_available is False
+    assert "SCIENTIFIC_STATE_AVAILABLE" not in empty_trajectory.resolutions[0].codes
+    assert empty_trajectory.resolutions[0].selected_date.mode == "DATA_UNAVAILABLE"
 
 
 def test_historical_import_units_and_missing_science():

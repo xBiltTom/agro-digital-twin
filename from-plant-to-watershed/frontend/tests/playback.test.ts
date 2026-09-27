@@ -288,6 +288,12 @@ test("Pydantic generated fixtures feed the official visual adapter and current 3
   const second = adaptPlaybackVisual(mature, { simulationId: mature.simulation_id, selectedPlantId: "test-plant-1" });
   assert.equal(first.mode, "SCIENTIFIC_ACTIVE");
   assert.equal(first.height?.value, 0.2);
+  assert.equal(first.laiDistribution?.p10?.value, young.field.lai_p10.value);
+  assert.equal(first.rootDepthDistribution?.p90?.value, young.field.root_depth_p90_m.value);
+  assert.equal(first.representativePlantCount?.value, 1000);
+  assert.equal(first.plantSampleContext?.population_count, 1000);
+  assert.equal(first.plantSampleContext?.captured_count, 1);
+  assert.equal(first.plantSampleContext?.selection_method, "EVENLY_SPACED_STABLE_IDS");
   assert.equal(first.precipitation?.value, 0);
   assert.equal(first.fspmMoisturePercent?.unit, "volumetric percent");
   assert.equal(first.swatSoilWaterMm?.unit, "mm");

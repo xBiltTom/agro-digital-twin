@@ -157,7 +157,7 @@ class SimulationResultResponse(BaseModel):
     plant_transpiration_mm: float
     root_water_uptake_mm: float
     cwsi_stress_index: float
-    sap_flow_velocity_cmh: float
+    sap_flow_velocity_cmh: Optional[float] = None
     water_balance_residual_mm: float
     model_config = ConfigDict(from_attributes=True)
 
@@ -223,4 +223,3 @@ class AIInsightsResponse(BaseModel):
     limitations_and_uncertainty: str
     raw_metrics_analyzed: Optional[Dict[str, Any]] = None
     model_config = ConfigDict(from_attributes=True)
-

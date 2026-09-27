@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from calendar import isleap, monthrange
 from datetime import date, timedelta
 from statistics import fmean
 from typing import Any, Iterable
@@ -45,11 +46,19 @@ def _field(row: dict | None) -> dict[str, VariableState]:
     source = "SimplifiedPlantModel -> PlantToFieldAggregator"
     moisture_source = row.get("soil_moisture_source", "UNSPECIFIED_FSPM_INPUT")
     moisture_assumed = moisture_source.startswith("ASSUMED")
+    lai_distribution = row.get("LAI_distribution") or {}
+    root_distribution = row.get("root_depth_distribution") or {}
     return {
         "lai": value(row.get("mean_LAI"), "m2_leaf/m2_ground", Evidence.DERIVED, source),
+        "lai_p10": value(lai_distribution.get("p10"), "m2_leaf/m2_ground", Evidence.DERIVED, source),
+        "lai_p90": value(lai_distribution.get("p90"), "m2_leaf/m2_ground", Evidence.DERIVED, source),
+        "lai_std": value(lai_distribution.get("std"), "m2_leaf/m2_ground", Evidence.DERIVED, source),
         "canopy_cover_fraction": value(row.get("canopy_cover"), "fraction", Evidence.DERIVED, source),
         "height_m": value(row.get("plant_height_mean_m"), "m", Evidence.DERIVED, source),
         "root_depth_m": value(row.get("root_depth_mean_m"), "m", Evidence.DERIVED, source),
+        "root_depth_p10_m": value(root_distribution.get("p10_m"), "m", Evidence.DERIVED, source),
+        "root_depth_p90_m": value(root_distribution.get("p90_m"), "m", Evidence.DERIVED, source),
+        "representative_plant_count": value(row.get("n_plants"), "modeled representative plants", Evidence.DERIVED, source),
         "biomass_g_plant": value(row.get("biomass_g_plant"), "g/plant", Evidence.DERIVED, source),
         "phenology_fraction": value(row.get("phenology_fraction"), "fraction [0, 1]", Evidence.DERIVED, source),
         "water_stress": value(row.get("water_stress"), "fraction [0, 1]", Evidence.SIMPLIFIED_FSPM, source),
@@ -132,6 +141,7 @@ def _weather_by_period(forcing: list[dict], resolution: str) -> dict[str, dict]:
                 "pet_mm": sum(row["pet_mm"] for row in rows) if all(row.get("pet_mm") is not None for row in rows) else None,
                 "co2_ppm": rows[0].get("co2_ppm"),
                 "assumed_weather_variables": sorted({name for row in rows for name in row.get("assumed_weather_variables", [])}),
+                "forcing_day_count": len(rows),
             }
     return result
 
@@ -180,6 +190,7 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
         field_day = (fspm_days or {}).get(day) if resolution == "DAILY" else None
         field_values = _field(field_day["field"]) if field_day and field_day.get("field") else {}
         samples = _plant_samples(field_day.get("plants", [])) if field_day else []
+        sample_context = field_day.get("plant_sample_context") if field_day else None
         crop = CropState(**field_day["crop"]) if field_day and field_day.get("crop") else None
         hru_states = []
         for hru in hrus_by_date.get(day, []):
@@ -200,6 +211,16 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
         limitations = []
         if day not in weather_by_date:
             limitations.append("Weather forcing unavailable for this output period; no precipitation is inferred from runoff")
+        else:
+            forcing_day_count = weather_by_date[day].get("forcing_day_count", 1)
+            period_date = date.fromisoformat(day)
+            expected_days = (monthrange(period_date.year, period_date.month)[1] if resolution == "MONTHLY"
+                             else 366 if resolution == "ANNUAL" and isleap(period_date.year)
+                             else 365 if resolution == "ANNUAL" else 1)
+            if forcing_day_count < expected_days:
+                limitations.append(
+                    f"Weather is aggregated from {forcing_day_count} available forcing days of {expected_days} calendar-period days; no missing daily forcing is reconstructed"
+                )
         if day not in by_period:
             limitations.append(missing_hydrology_reason)
         if run_type == "SWAT_MULTISCALE_COUPLED" and resolution != "DAILY":
@@ -210,6 +231,7 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
                              run_type=run_type, watershed_id=watershed_id, watershed_code=watershed_code,
                              outlet_unit=outlet_unit, spatial_support="WATERSHED_OUTLET_AND_BASIN",
                              weather=weather, crop=crop, field=field_values, plant_samples=samples,
+                             plant_sample_context=sample_context,
                              hydrology=hydro, hru_results=hru_states,
                              availability=_availability(weather, field_values, samples, hydro, hru_states),
                              limitations=limitations)
@@ -236,5 +258,6 @@ def simplified_frames(*, simulation_id: str, watershed_id: str, rows: Iterable[d
                              crop=CropState(active=True, crop=state["crop"], phenological_stage=state["phenological_stage"],
                                             source="SimplifiedPlantModel", limitation="No explicit crop-management season in the simplified run"),
                              field=field_values, plant_samples=samples, hydrology=hydro,
+                             plant_sample_context=state.get("plant_sample_context"),
                              availability=_availability(weather, field_values, samples, hydro, []),
                              limitations=["Coarse HRUs have no verified SWAT+ polygon identity"])

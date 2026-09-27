@@ -9,7 +9,7 @@ El contrato oficial de disponibilidad y adaptación para la fase 3.2 está en [G
 | SWAT+ `records` normalizados | Fechados en `monthly_outputs` incluso cuando la frecuencia era diaria; el nombre histórico se conserva | Caudal, escorrentía, ET, percolación y almacenamiento de suelo por periodo real `DAILY`, `MONTHLY` o `ANNUAL` |
 | SWAT+ `hru_results` | Fechados en `hru_aggregates.results` | Por identificador `hru_unit` verificable en la salida; sin identidad de polígono asumida |
 | SWAT+ estaciones de forcing directo | Archivos diarios `weather-sta.cli`/`*.pcp`/`*.tmp`; opcionalmente `*.slr`/`*.hmd` | Fechas explícitas, media aritmética entre estaciones como resumen de cuenca; no equivale a observación USGS ni a ponderación HRU |
-| FSPM acoplado | Estados diarios calculados pero descartados salvo máximos y muestra final | Nuevas corridas capturan agregado diario y hasta 10 plantas reales con IDs estables; no reconstruible para corridas antiguas |
+| FSPM acoplado | Estados diarios calculados pero descartados salvo máximos y muestra final | Nuevas corridas capturan agregado diario y hasta 10 estados de miembros representativos de la población modelada con IDs estables; no reconstruible para corridas antiguas |
 | Hidrología/FSPM simplificados | `SimulationResult` diario y agregados/muestra solo finales | Nuevas corridas capturan agregado y muestra diaria; forcing sintético clasificado `SYNTHETIC` |
 | USGS | Observaciones por fecha en el registro de datos; validación mensual separada | Si se enlazan a una corrida, `observed_streamflow_m3s` conserva la fecha y evidencia `OBSERVED`; para SWAT+ mensual/anual se promedia solo los días observados disponibles, indicando su cobertura; nunca rellena fechas ausentes |
 | South Fork v2 | Informe y datasets históricos | Intactos. Este contrato no los reetiqueta ni los promueve como playback completo |
@@ -19,6 +19,8 @@ El runner South Fork v3 conserva su exportación propia; no se ha ejecutado ni v
 ## API y almacenamiento
 
 `GET /api/v1/simulations/{id}/playback` requiere autenticación y que el usuario sea dueño de la corrida o `SUPERADMIN`. Parámetros: `date=YYYY-MM-DD` **o** `start=YYYY-MM-DD&end=YYYY-MM-DD`, `offset` desde 0 y `limit` entre 1 y 500 (100 por defecto). `resolution=DAILY|MONTHLY|ANNUAL` permite elegir una frecuencia disponible; sin él se devuelve la frecuencia SWAT+ principal. Una corrida acoplada con salida SWAT+ mensual/anual ofrece además `DAILY` con FSPM y forcing, dejando la hidrología diaria en `null`. `available_resolutions` informa las opciones. Responde `simulation_status` (`PENDING`, `RUNNING`, `FAILED`, `COMPLETED`), `artifact_status`, frecuencia efectiva, total filtrado, registros, catálogo de variables, procedencia y limitaciones. Una corrida histórica sin artefacto responde `NOT_AVAILABLE` y cero registros, sin representar ceros científicos. Una falla de integridad/archivo responde 503.
+
+El resumen `total_discharge_hm3` solo se integra con una salida DAILY de caudal completa. En frecuencia MONTHLY/ANNUAL o con periodos diarios faltantes se conserva como `null`, con `total_discharge_status` y `total_discharge_limitation`; no se multiplica el promedio mensual/anual por el número de días.
 
 Cada corrida nueva publica un sidecar SQLite inmutable con nombre único por intento (`{simulation_id}.{uuid}.sqlite`) en `DATA_ARTIFACT_ROOT/playback/v1`, con índice de fecha y checksum SHA-256 por registro. Una corrida acoplada con SWAT+ mensual/anual añade el sidecar `playback/v1/fspm-daily`. En `SimulationRun.provenance.playback` y, cuando proceda, `playback_daily_fspm`, quedan los manifiestos con `schema_version`, nombre, checksum del archivo completo, intervalo, frecuencia, catálogo, configuración, semilla, versión del código y procedencia. PostgreSQL conserva los manifiestos, no otra copia de miles de estados de plantas. La consulta de un día usa el índice, no carga la serie completa. El directorio debe persistir y compartirse entre procesos FastAPI.
 
@@ -42,7 +44,11 @@ El proveedor normalizado externo anterior rellenaba solar, humedad relativa y CO
 
 El cultivo acoplado se marca activo únicamente dentro de las ventanas calculadas por PHU; fuera de ellas, `crop.active=false`, `field={}` y `plant_samples=[]`. `window_status=APPROXIMATE_PLANTING_WINDOW` declara que siembra/cosecha no son eventos SWAT+ observados. Una línea base SWAT+ deja `crop=null` y no contiene estados FSPM. La corrida simplificada no dispone todavía de un calendario explícito de siembra/cosecha y declara esa limitación.
 
-Las coordenadas `x_m`/`y_m` de las muestras de plantas son relativas a la cuadrícula de población simulada; no son coordenadas geográficas. La identidad de polígono HRU sigue siendo `null` hasta documentar una correspondencia espacial comprobable.
+Las coordenadas `x_m`/`y_m` de las muestras de plantas son relativas a la cuadrícula de población simulada; no son coordenadas geográficas ni observaciones de individuos de campo. `plant_sample_context` indica `population_count`, `captured_count`, `selection_method` e `identity_scope=SIMULATION_SLOT`; cuando la población supera diez miembros, la selección está espaciada determinísticamente entre IDs estables, no toma solo el primer bloque. La identidad de polígono HRU sigue siendo `null` hasta documentar una correspondencia espacial comprobable.
+
+Los agregados de campo incluyen `lai_p10`, `lai_p90`, `lai_std`, `root_depth_p10_m`, `root_depth_p90_m` y `representative_plant_count` cuando el FSPM los calcula. Cada uno sigue el mismo esquema `VariableState`; ausencia es `null`. `SCIENTIFIC_STATE_AVAILABLE` no implica que todas las variables estén presentes.
+
+El resumen `water_balance.status=TERMS_COMPLETE` significa únicamente que runoff, ET y percolación están disponibles para todos los periodos solicitados; no afirma cierre del balance. `period_coverage` declara filas disponibles/esperadas por variable. Los totales son null si falta algún periodo o valor; cero se conserva si SWAT+ reportó cero.
 
 Ejemplo abreviado de **fixture determinista**, no resultado South Fork:
 

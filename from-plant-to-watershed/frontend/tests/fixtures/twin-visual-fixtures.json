@@ -63,9 +63,57 @@
               "availability": "AVAILABLE",
               "limitation": "Synthetic contract input, not a South Fork result"
             },
+            "lai_p10": {
+              "value": 0.36000000000000004,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "lai_p90": {
+              "value": 0.44000000000000006,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "lai_std": {
+              "value": 0.020000000000000004,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
             "root_depth_m": {
               "value": 0.1,
               "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "root_depth_p10_m": {
+              "value": 0.08,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "root_depth_p90_m": {
+              "value": 0.12,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "representative_plant_count": {
+              "value": 1000.0,
+              "unit": "modeled representative plants",
               "evidence": "SIMPLIFIED_FSPM",
               "source": "DETERMINISTIC_TEST_FIXTURE",
               "availability": "AVAILABLE",
@@ -145,6 +193,13 @@
               }
             }
           ],
+          "plant_sample_context": {
+            "population_count": 1000,
+            "captured_count": 1,
+            "selection_method": "EVENLY_SPACED_STABLE_IDS",
+            "identity_scope": "SIMULATION_SLOT",
+            "identity_semantics": "Synthetic fixture sample; no observed plants"
+          },
           "hydrology": {
             "streamflow_m3s": {
               "value": 2.0,
@@ -221,9 +276,57 @@
               "availability": "AVAILABLE",
               "limitation": "Synthetic contract input, not a South Fork result"
             },
+            "lai_p10": {
+              "value": 3.7800000000000002,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "lai_p90": {
+              "value": 4.620000000000001,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "lai_std": {
+              "value": 0.21000000000000002,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
             "root_depth_m": {
               "value": 0.9,
               "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "root_depth_p10_m": {
+              "value": 0.7,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "root_depth_p90_m": {
+              "value": 1.1,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "representative_plant_count": {
+              "value": 1000.0,
+              "unit": "modeled representative plants",
               "evidence": "SIMPLIFIED_FSPM",
               "source": "DETERMINISTIC_TEST_FIXTURE",
               "availability": "AVAILABLE",
@@ -303,6 +406,13 @@
               }
             }
           ],
+          "plant_sample_context": {
+            "population_count": 1000,
+            "captured_count": 1,
+            "selection_method": "EVENLY_SPACED_STABLE_IDS",
+            "identity_scope": "SIMULATION_SLOT",
+            "identity_semantics": "Synthetic fixture sample; no observed plants"
+          },
           "hydrology": {
             "streamflow_m3s": {
               "value": 2.0,
@@ -364,6 +474,7 @@
           },
           "field": {},
           "plant_samples": [],
+          "plant_sample_context": null,
           "hydrology": {
             "streamflow_m3s": {
               "value": 2.0,
@@ -440,6 +551,7 @@
           "crop": null,
           "field": {},
           "plant_samples": [],
+          "plant_sample_context": null,
           "hydrology": {
             "streamflow_m3s": {
               "value": 2.0,
@@ -559,9 +671,57 @@
               "availability": "AVAILABLE",
               "limitation": "Synthetic contract input, not a South Fork result"
             },
+            "lai_p10": {
+              "value": 1.08,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "lai_p90": {
+              "value": 1.32,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "lai_std": {
+              "value": 0.06,
+              "unit": "m2_leaf/m2_ground",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
             "root_depth_m": {
               "value": 0.9,
               "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "root_depth_p10_m": {
+              "value": 0.7,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "root_depth_p90_m": {
+              "value": 1.1,
+              "unit": "m",
+              "evidence": "SIMPLIFIED_FSPM",
+              "source": "DETERMINISTIC_TEST_FIXTURE",
+              "availability": "AVAILABLE",
+              "limitation": "Synthetic contract input, not a South Fork result"
+            },
+            "representative_plant_count": {
+              "value": 1000.0,
+              "unit": "modeled representative plants",
               "evidence": "SIMPLIFIED_FSPM",
               "source": "DETERMINISTIC_TEST_FIXTURE",
               "availability": "AVAILABLE",
@@ -609,6 +769,13 @@
             }
           },
           "plant_samples": [],
+          "plant_sample_context": {
+            "population_count": 1000,
+            "captured_count": 0,
+            "selection_method": "NONE",
+            "identity_scope": "SIMULATION_SLOT",
+            "identity_semantics": "Synthetic fixture sample; no observed plants"
+          },
           "hydrology": {
             "streamflow_m3s": {
               "value": 2.0,
@@ -686,6 +853,7 @@
           "crop": null,
           "field": {},
           "plant_samples": [],
+          "plant_sample_context": null,
           "hydrology": {
             "streamflow_m3s": {
               "value": 2.0,

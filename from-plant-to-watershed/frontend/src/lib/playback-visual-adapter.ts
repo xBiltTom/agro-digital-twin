@@ -1,4 +1,4 @@
-import type { PlaybackRecord, PlaybackResolution, PlantSample, VariableState } from "../types/playback";
+import type { PlaybackRecord, PlaybackResolution, PlantSample, PlantSampleContext, VariableState } from "../types/playback";
 import type { AvailabilityCode, SimulationAvailability, VisualMode } from "../types/playback-availability";
 
 /** Official scientific input for Gemini. Scene reference dimensions live in visual-state.ts. */
@@ -22,14 +22,18 @@ export interface TwinVisualState {
   phenologicalStage: string | null;
   height: VariableState | null;
   lai: VariableState | null;
+  laiDistribution: { p10: VariableState | null; p90: VariableState | null; standardDeviation: VariableState | null } | null;
   rootDepth: VariableState | null;
+  rootDepthDistribution: { p10: VariableState | null; p90: VariableState | null } | null;
   biomass: VariableState | null;
+  representativePlantCount: VariableState | null;
   canopyCover: VariableState | null;
   waterStress: VariableState | null;
   transpiration: VariableState | null;
   fspmMoisturePercent: VariableState | null;
   swatSoilWaterMm: VariableState | null;
   plantSamples: PlantSample[];
+  plantSampleContext: PlantSampleContext | null;
   selectedPlant: PlantSample | null;
   hruIds: string[];
   codes: AvailabilityCode[];
@@ -112,13 +116,22 @@ export function adaptPlaybackVisual(
     seasonIsApproximate: record?.crop?.window_status === "APPROXIMATE_PLANTING_WINDOW",
     phenologicalStage: record?.crop?.phenological_stage ?? null,
     height: record?.field.height_m ?? null, lai: record?.field.lai ?? null,
+    laiDistribution: record?.field.lai_p10 || record?.field.lai_p90 || record?.field.lai_std ? {
+      p10: record.field.lai_p10 ?? null, p90: record.field.lai_p90 ?? null,
+      standardDeviation: record.field.lai_std ?? null,
+    } : null,
     rootDepth: record?.field.root_depth_m ?? null, biomass: record?.field.biomass_g_plant ?? null,
+    rootDepthDistribution: record?.field.root_depth_p10_m || record?.field.root_depth_p90_m ? {
+      p10: record.field.root_depth_p10_m ?? null, p90: record.field.root_depth_p90_m ?? null,
+    } : null,
+    representativePlantCount: record?.field.representative_plant_count ?? null,
     canopyCover: record?.field.canopy_cover_fraction ?? null,
     waterStress: record?.field.water_stress ?? null,
     transpiration: record?.field.actual_transpiration_mm_day ?? null,
     fspmMoisturePercent: record?.field.soil_moisture_vol_percent ?? null,
     swatSoilWaterMm: record?.hydrology.soil_water_mm ?? null,
-    plantSamples: record?.plant_samples ?? [], selectedPlant: sample,
+    plantSamples: record?.plant_samples ?? [], plantSampleContext: record?.plant_sample_context ?? null,
+    selectedPlant: sample,
     hruIds: record?.hru_results.map((hru) => hru.hru_id) ?? [],
     codes: [...new Set(codes)], missingVariables: selected?.missing_variables ?? missing,
     limitations: [...(record?.limitations ?? []), ...(diagnostic?.limitations ?? [])],

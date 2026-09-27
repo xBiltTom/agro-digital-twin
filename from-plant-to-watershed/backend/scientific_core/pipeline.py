@@ -175,7 +175,6 @@ class MultiscaleSimulationOrchestrator:
             rows.append({**forcing, **twin, "date_str": date_value.isoformat(),
                          "et0_mm": baseline_step["et0_mm"], "actual_transpiration_mm": field["mean_transpiration_mm"],
                          "root_water_uptake_mm": field["mean_transpiration_mm"], "cwsi_stress_index": field["mean_stress"],
-                         "sap_flow_velocity_cmh": field["mean_transpiration_mm"] / 6 * 18,
                          "baseline_streamflow_m3s": baseline["streamflow_m3s"], "irrigation_mm": params["irrigation_mm_per_day"],
                          "hru_contributions": [{"hru_id": state["hru_id"], "area_fraction": state["area_fraction"],
                                                 "streamflow_m3s": output["streamflow_m3s"], "surface_runoff_mm": output["surface_runoff_mm"]}
@@ -190,8 +189,17 @@ class MultiscaleSimulationOrchestrator:
             }}
             field_lai.append(field["mean_lai"])
             field_stress.append(field["mean_stress"])
+            sampled_states = population.representative_sample(states)
             playback_rows.append({"date": date_value.isoformat(), "field": field,
-                                  "plants": states[:min(10, len(states))], "crop": management["crop"],
+                                  "plants": sampled_states,
+                                  "plant_sample_context": {
+                                      "population_count": len(states),
+                                      "captured_count": len(sampled_states),
+                                      "selection_method": "EVENLY_SPACED_STABLE_IDS" if len(states) > 10 else "ALL_REPRESENTATIVE_STATES",
+                                      "identity_scope": "SIMULATION_SLOT",
+                                      "identity_semantics": "Seeded modeled population slots; not observed individual plants",
+                                  },
+                                  "crop": management["crop"],
                                   "phenological_stage": Counter(state.phenological_stage for state in states).most_common(1)[0][0]})
         monthly_rows = tuple({"month": key, "baseline_streamflow_m3s": sum(v["baseline"]) / len(v["baseline"]),
                               "twin_streamflow_m3s": sum(v["twin"]) / len(v["twin"]),

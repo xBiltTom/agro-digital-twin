@@ -54,9 +54,51 @@ def _has_fspm_summary(values: object) -> bool:
 
 
 def _has_individual_samples(samples: object) -> bool:
-    return isinstance(samples, list) and any(
-        isinstance(item, dict) and any(item.get(key) for key in ("plant_id", "id", "plant_identifier"))
+    if not isinstance(samples, list):
+        return False
+    numeric_variables = (
+        "lai", "height_m", "plant_height_m", "root_depth_m", "biomass_g_plant",
+        "stress", "water_stress", "actual_transpiration_mm_day", "growing_degree_days_c_day",
+    )
+
+    def numeric(value: object) -> bool:
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+    def has_measurement(item: dict) -> bool:
+        for name in numeric_variables:
+            if numeric(item.get(name)):
+                return True
+        stage = item.get("phenological_stage")
+        if isinstance(stage, str) and stage.strip() and stage.upper() != "NOT_AVAILABLE":
+            return True
+        variables = item.get("variables")
+        if not isinstance(variables, dict):
+            return False
+        for name, state in variables.items():
+            if isinstance(state, dict):
+                if state.get("availability", "AVAILABLE") != "AVAILABLE":
+                    continue
+                value = state.get("value")
+            else:
+                value = state
+            if numeric(value):
+                return True
+            if name == "phenological_stage" and isinstance(value, str) and value.strip() and value.upper() != "NOT_AVAILABLE":
+                return True
+        return False
+
+    return any(
+        isinstance(item, dict)
+        and any(item.get(key) is not None and str(item.get(key)) != "" for key in ("plant_id", "id", "plant_identifier"))
+        and has_measurement(item)
         for item in samples
+    )
+
+
+def _has_dated_sample_data(record: PlaybackRecord) -> bool:
+    return any(
+        any(_present(sample.variables, name) for name in sample.variables)
+        for sample in record.plant_samples
     )
 
 
@@ -140,17 +182,18 @@ def diagnose_simulation(sim, *, on: date | None = None) -> SimulationAvailabilit
                 if on == record.date or (on is not None and resolution == "MONTHLY" and on.year == record.date.year and on.month == record.date.month) or (on is not None and resolution == "ANNUAL" and on.year == record.date.year):
                     summary.selected_date = state
                 summary.hydrology_available |= any(_present(record.hydrology, name) for name in record.hydrology)
+                usable_samples = _has_dated_sample_data(record)
                 has_dated_fspm = (record.crop is not None and record.crop.active and
-                    (any(_present(record.field, name) for name in _DATED_FSPM_VARIABLES) or bool(record.plant_samples)))
+                    (any(_present(record.field, name) for name in _DATED_FSPM_VARIABLES) or usable_samples))
                 summary.fspm_trajectory_available |= has_dated_fspm
-                summary.plant_samples_available |= bool(record.plant_samples)
+                summary.plant_samples_available |= usable_samples
                 sample_representable_seen |= state.sample_representable
                 summary.hru_ids = sorted(set(summary.hru_ids) | {h.hru_id for h in record.hru_results})
                 if record.crop and record.crop.active:
                     summary.first_active_crop = summary.first_active_crop or record.date
                     if state.field_representable:
                         summary.first_representable_field = summary.first_representable_field or record.date
-                    if record.plant_samples:
+                    if usable_samples:
                         summary.first_plant_samples = summary.first_plant_samples or record.date
                     season_id = record.crop.season_id
                     approximate = record.crop.window_status == "APPROXIMATE_PLANTING_WINDOW"

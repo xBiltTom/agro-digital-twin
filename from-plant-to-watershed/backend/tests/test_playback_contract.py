@@ -159,6 +159,12 @@ def test_seeded_daily_fspm_field_trajectory_and_date_alignment(tmp_path):
                                     daily_fields=first.playback_daily, climate_source="SYNTHETIC"))
     assert [item.date.isoformat() for item in frames] == ["2020-02-28", "2020-02-29", "2020-03-01"]
     assert frames[0].field["lai"].value == first.playback_daily[0]["field"]["mean_LAI"]
+    assert frames[0].field["lai_p10"].value == first.playback_daily[0]["field"]["LAI_distribution"]["p10"]
+    assert frames[0].field["root_depth_p90_m"].value == first.playback_daily[0]["field"]["root_depth_distribution"]["p90_m"]
+    assert frames[0].field["representative_plant_count"].value == 8
+    assert frames[0].plant_sample_context.population_count == 8
+    assert frames[0].plant_sample_context.captured_count == 8
+    assert frames[0].plant_sample_context.selection_method == "ALL_REPRESENTATIVE_STATES"
     assert frames[0].field["soil_moisture_vol_percent"].unit == "volumetric percent"
     assert frames[0].hydrology["soil_water_mm"].unit == "mm"
     assert frames[0].plant_samples[0].plant_id == frames[1].plant_samples[0].plant_id

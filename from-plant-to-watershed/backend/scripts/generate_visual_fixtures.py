@@ -8,7 +8,7 @@ import sys
 
 BACKEND = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND))
-from app.schemas.playback import CropState, Evidence, PlaybackPage, PlaybackRecord, PlantSample, VariableState
+from app.schemas.playback import CropState, Evidence, PlaybackPage, PlaybackRecord, PlantSample, PlantSampleContext, VariableState
 
 OUT = BACKEND.parent / "frontend/tests/fixtures/twin-visual-fixtures.json"
 
@@ -24,7 +24,13 @@ def frame(run, day, *, crop=True, height=0.2, lai=0.4, rain=0.0, samples=True,
           baseline=False, resolution="DAILY", hydro=True):
     active = crop and not baseline
     field = ({"height_m": variable(height, "m"), "lai": variable(lai, "m2_leaf/m2_ground"),
+        "lai_p10": variable(lai * .9 if lai is not None else None, "m2_leaf/m2_ground"),
+        "lai_p90": variable(lai * 1.1 if lai is not None else None, "m2_leaf/m2_ground"),
+        "lai_std": variable(lai * .05 if lai is not None else None, "m2_leaf/m2_ground"),
         "root_depth_m": variable(0.1 if height == 0.2 else 0.9, "m"),
+        "root_depth_p10_m": variable(0.08 if height == 0.2 else 0.7, "m"),
+        "root_depth_p90_m": variable(0.12 if height == 0.2 else 1.1, "m"),
+        "representative_plant_count": variable(1000, "modeled representative plants"),
         "biomass_g_plant": variable(12.0 if height == 0.2 else 650.0, "g/plant"),
         "canopy_cover_fraction": variable(0.1 if height == 0.2 else 0.8, "fraction"),
         "water_stress": variable(0.2, "fraction [0, 1]"),
@@ -34,6 +40,12 @@ def frame(run, day, *, crop=True, height=0.2, lai=0.4, rain=0.0, samples=True,
         variables={"height_m": variable(height, "m"), "lai": variable(lai, "m2_leaf/m2_ground"),
                    "phenological_stage": variable("V2" if height == 0.2 else "REPRODUCTIVE", "category")})]
         if active and samples else [])
+    sample_context = (PlantSampleContext(
+        population_count=1000, captured_count=len(plants),
+        selection_method="EVENLY_SPACED_STABLE_IDS" if plants else "NONE",
+        identity_scope="SIMULATION_SLOT",
+        identity_semantics="Synthetic fixture sample; no observed plants",
+    ) if active else None)
     return PlaybackRecord(simulation_id=run, date=date.fromisoformat(day), resolution=resolution,
         run_type="SWAT_STANDARD_BASELINE" if baseline else "SWAT_MULTISCALE_COUPLED",
         watershed_id="TEST_BASIN_ONLY", watershed_code="TEST_NOT_SOUTH_FORK",
@@ -42,7 +54,7 @@ def frame(run, day, *, crop=True, height=0.2, lai=0.4, rain=0.0, samples=True,
             phenological_stage="V2" if height == 0.2 and active else "REPRODUCTIVE" if active else None,
             window_status="APPROXIMATE_PLANTING_WINDOW", source="DETERMINISTIC_TEST_FIXTURE"),
         weather={"precipitation_mm": variable(rain, "mm/day" if resolution == "DAILY" else "mm/period", Evidence.SYNTHETIC)},
-        field=field, plant_samples=plants,
+        field=field, plant_samples=plants, plant_sample_context=sample_context,
         hydrology={"streamflow_m3s": variable(2.0 if hydro else None, "m3/s", Evidence.MODELLED_SWAT_PLUS),
                    "soil_water_mm": variable(140.0 if hydro else None, "mm", Evidence.MODELLED_SWAT_PLUS)},
         availability={"weather": "AVAILABLE" if rain is not None else "NOT_AVAILABLE",

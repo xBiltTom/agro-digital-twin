@@ -63,6 +63,26 @@ class PlantPopulation:
 
     VERSION = "3.0-simplified-fspm"
 
+    @staticmethod
+    def representative_sample(states: Iterable[PlantState], max_samples: int = 10) -> tuple[PlantState, ...]:
+        """Select evenly spaced, stable representative slots from a modeled population.
+
+        These are deterministic model members, not observed or field-census plants.
+        The population order follows stable plant IDs and local grid coordinates.
+        """
+        if max_samples < 1:
+            raise ValueError("max_samples must be positive")
+        rows = tuple(states)
+        if len(rows) <= max_samples:
+            return rows
+        if max_samples == 1:
+            return (rows[(len(rows) - 1) // 2],)
+        last = len(rows) - 1
+        denominator = max_samples - 1
+        indexes = [(position * last + denominator // 2) // denominator
+                   for position in range(max_samples)]
+        return tuple(rows[index] for index in indexes)
+
     def __init__(self, count: int = 1000, seed: int = 42, *, base_kc: float = 1.05,
                  max_root_depth_cm: float = 120.0, crop: str = "maize",
                  plant_density_plants_m2: float = 8.0,

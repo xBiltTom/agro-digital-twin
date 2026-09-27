@@ -2,6 +2,7 @@
 
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
+import math
 from pathlib import Path
 import subprocess
 from statistics import fmean
@@ -38,6 +39,19 @@ def _code_version() -> str | None:
         return f"{revision}+dirty" if dirty else revision
     except (OSError, subprocess.SubprocessError):
         return None
+
+
+def _daily_streamflow_volume_hm3(records: list[dict], water_balance: dict, frequency: str) -> tuple[float | None, str | None]:
+    """Integrate only complete daily discharge rates; never infer a daily series from coarser output."""
+    if frequency != "DAILY":
+        return None, "SWAT+ discharge volume is not integrated from MONTHLY or ANNUAL output"
+    coverage = (water_balance.get("period_coverage") or {}).get("streamflow_m3s") or {}
+    if coverage.get("complete") is not True:
+        return None, "Complete daily outlet discharge is unavailable"
+    flows = [row.get("streamflow_m3s") for row in records]
+    if not flows or any(not isinstance(flow, (int, float)) or not math.isfinite(flow) for flow in flows):
+        return None, "One or more daily outlet discharge values are missing or invalid"
+    return sum(float(flow) * 86400.0 for flow in flows) / 1_000_000.0, None
 
 
 class TwinCouplingEngine:
@@ -145,15 +159,18 @@ class TwinCouplingEngine:
         sim_run.plant_sample = []
         sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "SWAT baseline output integrity only; observational alignment is not part of this run"}
         totals = result.water_balance.get("totals_mm", {})
-        mean_q = (result.water_balance or {}).get("mean_streamflow_m3s")
-        days = (sim_run.end_date - sim_run.start_date).days + 1 if sim_run.start_date and sim_run.end_date else (sim_run.duration_days or len(result.records))
-        discharge_hm3 = round((mean_q * days * 86400.0) / 1_000_000.0, 3) if mean_q else None
-        precip_mm = round(sum(float(row.get("precip_mm") or row.get("precipitation_mm") or 0.0) for row in (climate or ())), 2) if climate else None
+        discharge_hm3, discharge_limitation = _daily_streamflow_volume_hm3(
+            result.records, result.water_balance or {}, config.output_frequency
+        )
+        precipitation = [row.get("precip_mm", row.get("precipitation_mm")) for row in (climate or ())]
+        precip_mm = round(sum(precipitation), 2) if precipitation and all(value is not None for value in precipitation) else None
         sim_run.summary_metrics = {
             "evidence_type": "REAL_SWAT_PLUS",
             "period_count": len(result.records),
             "total_precip_mm": precip_mm,
             "total_discharge_hm3": discharge_hm3,
+            "total_discharge_status": "AVAILABLE" if discharge_hm3 is not None else "NOT_AVAILABLE",
+            "total_discharge_limitation": discharge_limitation,
             "total_runoff_mm": totals.get("runoff_mm"),
             "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"),
             "total_percolation_mm": totals.get("percolation_mm"),
@@ -204,12 +221,21 @@ class TwinCouplingEngine:
             current_plants = population.step(index, daily_forcing, soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
             current_field = PlantToFieldAggregator.aggregate(current_plants, soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
             current_field["soil_moisture_source"] = "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
+            sampled_plants = population.representative_sample(current_plants)
             fspm_days[current_date.isoformat()] = {
                 "crop": {"active": True, "crop": "maize", "season_id": window["start_date"],
                          "phenological_stage": Counter(plant.phenological_stage for plant in current_plants).most_common(1)[0][0],
                          "window_status": window["status"], "source": "SWAT auto-management PHU window approximation",
                          "limitation": "Approximate planting/harvest; executed SWAT+ event dates unavailable"},
-                "field": current_field, "plants": current_plants[:min(10, len(current_plants))],
+                "field": current_field,
+                "plants": sampled_plants,
+                "plant_sample_context": {
+                    "population_count": len(current_plants),
+                    "captured_count": len(sampled_plants),
+                    "selection_method": "EVENLY_SPACED_STABLE_IDS" if len(current_plants) > 10 else "ALL_REPRESENTATIVE_STATES",
+                    "identity_scope": "SIMULATION_SLOT",
+                    "identity_semantics": "Seeded modeled population slots; not observed individual plants",
+                },
             }
             # PAR is 48% of shortwave radiation; green-canopy interception is
             # already represented by the FSPM Beer-Lambert cover calculation.
@@ -258,7 +284,7 @@ class TwinCouplingEngine:
         ):
             raise ValueError("Effective SWAT+ workspace forcing differs from FSPM forcing; temporal coupling cannot be published")
         manifest = result.provenance["workspace_modifications"]
-        sim_run.effective_config = {"backend": "SWAT_PLUS", "run_type": "SWAT_MULTISCALE_COUPLED", "simulation_start": sim_run.start_date.isoformat(), "simulation_end": sim_run.end_date.isoformat(), "same_source_project": str(source_project.resolve()), "fspm_version": PlantPopulation.VERSION, "plant_count": sim_run.plant_count}
+        sim_run.effective_config = {"backend": "SWAT_PLUS", "run_type": "SWAT_MULTISCALE_COUPLED", "simulation_start": sim_run.start_date.isoformat(), "simulation_end": sim_run.end_date.isoformat(), "output_frequency": config.output_frequency, "same_source_project": str(source_project.resolve()), "fspm_version": PlantPopulation.VERSION, "plant_count": sim_run.plant_count}
         sim_run.provenance = {**result.provenance, "evidence_type": "REAL_SWAT_PLUS_COUPLED", "run_id": result.run_id, "exit_code": result.exit_code, "duration_seconds": result.duration_seconds, "output_files": result.output_files, "process_logs": {"stdout": result.stdout, "stderr": result.stderr}, "parameter_updates": manifest.get("parameter_updates", []), **peak_dates, "code_version": _code_version()}
         playback = PlaybackArtifactStore().write(sim_run.id, swat_frames(
             simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
@@ -297,19 +323,31 @@ class TwinCouplingEngine:
         sim_run.monthly_outputs = result.records
         sim_run.hru_aggregates = {"status": "AVAILABLE" if result.hru_results else "NOT_AVAILABLE", "results": result.hru_results, "parameter_mapping": manifest}
         sim_run.field_aggregates = field
-        sim_run.plant_sample = [vars(plant) for plant in plants[:min(10, len(plants))]]
+        representative_plants = population.representative_sample(plants)
+        sim_run.plant_sample = [vars(plant) for plant in representative_plants]
+        sim_run.provenance = {**sim_run.provenance, "plant_sample_context": {
+            "population_count": population.count, "captured_count": len(representative_plants),
+            "selection_method": "EVENLY_SPACED_STABLE_IDS" if population.count > 10 else "ALL_REPRESENTATIVE_STATES",
+            "identity_scope": "SIMULATION_SLOT",
+            "identity_semantics": "Seeded modeled population slots; not observed individual plants",
+        }}
         sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "coupled run is an input-response experiment, not an observational validation"}
         totals = result.water_balance.get("totals_mm", {})
-        mean_q = (result.water_balance or {}).get("mean_streamflow_m3s")
-        days = (sim_run.end_date - sim_run.start_date).days + 1 if sim_run.start_date and sim_run.end_date else (sim_run.duration_days or len(result.records))
-        discharge_hm3 = round((mean_q * days * 86400.0) / 1_000_000.0, 3) if mean_q else None
-        precip_mm = round(sum(float(row.get("precip_mm") or row.get("precipitation_mm") or 0.0) for row in (climate or ())), 2) if climate else None
+        discharge_hm3, discharge_limitation = _daily_streamflow_volume_hm3(
+            result.records, result.water_balance or {}, config.output_frequency
+        )
+        precipitation = [row.get("precip_mm", row.get("precipitation_mm")) for row in (climate or ())]
+        precip_mm = round(sum(precipitation), 2) if precipitation and all(value is not None for value in precipitation) else None
         sim_run.summary_metrics = {
             "evidence_type": "REAL_SWAT_PLUS_COUPLED",
             "period_count": len(result.records),
             "total_precip_mm": precip_mm,
             "total_discharge_hm3": discharge_hm3,
-            "mean_cwsi": round(float(field.get("mean_water_stress") or field.get("cwsi_mean") or 0.0), 3) if field else None,
+            "total_discharge_status": "AVAILABLE" if discharge_hm3 is not None else "NOT_AVAILABLE",
+            "total_discharge_limitation": discharge_limitation,
+            "mean_cwsi": (round(float(field["mean_water_stress"]), 3)
+                          if field.get("mean_water_stress") is not None
+                          else round(float(field["cwsi_mean"]), 3) if field.get("cwsi_mean") is not None else None),
             "total_runoff_mm": totals.get("runoff_mm"),
             "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"),
             "total_percolation_mm": totals.get("percolation_mm"),
@@ -391,7 +429,7 @@ class TwinCouplingEngine:
                     streamflow_m3s=row["streamflow_m3s"], soil_moisture_vol=row["soil_moisture_vol"],
                     soil_water_depth_mm=row["soil_water_depth_mm"], plant_transpiration_mm=row["actual_transpiration_mm"],
                     root_water_uptake_mm=row["root_water_uptake_mm"], cwsi_stress_index=row["cwsi_stress_index"],
-                    sap_flow_velocity_cmh=row["sap_flow_velocity_cmh"],
+                    sap_flow_velocity_cmh=row.get("sap_flow_velocity_cmh"),
                     water_balance_residual_mm=row["water_balance_residual_mm"],
                 ) for row in core_run.results
             ])

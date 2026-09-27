@@ -194,7 +194,7 @@ class SwatOutputParser:
                 # use the selected outlet channel GIS ID.  Keep that one
                 # physical basin series instead of treating the valid,
                 # different identifier as a missing outlet.
-                if kind == "basin water-balance" and len(units) == 1:
+                if kind == "basin water-balance" and len(units) <= 1:
                     return rows
                 raise ValueError(f"Configured outlet_unit {self.outlet_unit!r} was not found in {kind} output")
             return selected
@@ -216,11 +216,12 @@ class SwatOutputParser:
             warnings.append({"code": "NON_FINITE_VALUE", "message": "SWAT+ output has non-finite values"})
         if not periods:
             warnings.append({"code": "MISSING_PERIODS", "message": "No dated SWAT+ records were parsed"})
-        if start_date and end_date and frequency == "DAILY":
+        if start_date and end_date:
+            expected = _expected_periods(start_date, end_date, frequency)
             actual = {date.fromisoformat(period) for period in periods}
-            expected = {start_date + timedelta(days=offset) for offset in range((end_date - start_date).days + 1)}
-            if expected - actual:
-                warnings.append({"code": "MISSING_PERIODS", "message": f"SWAT+ output is missing {len(expected - actual)} requested daily periods"})
+            missing = expected - actual
+            if missing:
+                warnings.append({"code": "MISSING_PERIODS", "message": f"SWAT+ output is missing {len(missing)} requested {frequency.lower()} periods"})
         return warnings
 
     @staticmethod
@@ -264,14 +265,45 @@ class SwatOutputParser:
             hru_results = [row for row in hru_results if period_start.isoformat() <= row["period"] <= period_end.isoformat()]
         warnings = self._validate(records, start_date, end_date, self.output_frequency)
         warnings.extend({"code": warning["code"], "message": warning["message"]} for warning in self._parse_warnings if warning not in warnings)
-        availability = {variable: "AVAILABLE" if any(row.get(variable) is not None for row in records) else "NOT_AVAILABLE" for variable in _VARIABLES}
-        complete = all(availability[name] == "AVAILABLE" for name in ("runoff_mm", "evapotranspiration_mm", "percolation_mm"))
+        requested_periods = (
+            _expected_periods(start_date, end_date, self.output_frequency)
+            if start_date and end_date else None
+        )
+        expected_period_count = len(requested_periods) if requested_periods is not None else len(records)
+        period_coverage = {
+            variable: {
+                "available_periods": sum(row.get(variable) is not None for row in records),
+                "expected_periods": expected_period_count,
+                "complete": expected_period_count > 0
+                and len(records) == expected_period_count
+                and all(row.get(variable) is not None for row in records),
+            }
+            for variable in _VARIABLES
+        }
+        availability = {
+            variable: "AVAILABLE" if coverage["complete"] else
+            "PARTIAL" if coverage["available_periods"] else "NOT_AVAILABLE"
+            for variable, coverage in period_coverage.items()
+        }
+        balance_terms = ("runoff_mm", "evapotranspiration_mm", "percolation_mm")
+        complete = all(period_coverage[name]["complete"] for name in balance_terms)
         water_balance = {
-            "status": "CHECKED" if complete else "NOT_AVAILABLE", "variable_availability": availability,
+            # This is a coverage check for reported terms, not a physical
+            # closure calculation. No residual or balance error is inferred.
+            "status": "TERMS_COMPLETE" if complete else "INCOMPLETE",
+            "variable_availability": availability,
+            "period_coverage": period_coverage,
+            "expected_output_period_count": expected_period_count,
             "warnings": warnings,
-            "totals_mm": {name: sum(row.get(name, 0.0) for row in records if row.get(name) is not None) for name in ("runoff_mm", "evapotranspiration_mm", "percolation_mm")},
-            "mean_streamflow_m3s": (sum(row["streamflow_m3s"] for row in records if row.get("streamflow_m3s") is not None) / sum(1 for row in records if row.get("streamflow_m3s") is not None)) if any(row.get("streamflow_m3s") is not None for row in records) else None,
-            "reason": None if complete else "One or more required balance terms are absent from SWAT+ outputs",
+            "totals_mm": {
+                name: sum(row[name] for row in records) if period_coverage[name]["complete"] else None
+                for name in balance_terms
+            },
+            "mean_streamflow_m3s": (
+                sum(row["streamflow_m3s"] for row in records) / expected_period_count
+                if period_coverage["streamflow_m3s"]["complete"] else None
+            ),
+            "reason": None if complete else "One or more required terms are missing for at least one output period; incomplete totals are null",
         }
         # ``_unit``/``_gis_id`` are parser selectors, not public scientific
         # variables.  Keep them long enough to select the configured outlet,
@@ -281,3 +313,22 @@ class SwatOutputParser:
         source_files = wb_files + channel_files + hru_files
         return SwatParsedOutput(records=records, hru_results=hru_results, water_balance=water_balance,
                                 output_files=[str(path.relative_to(run_directory)) for path in source_files], source_files=source_files)
+
+
+def _expected_periods(start: date, end: date, frequency: str) -> set[date]:
+    """Return requested output timestamps without changing their native frequency."""
+    if end < start:
+        return set()
+    if frequency == "DAILY":
+        return {start + timedelta(days=offset) for offset in range((end - start).days + 1)}
+    if frequency == "MONTHLY":
+        cursor = start.replace(day=1)
+        last = end.replace(day=1)
+        periods: set[date] = set()
+        while cursor <= last:
+            periods.add(cursor)
+            cursor = cursor.replace(year=cursor.year + (cursor.month == 12), month=1 if cursor.month == 12 else cursor.month + 1)
+        return periods
+    if frequency == "ANNUAL":
+        return {date(year, 1, 1) for year in range(start.year, end.year + 1)}
+    raise ValueError(f"Unsupported SWAT+ output frequency: {frequency}")

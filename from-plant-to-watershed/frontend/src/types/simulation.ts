@@ -126,8 +126,45 @@ export interface Watershed {
   elevation_max_m: number;
   outlet_lat: number;
   outlet_lon: number;
-  dem_metadata?: any;
+  dem_metadata?: { gauge?: string | null; [key: string]: unknown };
   subbasins: Subbasin[];
+}
+
+export interface FieldAggregates {
+  mean_water_stress?: number | null;
+  mean_lai?: number | null;
+  mean_LAI?: number | null;
+  mean_root_depth_cm?: number | null;
+  mean_root_depth_m?: number | null;
+  [key: string]: unknown;
+}
+
+export interface HruAggregates {
+  count?: number | null;
+  area_fraction_sum?: number | null;
+  status?: string;
+  results?: Array<Record<string, unknown>>;
+  [key: string]: unknown;
+}
+
+export interface SwatComparisonMonth {
+  month?: string;
+  observed_streamflow_m3s?: number | null;
+  baseline_streamflow_m3s?: number | null;
+  twin_streamflow_m3s?: number | null;
+  ml_assisted_streamflow_m3s?: number | null;
+  [key: string]: unknown;
+}
+
+export interface SimulationValidation {
+  status?: string;
+  reason?: string;
+  interpretation?: string;
+  aligned_months?: number | null;
+  daily?: { matched_count?: number | null; [key: string]: unknown };
+  improvement_percent?: { value?: number | null; [key: string]: unknown };
+  observation_station_id?: string | null;
+  [key: string]: unknown;
 }
 
 export interface SimulationResult {
@@ -145,7 +182,7 @@ export interface SimulationResult {
   plant_transpiration_mm: number;
   root_water_uptake_mm: number;
   cwsi_stress_index: number;
-  sap_flow_velocity_cmh: number;
+  sap_flow_velocity_cmh: number | null;
   water_balance_residual_mm: number;
 }
 
@@ -235,12 +272,13 @@ export interface SwatResultsResponse {
   water_balance: {
     status?: string;
     totals_mm?: {
-      runoff_mm?: number;
-      evapotranspiration_mm?: number;
-      percolation_mm?: number;
+      runoff_mm?: number | null;
+      evapotranspiration_mm?: number | null;
+      percolation_mm?: number | null;
     };
     mean_streamflow_m3s?: number | null;
     variable_availability?: Record<string, string>;
+    period_coverage?: Record<string, { available_periods: number; expected_periods: number; complete: boolean }>;
     warnings?: Array<{ code: string; message: string }>;
   } | null;
   provenance: SwatRunProvenance;
@@ -262,21 +300,23 @@ export interface SimulationRun {
   error?: { type: string; message: string } | null;
   scenario?: ClimateScenario;
   summary_metrics?: {
-    total_precip_mm?: number;
-    total_surface_runoff_mm?: number;
-    total_actual_et_mm?: number;
-    total_discharge_hm3?: number;
-    peak_streamflow_m3s?: number;
-    mean_cwsi?: number;
-    cumulative_water_balance_residual_mm?: number;
+    total_precip_mm?: number | null;
+    total_surface_runoff_mm?: number | null;
+    total_actual_et_mm?: number | null;
+    total_discharge_hm3?: number | null;
+    total_discharge_status?: "AVAILABLE" | "NOT_AVAILABLE";
+    total_discharge_limitation?: string | null;
+    peak_streamflow_m3s?: number | null;
+    mean_cwsi?: number | null;
+    cumulative_water_balance_residual_mm?: number | null;
     interpretation_status?: string;
     seasonal_crop_yield_proxy_t_ha?: number;
     yield_proxy_evidence_type?: "DERIVED";
     evidence_type?: SwatEvidenceType;
     period_count?: number;
-    total_runoff_mm?: number;
-    total_evapotranspiration_mm?: number;
-    total_percolation_mm?: number;
+    total_runoff_mm?: number | null;
+    total_evapotranspiration_mm?: number | null;
+    total_percolation_mm?: number | null;
     water_balance?: SwatResultsResponse["water_balance"];
     paired_comparison?: PairedComparison;
     [key: string]: unknown;
@@ -286,12 +326,12 @@ export interface SimulationRun {
   plant_count: number;
   hydrology_backend: "SIMPLIFIED" | "SWAT_PLUS";
   external_model_id?: string | null;
-  field_aggregates?: Record<string, any>;
-  hru_aggregates?: Record<string, any>;
+  field_aggregates?: FieldAggregates;
+  hru_aggregates?: HruAggregates;
   plant_sample?: PlantSample[];
-  monthly_outputs?: Array<Record<string, any>>;
-  validation?: Record<string, any>;
-  ml_result?: Record<string, any>;
+  monthly_outputs?: SwatComparisonMonth[];
+  validation?: SimulationValidation;
+  ml_result?: Record<string, unknown>;
   management_scenario: "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM";
   climate_source: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "OBSERVED_HYBRID" | "SWAT_PROJECT";
   dataset_ids: string[];
@@ -352,7 +392,7 @@ export interface TwinWebSocketTick {
     transpiration_mm: number;
     root_water_uptake_mm: number;
     cwsi_stress_index: number;
-    sap_flow_velocity_cmh: number;
+    sap_flow_velocity_cmh: number | null;
   };
   meso_soil: {
     soil_moisture_vol: number;

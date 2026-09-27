@@ -28,6 +28,14 @@ export interface PlantSample {
   variables: Record<string, VariableState>;
 }
 
+export interface PlantSampleContext {
+  population_count: number | null;
+  captured_count: number;
+  selection_method: "NONE" | "ALL_REPRESENTATIVE_STATES" | "EVENLY_SPACED_STABLE_IDS";
+  identity_scope: "SIMULATION_SLOT" | "UNSPECIFIED";
+  identity_semantics: string;
+}
+
 export interface HruState {
   hru_id: string;
   spatial_support: string;
@@ -49,6 +57,7 @@ export interface PlaybackRecord {
   crop: CropState | null;
   field: Record<string, VariableState>;
   plant_samples: PlantSample[];
+  plant_sample_context?: PlantSampleContext | null;
   hydrology: Record<string, VariableState>;
   hru_results: HruState[];
   availability: Record<string, Availability>;

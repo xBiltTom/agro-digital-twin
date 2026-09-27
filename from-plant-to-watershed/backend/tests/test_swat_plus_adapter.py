@@ -21,7 +21,7 @@ from app.services.swat_plus_adapter import (
     SwatRunFailedError,
 )
 from app.services.swat_plus_parser import SwatOutputParser
-from app.services.twin_coupling_engine import TwinCouplingEngine
+from app.services.twin_coupling_engine import TwinCouplingEngine, _daily_streamflow_volume_hm3
 from app.main import app
 
 
@@ -68,6 +68,63 @@ def _config(tmp_path: Path, project: Path, executable: Path, run_id: str = "run-
 def test_valid_swat_configuration_is_accepted(tmp_path: Path):
     config = _config(tmp_path, _project(tmp_path), _executable(tmp_path))
     config.validate()
+
+
+def test_read_only_preflight_distinguishes_baseline_capability_from_coupled_crop_support(tmp_path: Path):
+    project = _project(tmp_path)
+    executable = _executable(tmp_path)
+    baseline_config = _config(tmp_path, project, executable)
+    adapter = SwatPlusAdapter(executable, project, tmp_path / "workspaces")
+    baseline = adapter.preflight(baseline_config)
+    assert baseline["status"] == "READY"
+    assert baseline["estimated_executions"] == 1
+    assert baseline["checks"]["control_files"] is True
+    assert baseline["storage_estimate"]["workspace_project_copy_count"] == 1
+    assert baseline["storage_estimate"]["minimum_workspace_copy_bytes"] == baseline["storage_estimate"]["source_project_bytes"]
+    assert not (tmp_path / "workspaces").exists()
+
+
+    # This valid generic-agriculture schedule is not evidence that corn is the
+    # active modeled crop. Preflight must block before copying or running SWAT+.
+    (project / "hru-data.hru").write_text("hru\nheader\n1 hru01 sub soil profile agrl_lum\n", encoding="utf-8")
+    (project / "landuse.lum").write_text("landuse\nheader\nagrl_lum null agrl_comm agrl_rot\n", encoding="utf-8")
+    (project / "management.sch").write_text(
+        "management\nheader\nagrl_rot 0 1\npl_hv_summer1 6 5 3 agrl\n", encoding="utf-8"
+    )
+    coupled_config = SwatPlusRunConfig(
+        **{**baseline_config.__dict__, "run_type": "SWAT_MULTISCALE_COUPLED"}
+    )
+    coupled = adapter.preflight(coupled_config, target_crop="corn")
+    assert coupled["status"] == "BLOCKED"
+    assert coupled["estimated_executions"] == 2
+    assert coupled["storage_estimate"]["workspace_project_copy_count"] == 1
+    assert coupled["storage_estimate"]["minimum_workspace_copy_bytes"] == coupled["storage_estimate"]["source_project_bytes"]
+    assert coupled["checks"]["coupled_crop_management"] is False
+    assert coupled["blockers"][0]["code"] == "COUPLED_CROP_CONFIGURATION_INVALID"
+    assert "does not plant target crop 'corn'" in coupled["blockers"][0]["message"]
+    assert not (tmp_path / "workspaces").exists()
+
+
+def test_streamflow_volume_requires_complete_daily_rates_and_preserves_zero():
+    coverage = {"period_coverage": {"streamflow_m3s": {"complete": True}}}
+    daily_records = [{"streamflow_m3s": 2.0}, {"streamflow_m3s": 0.0}]
+    volume, limitation = _daily_streamflow_volume_hm3(daily_records, coverage, "DAILY")
+    assert volume == pytest.approx(2.0 * 86400 / 1_000_000)
+    assert limitation is None
+
+    zero, limitation = _daily_streamflow_volume_hm3([{"streamflow_m3s": 0.0}], coverage, "DAILY")
+    assert zero == 0.0
+    assert limitation is None
+
+    monthly, limitation = _daily_streamflow_volume_hm3(daily_records, coverage, "MONTHLY")
+    assert monthly is None
+    assert limitation and "not integrated" in limitation
+
+    incomplete, limitation = _daily_streamflow_volume_hm3(
+        daily_records, {"period_coverage": {"streamflow_m3s": {"complete": False}}}, "DAILY"
+    )
+    assert incomplete is None
+    assert limitation == "Complete daily outlet discharge is unavailable"
 
 
 def test_missing_executable_has_stable_error_code(tmp_path: Path):
@@ -117,6 +174,72 @@ def test_parser_normalizes_units_and_keeps_only_actual_columns(tmp_path: Path):
         "percolation_mm": 4.0, "soil_water_mm": 180.0, "streamflow_m3s": 2.0,
     }]
     assert parsed.water_balance["variable_availability"]["streamflow_m3s"] == "AVAILABLE"
+    assert parsed.water_balance["status"] == "TERMS_COMPLETE"
+    assert parsed.water_balance["totals_mm"] == {
+        "runoff_mm": 2.5, "evapotranspiration_mm": 3.0, "percolation_mm": 4.0,
+    }
+    assert parsed.water_balance["period_coverage"]["percolation_mm"] == {
+        "available_periods": 1, "expected_periods": 1, "complete": True,
+    }
+
+
+def test_parser_never_promotes_partial_balance_terms_to_complete_totals(tmp_path: Path):
+    (tmp_path / "output_wb_day").write_text(
+        "yr mon day surq et perc sw\n"
+        "yyyy mm dd mm mm mm mm\n"
+        "2020 1 1 0 2 3 180\n"
+        "2020 1 2 1 3 nan 179\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "output_channel_day").write_text(
+        "yr mon day flo_out\n"
+        "yyyy mm dd m3/s\n"
+        "2020 1 1 0\n",
+        encoding="utf-8",
+    )
+
+    parsed = SwatOutputParser().parse(tmp_path)
+    assert parsed.records[0]["runoff_mm"] == 0.0
+    assert parsed.water_balance["status"] == "INCOMPLETE"
+    assert parsed.water_balance["variable_availability"]["percolation_mm"] == "PARTIAL"
+    assert parsed.water_balance["variable_availability"]["streamflow_m3s"] == "PARTIAL"
+    assert parsed.water_balance["period_coverage"]["percolation_mm"] == {
+        "available_periods": 1, "expected_periods": 2, "complete": False,
+    }
+    assert parsed.water_balance["totals_mm"] == {
+        "runoff_mm": 1.0, "evapotranspiration_mm": 5.0, "percolation_mm": None,
+    }
+    assert parsed.water_balance["mean_streamflow_m3s"] is None
+    assert "closure_error_mm" not in parsed.water_balance
+
+
+def test_parser_counts_missing_requested_periods_as_incomplete_coverage(tmp_path: Path):
+    (tmp_path / "output_wb_day").write_text(
+        "yr mon day surq et perc sw\n"
+        "yyyy mm dd mm mm mm mm\n"
+        "2020 1 1 0 2 3 180\n"
+        "2020 1 3 1 3 4 179\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "output_channel_day").write_text(
+        "yr mon day flo_out\n"
+        "yyyy mm dd m3/s\n"
+        "2020 1 1 0\n"
+        "2020 1 3 1\n",
+        encoding="utf-8",
+    )
+
+    parsed = SwatOutputParser().parse(
+        tmp_path, start_date=date(2020, 1, 1), end_date=date(2020, 1, 3)
+    )
+    assert len(parsed.records) == 2
+    assert parsed.water_balance["expected_output_period_count"] == 3
+    assert parsed.water_balance["period_coverage"]["runoff_mm"] == {
+        "available_periods": 2, "expected_periods": 3, "complete": False,
+    }
+    assert parsed.water_balance["totals_mm"]["runoff_mm"] is None
+    assert parsed.water_balance["mean_streamflow_m3s"] is None
+    assert any(warning["code"] == "MISSING_PERIODS" for warning in parsed.water_balance["warnings"])
 
 
 def test_parser_accepts_singleton_basin_unit_with_explicit_channel_outlet(tmp_path: Path):
@@ -138,6 +261,24 @@ def test_parser_accepts_singleton_basin_unit_with_explicit_channel_outlet(tmp_pa
         "period": "2020-01-01", "runoff_mm": 2.5, "evapotranspiration_mm": 3.0,
         "percolation_mm": 4.0, "soil_water_mm": 180.0, "streamflow_m3s": 2.0,
     }]
+
+
+def test_parser_accepts_basin_output_without_unit_column_when_channel_outlet_is_configured(tmp_path: Path):
+    (tmp_path / "output_wb_day").write_text(
+        "yr mon day surq et perc sw\n"
+        "yyyy mm dd mm mm mm mm\n"
+        "2020 1 1 2.5 3.0 4.0 180\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "output_channel_day").write_text(
+        "yr mon day unit gis_id flo_out\n"
+        "yyyy mm dd --- --- m3/s\n"
+        "2020 1 1 25 153 2.0\n",
+        encoding="utf-8",
+    )
+    parsed = SwatOutputParser(outlet_unit="153").parse(tmp_path)
+    assert parsed.records[0]["runoff_mm"] == 2.5
+    assert parsed.records[0]["streamflow_m3s"] == 2.0
 
 
 def test_success_without_output_is_not_reported_as_success(tmp_path: Path):
@@ -192,7 +333,7 @@ def test_adapter_records_only_the_coupled_input_checksum_delta(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_engine_persists_a_real_swat_adapter_result(tmp_path: Path):
     project = _project(tmp_path)
-    executable = _executable(tmp_path, "printf 'yr mon day surq et perc sw\\nyyyy mm dd mm mm mm mm\\n2020 1 1 1 2 3 150\\n2020 1 2 2 3 4 151\\n' > output_wb_day\nprintf 'yr mon day flo_out\\nyyyy mm dd m3/s\\n2020 1 1 4\\n2020 1 2 5\\n' > output_channel_day")
+    executable = _executable(tmp_path, "printf 'yr mon day surq et perc sw\\nyyyy mm dd mm mm mm mm\\n2020 1 1 1 2 3 150\\n2020 1 2 2 3 4 151\\n' > output_wb_day\nprintf 'yr mon day unit gis_id flo_out\\nyyyy mm dd --- --- m3/s\\n2020 1 1 25 153 4\\n2020 1 2 25 153 5\\n' > output_channel_day")
     async with AsyncSessionLocal() as db:
         user_id = await db.scalar(select(User.id).limit(1))
         watershed_id = await db.scalar(select(Watershed.id).limit(1))

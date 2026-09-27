@@ -12,7 +12,7 @@ from app.models.watershed import Watershed
 from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
 from app.models.observation import Dataset, DatasetArtifact
 from app.core.config import settings
-from app.services.swat_plus_adapter import SwatPlusAdapter
+from app.services.swat_plus_adapter import SwatPlusAdapter, SwatPlusRunConfig
 from app.schemas.simulation import (
     SimulationRunCreate,
     SimulationRunResponse,
@@ -104,20 +104,37 @@ async def preflight_simulation(
 
     is_swat = sim_in.hydrology_backend == "SWAT_PLUS"
     if is_swat:
-        capability = SwatPlusAdapter(
-            executable=settings.SWAT_PLUS_EXECUTABLE,
-            project_dir=settings.SWAT_PLUS_PROJECT_DIR,
-            working_directory=settings.SWAT_PLUS_WORKING_DIRECTORY,
-        ).capability()
-        ready = capability["status"] == "ACTIVE"
+        if sim_in.swat_plus is None:
+            raise HTTPException(status_code=422, detail="SWAT+ configuration is required for preflight")
+        requested = sim_in.swat_plus
+        executable = requested.executable_path or settings.SWAT_PLUS_EXECUTABLE
+        project = requested.project_path or settings.SWAT_PLUS_PROJECT_DIR
+        working_directory = requested.working_directory or settings.SWAT_PLUS_WORKING_DIRECTORY
+        if not executable or not project:
+            return {
+                "status": "BLOCKED", "backend": "SWAT_PLUS", "run_type": requested.run_type,
+                "estimated_executions": 2 if requested.run_type == "SWAT_MULTISCALE_COUPLED" else 1,
+                "blockers": [{"code": "SWAT_CONFIGURATION_MISSING", "message": "Configure the SWAT+ executable and project path"}],
+                "provenance_only": [dataset.dataset_name for dataset in datasets],
+                "watershed": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
+                "scenario": {"id": scenario.id, "code": scenario.code, "application": "CONTEXT_ONLY; SWAT+ forcing comes from the configured project"},
+            }
+        config = SwatPlusRunConfig(
+            project_path=Path(project), executable_path=Path(executable),
+            working_directory=Path(working_directory), simulation_start=sim_in.start_date,
+            simulation_end=sim_in.end_date, warmup_period=requested.warmup_period,
+            output_frequency=requested.output_frequency, watershed_id=watershed.code,
+            run_id="preflight-read-only", timeout_seconds=requested.timeout_seconds,
+            run_type=requested.run_type, outlet_unit=requested.outlet_unit,
+        )
+        preflight = SwatPlusAdapter(executable, project, working_directory).preflight(
+            config, target_crop=requested.target_plant_name
+        )
         return {
-            "status": "READY" if ready else "BLOCKED",
+            **preflight,
             "backend": "SWAT_PLUS",
-            "run_type": sim_in.swat_plus.run_type,
-            "estimated_executions": 2 if sim_in.swat_plus.run_type == "SWAT_MULTISCALE_COUPLED" else 1,
-            "will_consume": ["SWAT+ project forcing", "SWAT+ project HRUs/soils/management", "start_date", "end_date", "seed", "plant_count"] + (["plant population -> plants.plt"] if sim_in.swat_plus.run_type == "SWAT_MULTISCALE_COUPLED" else []),
+            "will_consume": ["SWAT+ project forcing", "SWAT+ project HRUs/soils/management", "start_date", "end_date", "seed", "plant_count"] + (["plant population -> plants.plt"] if requested.run_type == "SWAT_MULTISCALE_COUPLED" else []),
             "provenance_only": [dataset.dataset_name for dataset in datasets],
-            "resource_status": capability,
             "watershed": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
             "scenario": {"id": scenario.id, "code": scenario.code, "application": "CONTEXT_ONLY; SWAT+ forcing comes from the configured project"},
         }
