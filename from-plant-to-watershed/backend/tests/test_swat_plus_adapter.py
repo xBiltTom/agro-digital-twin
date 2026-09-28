@@ -52,9 +52,9 @@ def _project(tmp_path: Path) -> Path:
     return project
 
 
-def _executable(tmp_path: Path, body: str = "exit 0") -> Path:
+def _executable(tmp_path: Path, body: str = "touch success.fin") -> Path:
     executable = tmp_path / "swat-plus-fixture"
-    executable.write_text(f"#!/bin/sh\n{body}\n", encoding="utf-8")
+    executable.write_text(f"#!/bin/sh\ntouch success.fin\n{body}\n", encoding="utf-8")
     executable.chmod(0o755)
     return executable
 
@@ -90,23 +90,24 @@ def test_read_only_preflight_distinguishes_baseline_capability_from_coupled_crop
     (project / "hru-data.hru").write_text("hru\nheader\n1 hru01 sub soil profile agrl_lum\n", encoding="utf-8")
     (project / "landuse.lum").write_text("landuse\nheader\nagrl_lum null agrl_comm agrl_rot\n", encoding="utf-8")
     (project / "management.sch").write_text(
-        "management\nheader\nagrl_rot 0 1\npl_hv_summer1 6 5 3 agrl\n", encoding="utf-8"
+        "management\nname numb_ops numb_auto op_typ mon day hu_sch op_data1 op_data2 op_data3\n"
+        "agrl_rot 0 1\npl_hv_summer1 6 5 3 agrl\n", encoding="utf-8"
     )
     coupled_config = SwatPlusRunConfig(
         **{**baseline_config.__dict__, "run_type": "SWAT_MULTISCALE_COUPLED"}
     )
     coupled = adapter.preflight(coupled_config, target_crop="corn")
     assert coupled["status"] == "BLOCKED"
-    assert coupled["estimated_executions"] == 2
-    assert coupled["storage_estimate"]["workspace_project_copy_count"] == 1
-    assert coupled["storage_estimate"]["minimum_workspace_copy_bytes"] == coupled["storage_estimate"]["source_project_bytes"]
+    assert coupled["estimated_executions"] == 4
+    assert coupled["storage_estimate"]["workspace_project_copy_count"] == 4
+    assert coupled["storage_estimate"]["minimum_workspace_copy_bytes"] == 4 * coupled["storage_estimate"]["source_project_bytes"]
     assert coupled["checks"]["coupled_crop_management"] is False
     assert coupled["blockers"][0]["code"] == "COUPLED_CROP_CONFIGURATION_INVALID"
     assert "does not plant target crop 'corn'" in coupled["blockers"][0]["message"]
     assert not (tmp_path / "workspaces").exists()
 
 
-def test_adapter_rechecks_coupled_crop_preflight_before_process_and_cleans_failed_copy(tmp_path: Path):
+def test_adapter_rechecks_coupled_crop_preflight_before_process_and_logs_failed_copy(tmp_path: Path):
     project = _project(tmp_path)
     process_marker = tmp_path / "process-started"
     executable = _executable(tmp_path, f"touch {process_marker}\nexit 0")
@@ -127,7 +128,9 @@ def test_adapter_rechecks_coupled_crop_preflight_before_process_and_cleans_faile
     assert raised.value.code == "SWAT_COUPLED_PREFLIGHT_BLOCKED"
     assert adapter.preflight.call_count == 2
     assert not process_marker.exists()
-    assert not (tmp_path / "workspaces" / config.run_id).exists()
+    status = tmp_path / "workspaces" / config.run_id / "swat_run_status.json"
+    assert status.is_file()
+    assert '"status": "FAILED"' in status.read_text(encoding="utf-8")
 
 
 def test_streamflow_volume_requires_complete_daily_rates_and_preserves_zero():
@@ -182,9 +185,9 @@ def test_declared_missing_weather_input_is_rejected_before_workspace_creation(tm
 
 def test_parser_normalizes_units_and_keeps_only_actual_columns(tmp_path: Path):
     (tmp_path / "output_wb_day").write_text(
-        "yr mon day surq et perc sw\n"
-        "yyyy mm dd mm mm m mm\n"
-        "2020 1 1 2.5 3.0 0.004 180\n",
+        "yr mon day precip surq et perc sw\n"
+        "yyyy mm dd mm mm mm m mm\n"
+        "2020 1 1 1.5 2.5 3.0 0.004 180\n",
         encoding="utf-8",
     )
     (tmp_path / "output_channel_day").write_text(
@@ -195,17 +198,34 @@ def test_parser_normalizes_units_and_keeps_only_actual_columns(tmp_path: Path):
     )
     parsed = SwatOutputParser().parse(tmp_path)
     assert parsed.records == [{
-        "period": "2020-01-01", "runoff_mm": 2.5, "evapotranspiration_mm": 3.0,
+        "period": "2020-01-01", "precip_mm": 1.5, "runoff_mm": 2.5, "evapotranspiration_mm": 3.0,
         "percolation_mm": 4.0, "soil_water_mm": 180.0, "streamflow_m3s": 2.0,
     }]
     assert parsed.water_balance["variable_availability"]["streamflow_m3s"] == "AVAILABLE"
     assert parsed.water_balance["status"] == "TERMS_COMPLETE"
     assert parsed.water_balance["totals_mm"] == {
-        "runoff_mm": 2.5, "evapotranspiration_mm": 3.0, "percolation_mm": 4.0,
+        "precip_mm": 1.5, "runoff_mm": 2.5, "evapotranspiration_mm": 3.0, "percolation_mm": 4.0,
     }
     assert parsed.water_balance["period_coverage"]["percolation_mm"] == {
         "available_periods": 1, "expected_periods": 1, "complete": True,
     }
+
+
+def test_parser_preserves_daily_channel_storage_and_rates_without_depth_conversion(tmp_path: Path):
+    (tmp_path / "channel_sd_day").write_text(
+        "yr mon day unit gis_id name area flo_stor flo_in flo_out water_temp\n"
+        "yyyy mm dd --- --- --- ha m3 m3/s m3/s degc\n"
+        "2020 1 1 25 153 cha153 12.5 3400 2.0 2.5 4.0\n",
+        encoding="utf-8",
+    )
+    parsed = SwatOutputParser(outlet_unit="153").parse(tmp_path)
+    channel = parsed.channel_results[0]
+    assert channel["channel_area_ha"] == 12.5
+    assert channel["channel_water_storage_m3"] == 3400.
+    assert channel["channel_inflow_m3s"] == 2.
+    assert channel["streamflow_m3s"] == 2.5
+    assert channel["channel_water_temp_c"] == 4.
+    assert not any(warning["code"] == "UNEXPECTED_UNIT" for warning in parsed.water_balance["warnings"])
 
 
 def test_parser_never_promotes_partial_balance_terms_to_complete_totals(tmp_path: Path):
@@ -232,7 +252,7 @@ def test_parser_never_promotes_partial_balance_terms_to_complete_totals(tmp_path
         "available_periods": 1, "expected_periods": 2, "complete": False,
     }
     assert parsed.water_balance["totals_mm"] == {
-        "runoff_mm": 1.0, "evapotranspiration_mm": 5.0, "percolation_mm": None,
+        "precip_mm": None, "runoff_mm": 1.0, "evapotranspiration_mm": 5.0, "percolation_mm": None,
     }
     assert parsed.water_balance["mean_streamflow_m3s"] is None
     assert "closure_error_mm" not in parsed.water_balance
@@ -340,11 +360,15 @@ def test_adapter_uses_isolated_workspace_and_parses_real_process_output(tmp_path
 
 def test_adapter_records_only_the_coupled_input_checksum_delta(tmp_path: Path):
     project = _project(tmp_path)
-    (project / "plants.plt").write_text("plants\nname lai_pot\ncorn 6\n", encoding="utf-8")
+    (project / "plants.plt").write_text(
+        "plants\nname days_mat bm_e yrs_mat lai_pot\ncorn 120 35 1 6\n", encoding="utf-8",
+    )
     source_plants_checksum = hashlib.sha256((project / "plants.plt").read_bytes()).hexdigest()
     executable = _executable(tmp_path, "printf 'yr mon day surq et perc sw\\nyyyy mm dd mm mm mm mm\\n2020 1 1 1 2 3 150\\n2020 1 2 1 2 3 150\\n' > output_wb_day\nprintf 'yr mon day flo_out\\nyyyy mm dd m3/s\\n2020 1 1 4\\n2020 1 2 4\\n' > output_channel_day")
     def mutator(workspace: Path):
-        (workspace / "plants.plt").write_text("plants\nname lai_pot\ncorn 5\n", encoding="utf-8")
+        (workspace / "plants.plt").write_text(
+            "plants\nname days_mat bm_e yrs_mat lai_pot\ncorn 120 35 1 5\n", encoding="utf-8",
+        )
         return {"status": "APPLIED", "workspace_input_files_modified": ["plants.plt"]}
     result = SwatPlusAdapter().run(
         _config(tmp_path, project, executable),

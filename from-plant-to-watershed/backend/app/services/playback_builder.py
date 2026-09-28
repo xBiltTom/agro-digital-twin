@@ -54,14 +54,18 @@ def _field(row: dict | None) -> dict[str, VariableState]:
         "lai_p90": value(lai_distribution.get("p90"), "m2_leaf/m2_ground", Evidence.DERIVED, source),
         "lai_std": value(lai_distribution.get("std"), "m2_leaf/m2_ground", Evidence.DERIVED, source),
         "canopy_cover_fraction": value(row.get("canopy_cover"), "fraction", Evidence.DERIVED, source),
+        "active_crop_area_fraction": value(row.get("active_crop_area_fraction"), "fraction", Evidence.DERIVED, source),
+        "active_calendar_group_count": value(row.get("active_calendar_group_count"), "calendar groups", Evidence.DERIVED, source),
+        "calendar_group_count": value(row.get("calendar_group_count"), "calendar groups", Evidence.DERIVED, source),
         "height_m": value(row.get("plant_height_mean_m"), "m", Evidence.DERIVED, source),
         "root_depth_m": value(row.get("root_depth_mean_m"), "m", Evidence.DERIVED, source),
         "root_depth_p10_m": value(root_distribution.get("p10_m"), "m", Evidence.DERIVED, source),
         "root_depth_p90_m": value(root_distribution.get("p90_m"), "m", Evidence.DERIVED, source),
         "representative_plant_count": value(row.get("n_plants"), "modeled representative plants", Evidence.DERIVED, source),
         "biomass_g_plant": value(row.get("biomass_g_plant"), "g/plant", Evidence.DERIVED, source),
+        "mean_growing_degree_days": value(row.get("mean_growing_degree_days_c_day"), "degC day", Evidence.DERIVED, source),
         "phenology_fraction": value(row.get("phenology_fraction"), "fraction [0, 1]", Evidence.DERIVED, source),
-        "water_stress": value(row.get("water_stress"), "fraction [0, 1]", Evidence.SIMPLIFIED_FSPM, source),
+        "water_stress": value(row.get("water_stress", row.get("mean_stress")), "fraction [0, 1]", Evidence.SIMPLIFIED_FSPM, source),
         "actual_transpiration_mm_day": value(row.get("actual_ET_mm_day"), "mm/day", Evidence.SIMPLIFIED_FSPM, source),
         "potential_transpiration_mm_day": value(row.get("potential_ET_mm_day"), "mm/day", Evidence.SIMPLIFIED_FSPM, source),
         "root_water_uptake_mm_day": value(row.get("soil_water_uptake_mm_day"), "mm/day", Evidence.SIMPLIFIED_FSPM, source),
@@ -94,10 +98,18 @@ def _hydrology(row: dict, evidence: Evidence, source: str, resolution: str,
                observed_streamflow: float | None = None, observation_source: str | None = None) -> dict[str, VariableState]:
     flux_unit = "mm/day" if resolution == "DAILY" else "mm/period"
     result = {
+        "precipitation_mm": value(row.get("precip_mm", row.get("precipitation_mm")), flux_unit, evidence, source),
         "runoff_mm": value(row.get("runoff_mm", row.get("surface_runoff_mm")), flux_unit, evidence, source),
+        "runoff_contribution_mm": value(row.get("runoff_contribution_mm"), flux_unit, evidence, source),
         "evapotranspiration_mm": value(row.get("evapotranspiration_mm", row.get("actual_et_mm")), flux_unit, evidence, source),
+        "plant_evapotranspiration_mm": value(row.get("plant_evapotranspiration_mm"), flux_unit, evidence, source),
+        "soil_evaporation_mm": value(row.get("soil_evaporation_mm"), flux_unit, evidence, source),
+        "canopy_evaporation_mm": value(row.get("canopy_evaporation_mm"), flux_unit, evidence, source),
+        "potential_evapotranspiration_mm": value(row.get("potential_evapotranspiration_mm"), flux_unit, evidence, source),
         "percolation_mm": value(row.get("percolation_mm"), flux_unit, evidence, source),
         "soil_water_mm": value(row.get("soil_water_mm", row.get("soil_water_depth_mm")), "mm", evidence, source),
+        "soil_water_initial_mm": value(row.get("soil_water_initial_mm"), "mm", evidence, source),
+        "soil_water_average_mm": value(row.get("soil_water_average_mm"), "mm", evidence, source),
         "streamflow_m3s": value(row.get("streamflow_m3s"), "m3/s", evidence, source),
     }
     if evidence == Evidence.SIMPLIFIED_HYDROLOGY:
@@ -148,6 +160,7 @@ def _weather_by_period(forcing: list[dict], resolution: str) -> dict[str, dict]:
 
 def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
                 resolution: str, records: list[dict], hru_results: list[dict],
+                plant_results: list[dict] | None = None,
                 forcing: list[dict] | None, forcing_source: str,
                 watershed_code: str | None = None, outlet_unit: str | None = None,
                 fspm_days: dict[str, dict] | None = None,
@@ -164,6 +177,14 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
     hrus_by_date: dict[str, list[dict]] = defaultdict(list)
     for row in hru_results:
         hrus_by_date[row["period"]].append(row)
+    plants_by_date_hru: dict[tuple[str, str], dict] = {}
+    for row in plant_results or []:
+        identifier = row.get("hru_unit", row.get("hru_gis_id"))
+        if identifier is not None:
+            key = (row["period"], str(identifier))
+            if key in plants_by_date_hru:
+                raise ValueError(f"Duplicate SWAT+ plant output for period/HRU {key}")
+            plants_by_date_hru[key] = row
     by_period = {}
     for row in records:
         day = row["period"]
@@ -197,8 +218,24 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
             identifier = hru.get("hru_unit")
             if identifier is None:
                 continue
+            variables = _hydrology(hru, Evidence.MODELLED_SWAT_PLUS, "SWAT+ HRU output", resolution)
+            plant = plants_by_date_hru.get((day, str(identifier)))
+            if plant is not None:
+                plant_units = {
+                    "lai_m2_m2": "m2_leaf/m2_ground", "biomass_kg_ha": "kg/ha",
+                    "yield_kg_ha": "kg/ha", "water_stress_factor": "fraction [0, 1]",
+                    "aeration_stress_factor": "fraction [0, 1]", "temperature_stress_factor": "fraction [0, 1]",
+                    "nitrogen_stress_factor": "fraction [0, 1]", "phosphorus_stress_factor": "fraction [0, 1]",
+                    "salinity_stress_factor": "fraction [0, 1]", "plant_heat_unit_fraction": "fraction [0, 1]",
+                    "biomass_growth_kg_ha": "kg/ha/day",
+                }
+                variables.update({
+                    f"swat_{name}": value(plant.get(name), unit, Evidence.MODELLED_SWAT_PLUS,
+                                          "SWAT+ hru_pw output")
+                    for name, unit in plant_units.items()
+                })
             hru_states.append(HruState(hru_id=str(identifier), spatial_support="SWAT_HRU_OUTPUT_UNIT_NO_VERIFIED_POLYGON",
-                                       variables=_hydrology(hru, Evidence.MODELLED_SWAT_PLUS, "SWAT+ HRU output", resolution)))
+                                       variables=variables))
         weather = _weather(weather_by_date.get(day), resolution=resolution, source=forcing_source, evidence=Evidence.DERIVED)
         observed_values = observations_by_period.get(day, [])
         hydro = _hydrology(row, Evidence.MODELLED_SWAT_PLUS, "SWAT+ normalized output", resolution,
@@ -225,8 +262,8 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
             limitations.append(missing_hydrology_reason)
         if run_type == "SWAT_MULTISCALE_COUPLED" and resolution != "DAILY":
             limitations.append("Daily FSPM states are not attached to aggregated SWAT+ output periods")
-        if field_day and crop and crop.window_status == "APPROXIMATE_PLANTING_WINDOW":
-            limitations.append("Crop window approximates SWAT+ auto-management; executed event date is unavailable")
+        if field_day and crop and crop.window_status == "EXECUTED_SWAT_MANAGEMENT_EVENTS":
+            limitations.append("FSPM calendar follows SWAT+ executed HRU events; the field state is an area-weighted composite of distinct calendar groups")
         yield PlaybackRecord(simulation_id=simulation_id, date=date.fromisoformat(day), resolution=resolution,
                              run_type=run_type, watershed_id=watershed_id, watershed_code=watershed_code,
                              outlet_unit=outlet_unit, spatial_support="WATERSHED_OUTLET_AND_BASIN",

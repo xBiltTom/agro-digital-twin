@@ -1,0 +1,58 @@
+{
+  "biomass_energy_ratio_kg_ha_per_mj_m2": 40.106577306111376,
+  "canopy_extinction_coefficient": 0.49913898455120675,
+  "coupling_parameter_provenance": {
+    "bm_e": {
+      "assumption_status": "ASSUMED_PARAMETER_NOT_CALIBRATED",
+      "calibrated": false,
+      "intra_population_variation": "seeded truncated normal; sigma=2.0 kg/ha/(MJ/m2)",
+      "model_clamp": {
+        "maximum": 90.0,
+        "minimum": 10.0
+      },
+      "population_mean": 40.10657730611137,
+      "population_std": 1.982589383884093,
+      "source_type": "MODEL_BASE_PARAMETER",
+      "source_value": 40.0,
+      "swat_documented_range": {
+        "maximum": 90.0,
+        "minimum": 10.0
+      }
+    },
+    "ext_co": {
+      "assumption_status": "ASSUMED_PARAMETER_NOT_CALIBRATED",
+      "calibrated": false,
+      "intra_population_variation": "seeded truncated normal; sigma=0.025",
+      "model_clamp": {
+        "maximum": 2.0,
+        "minimum": 0.05
+      },
+      "population_mean": 0.4991389845512067,
+      "population_std": 0.023981698140073986,
+      "source_type": "MODEL_BASE_PARAMETER",
+      "source_value": 0.5,
+      "swat_documented_range": {
+        "maximum": 2.0,
+        "minimum": 0.0
+      }
+    }
+  },
+  "peak_dates": {
+    "date_of_peak_LAI": "2019-07-30",
+    "date_of_peak_height": "2019-09-03",
+    "date_of_peak_root_depth": "2019-08-28"
+  },
+  "plant_height_mean_m": 2.6319339646701754,
+  "root_depth_mean_m": 1.2002188215154963,
+  "summary_semantics": "SEASONAL_MAXIMA_FOR_COUPLING_NOT_A_DATED_FSPM_STATE",
+  "swat_lai_contract": {
+    "derivation": "SWAT HRU area and CDL-corn-fraction weighted mean of separately dated SWAT-executed-calendar SIMPLIFIED_FSPM seasonal LAI contracts",
+    "frac_hu1": 0.15851869376606073,
+    "frac_hu2": 0.4412868412878087,
+    "hu_lai_decl": 0.7266195227120502,
+    "lai_max1": 0.16097363378192814,
+    "lai_max2": 0.8601255551456067,
+    "lai_pot": 5.004450701947298,
+    "season_count": 7
+  }
+}

@@ -63,6 +63,7 @@ def _daily_streamflow_volume_hm3(records: list[dict], water_balance: dict, frequ
 def _build_coupling_field_summary(
     dated_fields: list[tuple[str, dict[str, Any]]],
     seasonal_lai_contracts: list[dict[str, Any]],
+    seasonal_weights: list[float] | None = None,
 ) -> CouplingPlantParameterSummary:
     """Build a mapper-only contract with no unrelated dated field statistics."""
     if not dated_fields or not seasonal_lai_contracts:
@@ -75,13 +76,17 @@ def _build_coupling_field_summary(
     peak_root_date, peak_root_field = max(
         dated_fields, key=lambda item: item[1]["root_depth_mean_m"]
     )
+    weights = seasonal_weights or [1.0] * len(seasonal_lai_contracts)
+    if len(weights) != len(seasonal_lai_contracts) or any(not math.isfinite(weight) or weight <= 0 for weight in weights):
+        raise ValueError("seasonal LAI contracts require one positive spatial weight per executed crop calendar")
+    weight_total = sum(weights)
     lai_contract = {
-        key: fmean(contract[key] for contract in seasonal_lai_contracts)
+        key: sum(weight * contract[key] for weight, contract in zip(weights, seasonal_lai_contracts, strict=True)) / weight_total
         for key in ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl")
     }
     lai_contract.update({
         "season_count": len(seasonal_lai_contracts),
-        "derivation": "mean of SWAT auto-management PHU-derived SIMPLIFIED_FSPM seasonal LAI contracts",
+        "derivation": "SWAT HRU area and CDL-corn-fraction weighted mean of separately dated SWAT-executed-calendar SIMPLIFIED_FSPM seasonal LAI contracts",
     })
     static_traits = ("canopy_extinction_coefficient", "biomass_energy_ratio_kg_ha_per_mj_m2")
     trait_values: dict[str, float] = {}
@@ -237,7 +242,9 @@ class TwinCouplingEngine:
     async def _execute_swat_coupled(sim_run: SimulationRun, watershed: Watershed,
                                     observations: dict[str, float] | None = None,
                                     observation_source: str | None = None) -> None:
-        """One-way FSPM -> documented SWAT+ crop inputs -> real SWAT+ execution."""
+        """Couple existing FSPM dynamics to a converged SWAT+ event calendar."""
+        from app.services.swat_coupled_runner import run_coupled_swat_with_executed_calendar
+
         requested_swat = (sim_run.requested_config or {}).get("swat_plus") or {}
         target_crop = requested_swat.get("target_plant_name", "corn")
         config = swat_run_config_from_request(
@@ -247,150 +254,121 @@ class TwinCouplingEngine:
         adapter = SwatPlusAdapter(config.executable_path, config.project_path, config.working_directory)
         initial_preflight = adapter.preflight(config, target_crop=target_crop)
         require_coupled_preflight_ready(initial_preflight)
-        source_project = config.project_path
-        source_weather_directory = source_project / "TxtInOut" if (source_project / "TxtInOut" / "file.cio").is_file() else source_project
-        climate, climate_provenance = SwatClimateForcingReader(source_weather_directory).for_period(sim_run.start_date, sim_run.end_date)
-        population = PlantPopulation(count=sim_run.plant_count, seed=sim_run.seed, crop="maize")
-        season = SwatCropChainDiagnostic.auto_management_season(
-            source_weather_directory, target_crop=target_crop
+        coupled = run_coupled_swat_with_executed_calendar(
+            adapter, config, target_crop=target_crop, plant_count=sim_run.plant_count,
+            seed=sim_run.seed,
         )
-        season_windows = season.windows(
-            sim_run.start_date, sim_run.end_date, (forcing["temp_c"] for forcing in climate),
-            thermal_maturity_gdd=population.thermal_maturity_gdd,
-        )
-        active_by_date = {
-            date.fromisoformat(window["start_date"]) + timedelta(days=offset): window
-            for window in season_windows
-            for offset in range((date.fromisoformat(window["end_date"]) - date.fromisoformat(window["start_date"])).days + 1)
-        }
-        # Thermal time and absorbed radiation reset only when the traceable
-        # auto-management approximation opens a crop season, never at Jan 1.
-        gdd, absorbed_par, peak_lai_value, peak_lai_plants = 0.0, 0.0, None, ()
-        fields_by_season: dict[str, list[dict[str, Any]]] = {}
-        dated_fields: list[tuple[str, dict[str, Any]]] = []
-        fspm_days: dict[str, dict] = {}
-        for index, forcing in enumerate(climate, 1):
-            current_date = date.fromisoformat(forcing["date"])
-            if current_date != sim_run.start_date + timedelta(days=index - 1):
-                raise ValueError(f"SWAT+ forcing date discontinuity at {forcing['date']}")
-            window = active_by_date.get(current_date)
-            if window is None:
-                fspm_days[current_date.isoformat()] = {"crop": {"active": False, "source": "SWAT auto-management PHU window approximation",
-                    "limitation": "No active approximate crop window; no plant state computed"}}
-                continue
-            if current_date.isoformat() == window["start_date"]:
-                gdd, absorbed_par = 0.0, 0.0
-            gdd += season.fspm_growth_gdd_increment(forcing["temp_c"])
-            daily_forcing = {**forcing, "gdd_c_day": gdd, "cumulative_absorbed_par_mj_m2": absorbed_par}
-            current_plants = population.step(index, daily_forcing, soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
-            current_field = PlantToFieldAggregator.aggregate(current_plants, soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
-            current_field["soil_moisture_source"] = "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
-            sampled_plants = population.representative_sample(current_plants)
-            fspm_days[current_date.isoformat()] = {
-                "crop": {"active": True, "crop": "maize", "season_id": window["start_date"],
-                         "phenological_stage": Counter(plant.phenological_stage for plant in current_plants).most_common(1)[0][0],
-                         "window_status": window["status"], "source": "SWAT auto-management PHU window approximation",
-                         "limitation": "Approximate planting/harvest; executed SWAT+ event dates unavailable"},
-                "field": copy.deepcopy(current_field),
-                "plants": sampled_plants,
-                "plant_sample_context": {
-                    "population_count": len(current_plants),
-                    "captured_count": len(sampled_plants),
-                    "selection_method": "EVENLY_SPACED_STABLE_IDS" if len(current_plants) > 10 else "ALL_REPRESENTATIVE_STATES",
-                    "identity_scope": "SIMULATION_SLOT",
-                    "identity_semantics": "Seeded modeled population slots; not observed individual plants",
-                },
-            }
-            # PAR is 48% of shortwave radiation; green-canopy interception is
-            # already represented by the FSPM Beer-Lambert cover calculation.
-            absorbed_par += max(0.0, forcing["solar_rad_mj"]) * .48 * current_field["canopy_cover"]
-            fields_by_season.setdefault(window["start_date"], []).append(copy.deepcopy(current_field))
-            dated_fields.append((current_date.isoformat(), copy.deepcopy(current_field)))
-            if peak_lai_value is None or current_field["mean_LAI"] > peak_lai_value:
-                peak_lai_value = current_field["mean_LAI"]
-                peak_lai_plants = current_plants
-        seasonal_contracts = [PlantToFieldAggregator.seasonal_lai_contract(rows) for rows in fields_by_season.values() if len(rows) >= 3 and max(row["mean_LAI"] for row in rows) > 0]
-        if not seasonal_contracts:
-            raise ValueError("FSPM produced no seasonal LAI trajectory for SWAT+ coupling")
-        parameter_summary = _build_coupling_field_summary(
-            dated_fields, seasonal_contracts,
-        )
-        peak_dates = parameter_summary.peak_dates.model_dump(mode="json")
-        mapper = SwatPlantParameterMapper(target_crop)
-        result = adapter.run(
-            config, workspace_mutator=lambda workspace: mapper.apply(workspace, parameter_summary),
-            target_crop=target_crop,
-        )
-        effective_climate, _ = TwinCouplingEngine._baseline_forcing(Path(result.workspace), sim_run.start_date, sim_run.end_date)
-        if effective_climate is None or any(
-            any(left.get(key) != right.get(key) for key in ("date", "temp_c", "precip_mm", "solar_rad_mj", "rh_percent"))
-            for left, right in zip(climate, effective_climate, strict=True)
-        ):
-            raise ValueError("Effective SWAT+ workspace forcing differs from FSPM forcing; temporal coupling cannot be published")
+        result, fspm, parameter_summary = coupled.result, coupled.fspm, coupled.parameter_summary
         manifest = result.provenance["workspace_modifications"]
-        sim_run.effective_config = {"backend": "SWAT_PLUS", "run_type": "SWAT_MULTISCALE_COUPLED", "simulation_start": sim_run.start_date.isoformat(), "simulation_end": sim_run.end_date.isoformat(), "output_frequency": config.output_frequency, "same_source_project": str(source_project.resolve()), "fspm_version": PlantPopulation.VERSION, "plant_count": sim_run.plant_count}
-        sim_run.provenance = {**result.provenance, "evidence_type": "REAL_SWAT_PLUS_COUPLED", "run_id": result.run_id, "exit_code": result.exit_code, "duration_seconds": result.duration_seconds, "output_files": result.output_files, "process_logs": {"stdout": result.stdout, "stderr": result.stderr}, "parameter_updates": manifest.get("parameter_updates", []), "coupling_parameter_summary": parameter_summary.model_dump(mode="json"), **peak_dates, "code_version": _code_version()}
+        if manifest.get("status") != "APPLIED" or not manifest.get("parameter_updates"):
+            raise ValueError("FSPM parameter mapping did not modify the isolated SWAT+ plant record")
+        expected_days = (sim_run.end_date - sim_run.start_date).days + 1
+        expected_dates = [(sim_run.start_date + timedelta(days=i)).isoformat() for i in range(expected_days)]
+        if config.output_frequency == "DAILY" and [row["period"] for row in result.records] != expected_dates:
+            raise ValueError("SWAT+ basin outputs do not contain one unique daily record per requested date")
+        if len(fspm.fspm_days) != expected_days or sorted(fspm.fspm_days) != expected_dates:
+            raise ValueError("FSPM did not produce a complete, unique daily trajectory for the requested interval")
+        if result.water_balance.get("warnings"):
+            severe = {"DUPLICATE_TIMESTAMPS", "MISSING_PERIODS", "NON_FINITE_VALUE", "UNEXPECTED_UNIT"}
+            bad = [warning for warning in result.water_balance["warnings"] if warning.get("code") in severe]
+            if bad:
+                raise ValueError(f"SWAT+ output integrity warnings prevent publication: {bad}")
+
+        peak_dates = parameter_summary.peak_dates.model_dump(mode="json")
+        sim_run.effective_config = {
+            "backend": "SWAT_PLUS", "run_type": "SWAT_MULTISCALE_COUPLED",
+            "simulation_start": sim_run.start_date.isoformat(), "simulation_end": sim_run.end_date.isoformat(),
+            "warmup_period": config.warmup_period, "output_frequency": config.output_frequency,
+            "same_source_project": str(config.project_path.resolve()),
+            "fspm_version": PlantPopulation.VERSION, "plant_count_per_calendar_group": sim_run.plant_count,
+            "seed": sim_run.seed, "calendar_convergence": "CONVERGED",
+        }
+        sim_run.provenance = {
+            **result.provenance,
+            "evidence_type": "REAL_SWAT_PLUS_COUPLED",
+            "run_id": result.run_id,
+            "exit_code": result.exit_code,
+            "duration_seconds": result.duration_seconds,
+            "output_files": result.output_files,
+            "process_logs": {"stdout": result.stdout, "stderr": result.stderr},
+            "parameter_updates": manifest.get("parameter_updates", []),
+            "coupling_parameter_summary": parameter_summary.model_dump(mode="json"),
+            "executed_calendar_coupling": result.provenance.get("executed_calendar_coupling"),
+            "fspm_calendar_provenance": fspm.provenance,
+            "preflight": initial_preflight,
+            **peak_dates,
+            "code_version": _code_version(),
+        }
         playback = PlaybackArtifactStore().write(sim_run.id, swat_frames(
             simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
             outlet_unit=config.outlet_unit, run_type=config.run_type,
             resolution=config.output_frequency, records=result.records, hru_results=result.hru_results,
-            forcing=climate, forcing_source="SWAT+ direct station basin mean", fspm_days=fspm_days,
-            start_date=sim_run.start_date, end_date=sim_run.end_date,
+            plant_results=result.plant_results, forcing=fspm.field_climate,
+            forcing_source="SWAT+ station forcing, hru.con.wst, HRU area x 2019 CDL corn fraction",
+            fspm_days=fspm.fspm_days, start_date=sim_run.start_date, end_date=sim_run.end_date,
             observations=observations, observation_source=observation_source),
-            provenance={"code_version": sim_run.provenance["code_version"], "swat_model": "SWAT+",
-                        "swat_executable_version": result.provenance.get("executable_version"),
-                        "swat_executable_sha256": result.provenance.get("executable_sha256"),
-                        "swat_output_checksums": result.provenance.get("output_checksums"),
-                        "fspm_model": PlantPopulation.VERSION, "forcing": climate_provenance,
-                        "crop_windows": season.provenance(season_windows), "seed": sim_run.seed,
-                        "plant_count": sim_run.plant_count, "configuration": sim_run.effective_config,
-                        "requested_interval": [sim_run.start_date.isoformat(), sim_run.end_date.isoformat()]},
-            limitations=["FSPM moisture is an assumed constant 24 volumetric percent, not SWAT+ output",
-                         "Crop dates approximate auto-management PHU windows"])
+            provenance={
+                "code_version": sim_run.provenance["code_version"], "swat_model": "SWAT+",
+                "swat_executable_version": result.provenance.get("executable_version"),
+                "swat_executable_sha256": result.provenance.get("executable_sha256"),
+                "swat_output_checksums": result.provenance.get("output_checksums"),
+                "fspm_model": PlantPopulation.VERSION, "fspm_climate": fspm.provenance.get("field_climate"),
+                "calendar_coupling": result.provenance.get("executed_calendar_coupling"),
+                "seed": sim_run.seed, "plant_count_per_calendar_group": sim_run.plant_count,
+                "configuration": sim_run.effective_config,
+                "requested_interval": [sim_run.start_date.isoformat(), sim_run.end_date.isoformat()],
+            },
+            limitations=[
+                "FSPM soil moisture remains an assumed constant 24 volumetric percent; SWAT+ soil-water mm is exposed separately and is not converted to volumetric moisture",
+                "SWAT+ 61.0.2.61 hru_pw output has LAI, biomass and stress factors but no direct plant-height or root-depth columns; those traits come from FSPM representative plant states",
+                "Each distinct SWAT+ HRU planting/harvest calendar is simulated separately and field states are weighted by HRU area and 2019 CDL corn fraction",
+            ])
         sim_run.provenance = {**sim_run.provenance, "playback": playback}
         if config.output_frequency != "DAILY":
             daily_store = PlaybackArtifactStore(Path(settings.DATA_ARTIFACT_ROOT) / "playback" / "v1" / "fspm-daily")
             daily_manifest = daily_store.write(sim_run.id, swat_frames(
                 simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
                 outlet_unit=config.outlet_unit, run_type=config.run_type,
-                resolution="DAILY", records=[], hru_results=[], forcing=climate,
-                forcing_source="SWAT+ direct station basin mean", fspm_days=fspm_days,
-                start_date=sim_run.start_date, end_date=sim_run.end_date,
+                resolution="DAILY", records=[], hru_results=[], plant_results=[],
+                forcing=fspm.field_climate, forcing_source="SWAT+ station forcing weighted over maize HRUs",
+                fspm_days=fspm.fspm_days, start_date=sim_run.start_date, end_date=sim_run.end_date,
                 missing_hydrology_reason="SWAT+ was requested at a coarser frequency; daily hydrology is not available"),
                 provenance={"code_version": sim_run.provenance["code_version"], "seed": sim_run.seed,
-                            "fspm_model": PlantPopulation.VERSION,
-                            "plant_count": sim_run.plant_count, "forcing": climate_provenance,
-                            "parent_swat_playback_sha256": playback["sha256"]},
+                            "fspm_model": PlantPopulation.VERSION, "plant_count": sim_run.plant_count,
+                            "calendar": coupled.calendar.as_dict(), "parent_swat_playback_sha256": playback["sha256"]},
                 limitations=["Daily FSPM and forcing only; SWAT+ hydrology has a coarser effective frequency",
-                             "FSPM moisture is an assumed constant 24 volumetric percent"])
+                             "FSPM soil moisture is an assumed constant 24 volumetric percent"])
             sim_run.provenance = {**sim_run.provenance, "playback_daily_fspm": daily_manifest}
         sim_run.monthly_outputs = result.records
-        sim_run.hru_aggregates = {"status": "AVAILABLE" if result.hru_results else "NOT_AVAILABLE", "results": result.hru_results, "parameter_mapping": manifest}
-        peak_lai_field = _dated_peak_lai_field_snapshot(dated_fields)
-        sim_run.field_aggregates = peak_lai_field
-        representative_plants = population.representative_sample(peak_lai_plants)
-        sim_run.plant_sample = [vars(plant) for plant in representative_plants]
-        sim_run.provenance = {**sim_run.provenance, "plant_sample_context": {
-            "population_count": population.count, "captured_count": len(representative_plants),
-            "selection_method": "EVENLY_SPACED_STABLE_IDS" if population.count > 10 else "ALL_REPRESENTATIVE_STATES",
-            "identity_scope": "SIMULATION_SLOT",
-            "identity_semantics": "Seeded modeled population slots; not observed individual plants",
-        }}
-        sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "coupled run is an input-response experiment, not an observational validation"}
+        sim_run.hru_aggregates = {
+            "status": "AVAILABLE" if result.hru_results else "NOT_AVAILABLE",
+            "results": result.hru_results,
+            "plant_results": result.plant_results,
+            "channel_results": result.channel_results,
+            "management_events": result.management_events,
+            "parameter_mapping": manifest,
+        }
+        peak_lai_date, peak_lai_field = max(fspm.dated_fields, key=lambda item: item[1]["mean_LAI"])
+        sim_run.field_aggregates = _dated_peak_lai_field_snapshot(fspm.dated_fields)
+        sim_run.field_aggregates["calendar"] = coupled.calendar.as_dict()
+        peak_plants = fspm.fspm_days[peak_lai_date].get("plants", [])
+        sim_run.plant_sample = [vars(plant) for plant in peak_plants]
+        sim_run.provenance = {**sim_run.provenance, "plant_sample_context":
+                              fspm.fspm_days[peak_lai_date].get("plant_sample_context")}
+        sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "coupled run is an input-response simulation, not observational validation"}
         totals = result.water_balance.get("totals_mm", {})
         discharge_hm3, discharge_limitation = _daily_streamflow_volume_hm3(
             result.records, result.water_balance or {}, config.output_frequency
         )
-        precipitation = [row.get("precip_mm", row.get("precipitation_mm")) for row in (climate or ())]
-        precip_mm = round(sum(precipitation), 2) if precipitation and all(value is not None for value in precipitation) else None
+        stress = [field["mean_stress"] for _, field in fspm.dated_fields if "mean_stress" in field]
         sim_run.summary_metrics = {
             "evidence_type": "REAL_SWAT_PLUS_COUPLED",
             "period_count": len(result.records),
-            "total_precip_mm": precip_mm,
+            "total_precip_mm": totals.get("precip_mm"),
             "total_discharge_hm3": discharge_hm3,
             "total_discharge_status": "AVAILABLE" if discharge_hm3 is not None else "NOT_AVAILABLE",
             "total_discharge_limitation": discharge_limitation,
-            "mean_cwsi": round(fmean(field["mean_stress"] for _, field in dated_fields), 3),
+            "mean_fspm_water_stress": round(fmean(stress), 3) if stress else None,
             "total_runoff_mm": totals.get("runoff_mm"),
             "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"),
             "total_percolation_mm": totals.get("percolation_mm"),

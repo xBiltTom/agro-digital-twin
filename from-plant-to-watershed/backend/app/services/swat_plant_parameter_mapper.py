@@ -75,11 +75,23 @@ class SwatClimateForcingReader:
             output[(year, day)] = values
         return output
 
-    def for_period(self, start: date, end: date, *, require_fspm: bool = True) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-        """Return one explicitly dated row per day; missing primary data fail closed."""
+    def for_period(self, start: date, end: date, *, require_fspm: bool = True,
+                   station_weights: dict[str, float] | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """Return dated forcing, optionally weighted over selected SWAT stations."""
         if end < start:
             raise SwatPlantMappingError("Weather interval end precedes start")
         stations = self._station_files()
+        explicitly_weighted = station_weights is not None
+        if station_weights is not None:
+            if not station_weights or any(not math.isfinite(value) or value <= 0 for value in station_weights.values()):
+                raise SwatPlantMappingError("Station weights must contain positive finite values")
+            by_name = {files["name"].name: files for files in stations}
+            missing_names = sorted(set(station_weights) - set(by_name))
+            if missing_names:
+                raise SwatPlantMappingError(f"Selected HRUs reference weather stations absent from weather-sta.cli: {missing_names}")
+            stations = [by_name[name] for name in station_weights]
+        else:
+            station_weights = {files["name"].name: 1.0 for files in stations}
         station_data = [
             {
                 "name": files["name"].name,
@@ -92,6 +104,13 @@ class SwatClimateForcingReader:
             }
             for files in stations
         ]
+        denominator = sum(station_weights.values())
+
+        def weighted_mean(values: list[tuple[str, float]]) -> float | None:
+            if len(values) != len(station_data):
+                return None
+            return sum(value * station_weights[name] for name, value in values) / denominator
+
         daily: list[dict[str, Any]] = []
         cursor = start
         while cursor <= end:
@@ -101,27 +120,30 @@ class SwatClimateForcingReader:
                 for kind in required:
                     if key not in row[kind]:
                         raise SwatPlantMappingError(f"Missing {kind} at station {row['name']} on {cursor.isoformat()}; no day or station is silently skipped")
-            temperatures = [(values[0] + values[1]) / 2.0 for row in station_data
+            temperatures = [(row["name"], (values[0] + values[1]) / 2.0) for row in station_data
                             if (values := row["tmp"].get(key)) and all(math.isfinite(v) and v > -90 for v in values)]
-            precipitation = [values[0] for row in station_data
+            precipitation = [(row["name"], values[0]) for row in station_data
                              if (values := row["pcp"].get(key)) and math.isfinite(values[0]) and values[0] >= 0]
-            solar = [values[0] for row in station_data
+            solar = [(row["name"], values[0]) for row in station_data
                      if (values := row["slr"].get(key)) and math.isfinite(values[0]) and values[0] >= 0]
-            humidity = [values[0] * 100.0 for row in station_data
+            humidity = [(row["name"], values[0] * 100.0) for row in station_data
                         if (values := row["hmd"].get(key)) and math.isfinite(values[0]) and 0 <= values[0] <= 1]
-            wind = [values[0] for row in station_data
+            wind = [(row["name"], values[0]) for row in station_data
                     if (values := row["wnd"].get(key)) and math.isfinite(values[0]) and values[0] >= 0]
-            pet = [values[0] for row in station_data
+            pet = [(row["name"], values[0]) for row in station_data
                    if (values := row["pet"].get(key)) and math.isfinite(values[0]) and values[0] >= 0]
-            if len(temperatures) != len(station_data) or len(precipitation) != len(station_data) or (require_fspm and (len(solar) != len(station_data) or len(humidity) != len(station_data))):
+            temperature_mean = weighted_mean(temperatures)
+            precipitation_mean = weighted_mean(precipitation)
+            solar_mean = weighted_mean(solar)
+            humidity_mean = weighted_mean(humidity)
+            if temperature_mean is None or precipitation_mean is None or (require_fspm and (solar_mean is None or humidity_mean is None)):
                 raise SwatPlantMappingError(f"Missing required weather for {cursor.isoformat()}; no day is skipped or filled")
-            # Equal-station means are basin summaries, not point observations.
-            daily.append({"date": cursor.isoformat(), "temp_c": fmean(temperatures),
-                          "precip_mm": fmean(precipitation),
-                          "solar_rad_mj": fmean(solar) if len(solar) == len(station_data) else None,
-                          "rh_percent": fmean(humidity) if len(humidity) == len(station_data) else None,
-                          "wind_speed_ms": fmean(wind) if len(wind) == len(station_data) else None,
-                          "pet_mm": fmean(pet) if len(pet) == len(station_data) else None,
+            daily.append({"date": cursor.isoformat(), "temp_c": temperature_mean,
+                          "precip_mm": precipitation_mean,
+                          "solar_rad_mj": solar_mean,
+                          "rh_percent": humidity_mean,
+                          "wind_speed_ms": weighted_mean(wind),
+                          "pet_mm": weighted_mean(pet),
                           "co2_ppm": 400.0 if require_fspm else None})
             cursor += timedelta(days=1)
         return daily, {
@@ -132,12 +154,60 @@ class SwatClimateForcingReader:
                    for files in stations for kind, path in files.items() if kind != "name" and path is not None},
             },
             "station_count": len(station_data),
-            "station_aggregation": "equal_station_mean; HRU-to-station weights are not available in this TxtInOut",
+            "station_weights": station_weights,
+            "station_aggregation": "area_weighted_from_hru.con" if explicitly_weighted else "equal_station_mean",
             "variables": ["pcp", "tmp"] + [kind for kind in ("slr", "hmd", "wnd", "pet") if any(row[kind] for row in station_data)],
             "days": len(daily), "start_date": start.isoformat(), "end_date": end.isoformat(),
             "missing_policy": "FAIL_CLOSED_PER_STATION_PRIMARY_AND_FSPM_REQUIRED; OPTIONAL_SECONDARY_NULL",
             "limitations": "Equal-station basin forcing summary; station availability can differ by variable and day. No HRU-to-station weights or USGS weather observations are implied.",
         }
+
+    def for_hrus(self, start: date, end: date, hru_ids: list[int], *,
+                 crop_fraction_by_hru: dict[int, float] | None = None,
+                 require_fspm: bool = True) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """Return climate for the exact station mix assigned to selected HRUs."""
+        hru_path = self.project / "hru.con"
+        if not hru_path.is_file():
+            raise SwatPlantMappingError("hru.con is required to align FSPM climate to SWAT+ HRU stations")
+        lines = hru_path.read_text(encoding="utf-8", errors="strict").splitlines()
+        if len(lines) < 3:
+            raise SwatPlantMappingError("hru.con has no station assignments")
+        header = [token.lower() for token in lines[1].split()]
+        try:
+            id_index, area_index, station_index = header.index("id"), header.index("area"), header.index("wst")
+        except ValueError:
+            raise SwatPlantMappingError("hru.con must expose id, area and wst fields") from None
+        selected = set(hru_ids)
+        station_weights: dict[str, float] = {}
+        seen: set[int] = set()
+        for line_number, raw in enumerate(lines[2:], 3):
+            values = raw.split()
+            if len(values) <= max(id_index, area_index, station_index):
+                continue
+            try:
+                hru_id = int(values[id_index])
+                area = float(values[area_index])
+            except ValueError:
+                raise SwatPlantMappingError(f"Invalid HRU station assignment in hru.con:{line_number}") from None
+            if hru_id not in selected:
+                continue
+            station = values[station_index]
+            crop_fraction = (crop_fraction_by_hru or {}).get(hru_id, 1.0)
+            if not math.isfinite(area) or area <= 0 or not math.isfinite(crop_fraction) or not 0 < crop_fraction <= 1:
+                raise SwatPlantMappingError(f"Invalid area or crop fraction for HRU {hru_id}")
+            station_weights[station] = station_weights.get(station, 0.0) + area * crop_fraction
+            seen.add(hru_id)
+        if seen != selected:
+            raise SwatPlantMappingError(f"hru.con does not contain every requested HRU: {sorted(selected - seen)}")
+        forcing, provenance = self.for_period(start, end, require_fspm=require_fspm,
+                                             station_weights=station_weights)
+        provenance = {**provenance, "forcing_support": "selected_management_hrus",
+                      "hru_ids": sorted(selected), "hrus_area_weighted": True,
+                      "crop_fraction_weighted": crop_fraction_by_hru is not None,
+                      "hru_station_source": "hru.con.wst",
+                      "hru_con_sha256": hashlib.sha256(hru_path.read_bytes()).hexdigest(),
+                      "limitations": "Each HRU uses its SWAT+ assigned station; cohort forcing is a basin-area and 2019 CDL crop-fraction weighted mix. The FSPM remains a single representative population for each unique management calendar."}
+        return forcing, provenance
 
 
 class SwatPlantParameterMapper:
