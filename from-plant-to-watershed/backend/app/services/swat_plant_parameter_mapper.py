@@ -15,6 +15,7 @@ from statistics import fmean
 from typing import Any
 
 from scientific_core.units import validate_soil_moisture_vol_percent
+from app.schemas.coupling import CouplingPlantParameterSummary
 
 
 class SwatPlantMappingError(ValueError):
@@ -264,7 +265,9 @@ class SwatPlantParameterMapper:
         except (TypeError, ValueError) as exc:
             raise SwatPlantMappingError(f"FieldAggregate value {dotted_name} is not numeric") from exc
 
-    def apply(self, workspace: Path, field: dict[str, Any]) -> dict[str, Any]:
+    def apply(self, workspace: Path, field: dict[str, Any] | CouplingPlantParameterSummary) -> dict[str, Any]:
+        if isinstance(field, CouplingPlantParameterSummary):
+            field = field.model_dump(mode="python")
         if "soil_moisture_vol" in field:
             validate_soil_moisture_vol_percent(field["soil_moisture_vol"])
         plants = workspace / "plants.plt"

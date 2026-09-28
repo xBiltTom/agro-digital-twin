@@ -27,6 +27,7 @@ from app.services.playback_artifact import PlaybackArtifactStore
 from app.services.playback_builder import simplified_frames, swat_frames
 from app.services.swat_crop_chain_diagnostic import SwatCropChainDiagnostic
 from app.core.config import settings
+from app.schemas.coupling import CouplingPlantParameterSummary
 from scientific_core import MultiscaleSimulationOrchestrator, PlantPopulation, PlantToFieldAggregator, RunConfig, SimulationOrchestrator, ValidationEngine
 from scientific_core.climate_file import NormalizedClimateFileProvider
 from scientific_core.units import ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT
@@ -61,11 +62,9 @@ def _daily_streamflow_volume_hm3(records: list[dict], water_balance: dict, frequ
 
 def _build_coupling_field_summary(
     dated_fields: list[tuple[str, dict[str, Any]]],
-    seasonal_lai_contracts: list[dict[str, Any]], *,
-    climate_provenance: dict[str, Any], season_provenance: dict[str, Any],
-    growth_temperature_base_c: float,
-) -> dict[str, Any]:
-    """Build mapper inputs without mutating any date-specific FSPM field state."""
+    seasonal_lai_contracts: list[dict[str, Any]],
+) -> CouplingPlantParameterSummary:
+    """Build a mapper-only contract with no unrelated dated field statistics."""
     if not dated_fields or not seasonal_lai_contracts:
         raise ValueError("FSPM seasonal field states and LAI contracts are required for SWAT+ coupling")
 
@@ -76,34 +75,47 @@ def _build_coupling_field_summary(
     peak_root_date, peak_root_field = max(
         dated_fields, key=lambda item: item[1]["root_depth_mean_m"]
     )
-    summary = copy.deepcopy(peak_lai_field)
-    summary["plant_height_mean_m"] = peak_height_field["plant_height_mean_m"]
-    summary["root_depth_mean_m"] = peak_root_field["root_depth_mean_m"]
-    summary["peak_dates"] = {
-        "date_of_peak_LAI": peak_lai_date,
-        "date_of_peak_height": peak_height_date,
-        "date_of_peak_root_depth": peak_root_date,
-    }
-    summary["seasonal_maxima"] = {
-        "LAI": {"value": peak_lai_field["mean_LAI"], "unit": "m2_leaf/m2_ground", "date": peak_lai_date},
-        "height_m": {"value": peak_height_field["plant_height_mean_m"], "unit": "m", "date": peak_height_date},
-        "root_depth_m": {"value": peak_root_field["root_depth_mean_m"], "unit": "m", "date": peak_root_date},
-    }
-    summary["summary_semantics"] = "SEASONAL_MAXIMA_FOR_COUPLING_NOT_A_DATED_FSPM_STATE"
-    summary["swat_lai_contract"] = {
+    lai_contract = {
         key: fmean(contract[key] for contract in seasonal_lai_contracts)
         for key in ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl")
     }
-    summary["swat_lai_contract"].update({
+    lai_contract.update({
         "season_count": len(seasonal_lai_contracts),
         "derivation": "mean of SWAT auto-management PHU-derived SIMPLIFIED_FSPM seasonal LAI contracts",
     })
-    summary["aggregation_window"] = "SWAT auto-management PHU-derived approximate crop-season trajectories"
-    summary["climate_provenance"] = copy.deepcopy(climate_provenance)
-    summary["season_provenance"] = copy.deepcopy(season_provenance)
-    summary["fspm_growth_temperature_base_c"] = growth_temperature_base_c
-    summary["fspm_growth_temperature_base_source"] = "plants.plt.tmp_base"
-    return summary
+    static_traits = ("canopy_extinction_coefficient", "biomass_energy_ratio_kg_ha_per_mj_m2")
+    trait_values: dict[str, float] = {}
+    for key in static_traits:
+        samples = [float(field[key]) for _, field in dated_fields]
+        if max(samples) - min(samples) > 1e-12:
+            raise ValueError(f"FSPM coupling trait {key} varies by date and cannot enter the static plant-parameter contract")
+        trait_values[key] = samples[0]
+
+    return CouplingPlantParameterSummary.model_validate({
+        "summary_semantics": "SEASONAL_MAXIMA_FOR_COUPLING_NOT_A_DATED_FSPM_STATE",
+        "swat_lai_contract": lai_contract,
+        "plant_height_mean_m": peak_height_field["plant_height_mean_m"],
+        "root_depth_mean_m": peak_root_field["root_depth_mean_m"],
+        **trait_values,
+        "peak_dates": {
+            "date_of_peak_LAI": peak_lai_date,
+            "date_of_peak_height": peak_height_date,
+            "date_of_peak_root_depth": peak_root_date,
+        },
+        "coupling_parameter_provenance": {
+            name: copy.deepcopy(peak_lai_field["coupling_parameter_provenance"][name])
+            for name in ("ext_co", "bm_e")
+        },
+    })
+
+
+def _dated_peak_lai_field_snapshot(dated_fields: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
+    """Return one internally consistent dated aggregate for legacy run summaries."""
+    peak_lai_date, peak_lai_field = max(dated_fields, key=lambda item: item[1]["mean_LAI"])
+    snapshot = copy.deepcopy(peak_lai_field)
+    snapshot["field_date"] = peak_lai_date
+    snapshot["summary_semantics"] = "DATED_FSPM_FIELD_STATE_AT_PEAK_LAI_DATE"
+    return snapshot
 
 
 class TwinCouplingEngine:
@@ -300,16 +312,13 @@ class TwinCouplingEngine:
         seasonal_contracts = [PlantToFieldAggregator.seasonal_lai_contract(rows) for rows in fields_by_season.values() if len(rows) >= 3 and max(row["mean_LAI"] for row in rows) > 0]
         if not seasonal_contracts:
             raise ValueError("FSPM produced no seasonal LAI trajectory for SWAT+ coupling")
-        season_provenance = season.provenance(season_windows)
-        field = _build_coupling_field_summary(
-            dated_fields, seasonal_contracts, climate_provenance=climate_provenance,
-            season_provenance=season_provenance,
-            growth_temperature_base_c=season.crop_temperature_base_c,
+        parameter_summary = _build_coupling_field_summary(
+            dated_fields, seasonal_contracts,
         )
-        peak_dates = field["peak_dates"]
+        peak_dates = parameter_summary.peak_dates.model_dump(mode="json")
         mapper = SwatPlantParameterMapper(target_crop)
         result = adapter.run(
-            config, workspace_mutator=lambda workspace: mapper.apply(workspace, field),
+            config, workspace_mutator=lambda workspace: mapper.apply(workspace, parameter_summary),
             target_crop=target_crop,
         )
         effective_climate, _ = TwinCouplingEngine._baseline_forcing(Path(result.workspace), sim_run.start_date, sim_run.end_date)
@@ -320,7 +329,7 @@ class TwinCouplingEngine:
             raise ValueError("Effective SWAT+ workspace forcing differs from FSPM forcing; temporal coupling cannot be published")
         manifest = result.provenance["workspace_modifications"]
         sim_run.effective_config = {"backend": "SWAT_PLUS", "run_type": "SWAT_MULTISCALE_COUPLED", "simulation_start": sim_run.start_date.isoformat(), "simulation_end": sim_run.end_date.isoformat(), "output_frequency": config.output_frequency, "same_source_project": str(source_project.resolve()), "fspm_version": PlantPopulation.VERSION, "plant_count": sim_run.plant_count}
-        sim_run.provenance = {**result.provenance, "evidence_type": "REAL_SWAT_PLUS_COUPLED", "run_id": result.run_id, "exit_code": result.exit_code, "duration_seconds": result.duration_seconds, "output_files": result.output_files, "process_logs": {"stdout": result.stdout, "stderr": result.stderr}, "parameter_updates": manifest.get("parameter_updates", []), **peak_dates, "code_version": _code_version()}
+        sim_run.provenance = {**result.provenance, "evidence_type": "REAL_SWAT_PLUS_COUPLED", "run_id": result.run_id, "exit_code": result.exit_code, "duration_seconds": result.duration_seconds, "output_files": result.output_files, "process_logs": {"stdout": result.stdout, "stderr": result.stderr}, "parameter_updates": manifest.get("parameter_updates", []), "coupling_parameter_summary": parameter_summary.model_dump(mode="json"), **peak_dates, "code_version": _code_version()}
         playback = PlaybackArtifactStore().write(sim_run.id, swat_frames(
             simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
             outlet_unit=config.outlet_unit, run_type=config.run_type,
@@ -357,7 +366,8 @@ class TwinCouplingEngine:
             sim_run.provenance = {**sim_run.provenance, "playback_daily_fspm": daily_manifest}
         sim_run.monthly_outputs = result.records
         sim_run.hru_aggregates = {"status": "AVAILABLE" if result.hru_results else "NOT_AVAILABLE", "results": result.hru_results, "parameter_mapping": manifest}
-        sim_run.field_aggregates = field
+        peak_lai_field = _dated_peak_lai_field_snapshot(dated_fields)
+        sim_run.field_aggregates = peak_lai_field
         representative_plants = population.representative_sample(peak_lai_plants)
         sim_run.plant_sample = [vars(plant) for plant in representative_plants]
         sim_run.provenance = {**sim_run.provenance, "plant_sample_context": {
@@ -380,9 +390,7 @@ class TwinCouplingEngine:
             "total_discharge_hm3": discharge_hm3,
             "total_discharge_status": "AVAILABLE" if discharge_hm3 is not None else "NOT_AVAILABLE",
             "total_discharge_limitation": discharge_limitation,
-            "mean_cwsi": (round(float(field["mean_water_stress"]), 3)
-                          if field.get("mean_water_stress") is not None
-                          else round(float(field["cwsi_mean"]), 3) if field.get("cwsi_mean") is not None else None),
+            "mean_cwsi": round(fmean(field["mean_stress"] for _, field in dated_fields), 3),
             "total_runoff_mm": totals.get("runoff_mm"),
             "total_evapotranspiration_mm": totals.get("evapotranspiration_mm"),
             "total_percolation_mm": totals.get("percolation_mm"),

@@ -5,7 +5,7 @@ import pytest
 
 from app.services.swat_plant_parameter_mapper import SwatPlantParameterMapper
 from app.services.swat_crop_chain_diagnostic import SwatAutoManagementSeason
-from app.services.twin_coupling_engine import _build_coupling_field_summary
+from app.services.twin_coupling_engine import _build_coupling_field_summary, _dated_peak_lai_field_snapshot
 from scientific_core import PlantPopulation, PlantToFieldAggregator
 from scientific_core.units import ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT
 
@@ -85,12 +85,25 @@ def test_seasonal_lai_contract_is_ordered_and_physically_bounded():
 
 
 def test_coupling_maxima_keep_their_own_dates_and_do_not_mutate_daily_states():
+    static_provenance = {
+        "ext_co": {"source_type": "MODEL_BASE_PARAMETER"},
+        "bm_e": {"source_type": "MODEL_BASE_PARAMETER"},
+    }
     dated_fields = [
         ("2020-08-10", {"mean_LAI": 4.2, "plant_height_mean_m": 1.2, "root_depth_mean_m": 0.45,
+                        "canopy_extinction_coefficient": .5,
+                        "biomass_energy_ratio_kg_ha_per_mj_m2": 40.0,
+                        "coupling_parameter_provenance": static_provenance,
                         "daily_tag": {"date": "2020-08-10"}}),
         ("2020-08-18", {"mean_LAI": 3.8, "plant_height_mean_m": 2.1, "root_depth_mean_m": 0.62,
+                        "canopy_extinction_coefficient": .5,
+                        "biomass_energy_ratio_kg_ha_per_mj_m2": 40.0,
+                        "coupling_parameter_provenance": static_provenance,
                         "daily_tag": {"date": "2020-08-18"}}),
         ("2020-08-25", {"mean_LAI": 3.1, "plant_height_mean_m": 1.9, "root_depth_mean_m": 0.91,
+                        "canopy_extinction_coefficient": .5,
+                        "biomass_energy_ratio_kg_ha_per_mj_m2": 40.0,
+                        "coupling_parameter_provenance": static_provenance,
                         "daily_tag": {"date": "2020-08-25"}}),
     ]
     original_daily_fields = [
@@ -103,22 +116,27 @@ def test_coupling_maxima_keep_their_own_dates_and_do_not_mutate_daily_states():
     }]
 
     coupling_summary = _build_coupling_field_summary(
-        dated_fields, contracts, climate_provenance={"source": "fixture"},
-        season_provenance={"season_windows": []}, growth_temperature_base_c=8.0,
+        dated_fields, contracts,
     )
 
     assert dated_fields == original_daily_fields
-    assert coupling_summary["mean_LAI"] == 4.2
-    assert coupling_summary["plant_height_mean_m"] == 2.1
-    assert coupling_summary["root_depth_mean_m"] == .91
-    assert coupling_summary["peak_dates"] == {
+    assert coupling_summary.plant_height_mean_m == 2.1
+    assert coupling_summary.root_depth_mean_m == .91
+    assert coupling_summary.peak_dates.model_dump(mode="json") == {
         "date_of_peak_LAI": "2020-08-10",
         "date_of_peak_height": "2020-08-18",
         "date_of_peak_root_depth": "2020-08-25",
     }
-    assert coupling_summary["seasonal_maxima"]["root_depth_m"]["date"] == "2020-08-25"
-    assert coupling_summary["summary_semantics"] == "SEASONAL_MAXIMA_FOR_COUPLING_NOT_A_DATED_FSPM_STATE"
-    assert coupling_summary["daily_tag"]["date"] == "2020-08-10"
+    assert coupling_summary.summary_semantics == "SEASONAL_MAXIMA_FOR_COUPLING_NOT_A_DATED_FSPM_STATE"
+    assert coupling_summary.swat_lai_contract.lai_pot == 4.2
+    mapper_values = coupling_summary.model_dump(mode="json")
+    assert not {"LAI_distribution", "root_depth_distribution", "water_stress", "actual_ET_mm_day",
+                "biomass_g_plant", "phenology_fraction", "soil_moisture_vol"} & set(mapper_values)
+    dated_snapshot = _dated_peak_lai_field_snapshot(dated_fields)
+    assert dated_snapshot["field_date"] == "2020-08-10"
+    assert dated_snapshot["plant_height_mean_m"] == 1.2
+    assert dated_snapshot["root_depth_mean_m"] == .45
+    assert dated_snapshot["summary_semantics"] == "DATED_FSPM_FIELD_STATE_AT_PEAK_LAI_DATE"
 
 
 def test_multiyear_seasons_reset_all_computed_crop_state_without_replacing_population():
