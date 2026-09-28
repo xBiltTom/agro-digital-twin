@@ -82,39 +82,34 @@ El resumen `total_discharge_hm3` se integra solo desde caudales diarios completo
 
 `POST /api/v1/simulations/preflight` es autenticado y no crea corridas. Valida el proyecto exacto de la solicitud, los archivos de control y, para `SWAT_MULTISCALE_COUPLED`, que el cultivo destino esté asociado al manejo de HRU activo, exista forcing FSPM diario y haya una ventana PHU aproximada. Devuelve bloqueos y conteos de componentes/modelos. La estimación mínima de almacenamiento cubre una copia aislada del proyecto SWAT+, no crecimiento de salidas; el runtime depende de periodo y frecuencia.
 
-Auditoría de solo lectura a PostgreSQL el 2026-09-27: seis corridas completadas: cuatro `RESEARCH_MULTISCALE` sin manifiesto playback, una `HISTORICAL_IMPORT` sin manifiesto y una `SWAT_STANDARD_BASELINE` con manifiesto hidrológico íntegro. Ninguna presenta trayectoria FSPM fechada ni muestras FSPM en playback. El baseline no ejecutó FSPM. No se imprimieron nombres, IDs o propietarios y no se modificó la base.
+El proyecto fuente sigue bloqueando el acoplamiento de maíz y debe permanecer así: los 36 HRU usan `agrl_lum` → `agrl_comm` → registro `agrl` → `agrl_rot` → decisión `pl_hv_summer1`, con las acciones genéricas `plant crop` y `harvest_kill crop`. `plants.plt` contiene `corn` y `lum.dtl` contiene `pl_hv_summer1_corn`, pero el proyecto fuente no los enlaza desde esos HRU. La fase 3.4 no cambió el proyecto fuente.
 
-El proyecto SWAT+ actualmente configurado tiene 36 HRU bajo `agrl_lum`/`agrl_comm` y una operación activa para `agrl`, no `corn`. Que `plants.plt` tenga parámetros `corn` y que haya tablas de decisión con etiquetas de maíz no prueba que el manejo activo de HRU ejecute maíz. Por eso el preflight ahora bloquea ese acoplamiento; editar el manejo o la población sería una decisión de configuración científica, no un fallback visual. No se ejecutó una corrida acoplada real con esta configuración. Se comprobó que el ejecutable y el proyecto existen, que el directorio de trabajo es escribible y que hay aproximadamente 48 GB libres. Una corrida ejecutable requiere al menos una copia aislada del proyecto (unos 712 MB observados); las salidas pueden requerir espacio adicional.
+Se preparó y ejecutó una variante aislada de prueba, clasificada como experimento hipotético de manejo y no como reconstrucción histórica ni validación South Fork. El mapa CDL estático 2019 marcó 32 HRU con fracción de maíz ≥ 0.50; los HRU 3, 4, 25 y 28 se dejaron sin cambiar. La variante enlaza solo esos 32 HRU con `corn_lum` → `corn_comm` → `corn_rot` → `pl_hv_summer1_corn`, cuya tabla contiene acciones explícitas de `plant corn` y `harvest_kill corn`. Se conservaron todas las entradas originales en una copia; el manifiesto y los hashes están en `backend/data/phase34-cdl-2019/manifest.json` (directorio local excluido de Git). Las fracciones CDL anuales no son fechas observadas de siembra/cosecha; las ventanas FSPM siguen siendo aproximaciones PHU.
 
-Cuando el proyecto tenga manejo activo de `corn`, repetir primero el preflight con una cuenca South Fork y un escenario neutral disponibles en la API. Solo si responde `READY`, lanzar la corrida breve de verificación de un año. `API_BASE_URL`, `TOKEN`, `SOUTH_FORK_WATERSHED_ID` y `NEUTRAL_SCENARIO_ID` son valores del entorno autenticado; se omiten las rutas SWAT para usar las configuradas en el backend:
+La ejecución real pareada cubrió 2019-01-01 a 2019-12-31, con 365 entradas diarias, semilla 42 y población FSPM modelada de 1000 plantas. El baseline y el acoplado usaron la misma variante CDL, el mismo forcing y el mismo periodo; dentro de sus 283 archivos de trabajo, solo `plants.plt` (parámetros de cultivo) y `simulation.out` difieren. No representa una comparación entre el proyecto original `agrl` y una superficie de maíz: ambos brazos tienen la configuración experimental CDL; el acoplado además recibe parámetros vegetales derivados del resumen FSPM.
+
+Evidencia de la verificación: SWAT+ terminó en ambos brazos con código 0; la comprobación de salida encontró la comunidad esperada en 11.680 HRU-día; los artefactos DAILY tienen 365 registros y pasan checksum; FastAPI local sobre SQLite desechable devolvió disponibilidad y playback; el acceso de un usuario ajeno fue 404. El primer campo y las primeras muestras disponibles son 2019-04-16, con diez IDs estables; el 2019-07-24 hay LAI de campo 5.0046 m²/m² y etapa `REPRODUCTIVE`; 2019-01-01 está fuera de temporada y no tiene estado vegetal. La humedad FSPM de 24% conserva evidencia `ASSUMED` y no viene de SWAT+.
+
+Las salidas hidrológicas `basin_wb_day.txt`, `channel_sd_day.txt` y `hru_wb_day.txt` tuvieron checksums idénticos entre brazos; la comparación de archivos halló solo dos diferencias de 283 (`plants.plt`, `simulation.out`), y los archivos de rendimiento de cultivo también fueron idénticos. Esto no demuestra sensibilidad hidrológica a los parámetros FSPM. El resultado queda reportado sin atribuir mejora ni alterar entradas para forzar una diferencia. Los IDs `phase34-sf19-baseline` y `phase34-sf19-coupled` pertenecen a la integración local desechable; no son filas PostgreSQL disponibles para la UI ni simulaciones productivas. PostgreSQL local no respondió durante esta fase.
+
+### Reproducción del experimento local verificado
+
+Los comandos siguientes fueron ejecutados desde `from-plant-to-watershed/backend` en el entorno donde están las rutas de SWAT+ y CDL configuradas. El preparador rechaza sobrescribir su destino; el runner también rechaza una carpeta de salida existente. Los datos de entrada, salidas, manifests de playback y SQLite se guardan bajo `backend/data/`, excluido de Git:
 
 ```bash
-curl --fail-with-body --request POST "$API_BASE_URL/api/v1/simulations/preflight" \
-  --header "Authorization: Bearer $TOKEN" --header "Content-Type: application/json" --data-binary @- <<JSON
-{
-  "name": "South Fork FSPM SWAT+ playback verification",
-  "watershed_id": "$SOUTH_FORK_WATERSHED_ID",
-  "scenario_id": "$NEUTRAL_SCENARIO_ID",
-  "duration_days": 365,
-  "start_date": "2015-01-01",
-  "end_date": "2015-12-31",
-  "seed": 42,
-  "plant_count": 1000,
-  "mode": "SWAT_PLUS",
-  "hydrology_backend": "SWAT_PLUS",
-  "climate_source": "SWAT_PROJECT",
-  "swat_plus": {
-    "run_type": "SWAT_MULTISCALE_COUPLED",
-    "target_plant_name": "corn",
-    "output_frequency": "MONTHLY",
-    "warmup_period": 0,
-    "timeout_seconds": 3600
-  }
-}
-JSON
+PYTHONPATH=. .venv/bin/python scripts/prepare_south_fork_cdl_experiment.py \
+  --source-project /home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/project/Scenarios/Default/TxtInOut \
+  --cdl-composition /home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/cdl/hru_crop_composition.parquet \
+  --cdl-provenance /home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/cdl/hru_crop_provenance.json \
+  --destination data/phase34-cdl-2019
+
+PYTHONPATH=. .venv/bin/python scripts/run_phase34_south_fork_verification.py \
+  --experiment-bundle data/phase34-cdl-2019 \
+  --watershed-metadata /home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/delin/watershed_result.json \
+  --output-root data/phase34-verification --artifact-root data --timeout-seconds 1800
 ```
 
-Tras revisar que el preflight indique `READY`, repetir la misma petición cambiando la ruta a `/api/v1/simulations`. La corrida genera hidrología SWAT+ mensual y un sidecar diario independiente para FSPM/forcing. La configuración actual devuelve `BLOCKED` porque sus HRU activos manejan `agrl`; el comando no debe ejecutarse contra esa configuración.
+El preparador registra los checksums fuente y de la copia y valida que solo `hru-data.hru`, `landuse.lum`, `plant.ini` y `management.sch` cambien al construir la configuración. El runner ejecuta ambos brazos sobre workspaces separados, verifica hashes de entradas, salidas SWAT+ y sidecars, crea metadatos solo en SQLite temporal e invoca los endpoints FastAPI reales. No registra las corridas en PostgreSQL.
 
 ## Fixtures y verificación
 
@@ -133,7 +128,7 @@ El generador Pydantic añade distribuciones vegetales, cantidad de población y 
 
 ## Hallazgos de la base configurada (auditoría solo lectura, 2026-09-24)
 
-La auditoría de 2026-09-24 encontró seis corridas de dos propietarios. Una línea base `SWAT_STANDARD_BASELINE` dispone de 365 registros diarios íntegros (2018), hidrología y 36 IDs HRU; no tiene cultivo/FSPM. Una importación South Fork v2 tiene resultados históricos agregados sin manifiesto v1. Otras cuatro corridas carecen de manifiesto v1. No hay trayectoria FSPM diaria accesible en esa base. La lista API ahora pagina por propietario y el cliente consume todas las páginas de 100.
+La auditoría de solo lectura de la base PostgreSQL configurada encontró seis corridas de dos propietarios. Una línea base `SWAT_STANDARD_BASELINE` dispone de 365 registros diarios íntegros (2018), hidrología y 36 IDs HRU; no tiene cultivo/FSPM. Una importación South Fork v2 tiene resultados históricos agregados sin manifiesto v1. Otras cuatro corridas carecen de manifiesto v1. Ninguna de esas seis filas contiene una trayectoria FSPM diaria acoplada accesible. La verificación local 2019 descrita arriba es una nueva ejecución real del motor, pero no una fila de esa base. La lista API pagina por propietario y el cliente consume todas las páginas de 100.
 
 La importación histórica existente presenta indicadores de cinco defectos heredados: percolación fija 142.50, cierre cero no calculado, humedad derivada de `soil_water_mm/10`, biomasa etiquetada `kg/m²` pese al esquema `g/plant`, y etiqueta de calibración pese al informe v2 (`NOT_OPTIMIZED`, ningún parámetro ajustado). `backend/scripts/populate_swat_simulations.py` hace auditoría de solo lectura por defecto y ya no crea estos valores en futuras importaciones. La reparación de la fila existente **no se ejecuta automáticamente**. Procedimiento reversible: exportar JSON completo de la fila y hashes v2, identificar el ID en la auditoría, preparar un parche de campos JSON con valores `null` y claves de razón, revisar el diff, ejecutar una transacción explícita con copia de seguridad y verificar de nuevo; conservar rollback documentado. No editar los archivos v2.
 

@@ -6,7 +6,7 @@ project, failed process, or missing output is always represented by a typed erro
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import date
 import hashlib
 import os
@@ -39,6 +39,10 @@ class SwatProjectNotFoundError(SwatPlusError):
 
 class SwatProjectInvalidError(SwatPlusError):
     code = "SWAT_PROJECT_INVALID"
+
+
+class SwatCoupledPreflightBlockedError(SwatPlusError):
+    code = "SWAT_COUPLED_PREFLIGHT_BLOCKED"
 
 
 class SwatRunFailedError(SwatPlusError):
@@ -81,6 +85,43 @@ class SwatPlusRunConfig:
             raise SwatProjectInvalidError("run_id and watershed_id are required")
         if self.timeout_seconds <= 0:
             raise SwatProjectInvalidError("timeout_seconds must be positive")
+
+
+def swat_run_config_from_request(
+    requested: dict[str, Any], *, simulation_start: date, simulation_end: date,
+    watershed_id: str, run_id: str, run_type: str | None = None,
+    outlet_unit: str | None = None,
+) -> SwatPlusRunConfig:
+    """Build one SWAT contract consistently for preflight and execution."""
+    from app.core.config import settings
+
+    return SwatPlusRunConfig(
+        project_path=Path(requested.get("project_path") or settings.SWAT_PLUS_PROJECT_DIR),
+        executable_path=Path(requested.get("executable_path") or settings.SWAT_PLUS_EXECUTABLE),
+        working_directory=Path(requested.get("working_directory") or settings.SWAT_PLUS_WORKING_DIRECTORY),
+        simulation_start=simulation_start,
+        simulation_end=simulation_end,
+        warmup_period=requested.get("warmup_period", 0),
+        output_frequency=requested.get("output_frequency", "DAILY"),
+        watershed_id=watershed_id,
+        run_id=run_id,
+        timeout_seconds=requested.get("timeout_seconds", settings.SWAT_PLUS_TIMEOUT_SECONDS),
+        run_type=run_type or requested.get("run_type", "SWAT_STANDARD_BASELINE"),
+        outlet_unit=requested.get("outlet_unit") or outlet_unit
+        or ("153" if "05451210" in watershed_id else None),
+    )
+
+
+def require_coupled_preflight_ready(preflight: dict[str, Any]) -> None:
+    """Stop before running SWAT+ when the exact crop/forcing contract is blocked."""
+    if preflight.get("status") != "READY":
+        raise SwatCoupledPreflightBlockedError(
+            "SWAT+ coupled run failed its pre-execution scientific preflight",
+            details={
+                "preflight": preflight,
+                "blockers": preflight.get("blockers", []),
+            },
+        )
 
 
 @dataclass(frozen=True)
@@ -419,7 +460,8 @@ class SwatPlusAdapter:
         return revision[:500] if revision else None
 
     def run(self, config: SwatPlusRunConfig | None = None, timeout_seconds: int | None = None,
-            workspace_mutator: Callable[[Path], dict[str, Any]] | None = None) -> SwatRunResult:
+            workspace_mutator: Callable[[Path], dict[str, Any]] | None = None,
+            target_crop: str = "corn") -> SwatRunResult:
         """Execute one real run; an optional mutator may edit only its copied inputs."""
         if config is None:
             # Compatibility only; normal application calls always provide the
@@ -432,6 +474,8 @@ class SwatPlusAdapter:
                 timeout_seconds=timeout_seconds or 3600,
             )
         input_directory = self._validate_resources(config)
+        if config.run_type == "SWAT_MULTISCALE_COUPLED" and workspace_mutator is None:
+            require_coupled_preflight_ready(self.preflight(config, target_crop=target_crop))
         source_root = config.project_path.resolve()
         workspace_root = config.working_directory.resolve()
         workspace_root.mkdir(parents=True, exist_ok=True)
@@ -465,6 +509,14 @@ class SwatPlusAdapter:
                 workspace_modifications = workspace_mutator(run_directory)
             except Exception as exc:
                 raise SwatProjectInvalidError("Coupled SWAT+ input preparation failed", details={"workspace": str(workspace), "message": str(exc)}) from exc
+        if config.run_type == "SWAT_MULTISCALE_COUPLED":
+            # Re-check the effective, isolated inputs after any caller-specific
+            # crop setup and immediately before the scientific process starts.
+            effective_config = replace(config, project_path=workspace)
+            effective_preflight = self.preflight(effective_config, target_crop=target_crop)
+            if effective_preflight.get("status") != "READY":
+                shutil.rmtree(workspace)
+                require_coupled_preflight_ready(effective_preflight)
         input_checksums_after_mutator = self._input_checksums(run_directory)
         changed_input_files = sorted(name for name, before in input_checksums_before_mutator.items()
                                      if input_checksums_after_mutator.get(name) != before)

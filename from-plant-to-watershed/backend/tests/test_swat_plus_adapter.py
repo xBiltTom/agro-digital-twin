@@ -2,6 +2,7 @@ from datetime import date
 import os
 from pathlib import Path
 import hashlib
+from unittest.mock import Mock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -12,6 +13,7 @@ from app.models.simulation import ClimateScenario, SimulationRun
 from app.models.user import User
 from app.models.watershed import Watershed
 from app.services.swat_plus_adapter import (
+    SwatCoupledPreflightBlockedError,
     SwatExecutableNotFoundError,
     SwatOutputNotFoundError,
     SwatPlusAdapter,
@@ -83,7 +85,6 @@ def test_read_only_preflight_distinguishes_baseline_capability_from_coupled_crop
     assert baseline["storage_estimate"]["minimum_workspace_copy_bytes"] == baseline["storage_estimate"]["source_project_bytes"]
     assert not (tmp_path / "workspaces").exists()
 
-
     # This valid generic-agriculture schedule is not evidence that corn is the
     # active modeled crop. Preflight must block before copying or running SWAT+.
     (project / "hru-data.hru").write_text("hru\nheader\n1 hru01 sub soil profile agrl_lum\n", encoding="utf-8")
@@ -103,6 +104,30 @@ def test_read_only_preflight_distinguishes_baseline_capability_from_coupled_crop
     assert coupled["blockers"][0]["code"] == "COUPLED_CROP_CONFIGURATION_INVALID"
     assert "does not plant target crop 'corn'" in coupled["blockers"][0]["message"]
     assert not (tmp_path / "workspaces").exists()
+
+
+def test_adapter_rechecks_coupled_crop_preflight_before_process_and_cleans_failed_copy(tmp_path: Path):
+    project = _project(tmp_path)
+    process_marker = tmp_path / "process-started"
+    executable = _executable(tmp_path, f"touch {process_marker}\nexit 0")
+    config = SwatPlusRunConfig(
+        **{**_config(tmp_path, project, executable, "coupled-recheck").__dict__,
+           "run_type": "SWAT_MULTISCALE_COUPLED"}
+    )
+    adapter = SwatPlusAdapter(executable, project, tmp_path / "workspaces")
+    responses = iter((
+        {"status": "READY", "blockers": []},
+        {"status": "BLOCKED", "blockers": [{"code": "COUPLED_CROP_CONFIGURATION_INVALID"}]},
+    ))
+    adapter.preflight = Mock(side_effect=lambda *_args, **_kwargs: next(responses))
+
+    with pytest.raises(SwatCoupledPreflightBlockedError) as raised:
+        adapter.run(config, target_crop="corn")
+
+    assert raised.value.code == "SWAT_COUPLED_PREFLIGHT_BLOCKED"
+    assert adapter.preflight.call_count == 2
+    assert not process_marker.exists()
+    assert not (tmp_path / "workspaces" / config.run_id).exists()
 
 
 def test_streamflow_volume_requires_complete_daily_rates_and_preserves_zero():

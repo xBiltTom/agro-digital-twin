@@ -44,6 +44,12 @@ export interface SimulationAvailability {
   simulation_status: string;
   run_type: string;
   origin: "EXECUTED" | "HISTORICAL_IMPORT" | "UNKNOWN";
+  provenance_class:
+    | "SWAT_EXECUTED"
+    | "COUPLED_EXECUTED"
+    | "HISTORICAL_IMPORT"
+    | "SIMPLIFIED"
+    | "UNKNOWN";
   stored_hydrology_available: boolean;
   stored_fspm_summary_available: boolean;
   stored_fspm_trajectory_available: boolean;

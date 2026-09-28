@@ -199,7 +199,8 @@ async def test_availability_endpoint_owner_and_filtered_pagination(tmp_path, mon
                     name="Historical import", status="COMPLETED", duration_days=1, seed=7,
                     requested_config={"swat_plus": {"run_type": "SWAT_MULTISCALE_COUPLED"}},
                     effective_config={"output_frequency": "MONTHLY"},
-                    provenance={"source_kind": "HISTORICAL_IMPORT", "schema_version": "south-fork-final-v2"},
+                    provenance={"experiment_id": "south-fork-final-coupled-2015-2020",
+                                "evidence_type": "REAL_SWAT_PLUS", "schema_version": "south-fork-final-v2"},
                     validation={"temporal_resolution": "monthly"}, monthly_outputs=imported_records),
                 SimulationRun(user_id=owner.id, watershed_id=watershed.id, scenario_id=scenario.id,
                     name="Executed baseline", status="COMPLETED", duration_days=1, seed=8,
@@ -221,14 +222,17 @@ async def test_availability_endpoint_owner_and_filtered_pagination(tmp_path, mon
             owner_headers = {"Authorization": f"Bearer {create_access_token(owner_id)}"}
             outsider_headers = {"Authorization": f"Bearer {create_access_token(outsider_id)}"}
             assert (await client.get(path, headers=owner_headers)).json()["codes"] == ["HISTORICAL_REFERENCE", "NO_PLAYBACK_ARTIFACT"]
+            assert (await client.get(path, headers=owner_headers)).json()["provenance_class"] == "HISTORICAL_IMPORT"
             assert (await client.get(path, headers=outsider_headers)).status_code == 404
             historical_response = await client.get(f"/api/v1/simulations/{historic_id}/swat-results", headers=owner_headers)
             assert historical_response.status_code == 200
             assert historical_response.json()["origin"] == "HISTORICAL_IMPORT"
+            assert historical_response.json()["provenance_class"] == "HISTORICAL_IMPORT"
             assert historical_response.json()["temporal_resolution"] == "monthly"
             assert historical_response.json()["records"] == imported_records
             executed_response = await client.get(f"/api/v1/simulations/{executed_id}/swat-results", headers=owner_headers)
             assert executed_response.status_code == 200 and executed_response.json()["origin"] == "EXECUTED"
+            assert executed_response.json()["provenance_class"] == "SWAT_EXECUTED"
             incompatible_response = await client.get(f"/api/v1/simulations/{incompatible_id}/swat-results", headers=owner_headers)
             assert incompatible_response.status_code == 409
             empty_response = await client.get(f"/api/v1/simulations/{empty_id}/swat-results", headers=owner_headers)

@@ -68,6 +68,9 @@ class SimulationAvailability(BaseModel):
     simulation_status: str
     run_type: str
     origin: Literal["EXECUTED", "HISTORICAL_IMPORT", "UNKNOWN"]
+    provenance_class: Literal[
+        "SWAT_EXECUTED", "COUPLED_EXECUTED", "HISTORICAL_IMPORT", "SIMPLIFIED", "UNKNOWN"
+    ] = "UNKNOWN"
     stored_hydrology_available: bool = False
     stored_fspm_summary_available: bool = False
     stored_fspm_trajectory_available: bool = False

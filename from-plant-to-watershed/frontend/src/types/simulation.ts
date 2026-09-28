@@ -265,6 +265,7 @@ export interface SwatRunProvenance {
 export interface SwatResultsResponse {
   status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
   origin: "EXECUTED" | "HISTORICAL_IMPORT";
+  provenance_class: "SWAT_EXECUTED" | "COUPLED_EXECUTED" | "HISTORICAL_IMPORT";
   run_id: string;
   temporal_resolution: string | null;
   records: SwatRecord[];

@@ -235,6 +235,7 @@ test("historical charts appear only for completed runs without a playback artifa
 test("historical SWAT import charts preserve stored periods and identify the import origin", () => {
   const response: SwatResultsResponse = {
     status: "COMPLETED", origin: "HISTORICAL_IMPORT", run_id: "historical-v2",
+    provenance_class: "HISTORICAL_IMPORT",
     temporal_resolution: "monthly", records: [{ period: "2018-01-01", streamflow_m3s: 0, runoff_mm: 1.2,
       evapotranspiration_mm: 3.4, percolation_mm: null, soil_water_mm: 158 }],
     hru_results: [], water_balance: null,
@@ -253,6 +254,7 @@ test("first-crop navigation uses only the selected resolution's representable st
   const availability: SimulationAvailability = {
     simulation_id: "fixture-coupled", simulation_name: "fixture", simulation_status: "COMPLETED",
     run_type: "SWAT_MULTISCALE_COUPLED", origin: "EXECUTED" as const,
+    provenance_class: "COUPLED_EXECUTED",
     stored_hydrology_available: true, stored_fspm_summary_available: true,
     stored_fspm_trajectory_available: true, stored_fspm_samples_available: true, fspm_results_available: true,
     available_resolutions: ["MONTHLY", "DAILY"], codes: [], limitations: [],
@@ -305,6 +307,7 @@ test("Pydantic generated fixtures feed the official visual adapter and current 3
   assert.equal(adaptPlaybackVisual(null, { simulationId: "fixture-historical", availability: {
     simulation_id: "fixture-historical", simulation_name: "Historical", simulation_status: "COMPLETED",
     run_type: "SWAT_MULTISCALE_COUPLED", origin: "HISTORICAL_IMPORT",
+    provenance_class: "HISTORICAL_IMPORT",
     stored_hydrology_available: true, stored_fspm_summary_available: true,
     stored_fspm_trajectory_available: false, stored_fspm_samples_available: false,
     fspm_results_available: true, available_resolutions: [],

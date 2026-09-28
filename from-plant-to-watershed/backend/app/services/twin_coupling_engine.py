@@ -1,6 +1,7 @@
 """Application adapter between SQLAlchemy persistence and the pure scientific core."""
 
 from collections import Counter
+import copy
 from datetime import date, datetime, timedelta, timezone
 import math
 from pathlib import Path
@@ -16,7 +17,11 @@ from app.models.observation import Dataset, DatasetArtifact, StreamflowObservati
 from app.models.external_model import ExternalModel
 from app.models.watershed import Watershed
 from app.services.external_model_bundle import ExternalModelBundleAdapter
-from app.services.swat_plus_adapter import SwatPlusAdapter, SwatPlusRunConfig
+from app.services.swat_plus_adapter import (
+    SwatPlusAdapter,
+    require_coupled_preflight_ready,
+    swat_run_config_from_request,
+)
 from app.services.swat_plant_parameter_mapper import SwatClimateForcingReader, SwatPlantParameterMapper, SwatPlantMappingError
 from app.services.playback_artifact import PlaybackArtifactStore
 from app.services.playback_builder import simplified_frames, swat_frames
@@ -52,6 +57,53 @@ def _daily_streamflow_volume_hm3(records: list[dict], water_balance: dict, frequ
     if not flows or any(not isinstance(flow, (int, float)) or not math.isfinite(flow) for flow in flows):
         return None, "One or more daily outlet discharge values are missing or invalid"
     return sum(float(flow) * 86400.0 for flow in flows) / 1_000_000.0, None
+
+
+def _build_coupling_field_summary(
+    dated_fields: list[tuple[str, dict[str, Any]]],
+    seasonal_lai_contracts: list[dict[str, Any]], *,
+    climate_provenance: dict[str, Any], season_provenance: dict[str, Any],
+    growth_temperature_base_c: float,
+) -> dict[str, Any]:
+    """Build mapper inputs without mutating any date-specific FSPM field state."""
+    if not dated_fields or not seasonal_lai_contracts:
+        raise ValueError("FSPM seasonal field states and LAI contracts are required for SWAT+ coupling")
+
+    peak_lai_date, peak_lai_field = max(dated_fields, key=lambda item: item[1]["mean_LAI"])
+    peak_height_date, peak_height_field = max(
+        dated_fields, key=lambda item: item[1]["plant_height_mean_m"]
+    )
+    peak_root_date, peak_root_field = max(
+        dated_fields, key=lambda item: item[1]["root_depth_mean_m"]
+    )
+    summary = copy.deepcopy(peak_lai_field)
+    summary["plant_height_mean_m"] = peak_height_field["plant_height_mean_m"]
+    summary["root_depth_mean_m"] = peak_root_field["root_depth_mean_m"]
+    summary["peak_dates"] = {
+        "date_of_peak_LAI": peak_lai_date,
+        "date_of_peak_height": peak_height_date,
+        "date_of_peak_root_depth": peak_root_date,
+    }
+    summary["seasonal_maxima"] = {
+        "LAI": {"value": peak_lai_field["mean_LAI"], "unit": "m2_leaf/m2_ground", "date": peak_lai_date},
+        "height_m": {"value": peak_height_field["plant_height_mean_m"], "unit": "m", "date": peak_height_date},
+        "root_depth_m": {"value": peak_root_field["root_depth_mean_m"], "unit": "m", "date": peak_root_date},
+    }
+    summary["summary_semantics"] = "SEASONAL_MAXIMA_FOR_COUPLING_NOT_A_DATED_FSPM_STATE"
+    summary["swat_lai_contract"] = {
+        key: fmean(contract[key] for contract in seasonal_lai_contracts)
+        for key in ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl")
+    }
+    summary["swat_lai_contract"].update({
+        "season_count": len(seasonal_lai_contracts),
+        "derivation": "mean of SWAT auto-management PHU-derived SIMPLIFIED_FSPM seasonal LAI contracts",
+    })
+    summary["aggregation_window"] = "SWAT auto-management PHU-derived approximate crop-season trajectories"
+    summary["climate_provenance"] = copy.deepcopy(climate_provenance)
+    summary["season_provenance"] = copy.deepcopy(season_provenance)
+    summary["fspm_growth_temperature_base_c"] = growth_temperature_base_c
+    summary["fspm_growth_temperature_base_source"] = "plants.plt.tmp_base"
+    return summary
 
 
 class TwinCouplingEngine:
@@ -107,17 +159,9 @@ class TwinCouplingEngine:
                                      observation_source: str | None = None) -> None:
         """Execute SWAT+ without leaking project/process details into the engine."""
         requested_swat = (sim_run.requested_config or {}).get("swat_plus") or {}
-        config = SwatPlusRunConfig(
-            project_path=Path(requested_swat.get("project_path") or settings.SWAT_PLUS_PROJECT_DIR),
-            executable_path=Path(requested_swat.get("executable_path") or settings.SWAT_PLUS_EXECUTABLE),
-            working_directory=Path(requested_swat.get("working_directory") or settings.SWAT_PLUS_WORKING_DIRECTORY),
-            simulation_start=sim_run.start_date, simulation_end=sim_run.end_date,
-            warmup_period=requested_swat.get("warmup_period", 0),
-            output_frequency=requested_swat.get("output_frequency", "DAILY"),
+        config = swat_run_config_from_request(
+            requested_swat, simulation_start=sim_run.start_date, simulation_end=sim_run.end_date,
             watershed_id=watershed.code, run_id=sim_run.id,
-            timeout_seconds=requested_swat.get("timeout_seconds", settings.SWAT_PLUS_TIMEOUT_SECONDS),
-            run_type=requested_swat.get("run_type", "SWAT_STANDARD_BASELINE"),
-            outlet_unit=requested_swat.get("outlet_unit") or ("153" if "05451210" in (watershed.code or "") else None),
         )
         result = SwatPlusAdapter().run(config)
         climate, climate_provenance = TwinCouplingEngine._baseline_forcing(Path(result.workspace), sim_run.start_date, sim_run.end_date)
@@ -183,12 +227,20 @@ class TwinCouplingEngine:
                                     observation_source: str | None = None) -> None:
         """One-way FSPM -> documented SWAT+ crop inputs -> real SWAT+ execution."""
         requested_swat = (sim_run.requested_config or {}).get("swat_plus") or {}
-        source_project = Path(requested_swat.get("project_path") or settings.SWAT_PLUS_PROJECT_DIR)
+        target_crop = requested_swat.get("target_plant_name", "corn")
+        config = swat_run_config_from_request(
+            requested_swat, simulation_start=sim_run.start_date, simulation_end=sim_run.end_date,
+            watershed_id=watershed.code, run_id=sim_run.id, run_type="SWAT_MULTISCALE_COUPLED",
+        )
+        adapter = SwatPlusAdapter(config.executable_path, config.project_path, config.working_directory)
+        initial_preflight = adapter.preflight(config, target_crop=target_crop)
+        require_coupled_preflight_ready(initial_preflight)
+        source_project = config.project_path
         source_weather_directory = source_project / "TxtInOut" if (source_project / "TxtInOut" / "file.cio").is_file() else source_project
         climate, climate_provenance = SwatClimateForcingReader(source_weather_directory).for_period(sim_run.start_date, sim_run.end_date)
         population = PlantPopulation(count=sim_run.plant_count, seed=sim_run.seed, crop="maize")
         season = SwatCropChainDiagnostic.auto_management_season(
-            source_weather_directory, target_crop=requested_swat.get("target_plant_name", "corn")
+            source_weather_directory, target_crop=target_crop
         )
         season_windows = season.windows(
             sim_run.start_date, sim_run.end_date, (forcing["temp_c"] for forcing in climate),
@@ -201,9 +253,9 @@ class TwinCouplingEngine:
         }
         # Thermal time and absorbed radiation reset only when the traceable
         # auto-management approximation opens a crop season, never at Jan 1.
-        gdd, absorbed_par, peak_field, plants = 0.0, 0.0, None, ()
-        peak_height, peak_root, peak_dates = None, None, {}
+        gdd, absorbed_par, peak_lai_value, peak_lai_plants = 0.0, 0.0, None, ()
         fields_by_season: dict[str, list[dict[str, Any]]] = {}
+        dated_fields: list[tuple[str, dict[str, Any]]] = []
         fspm_days: dict[str, dict] = {}
         for index, forcing in enumerate(climate, 1):
             current_date = date.fromisoformat(forcing["date"])
@@ -227,7 +279,7 @@ class TwinCouplingEngine:
                          "phenological_stage": Counter(plant.phenological_stage for plant in current_plants).most_common(1)[0][0],
                          "window_status": window["status"], "source": "SWAT auto-management PHU window approximation",
                          "limitation": "Approximate planting/harvest; executed SWAT+ event dates unavailable"},
-                "field": current_field,
+                "field": copy.deepcopy(current_field),
                 "plants": sampled_plants,
                 "plant_sample_context": {
                     "population_count": len(current_plants),
@@ -240,43 +292,26 @@ class TwinCouplingEngine:
             # PAR is 48% of shortwave radiation; green-canopy interception is
             # already represented by the FSPM Beer-Lambert cover calculation.
             absorbed_par += max(0.0, forcing["solar_rad_mj"]) * .48 * current_field["canopy_cover"]
-            fields_by_season.setdefault(window["start_date"], []).append(current_field)
-            if peak_field is None or current_field["mean_LAI"] > peak_field["mean_LAI"]:
-                peak_field, plants = current_field, current_plants
-                peak_dates["date_of_peak_LAI"] = current_date.isoformat()
-            if peak_height is None or current_field["plant_height_mean_m"] > peak_height["plant_height_mean_m"]:
-                peak_height = current_field
-                peak_dates["date_of_peak_height"] = current_date.isoformat()
-            if peak_root is None or current_field["root_depth_mean_m"] > peak_root["root_depth_mean_m"]:
-                peak_root = current_field
-                peak_dates["date_of_peak_root_depth"] = current_date.isoformat()
+            fields_by_season.setdefault(window["start_date"], []).append(copy.deepcopy(current_field))
+            dated_fields.append((current_date.isoformat(), copy.deepcopy(current_field)))
+            if peak_lai_value is None or current_field["mean_LAI"] > peak_lai_value:
+                peak_lai_value = current_field["mean_LAI"]
+                peak_lai_plants = current_plants
         seasonal_contracts = [PlantToFieldAggregator.seasonal_lai_contract(rows) for rows in fields_by_season.values() if len(rows) >= 3 and max(row["mean_LAI"] for row in rows) > 0]
         if not seasonal_contracts:
             raise ValueError("FSPM produced no seasonal LAI trajectory for SWAT+ coupling")
-        field = peak_field
-        field["plant_height_mean_m"] = peak_height["plant_height_mean_m"]
-        field["root_depth_mean_m"] = peak_root["root_depth_mean_m"]
-        field["swat_lai_contract"] = {key: fmean(contract[key] for contract in seasonal_contracts)
-                                      for key in ("lai_pot", "frac_hu1", "lai_max1", "frac_hu2", "lai_max2", "hu_lai_decl")}
-        field["swat_lai_contract"]["season_count"] = len(seasonal_contracts)
-        field["swat_lai_contract"]["derivation"] = "mean of SWAT auto-management PHU-derived SIMPLIFIED_FSPM seasonal LAI contracts"
-        field["aggregation_window"] = "SWAT auto-management PHU-derived approximate crop-season trajectories"
-        field["peak_dates"] = peak_dates
-        field["climate_provenance"] = climate_provenance
-        field["season_provenance"] = season.provenance(season_windows)
-        field["fspm_growth_temperature_base_c"] = season.crop_temperature_base_c
-        field["fspm_growth_temperature_base_source"] = "plants.plt.tmp_base"
-        mapper = SwatPlantParameterMapper(requested_swat.get("target_plant_name", "corn"))
-        config = SwatPlusRunConfig(
-            project_path=source_project, executable_path=Path(requested_swat.get("executable_path") or settings.SWAT_PLUS_EXECUTABLE),
-            working_directory=Path(requested_swat.get("working_directory") or settings.SWAT_PLUS_WORKING_DIRECTORY),
-            simulation_start=sim_run.start_date, simulation_end=sim_run.end_date, warmup_period=requested_swat.get("warmup_period", 0),
-            output_frequency=requested_swat.get("output_frequency", "DAILY"), watershed_id=watershed.code, run_id=sim_run.id,
-            timeout_seconds=requested_swat.get("timeout_seconds", settings.SWAT_PLUS_TIMEOUT_SECONDS),
-            run_type="SWAT_MULTISCALE_COUPLED",
-            outlet_unit=requested_swat.get("outlet_unit") or ("153" if "05451210" in (watershed.code or "") else None),
+        season_provenance = season.provenance(season_windows)
+        field = _build_coupling_field_summary(
+            dated_fields, seasonal_contracts, climate_provenance=climate_provenance,
+            season_provenance=season_provenance,
+            growth_temperature_base_c=season.crop_temperature_base_c,
         )
-        result = SwatPlusAdapter().run(config, workspace_mutator=lambda workspace: mapper.apply(workspace, field))
+        peak_dates = field["peak_dates"]
+        mapper = SwatPlantParameterMapper(target_crop)
+        result = adapter.run(
+            config, workspace_mutator=lambda workspace: mapper.apply(workspace, field),
+            target_crop=target_crop,
+        )
         effective_climate, _ = TwinCouplingEngine._baseline_forcing(Path(result.workspace), sim_run.start_date, sim_run.end_date)
         if effective_climate is None or any(
             any(left.get(key) != right.get(key) for key in ("date", "temp_c", "precip_mm", "solar_rad_mj", "rh_percent"))
@@ -323,7 +358,7 @@ class TwinCouplingEngine:
         sim_run.monthly_outputs = result.records
         sim_run.hru_aggregates = {"status": "AVAILABLE" if result.hru_results else "NOT_AVAILABLE", "results": result.hru_results, "parameter_mapping": manifest}
         sim_run.field_aggregates = field
-        representative_plants = population.representative_sample(plants)
+        representative_plants = population.representative_sample(peak_lai_plants)
         sim_run.plant_sample = [vars(plant) for plant in representative_plants]
         sim_run.provenance = {**sim_run.provenance, "plant_sample_context": {
             "population_count": population.count, "captured_count": len(representative_plants),

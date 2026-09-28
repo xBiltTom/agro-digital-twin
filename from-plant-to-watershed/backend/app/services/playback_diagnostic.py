@@ -12,6 +12,11 @@ from app.schemas.playback_diagnostic import (
     ResolutionAvailability, SimulationAvailability,
 )
 from app.services.playback_artifact import PlaybackArtifactStore
+from app.services.simulation_provenance import (
+    SimulationProvenanceClass,
+    classify_simulation_provenance,
+    public_origin,
+)
 
 
 def _present(group: dict, name: str) -> bool:
@@ -149,12 +154,13 @@ def diagnose_simulation(sim, *, on: date | None = None) -> SimulationAvailabilit
     provenance = sim.provenance or {}
     requested = sim.requested_config or {}
     run_type = (requested.get("swat_plus") or {}).get("run_type") or (sim.effective_config or {}).get("run_type") or "RESEARCH_MULTISCALE"
-    historical = provenance.get("source_kind") == "HISTORICAL_IMPORT" or provenance.get("experiment_id") == "south-fork-final-coupled-2015-2020"
+    provenance_class = classify_simulation_provenance(sim)
     metrics = getattr(sim, "summary_metrics", None) or {}
     hydro_keys = ("total_runoff_mm", "total_evapotranspiration_mm", "mean_streamflow_m3s", "water_balance")
     result = SimulationAvailability(simulation_id=sim.id, simulation_name=sim.name,
         simulation_status=sim.status, run_type=run_type,
-        origin="HISTORICAL_IMPORT" if historical else "EXECUTED" if provenance.get("evidence_type") else "UNKNOWN",
+        origin=public_origin(provenance_class),
+        provenance_class=provenance_class.value,
         stored_hydrology_available=bool(getattr(sim, "monthly_outputs", None) or any(metrics.get(key) is not None for key in hydro_keys)),
         stored_fspm_summary_available=_has_fspm_summary(getattr(sim, "field_aggregates", None)),
         stored_fspm_samples_available=_has_individual_samples(getattr(sim, "plant_sample", None)))
@@ -249,7 +255,7 @@ def diagnose_simulation(sim, *, on: date | None = None) -> SimulationAvailabilit
     result.fspm_results_available = (result.stored_fspm_summary_available or
         result.stored_fspm_trajectory_available or result.stored_fspm_samples_available)
     if not result.resolutions:
-        if historical:
+        if provenance_class is SimulationProvenanceClass.HISTORICAL_IMPORT:
             result.codes.extend([C.HISTORICAL_REFERENCE, C.NO_PLAYBACK_ARTIFACT])
         else:
             result.codes.append(C.NO_PLAYBACK_ARTIFACT)

@@ -5,6 +5,7 @@ import pytest
 
 from app.services.swat_plant_parameter_mapper import SwatPlantParameterMapper
 from app.services.swat_crop_chain_diagnostic import SwatAutoManagementSeason
+from app.services.twin_coupling_engine import _build_coupling_field_summary
 from scientific_core import PlantPopulation, PlantToFieldAggregator
 from scientific_core.units import ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT
 
@@ -81,6 +82,43 @@ def test_seasonal_lai_contract_is_ordered_and_physically_bounded():
     assert 0 < contract["frac_hu1"] < contract["frac_hu2"] < contract["hu_lai_decl"] <= 1
     assert 0 < contract["lai_max1"] < contract["lai_max2"] <= 1
     assert contract["lai_pot"] > 0
+
+
+def test_coupling_maxima_keep_their_own_dates_and_do_not_mutate_daily_states():
+    dated_fields = [
+        ("2020-08-10", {"mean_LAI": 4.2, "plant_height_mean_m": 1.2, "root_depth_mean_m": 0.45,
+                        "daily_tag": {"date": "2020-08-10"}}),
+        ("2020-08-18", {"mean_LAI": 3.8, "plant_height_mean_m": 2.1, "root_depth_mean_m": 0.62,
+                        "daily_tag": {"date": "2020-08-18"}}),
+        ("2020-08-25", {"mean_LAI": 3.1, "plant_height_mean_m": 1.9, "root_depth_mean_m": 0.91,
+                        "daily_tag": {"date": "2020-08-25"}}),
+    ]
+    original_daily_fields = [
+        (field_date, {**field, "daily_tag": dict(field["daily_tag"])})
+        for field_date, field in dated_fields
+    ]
+    contracts = [{
+        "lai_pot": 4.2, "frac_hu1": .18, "lai_max1": .16,
+        "frac_hu2": .48, "lai_max2": .86, "hu_lai_decl": .76,
+    }]
+
+    coupling_summary = _build_coupling_field_summary(
+        dated_fields, contracts, climate_provenance={"source": "fixture"},
+        season_provenance={"season_windows": []}, growth_temperature_base_c=8.0,
+    )
+
+    assert dated_fields == original_daily_fields
+    assert coupling_summary["mean_LAI"] == 4.2
+    assert coupling_summary["plant_height_mean_m"] == 2.1
+    assert coupling_summary["root_depth_mean_m"] == .91
+    assert coupling_summary["peak_dates"] == {
+        "date_of_peak_LAI": "2020-08-10",
+        "date_of_peak_height": "2020-08-18",
+        "date_of_peak_root_depth": "2020-08-25",
+    }
+    assert coupling_summary["seasonal_maxima"]["root_depth_m"]["date"] == "2020-08-25"
+    assert coupling_summary["summary_semantics"] == "SEASONAL_MAXIMA_FOR_COUPLING_NOT_A_DATED_FSPM_STATE"
+    assert coupling_summary["daily_tag"]["date"] == "2020-08-10"
 
 
 def test_multiyear_seasons_reset_all_computed_crop_state_without_replacing_population():
