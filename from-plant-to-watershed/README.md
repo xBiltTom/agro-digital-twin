@@ -148,14 +148,19 @@ migraciones SQL versionadas de `backend/migrations/` de manera no destructiva y
 registra cada archivo en `schema_migrations`. Respaldar la base antes de una
 actualización sigue siendo una práctica obligatoria.
 
-La aplicación local usa la instancia PostgreSQL existente y la base `digitaltwin`.
+La aplicación local usa el servicio PostgreSQL del sistema, por el socket
+`/run/postgresql` en el puerto `5432`, con el rol y la base `digitaltwin`. Si tu
+rol o método de autenticación son distintos, configura `DATABASE_URL` en
+`backend/.env`. Comprueba la conexión con `pg_isready` y
+`psql -h /run/postgresql -p 5432 -U digitaltwin -d digitaltwin`. No ejecutes
+`backend/scripts/start_local_postgres.sh`, porque ese script crea un clúster
+separado dentro del proyecto.
+
 El playback operativo está en `playback_frames` (JSONB), con clave por simulación,
 resolución y fecha. SQLite se conserva únicamente en pruebas aisladas y como
-formato histórico de importación. Para iniciar la instancia local existente y
-la API:
+formato histórico de importación. Para iniciar la API:
 
 ```bash
-backend/scripts/start_local_postgres.sh
 cd backend
 venv/bin/uvicorn app.main:app
 ```
@@ -217,7 +222,6 @@ migraciones y aislamiento de SQLite. No se fijan conteos de tests en este README
 
 ```bash
 cd backend
-bash scripts/start_local_postgres.sh
 python -m app.cli bootstrap-mvp
 uvicorn app.main:app --reload --port 8000
 ```

@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # Tests may explicitly override this with an isolated SQLite database.
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+asyncpg:///digitaltwin?host=/tmp/from-plant-to-watershed-pg&port=55432"
+        "postgresql+asyncpg://digitaltwin@/digitaltwin?host=/run/postgresql&port=5432"
     )
     
     # CORS
