@@ -27,6 +27,15 @@ artifacts/
         └── metrics.json
 ```
 
+`metadata.json` identifica además `target_name`, `target_unit`, `feature_order`,
+`feature_units`, `dataset_id`, `dataset_period`, `dataset_source_kind`,
+`artifact_classification`, `validation_strategy` y `dataset_limitations`. La
+clasificación no es fija: el demo sintético se marca como
+`SYNTHETIC_DEVELOPMENT_ARTIFACT`; los bundles entrenados con resultados South
+Fork se marcan como `SWAT_FSPM_SIMULATION_RESULTS` y
+`simulation_validation_only`. Estos últimos no deben interpretarse como
+modelos calibrados con observaciones de campo.
+
 ---
 
 ## 2. Consumo Directo en Python
@@ -36,6 +45,10 @@ from src.core.inference import ModelBundle
 
 # Carga del bundle campeón
 bundle = ModelBundle.load("artifacts/monthly_runoff_mm/champion")
+
+# El contrato real debe leerse del bundle; no reutilizar defaults del demo.
+print(bundle.metadata["feature_order"])
+print(bundle.metadata["artifact_classification"])
 
 # Inferencia sobre un payload de campo (Nivel Clima + Suelo + FSPM + Campo)
 payload = {
@@ -137,3 +150,46 @@ En el **Modo B (Residual Correction)**, el backend de FastAPI puede recibir la s
 $$\text{Runoff}_{\text{corrected}} = \text{Runoff}_{\text{SWAT\_baseline}} + \Delta_{\text{AI\_predicted}}$$
 
 El artefacto almacena si fue entrenado en modo `direct` o `residual` en su archivo `metadata.json`. El método `bundle.predict(payload)` detecta automáticamente el modo y efectúa la corrección.
+
+## 5. Procedencia y preparación de datos reales
+
+El laboratorio puede cargar un directorio de resultados mediante
+`AGRO_TWIN_ARTIFACT_DIR` (o `AGRO_TWIN_REAL_ARTIFACT_DIR`). El cargador exige
+el `manifest.json`, valida columnas, fechas e identificadores y mantiene las
+tablas basin, HRU, canales y FSPM separadas. Para el contrato mensual usa
+acumulaciones para flujos en mm/día, medias para temperatura y caudal en m³/s,
+y no convierte `soil_water_mm` a humedad volumétrica. Las variables FSPM que
+solo existen durante el cultivo permanecen faltantes fuera de ese periodo y no
+se imputan.
+
+South Fork 2019 contiene únicamente doce meses. Por ello el laboratorio
+permite su EDA y preparación, pero bloquea el entrenamiento hasta disponer de
+un periodo compatible de al menos 24 muestras mensuales; así no se presenta
+una validación temporal frágil como resultado de producción. La conexión
+posterior con FastAPI debe copiar el bundle sin cambiar sus metadatos y validar
+el payload contra `feature_schema.json`.
+
+## 6. Playback FastAPI y experimento diario
+
+La pestaña de entrenamiento puede consumir, en modo lectura, el catálogo de
+simulaciones y su playback diario mediante:
+
+- `POST /api/v1/auth/login` para obtener un token en memoria.
+- `GET /api/v1/simulations` con paginación `skip/limit`.
+- `GET /api/v1/simulations/{simulation_id}/availability`.
+- `GET /api/v1/simulations/{simulation_id}/playback` con paginación `offset/limit`.
+
+El cliente no persiste credenciales, tokens ni playback. La UI conserva el
+registro seleccionado del catálogo y no depende de un endpoint individual de
+simulación no confirmado.
+
+Para una fuente diaria se habilita `next_day_outlet_streamflow`. El pipeline:
+
+- construye lags disponibles únicamente hasta `issue_date`;
+- excluye saltos de calendario y usa `target_date = issue_date + 1 día`;
+- divide cronológicamente en TRAIN 60%, VALIDATION 20% y TEST 20%;
+- compara persistencia contra Random Forest, SVR y opcionalmente XGBoost;
+- exporta bundles bajo `artifacts/next_day_streamflow_m3s/` y un `experiment.json`.
+
+Estos bundles quedan clasificados como `EXPERIMENTAL_SIMULATION_ONLY` y no
+representan validación con observaciones de campo.

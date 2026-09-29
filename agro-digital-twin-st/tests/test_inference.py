@@ -55,6 +55,8 @@ def test_model_bundle_save_load_predict(tmp_path):
     assert loaded_bundle.target_name == "monthly_runoff_mm"
     assert loaded_bundle.mode == "direct"
     assert loaded_bundle.metadata["model_name"] == "Random Forest Regressor"
+    assert loaded_bundle.metadata["is_synthetic_training_data"] is True
+    assert loaded_bundle.metadata["artifact_classification"] == "SYNTHETIC_DEVELOPMENT_ARTIFACT"
 
     # Single payload prediction
     sample_payload = {f.name: 25.0 for f in schema.features}
@@ -67,6 +69,44 @@ def test_model_bundle_save_load_predict(tmp_path):
     arr_payload = np.ones((5, len(schema.features))) * 25.0
     arr_pred = loaded_bundle.predict(arr_payload)
     assert len(arr_pred["values"]) == 5
+
+
+def test_model_bundle_preserves_real_simulation_provenance(tmp_path):
+    bundle_dir = str(tmp_path / "real_bundle")
+    schema = get_default_feature_schema(mode="direct")
+    data = {feature.name: np.random.uniform(5, 50, size=30) for feature in schema.features}
+    df = pd.DataFrame(data)
+    preprocessor = MultiScaleDataPreprocessor(schema=schema)
+    X_scaled = preprocessor.fit_transform(df)
+    rf = RandomForestModel(n_estimators=5, random_state=42)
+    rf.fit(X_scaled, np.random.uniform(10, 40, size=30))
+
+    ModelBundle.save_bundle(
+        artifact_dir=bundle_dir,
+        model=rf,
+        preprocessor=preprocessor,
+        schema=schema,
+        target_name="monthly_runoff_mm",
+        learning_mode="direct",
+        metrics={"rmse": 1.0},
+        validation_strategy="temporal",
+        train_split_desc="simulation test",
+        dataset_metadata={
+            "dataset_id": "phase1-sf-2019-v3",
+            "dataset_version": "phase1-sf-2019-v3",
+            "source_kind": "simulation_results",
+            "is_synthetic_training_data": False,
+            "artifact_classification": "SWAT_FSPM_SIMULATION_RESULTS",
+            "origin": "South Fork published results",
+            "period": ["2019-01-01", "2019-12-31"],
+            "limitations": ["simulation only"],
+        },
+    )
+    loaded = ModelBundle.load(bundle_dir)
+    assert loaded.metadata["is_synthetic_training_data"] is False
+    assert loaded.metadata["artifact_classification"] == "SWAT_FSPM_SIMULATION_RESULTS"
+    assert loaded.metadata["deployment_status"] == "simulation_validation_only"
+    assert loaded.metadata["dataset_id"] == "phase1-sf-2019-v3"
 
 
 def test_model_bundle_residual_mode(tmp_path):

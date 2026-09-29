@@ -67,8 +67,11 @@ class ModelBundle:
         validation_strategy: str,
         train_split_desc: str,
         random_seed: int = 42,
-        dataset_version: str = "v1.0-synthetic-cornbelt",
-        is_champion: bool = False
+        dataset_version: Optional[str] = None,
+        is_champion: bool = False,
+        dataset_metadata: Optional[Dict[str, Any]] = None,
+        forecast_horizon: Optional[Dict[str, Any]] = None,
+        inference_contract: Optional[Dict[str, Any]] = None,
     ) -> "ModelBundle":
         """
         Creates and writes the complete artifact bundle to disk.
@@ -113,13 +116,29 @@ class ModelBundle:
         timesteps = getattr(model, "timesteps", None)
         is_sequence_model = timesteps is not None and timesteps > 1
 
+        dataset_metadata = dict(dataset_metadata or {})
+        is_synthetic = bool(dataset_metadata.get("is_synthetic_training_data", True))
+        if dataset_version is None:
+            dataset_version = str(dataset_metadata.get("dataset_version", "v1.0-synthetic-cornbelt"))
+        artifact_classification = dataset_metadata.get(
+            "artifact_classification",
+            "SYNTHETIC_DEVELOPMENT_ARTIFACT" if is_synthetic else "UNCLASSIFIED_SIMULATION_ARTIFACT",
+        )
+        deployment_status = dataset_metadata.get(
+            "deployment_status",
+            "demo_only" if is_synthetic else "simulation_validation_only",
+        )
+        feature_units = {feature.name: feature.unit for feature in schema.features}
         metadata = {
             "model_name": model.name,
             "model_type": model.model_type,
             "target_name": target_name,
+            "target_unit": get_target_schema(target_name).unit,
+            "target_description": get_target_schema(target_name).description,
             "learning_mode": learning_mode,  # direct or residual
             "features": schema.feature_names,
             "feature_order": schema.feature_names,
+            "feature_units": feature_units,
             "is_sequence_model": is_sequence_model,
             "timesteps": timesteps if is_sequence_model else None,
             "training_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -129,10 +148,27 @@ class ModelBundle:
             "validation_strategy": validation_strategy,
             "metrics": metrics,
             "is_champion": is_champion,
-            "is_synthetic_training_data": True,
-            "artifact_classification": "SYNTHETIC_DEVELOPMENT_ARTIFACT",
-            "deployment_status": "demo_only",
-            "data_provenance": "Plant-to-Watershed Multi-Scale Simulator (Zea mays / SWAT+)",
+            "is_synthetic_training_data": is_synthetic,
+            "artifact_classification": artifact_classification,
+            "deployment_status": deployment_status,
+            "data_provenance": dataset_metadata.get(
+                "origin",
+                "Plant-to-Watershed Multi-Scale Simulator (Zea mays / SWAT+)",
+            ),
+            "dataset_period": dataset_metadata.get("period"),
+            "dataset_source_kind": dataset_metadata.get("source_kind", "synthetic_demo" if is_synthetic else "unknown"),
+            "dataset_id": dataset_metadata.get("dataset_id"),
+            "dataset_limitations": dataset_metadata.get("limitations", []),
+            "aggregation_rules": dataset_metadata.get("aggregation_rules", {}),
+            "experiment_status": dataset_metadata.get("experiment_status"),
+            "forecast_horizon": forecast_horizon,
+            "inference_contract": inference_contract or {
+                "required_features": schema.feature_names,
+                "target": target_name,
+                "target_unit": get_target_schema(target_name).unit,
+                "missing_feature_policy": "schema_validation",
+            },
+            "bundle_version": "1.1",
             "library_versions": library_versions
         }
 
@@ -286,6 +322,9 @@ class ModelBundle:
                     "swat_baseline_value": round(baseline_val, 3),
                     "unit": self.target_schema.unit,
                     "model_used": self.metadata.get("model_name"),
+                    "model_version": self.metadata.get("bundle_version"),
+                    "forecast_horizon": self.metadata.get("forecast_horizon"),
+                    "artifact_classification": self.metadata.get("artifact_classification"),
                     "artifact_dir": self.artifact_dir
                 }
             else:
@@ -311,7 +350,10 @@ class ModelBundle:
                     "predicted_residuals": [round(float(r), 3) for r in raw_pred],
                     "swat_baseline_values": [round(float(b), 3) for b in baseline_vals],
                     "unit": self.target_schema.unit,
-                    "model_used": self.metadata.get("model_name")
+                    "model_used": self.metadata.get("model_name"),
+                    "model_version": self.metadata.get("bundle_version"),
+                    "forecast_horizon": self.metadata.get("forecast_horizon"),
+                    "artifact_classification": self.metadata.get("artifact_classification")
                 }
         else:
             # Mode A: Direct Prediction
@@ -323,6 +365,9 @@ class ModelBundle:
                     "value": round(val, 3),
                     "unit": self.target_schema.unit,
                     "model_used": self.metadata.get("model_name"),
+                    "model_version": self.metadata.get("bundle_version"),
+                    "forecast_horizon": self.metadata.get("forecast_horizon"),
+                    "artifact_classification": self.metadata.get("artifact_classification"),
                     "artifact_dir": self.artifact_dir
                 }
             else:
@@ -332,7 +377,10 @@ class ModelBundle:
                     "mode": "direct_prediction",
                     "values": vals,
                     "unit": self.target_schema.unit,
-                    "model_used": self.metadata.get("model_name")
+                    "model_used": self.metadata.get("model_name"),
+                    "model_version": self.metadata.get("bundle_version"),
+                    "forecast_horizon": self.metadata.get("forecast_horizon"),
+                    "artifact_classification": self.metadata.get("artifact_classification")
                 }
 
 

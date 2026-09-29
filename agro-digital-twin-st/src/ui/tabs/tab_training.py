@@ -1,196 +1,264 @@
-"""
-Tab 3: AI Model Training — Plant-to-Watershed AI Lab.
-Configures and trains 3 Traditional (RF, XGBoost, SVR) + 2 Hybrid (CNN-LSTM, LSTM-AE+RF) models.
-Features:
-- Target selection: monthly_runoff_mm, monthly_streamflow_m3s, maize_yield_t_ha
-- Learning Mode: Direct Prediction vs Residual Correction
-- Leak-Free validation strategies: Temporal Holdout, Watershed Holdout, Walk-Forward CV
-- Mode FAST/DEV vs FULL TRAINING
-- Live progress, duration, artifact bundling
-"""
+"""Tab 3: leak-free model training for the selected dataset source."""
 
-import os
 import streamlit as st
 import pandas as pd
 
-from src.core.dataset_generator import get_dataset
-from src.ui.components import render_hardware_analyzer, render_synthetic_data_badge
-from src.core.training.trainer import MultiScaleTrainer
-from src.core.features.schema import TARGET_REGISTRY, get_default_feature_schema
-from src.utils.config import DATASET_RAW_PATH, ARTIFACTS_DIR
+from src.core.features.schema import TARGET_REGISTRY, get_available_feature_schema, get_default_feature_schema
+from src.core.experiments.next_day_flow import NextDayExperiment
+from src.ui.components import get_active_dataset, render_hardware_analyzer, render_synthetic_data_badge
+from src.utils.config import ARTIFACTS_DIR
 from src.infrastructure.auth import Permission
+
+
+MIN_REAL_TRAINING_ROWS = 24
+
+
+def _target_label(target: str) -> str:
+    return {
+        "monthly_runoff_mm": "Escorrentía mensual [mm/mes]",
+        "monthly_streamflow_m3s": "Caudal mensual [m³/s]",
+        "maize_yield_t_ha": "Rendimiento de maíz [t/ha]",
+    }.get(target, target)
 
 
 def render():
     st.header("⚙️ 3. Entrenamiento de Modelos de Inteligencia Artificial")
     st.caption("🏷️ **[CRISP-DM: Modeling]**")
+    df, metadata, _ = get_active_dataset()
     render_synthetic_data_badge()
+    if metadata.get("temporal_resolution") == "DAILY" and "streamflow_m3s" in df.columns:
+        _render_next_day_experiment(df, metadata)
+        return
+    from src.core.training.trainer import MultiScaleTrainer
+    is_synthetic = bool(metadata.get("is_synthetic_training_data", False))
+    available_targets = [target for target in TARGET_REGISTRY if target in df.columns and df[target].notna().any()]
+    if not is_synthetic and not metadata.get("is_observation", False):
+        # South Fork contains modeled crop state, but no observational target
+        # suitable for claiming an agricultural performance model.
+        available_targets = [target for target in available_targets if target != "maize_yield_t_ha"]
+    if not available_targets:
+        st.warning("Este dataset no contiene un objetivo válido para entrenamiento.")
+        return
 
-    st.markdown("""
-    Configura y entrena la batería de **3 algoritmos tradicionales y 2 arquitecturas híbridas**.
-    La partición de datos implementa **prevención estricta de Data Leakage** temporal o espacial.
-    Al finalizar, el sistema exporta automáticamente los **Artifact Bundles** completos para su integración con FastAPI.
-    """)
+    st.markdown(
+        "Configura los algoritmos existentes. El contrato de entrada se construye con variables completas del "
+        "dataset seleccionado y el preprocesador se ajusta únicamente con TRAIN."
+    )
+    st.caption(f"Dataset activo: `{metadata.get('dataset_id', 'n/d')}` | Filas preparadas: `{len(df):,}`")
 
-    df = get_dataset()
-
-    # 1. Configuración de Target y Modo de Aprendizaje
-    st.subheader("🎯 1. Target y Modo de Aprendizaje")
-    col_t1, col_t2 = st.columns(2)
-
-    with col_t1:
-        target_options = list(TARGET_REGISTRY.keys())
-        target_labels = {
-            "monthly_runoff_mm": "Escorrentía Mensual (monthly_runoff_mm) [mm/mes]",
-            "monthly_streamflow_m3s": "Caudal de Desembocadura (monthly_streamflow_m3s) [m³/s]",
-            "maize_yield_t_ha": "Rendimiento de Grano de Maíz (maize_yield_t_ha) [t/ha]"
-        }
+    st.subheader("🎯 1. Target y modo de aprendizaje")
+    left, right = st.columns(2)
+    with left:
         selected_target = st.selectbox(
-            "Seleccionar Variable Objetivo (Target):",
-            options=target_options,
-            format_func=lambda x: target_labels.get(x, x),
-            index=0
+            "Seleccionar variable objetivo",
+            options=available_targets,
+            format_func=_target_label,
         )
-
-    with col_t2:
-        mode_options = ["direct", "residual"] if selected_target != "maize_yield_t_ha" else ["direct"]
-        mode_labels = {
-            "direct": "Modo A: Direct Prediction [Target = f(Clima, FSPM, Suelo, Campo)]",
-            "residual": "Modo B: Residual Correction [Residual = Observed - SWAT_baseline]"
-        }
+    with right:
+        residual_available = is_synthetic and selected_target != "maize_yield_t_ha"
+        mode_options = ["direct", "residual"] if residual_available else ["direct"]
         selected_mode = st.selectbox(
-            "Modo de Aprendizaje:",
+            "Modo de aprendizaje",
             options=mode_options,
-            format_func=lambda x: mode_labels.get(x, x),
-            index=0
+            format_func=lambda mode: "Modo A: predicción directa" if mode == "direct" else "Modo B: corrección residual SWAT+",
         )
+    if not is_synthetic and selected_target == "maize_yield_t_ha":
+        st.info("El objetivo agrícola se mantiene preparado para futuras observaciones compatibles, pero no se entrena con esta corrida simulada.")
 
-    if selected_mode == "residual":
-        st.info("💡 **Modo B (Residual Correction) Activo**: El modelo aprenderá el error sistemático del SWAT+ estándar no acoplado, permitiendo evaluar si la información multiescala planta-campo agrega señal predictiva neta.")
+    try:
+        schema = (
+            get_default_feature_schema(mode=selected_mode, include_baseline=selected_mode == "residual", target_name=selected_target)
+            if is_synthetic
+            else get_available_feature_schema(df, target_name=selected_target, mode=selected_mode)
+        )
+    except (KeyError, ValueError) as exc:
+        st.error(f"No es posible construir el contrato de características: {exc}")
+        return
+
+    st.dataframe(
+        pd.DataFrame([
+            {"orden": index + 1, "variable": feature.name, "unidad": feature.unit, "escala": feature.scale_level}
+            for index, feature in enumerate(schema.features)
+        ]),
+        width="stretch",
+        hide_index=True,
+    )
+    st.caption("No se incluyen variables ausentes o incompletas y el objetivo nunca se incorpora como entrada.")
+
+    if not is_synthetic and len(df) < MIN_REAL_TRAINING_ROWS:
+        st.warning(
+            f"Entrenamiento bloqueado para esta corrida: hay {len(df)} muestras mensuales y se requieren al menos "
+            f"{MIN_REAL_TRAINING_ROWS} para una partición temporal mínima. Los 12 meses de 2019 no permiten "
+            "validar con solidez modelos complejos; incorpora periodos compatibles sin mezclar corridas distintas."
+        )
+        st.info("El contrato y las transformaciones están listos. No se exporta un bundle con evidencia insuficiente.")
+        return
 
     st.markdown("---")
-
-    # 2. Estrategia de Validación y Prevención de Data Leakage
-    st.subheader("🛡️ 2. Estrategia de Validación (Prevención de Data Leakage)")
-    col_v1, col_v2, col_v3 = st.columns(3)
-
-    with col_v1:
+    st.subheader("🛡️ 2. Estrategia de validación")
+    v1, v2, v3 = st.columns(3)
+    with v1:
         val_strategy = st.selectbox(
-            "Estrategia de Split:",
+            "Estrategia de split",
             options=["temporal", "watershed", "timeseries_cv"],
-            format_func=lambda x: {
-                "temporal": "Temporal Holdout (Entrenar pasado, evaluar futuro)",
-                "watershed": "Spatial Holdout (Entrenar cuencas A, evaluar cuenca B)",
-                "timeseries_cv": "TimeSeries Walk-Forward (Ventana expansiva)"
-            }[x]
+            format_func=lambda value: {
+                "temporal": "Temporal 3-way (pasado → futuro)",
+                "watershed": "Spatial holdout por cuenca",
+                "timeseries_cv": "Walk-forward (adaptado a 3-way)",
+            }[value],
         )
-
-    with col_v2:
+    with v2:
         if val_strategy == "watershed":
-            holdout_ws = st.selectbox("Cuenca de Prueba no vista (Holdout):", df["watershed_id"].unique(), index=len(df["watershed_id"].unique())-1)
+            watersheds = list(df["watershed_id"].dropna().unique()) if "watershed_id" in df else []
+            if len(watersheds) < 3:
+                st.info("No hay tres cuencas independientes; se usará partición temporal.")
+                holdout_ws = None
+            else:
+                holdout_ws = st.selectbox("Cuenca de prueba no vista", watersheds, index=len(watersheds) - 1)
+            test_pct = 0.20
         else:
             holdout_ws = None
-            test_pct = st.slider("Porcentaje de Datos de Prueba (Test Ratio)", 0.15, 0.35, 0.25, 0.05)
+            test_pct = st.slider("Porcentaje de test", 0.15, 0.35, 0.25, 0.05)
+    with v3:
+        random_seed = st.number_input("Semilla", min_value=1, max_value=9999, value=42)
 
-    with col_v3:
-        random_seed = st.number_input("Semilla de Reproducibilidad (Seed):", min_value=1, max_value=9999, value=42)
-
-    st.markdown("---")
-
-    # 3. Selección de Modelos y Modo de Cómputo
-    st.subheader("🧠 3. Modelos & Recursos de Cómputo")
-    col_m1, col_m2 = st.columns(2)
-
-    with col_m1:
-        st.markdown("**Modelos a Entrenar (3 Tradicionales + 2 Híbridos):**")
+    st.subheader("🧠 3. Modelos y recursos")
+    m1, m2 = st.columns(2)
+    with m1:
         use_rf = st.checkbox("🌲 Random Forest Regressor", value=True)
         use_xgb = st.checkbox("⚡ XGBoost Regressor", value=True)
         use_svr = st.checkbox("📐 Support Vector Regression (SVR)", value=True)
-        use_cnn_lstm = st.checkbox("🧬 CNN-LSTM Hybrid (Deep Learning)", value=True)
-        use_ae_rf = st.checkbox("🔬 LSTM Autoencoder + Random Forest (Híbrido)", value=True)
-
-        selected_models_list = []
-        if use_rf: selected_models_list.append("Random Forest")
-        if use_xgb: selected_models_list.append("XGBoost")
-        if use_svr: selected_models_list.append("SVR")
-        if use_cnn_lstm: selected_models_list.append("CNN-LSTM")
-        if use_ae_rf: selected_models_list.append("LSTM Autoencoder")
-
-    with col_m2:
-        st.markdown("**Modo de Entrenamiento:**")
-        training_profile = st.radio(
-            "Perfil de Hiperparámetros:",
-            ["FAST / DEVELOPMENT (Optimizado para CPU rápido)", "FULL TRAINING (Convergencia completa)"],
-            index=0
-        )
-        is_fast = "FAST" in training_profile
-        tune_params = False
-        if not is_fast:
-            tune_params = st.checkbox("🔍 Búsqueda de Hiperparámetros (Train + Val Tuning)", value=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🖥️ Escanear Recursos de Cómputo (CPU / GPU)", use_container_width=True):
+        use_cnn_lstm = st.checkbox("🧬 CNN-LSTM Hybrid", value=is_synthetic)
+        use_ae_rf = st.checkbox("🔬 LSTM Autoencoder + Random Forest", value=is_synthetic)
+        selected_models = [
+            name for enabled, name in [
+                (use_rf, "Random Forest"), (use_xgb, "XGBoost"), (use_svr, "SVR"),
+                (use_cnn_lstm, "CNN-LSTM"), (use_ae_rf, "LSTM Autoencoder"),
+            ] if enabled
+        ]
+    with m2:
+        profile = st.radio("Perfil de hiperparámetros", ["FAST / DEVELOPMENT", "FULL TRAINING"], index=0)
+        is_fast = profile.startswith("FAST")
+        tune_params = st.checkbox("Búsqueda de hiperparámetros (Train + Val)", value=not is_fast) if not is_fast else False
+        if st.button("🖥️ Escanear recursos de cómputo"):
             render_hardware_analyzer()
 
-    st.markdown("---")
-
-    # 4. Botón Lanzador de Entrenamiento
-    st.subheader("🚀 4. Ejecutar Pipeline de Entrenamiento")
-    st.markdown("Al hacer clic, se entrenarán los modelos seleccionados, se evaluarán métricas hidrológicas (RMSE, NSE, PBIAS) y se registrará el Modelo Campeón.")
-
+    st.subheader("🚀 4. Ejecutar pipeline")
     current_user = st.session_state.get("auth_user")
     if current_user and not current_user.can(Permission.RUN_TRAINING):
-        st.warning(f"🔒 **Modo de Sólo Lectura**: El usuario actual (`{current_user.username}`) con rol `{current_user.role.value}` no tiene permisos de entrenamiento. Cambie al rol `RESEARCHER` o `ADMIN` en la barra lateral.")
+        st.warning("El usuario actual no tiene permisos de entrenamiento.")
         return
-
-    if st.button("▶️ Iniciar Entrenamiento Multiescala", type="primary", use_container_width=True):
-        if not selected_models_list:
-            st.error("Debes seleccionar al menos un modelo para entrenar.")
+    if st.button("▶️ Iniciar entrenamiento multiescala", type="primary"):
+        if not selected_models:
+            st.error("Selecciona al menos un modelo.")
             return
-
         progress_bar = st.progress(0.0)
         status_text = st.empty()
 
-        def update_progress(pct, msg):
+        def update_progress(pct, message):
             progress_bar.progress(pct)
-            status_text.text(msg)
+            status_text.text(message)
 
-        with st.spinner("Entrenando modelos y exportando artefactos..."):
-            trainer = MultiScaleTrainer(
-                target_name=selected_target,
-                learning_mode=selected_mode,
-                validation_strategy=val_strategy,
-                holdout_watershed=holdout_ws,
-                fast_dev_mode=is_fast,
-                tune_hyperparameters=tune_params,
-                random_seed=random_seed
-            )
-
-            res = trainer.train(
-                df,
-                selected_models=selected_models_list,
-                progress_callback=update_progress
-            )
-
-        progress_bar.progress(1.0)
-        status_text.text(f"¡Entrenamiento finalizado en {res['duration_seconds']} segundos!")
-
-        st.success(f"🏆 **Modelo Campeón Seleccionado**: `{res['champion_model_name']}`")
-        st.info(f"📦 Artefacto exportado en: `{res['champion_dir']}` (Contrato `feature_schema.json`, `model`, `preprocessing.joblib`, `metadata.json`)")
-
-        # Tabla de métricas
-        st.subheader("📊 Métricas de Validación Obtenidas")
+        trainer = MultiScaleTrainer(
+            target_name=selected_target,
+            learning_mode=selected_mode,
+            validation_strategy=val_strategy,
+            holdout_watershed=holdout_ws,
+            test_ratio=test_pct,
+            fast_dev_mode=is_fast,
+            tune_hyperparameters=tune_params,
+            random_seed=random_seed,
+            artifact_base_dir=ARTIFACTS_DIR,
+            schema=schema,
+            dataset_metadata=metadata,
+        )
+        with st.spinner("Entrenando modelos y exportando bundles..."):
+            result = trainer.train(df, selected_models=selected_models, progress_callback=update_progress)
+        st.success(f"🏆 Modelo campeón: `{result['champion_model_name']}`")
+        st.info(f"Bundle exportado en `{result['champion_dir']}` con procedencia `{metadata.get('artifact_classification')}`.")
         rows = []
-        for name, d in res["results"].items():
-            m = d["metrics"]
+        for name, details in result["results"].items():
+            metrics = details["metrics"]
             rows.append({
                 "Modelo": name,
-                "R² Score": m.get("r2", 0.0),
-                "RMSE": m.get("rmse", 0.0),
-                "MAE": m.get("mae", 0.0),
-                "NSE (Nash)": m.get("nse", "N/A"),
-                "PBIAS (%)": f"{m.get('pbias', 0.0):.2f}%" if "pbias" in m else "N/A",
-                "Directorio de Artefactos": d["artifact_dir"]
+                "R²": metrics.get("r2"),
+                "RMSE": metrics.get("rmse"),
+                "MAE": metrics.get("mae"),
+                "NSE": metrics.get("nse"),
+                "PBIAS (%)": metrics.get("pbias"),
+                "Bundle": details["artifact_dir"],
             })
+        st.dataframe(pd.DataFrame(rows), width="stretch")
 
-        st.dataframe(pd.DataFrame(rows).sort_values(by="R² Score", ascending=False), use_container_width=True)
+
+def _render_next_day_experiment(df: pd.DataFrame, metadata: dict):
+    """Expose the daily, one-day-ahead experiment separately from monthly training."""
+    st.subheader("🌊 Experimento diario: pronóstico de caudal a un día")
+    st.caption(
+        "Resultado preliminar sobre playback simulado. El split es cronológico y la línea base usa el último caudal conocido."
+    )
+    st.caption(
+        f"Muestras disponibles: `{len(df):,}`. Con menos de 60 filas el experimento sigue siendo exploratorio y no debe interpretarse como validación robusta."
+    )
+    st.info(
+        f"Fuente: `{metadata.get('dataset_id', 'n/d')}` | "
+        "Los valores son estados modelados, no observaciones de campo."
+    )
+    m1, m2, m3 = st.columns(3)
+    with m1:
+        use_rf = st.checkbox("🌲 Random Forest", value=True, key="next_day_rf")
+        use_svr = st.checkbox("📐 SVR", value=True, key="next_day_svr")
+    with m2:
+        use_xgb = st.checkbox("⚡ XGBoost", value=False, key="next_day_xgb")
+        fast_mode = st.checkbox("Modo rápido", value=True, key="next_day_fast")
+    with m3:
+        random_seed = st.number_input("Semilla", min_value=1, max_value=9999, value=42, key="next_day_seed")
+        st.caption("TRAIN 60% → VALIDATION 20% → TEST 20%")
+
+    selected_models = [
+        name for enabled, name in [
+            (use_rf, "random_forest"),
+            (use_svr, "svr"),
+            (use_xgb, "xgboost"),
+        ] if enabled
+    ]
+    current_user = st.session_state.get("auth_user")
+    if current_user and not current_user.can(Permission.RUN_TRAINING):
+        st.warning("El usuario actual no tiene permisos de entrenamiento.")
+        return
+    if st.button("▶️ Ejecutar experimento diario", type="primary", key="run_next_day_experiment"):
+        if not selected_models:
+            st.error("Selecciona al menos un modelo.")
+            return
+        with st.spinner("Preparando features, entrenando y exportando bundles..."):
+            try:
+                result = NextDayExperiment(
+                    artifact_base_dir=ARTIFACTS_DIR,
+                    dataset_metadata=metadata,
+                    random_seed=int(random_seed),
+                    fast_dev_mode=fast_mode,
+                ).run(df, selected_models=selected_models)
+            except (KeyError, ValueError, RuntimeError, OSError) as exc:
+                st.error(f"El experimento no pudo completarse: {exc}")
+                return
+        st.session_state["next_day_experiment_result"] = result
+
+    result = st.session_state.get("next_day_experiment_result")
+    if not result:
+        return
+    st.success(f"Mejor modelo de la corrida: `{result['best_model']}`")
+    st.caption(f"Reporte: `{result['report_path']}` | Champion: `{result['champion_dir']}`")
+    rows = []
+    for name, details in result["results"].items():
+        metrics = details["metrics"]
+        rows.append({
+            "Modelo": name,
+            "RMSE": metrics.get("rmse"),
+            "MAE": metrics.get("mae"),
+            "NSE": metrics.get("nse"),
+            "KGE": metrics.get("kge"),
+            "PBIAS (%)": metrics.get("pbias"),
+            "Bundle": details.get("artifact_dir"),
+        })
+    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+    st.caption("Interpretar las métricas como comparación interna de esta corrida simulada; no como validación observacional.")

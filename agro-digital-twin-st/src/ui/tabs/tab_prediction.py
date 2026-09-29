@@ -5,9 +5,10 @@ Supports Direct Prediction and Residual Correction against SWAT+ baseline.
 """
 
 import os
+import json
 import streamlit as st
 from src.core.inference import load_model_bundle, ModelBundle
-from src.ui.components import render_synthetic_data_badge, render_lab_ticket
+from src.ui.components import get_active_dataset, render_synthetic_data_badge, render_lab_ticket
 from src.core.features.schema import TARGET_REGISTRY
 from src.utils.config import ARTIFACTS_DIR
 from src.infrastructure.database.repositories import SQLAlchemyPredictionRepository
@@ -17,6 +18,7 @@ from src.infrastructure.database.models import PredictionRecord
 def render():
     st.header("🔮 4. Inferencia: Predicción de Escorrentía y Rendimiento")
     st.caption("🏷️ **[CRISP-DM: Deployment & API Serving]**")
+    _, active_metadata, _ = get_active_dataset()
     render_synthetic_data_badge()
 
     st.markdown("""
@@ -46,7 +48,16 @@ def render():
         for entry in os.listdir(target_artifacts_dir):
             entry_path = os.path.join(target_artifacts_dir, entry)
             if os.path.isdir(entry_path) and os.path.exists(os.path.join(entry_path, "metadata.json")):
-                available_bundles.append(entry)
+                try:
+                    with open(os.path.join(entry_path, "metadata.json"), "r", encoding="utf-8") as metadata_file:
+                        bundle_metadata = json.load(metadata_file)
+                    bundle_classification = bundle_metadata.get("artifact_classification")
+                    if bundle_classification is None and bundle_metadata.get("is_synthetic_training_data"):
+                        bundle_classification = "SYNTHETIC_DEVELOPMENT_ARTIFACT"
+                    if bundle_classification == active_metadata.get("artifact_classification"):
+                        available_bundles.append(entry)
+                except (OSError, json.JSONDecodeError):
+                    continue
 
     with col_m:
         if available_bundles:

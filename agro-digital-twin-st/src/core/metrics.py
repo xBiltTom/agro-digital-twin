@@ -65,6 +65,18 @@ def calculate_pbias(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(100.0 * (numerator / denom))
 
 
+def calculate_kge(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Calculate Kling-Gupta Efficiency for hydrological series."""
+    y_t = np.asarray(y_true, dtype=np.float64)
+    y_p = np.asarray(y_pred, dtype=np.float64)
+    if len(y_t) < 2 or np.std(y_t) == 0.0 or np.mean(y_t) == 0.0 or np.std(y_p) == 0.0:
+        return 0.0
+    correlation = float(np.corrcoef(y_t, y_p)[0, 1])
+    alpha = float(np.std(y_p) / np.std(y_t))
+    beta = float(np.mean(y_p) / np.mean(y_t))
+    return float(1.0 - np.sqrt((correlation - 1.0) ** 2 + (alpha - 1.0) ** 2 + (beta - 1.0) ** 2))
+
+
 def compute_all_metrics(
     y_true: Union[np.ndarray, list],
     y_pred: Union[np.ndarray, list],
@@ -93,6 +105,7 @@ def compute_all_metrics(
         pbias = calculate_pbias(y_t, y_p)
         metrics["nse"] = round(nse, 4)
         metrics["pbias"] = round(pbias, 2)
+        metrics["kge"] = round(calculate_kge(y_t, y_p), 4)
 
     return metrics
 

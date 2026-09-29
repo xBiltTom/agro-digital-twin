@@ -1,125 +1,135 @@
-"""
-Tab 2: Exploratory Data Analysis (EDA) — Plant-to-Watershed AI Lab.
-Explores multi-scale variables:
-Precipitation, Temperature, Solar Radiation, Soil Moisture, Infiltration,
-ET, LAI, Root Depth, Transpiration, Water Stress, Runoff, Streamflow, Maize Yield.
-"""
+"""Tab 2: exploratory analysis for synthetic and published result datasets."""
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 
-from src.core.dataset_generator import get_dataset
-from src.ui.components import render_synthetic_data_badge
+from src.ui.components import get_active_dataset, render_synthetic_data_badge
+
+
+def _numeric_columns(df: pd.DataFrame) -> list[str]:
+    excluded = {"is_synthetic", "is_observation"}
+    return [
+        column for column in df.columns
+        if column not in excluded and pd.api.types.is_numeric_dtype(df[column])
+    ]
 
 
 def render():
     st.header("📈 2. Análisis Exploratorio de Datos Multiescala (EDA)")
     st.caption("🏷️ **[CRISP-DM: Data Understanding]**")
+    df, metadata, variable_catalog = get_active_dataset()
     render_synthetic_data_badge()
+    numeric_cols = _numeric_columns(df)
 
-    st.markdown("""
-    Analiza la interconexión biofísica y ambiental entre las cuatro escalas:
-    **Clima** ➔ **Suelo / HRU** ➔ **Planta FSPM (Maíz)** ➔ **Cuenca SWAT+**.
-    """)
+    st.markdown(
+        "Analiza la relación entre clima, balance hídrico, estados vegetales y resultados hidrológicos "
+        "sin combinar corridas experimentales distintas."
+    )
 
-    df = get_dataset()
+    st.subheader("📌 1. Origen, periodo y cobertura")
+    info = st.columns(5)
+    with info[0]:
+        st.metric("Fuente", "Demo sintética" if metadata.get("is_synthetic_training_data") else "Simulación")
+    with info[1]:
+        st.metric("Registros", f"{len(df):,}")
+    with info[2]:
+        st.metric("Variables numéricas", len(numeric_cols))
+    with info[3]:
+        period = metadata.get("period", ["n/d", "n/d"])
+        st.metric("Inicio", str(period[0]))
+    with info[4]:
+        st.metric("Fin", str(period[-1]))
+    st.caption(f"**Procedencia:** {metadata.get('origin', 'no especificada')}")
+    if metadata.get("limitations"):
+        with st.expander("Limitaciones declaradas por el origen", expanded=False):
+            for limitation in metadata["limitations"]:
+                st.write(f"- {limitation}")
 
-    # 1. Estadísticas Descriptivas y Missing Values
-    st.subheader("📋 1. Resumen Estadístico & Calidad del Dataset")
-    numeric_cols = [
-        "precip_mm", "temp_mean_c", "solar_radiation", "soil_moisture",
-        "infiltration_mm", "et_mm", "lai", "root_depth_m",
-        "transpiration_mm", "water_stress", "swat_baseline_runoff_mm",
-        "monthly_runoff_mm", "monthly_streamflow_m3s", "maize_yield_t_ha"
+    st.subheader("📋 2. Variables, unidades y calidad")
+    left, right = st.columns([3, 2])
+    with left:
+        if variable_catalog.empty:
+            st.info("El origen no publicó un catálogo de variables.")
+        else:
+            st.dataframe(variable_catalog, width="stretch", height=280)
+    with right:
+        quality = pd.DataFrame({
+            "variable": df.columns,
+            "nulos": df.isna().sum().values,
+            "completitud_%": (100.0 * df.notna().mean()).round(1).values,
+        }).sort_values(["nulos", "variable"], ascending=[False, True])
+        st.dataframe(quality, width="stretch", height=280)
+        st.metric("Celdas nulas", f"{int(df.isna().sum().sum()):,}")
+    st.caption("Los valores faltantes se muestran y se conservan; no se imputan silenciosamente.")
+
+    st.subheader("📊 3. Resumen estadístico")
+    if numeric_cols:
+        st.dataframe(df[numeric_cols].describe().T.round(3), width="stretch")
+    else:
+        st.warning("No hay variables numéricas disponibles para describir.")
+
+    st.subheader("🔥 4. Relaciones entre variables disponibles")
+    if len(numeric_cols) >= 2:
+        corr = df[numeric_cols].corr(numeric_only=True)
+        fig_corr = px.imshow(
+            corr,
+            text_auto=".2f",
+            aspect="auto",
+            color_continuous_scale="RdBu_r",
+            title="Correlaciones del dataset seleccionado",
+            template="plotly_dark",
+        )
+        fig_corr.update_layout(height=520)
+        st.plotly_chart(fig_corr, width="stretch")
+
+        rel_left, rel_right = st.columns(2)
+        with rel_left:
+            x_column = st.selectbox("Variable explicativa", numeric_cols, index=0)
+        with rel_right:
+            y_options = [column for column in numeric_cols if column != x_column]
+            y_column = st.selectbox("Variable de respuesta", y_options, index=0)
+        relation_df = df[[x_column, y_column]].dropna()
+        if relation_df.empty:
+            st.warning("No hay pares completos para la relación seleccionada.")
+        else:
+            st.plotly_chart(
+                px.scatter(
+                    relation_df,
+                    x=x_column,
+                    y=y_column,
+                    title=f"Relación: {x_column} vs {y_column}",
+                    template="plotly_dark",
+                ),
+                width="stretch",
+            )
+    else:
+        st.info("Se requieren al menos dos variables numéricas para calcular relaciones.")
+
+    st.subheader("📅 5. Evolución temporal de clima, vegetación e hidrología")
+    if "date" not in df.columns:
+        st.warning("El dataset no tiene una columna temporal.")
+        return
+    temporal = df.copy()
+    temporal["date"] = pd.to_datetime(temporal["date"], errors="coerce")
+    temporal = temporal.dropna(subset=["date"])
+    temporal_columns = [column for column in numeric_cols if column in temporal.columns]
+    preferred = [
+        "precip_mm", "temp_mean_c", "soil_moisture", "lai", "water_stress",
+        "et_mm", "monthly_runoff_mm", "monthly_streamflow_m3s",
     ]
-
-    c1, c2 = st.columns([3, 1])
-    with c1:
-        st.dataframe(df[numeric_cols].describe().T.round(2), use_container_width=True)
-    with c2:
-        missing_count = df.isnull().sum().sum()
-        st.metric(label="Valores Nulos (NaN)", value=missing_count)
-        st.metric(label="Total Columnas", value=len(df.columns))
-        st.metric(label="Escenarios Climáticos", value=df["climate_scenario"].nunique())
-
-    st.markdown("---")
-
-    # 2. Matriz de Correlación Pearson
-    st.subheader("🔥 2. Matriz de Correlación Multiescala (Pearson)")
-    st.markdown("Observa la correlación entre variables fisiológicas individuales y las respuestas hidrológicas de cuenca:")
-
-    corr = df[numeric_cols].corr()
-    fig_corr = px.imshow(
-        corr,
-        text_auto=".2f",
-        aspect="auto",
-        color_continuous_scale="RdBu_r",
-        title="Correlaciones: Clima ⇄ Suelo ⇄ FSPM Maíz ⇄ Cuenca SWAT+",
-        template="plotly_dark"
+    default_columns = [column for column in preferred if column in temporal_columns][:4]
+    selected_columns = st.multiselect(
+        "Variables para la serie temporal",
+        options=temporal_columns,
+        default=default_columns or temporal_columns[: min(4, len(temporal_columns))],
     )
-    fig_corr.update_layout(height=550)
-    st.plotly_chart(fig_corr, use_container_width=True)
+    if selected_columns:
+        plot_df = temporal[["date", *selected_columns]].sort_values("date").set_index("date")
+        st.line_chart(plot_df, width="stretch")
+    else:
+        st.info("Selecciona al menos una variable.")
 
-    st.info("💡 **Anotación Científica**: Observa la alta correlación entre `precip_mm` y `monthly_runoff_mm` (+0.81 aprox.), así como el efecto regulador de `lai` y `root_depth_m` en la infiltración y amortiguación de caudales pico.")
-
-    st.markdown("---")
-
-    # 3. Relaciones Físicas Clave
-    st.subheader("🌾 3. Relaciones Biofísicas Fundamentales")
-    col_g1, col_g2 = st.columns(2)
-
-    with col_g1:
-        st.markdown("**Precipitación vs Escorrentía Mensual (Runoff)**")
-        fig_pr = px.scatter(
-            df,
-            x="precip_mm",
-            y="monthly_runoff_mm",
-            color="climate_scenario",
-            size="lai",
-            title="Precipitación vs Runoff (Tamaño: LAI del Maíz)",
-            labels={"precip_mm": "Precipitación (mm)", "monthly_runoff_mm": "Escorrentía Mensual (mm)"},
-            template="plotly_dark"
-        )
-        st.plotly_chart(fig_pr, use_container_width=True)
-
-    with col_g2:
-        st.markdown("**Evapotranspiración (ET) vs Rendimiento de Maíz (Yield)**")
-        # Filtrar registros de cosecha (octubre / yield > 0)
-        df_harvest = df[df["maize_yield_t_ha"] > 0.0]
-        fig_ey = px.scatter(
-            df_harvest,
-            x="et_mm",
-            y="maize_yield_t_ha",
-            color="management_scenario",
-            title="Evapotranspiración vs Rendimiento de Grano (Cosecha)",
-            labels={"et_mm": "ET de Campo (mm)", "maize_yield_t_ha": "Rendimiento (t/ha)"},
-            template="plotly_dark"
-        )
-        st.plotly_chart(fig_ey, use_container_width=True)
-
-    st.markdown("---")
-
-    # 4. Dinámica Temporal de la Serie
-    st.subheader("📅 4. Serie Temporal Anual: Fenología de Maíz y Respuesta Hidrológica")
-    ws_pick = st.selectbox("Seleccionar Cuenca para Visualización Temporal:", df["watershed_id"].unique())
-
-    sub_ts = df[(df["watershed_id"] == ws_pick) & (df["climate_scenario"] == "Historical")].iloc[:48]
-
-    fig_ts = go.Figure()
-    fig_ts.add_trace(go.Bar(x=sub_ts["date"], y=sub_ts["precip_mm"], name="Precipitación (mm)", marker_color="#38BDF8", opacity=0.4))
-    fig_ts.add_trace(go.Scatter(x=sub_ts["date"], y=sub_ts["monthly_runoff_mm"], mode="lines+markers", name="Escorrentía Acoplada (mm)", line=dict(color="#EF4444", width=2)))
-    fig_ts.add_trace(go.Scatter(x=sub_ts["date"], y=sub_ts["swat_baseline_runoff_mm"], mode="lines", name="SWAT+ Baseline (mm)", line=dict(color="#94A3B8", dash="dash")))
-    fig_ts.add_trace(go.Scatter(x=sub_ts["date"], y=sub_ts["lai"] * 10.0, mode="lines", name="LAI Maíz (x10)", line=dict(color="#10B981", width=2)))
-
-    fig_ts.update_layout(
-        title=f"Dinámica Eco-Hidrológica en {ws_pick} (Primeros 4 Años Históricos)",
-        xaxis_title="Fecha",
-        yaxis_title="Magnitud",
-        template="plotly_dark",
-        height=420,
-        legend=dict(orientation="h", y=1.1)
-    )
-    st.plotly_chart(fig_ts, use_container_width=True)
+    st.subheader("🧾 6. Muestra del dataset mensual preparado")
+    st.dataframe(df.head(200), width="stretch", height=300)
+    st.caption(f"Se muestran hasta 200 filas de {len(df):,}. Dataset: `{metadata.get('dataset_id', 'n/d')}`.")

@@ -29,7 +29,7 @@ class FeatureDefinition:
 
     def validate_value(self, val: Any) -> float:
         """Validates and converts a single feature value."""
-        if val is None or (isinstance(val, float) and np.isnan(val)):
+        if val is None or pd.isna(val):
             if self.required and self.default is None:
                 raise ValueError(f"Required feature '{self.name}' is missing with no default.")
             return float(self.default if self.default is not None else 0.0)
@@ -108,6 +108,13 @@ TARGET_REGISTRY: Dict[str, TargetSchema] = {
         baseline_variable="swat_baseline_streamflow_m3s",
         target_type="streamflow"
     ),
+    "next_day_streamflow_m3s": TargetSchema(
+        target_name="next_day_streamflow_m3s",
+        unit="m3/s",
+        description="Next-day outlet streamflow forecast",
+        baseline_variable="streamflow_lag_1",
+        target_type="streamflow"
+    ),
     "maize_yield_t_ha": TargetSchema(
         target_name="maize_yield_t_ha",
         unit="t/ha",
@@ -124,8 +131,9 @@ class ModelFeatureSchema:
     Can be exported to and imported from JSON for cross-service sharing (FastAPI).
     """
 
-    def __init__(self, features: List[FeatureDefinition]):
+    def __init__(self, features: List[FeatureDefinition], strict_missing: bool = False):
         self.features = features
+        self.strict_missing = strict_missing
         self.feature_names = [f.name for f in features]
         self._feature_map = {f.name: f for f in features}
 
@@ -147,6 +155,8 @@ class ModelFeatureSchema:
         clean_df = pd.DataFrame(index=df.index)
         for feat in self.features:
             if feat.name not in df.columns:
+                if self.strict_missing:
+                    raise KeyError(f"Required feature '{feat.name}' missing from input DataFrame.")
                 if feat.default is not None:
                     clean_df[feat.name] = feat.default
                 else:
@@ -157,13 +167,16 @@ class ModelFeatureSchema:
                     series = series.clip(lower=feat.min_val)
                 if feat.max_val is not None:
                     series = series.clip(upper=feat.max_val)
+                if self.strict_missing and series.isna().any():
+                    raise ValueError(f"Feature '{feat.name}' contains missing values in a strict schema.")
                 clean_df[feat.name] = series.fillna(feat.default if feat.default is not None else 0.0)
         return clean_df[self.feature_names]
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "feature_names": self.feature_names,
-            "features": [asdict(f) for f in self.features]
+            "features": [asdict(f) for f in self.features],
+            "strict_missing": self.strict_missing,
         }
 
     def to_json(self, indent: int = 2) -> str:
@@ -174,7 +187,7 @@ class ModelFeatureSchema:
         feats = []
         for f_data in data.get("features", []):
             feats.append(FeatureDefinition(**f_data))
-        return cls(feats)
+        return cls(feats, strict_missing=data.get("strict_missing", False))
 
     @classmethod
     def from_json(cls, json_str: str) -> "ModelFeatureSchema":
@@ -203,6 +216,44 @@ def get_default_feature_schema(
         selected_features.extend(FEATURE_GROUPS["SWAT_Baseline"])
 
     return ModelFeatureSchema(selected_features)
+
+
+def get_available_feature_schema(
+    df: pd.DataFrame,
+    target_name: str = "monthly_runoff_mm",
+    mode: str = "direct",
+) -> ModelFeatureSchema:
+    """Build a strict contract from complete, non-target columns in ``df``.
+
+    This is used for published result tables whose FSPM state is only emitted
+    during the crop window.  A missing variable is excluded from the contract,
+    not filled with a synthetic default.  The resulting schema is therefore a
+    faithful statement of what the selected dataset can support.
+    """
+    default_schema = get_default_feature_schema(
+        mode=mode,
+        include_baseline=(mode == "residual"),
+        target_name=target_name,
+    )
+    selected = []
+    for feature in default_schema.features:
+        if feature.name == target_name or feature.name not in df.columns:
+            continue
+        if pd.to_numeric(df[feature.name], errors="coerce").notna().all():
+            selected.append(FeatureDefinition(
+                name=feature.name,
+                dtype=feature.dtype,
+                unit=feature.unit,
+                scale_level=feature.scale_level,
+                min_val=feature.min_val,
+                max_val=feature.max_val,
+                required=True,
+                default=None,
+                description=feature.description,
+            ))
+    if not selected:
+        raise ValueError(f"No complete feature columns are available for target '{target_name}'.")
+    return ModelFeatureSchema(selected, strict_missing=True)
 
 
 def get_target_schema(target_name: str) -> TargetSchema:
