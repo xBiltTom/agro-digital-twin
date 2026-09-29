@@ -21,14 +21,33 @@ def test_profile_storage_uses_soil_thickness_and_root_zone_thresholds(tmp_path):
     )
     (tmp_path / "hru-data.hru").write_text("hru\nid name soil\n1 a s1\n")
     profile = read_hru_soils(tmp_path)[1]
-    wet = hru_water_state(profile, 300, .2)
+    wilting = hru_water_state(profile, 0, .2)
+    field_capacity = hru_water_state(profile, profile.field_capacity_storage_mm, .2)
     dry = hru_water_state(profile, 100, .8)
-    assert wet["estimated_soil_moisture_vol_percent"] == 30
-    assert wet["estimated_root_zone_water_mm"] == 60
-    assert wet["estimated_root_zone_depth_mm"] == 200
-    assert wet["estimated_plant_available_fraction"] > dry["estimated_plant_available_fraction"]
-    assert wet["wilting_point_vol_percent"] == pytest.approx(15.6)
-    assert dry["field_capacity_vol_percent"] != wet["field_capacity_vol_percent"]
+    assert profile.field_capacity_storage_mm == pytest.approx(135)
+    assert wilting["estimated_soil_moisture_vol_percent"] == pytest.approx(wilting["wilting_point_vol_percent"])
+    assert wilting["estimated_plant_available_fraction"] == 0
+    assert field_capacity["estimated_soil_moisture_vol_percent"] == pytest.approx(field_capacity["field_capacity_vol_percent"])
+    assert field_capacity["estimated_root_zone_water_mm"] == pytest.approx(51.2)
+    assert field_capacity["estimated_root_zone_depth_mm"] == 200
+    assert field_capacity["estimated_plant_available_fraction"] == 1
+    assert dry["estimated_plant_available_fraction"] < 1
+    assert field_capacity["wilting_point_vol_percent"] == pytest.approx(15.6)
+    assert dry["field_capacity_vol_percent"] != field_capacity["field_capacity_vol_percent"]
+
+
+def test_soil_initialization_matches_swat_porosity_fallback(tmp_path):
+    (tmp_path / "soils.sol").write_text(
+        "soils\nname nly hyd_grp dp_tot anion_excl perc_crk texture\n"
+        "s1 1 B 1000 .5 0 null\n"
+        "1000 1.7 .50 10 1 20 40 40 0 0 0 0 0 7\n"
+    )
+    (tmp_path / "hru-data.hru").write_text("hru\nid name soil\n1 a s1\n")
+    profile = read_hru_soils(tmp_path)[1]
+    porosity = 1 - 1.7 / 2.65
+    assert profile.layers[0].wilting_fraction == pytest.approx(porosity * .25)
+    assert profile.layers[0].available_fraction == pytest.approx(porosity * .50)
+    assert hru_water_state(profile, profile.field_capacity_storage_mm, 1)["field_capacity_vol_percent"] == pytest.approx(porosity * 75)
 
 
 def test_daily_playback_keeps_hru_crop_and_channel_units():
@@ -52,7 +71,7 @@ def test_daily_playback_keeps_hru_crop_and_channel_units():
     assert rows[0].hru_results[0].crop.active is False
     assert rows[1].hru_results[0].crop.active is True
     assert rows[1].hru_results[0].gis_id == "107"
-    assert rows[1].hru_results[0].variables["estimated_soil_moisture_vol_percent"].value == 18
+    assert rows[1].hru_results[0].variables["estimated_soil_moisture_vol_percent"].value == pytest.approx(30)
     assert rows[1].hru_results[0].variables["estimated_soil_moisture_vol_percent"].evidence == Evidence.DERIVED
     assert rows[1].channel_results[0].gis_id == "153"
     assert rows[1].channel_results[0].variables["streamflow_m3s"].unit == "m3/s"

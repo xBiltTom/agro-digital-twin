@@ -1,6 +1,7 @@
 from typing import List, Optional
 from datetime import date, datetime
-from sqlalchemy import String, Float, Integer, ForeignKey, JSON, Date, DateTime
+from sqlalchemy import String, Float, Integer, ForeignKey, JSON, Date, DateTime, Index
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.models.base import TimestampMixin
@@ -94,3 +95,16 @@ class SimulationResult(Base, TimestampMixin):
     water_balance_residual_mm: Mapped[float] = mapped_column(Float, default=0.0)
 
     simulation_run: Mapped[SimulationRun] = relationship("SimulationRun", back_populates="results")
+
+
+class PlaybackFrame(Base):
+    """One complete dated playback state, stored as JSONB on PostgreSQL."""
+
+    __tablename__ = "playback_frames"
+    __table_args__ = (Index("ix_playback_frames_resolution_date", "resolution", "date"),)
+
+    simulation_id: Mapped[str] = mapped_column(String(36), ForeignKey("simulation_runs.id", ondelete="CASCADE"), primary_key=True)
+    resolution: Mapped[str] = mapped_column(String(10), primary_key=True)
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    payload: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)

@@ -23,7 +23,10 @@ def test_runtime_security_rejects_placeholder_in_production():
         Settings(APP_ENV="production", SECRET_KEY="CHANGE_ME").validate_runtime_security()
     with pytest.raises(RuntimeError, match="ENABLE_DEMO_SEED"):
         Settings(APP_ENV="production", SECRET_KEY="a-safe-production-secret-key", ENABLE_DEMO_SEED=True).validate_runtime_security()
-    Settings(APP_ENV="development", SECRET_KEY="CHANGE_ME").validate_runtime_security()
+    Settings(APP_ENV="development", SECRET_KEY="CHANGE_ME",
+             DATABASE_URL="postgresql+asyncpg:///digitaltwin").validate_runtime_security()
+    with pytest.raises(RuntimeError, match="SQLite is allowed only"):
+        Settings(APP_ENV="development", DATABASE_URL="sqlite+aiosqlite:///./digitaltwin.db").validate_runtime_security()
 
 
 @pytest.mark.asyncio

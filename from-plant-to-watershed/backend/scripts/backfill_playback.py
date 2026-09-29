@@ -1,4 +1,4 @@
-"""Publish a new playback sidecar for one completed persisted SWAT+ baseline.
+"""Publish PostgreSQL playback for one completed persisted SWAT+ baseline.
 
 No SWAT+ executable is invoked. Coupled legacy runs cannot regain discarded
 daily FSPM trajectories and are deliberately rejected.
@@ -13,7 +13,7 @@ from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.models.simulation import SimulationRun
 from app.models.watershed import Watershed
-from app.services.playback_artifact import PlaybackArtifactStore
+from app.services.playback_database import PlaybackDatabaseStore
 from app.services.playback_builder import swat_frames
 from app.services.twin_coupling_engine import TwinCouplingEngine, _code_version
 
@@ -39,7 +39,7 @@ async def backfill(run_id: str) -> dict:
             else (None, {"status": "NOT_AVAILABLE", "reason": "Original isolated SWAT+ workspace is absent"})
         )
         resolution = (run.provenance or {}).get("output_frequency") or (run.effective_config or {}).get("output_frequency", "DAILY")
-        manifest = PlaybackArtifactStore().write(run.id, swat_frames(
+        manifest = await PlaybackDatabaseStore(db).write(run.id, swat_frames(
             simulation_id=run.id, watershed_id=watershed.id, watershed_code=watershed.code,
             outlet_unit=(run.effective_config or {}).get("outlet_unit"), run_type="SWAT_STANDARD_BASELINE",
             resolution=resolution, records=run.monthly_outputs,

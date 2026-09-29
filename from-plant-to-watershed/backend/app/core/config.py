@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -32,10 +33,11 @@ class Settings(BaseSettings):
     AI_MODEL_NAME: str = "gemini-2.5-flash"
     
     # Database
-    # SQLite remains a local/test fallback. Docker Compose sets canonical PostgreSQL.
+    # The local application uses the existing user-owned PostgreSQL instance.
+    # Tests may explicitly override this with an isolated SQLite database.
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "sqlite+aiosqlite:///./digitaltwin.db"
+        "postgresql+asyncpg:///digitaltwin?host=/tmp/from-plant-to-watershed-pg&port=55432"
     )
     
     # CORS
@@ -48,7 +50,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         case_sensitive=True,
-        env_file=".env",
+        env_file=Path(__file__).resolve().parents[2] / ".env",
         extra="ignore"
     )
 
@@ -59,5 +61,7 @@ class Settings(BaseSettings):
             raise RuntimeError("SECRET_KEY must be a non-default secret outside development/test")
         if environment == "production" and self.ENABLE_DEMO_SEED:
             raise RuntimeError("ENABLE_DEMO_SEED must be false in production")
+        if environment not in {"test", "testing"} and self.DATABASE_URL.startswith("sqlite"):
+            raise RuntimeError("SQLite is allowed only in isolated tests; configure PostgreSQL digitaltwin")
 
 settings = Settings()

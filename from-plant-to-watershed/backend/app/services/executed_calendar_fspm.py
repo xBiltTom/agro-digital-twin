@@ -311,8 +311,8 @@ def run_fspm_on_executed_calendar(
                 "source": "SWAT+ hru_wb_day.sw_ave + hru-data.hru.soil + soils.sol" if hru_water_results is not None else "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT",
                 "classification": "DERIVED" if hru_water_results is not None else "ASSUMED",
                 "unit": "volumetric percent",
-                "method": "Profile mean theta = daily average storage mm / profile depth mm; projected uniformly to the current FSPM root depth. SWAT+ soil-specific wilting, field capacity and porosity thresholds are area weighted within each calendar group." if hru_water_results is not None else "constant 24 vol%",
-                "limitation": "SWAT+ daily output lacks layer water states; root-zone moisture and availability assume a uniform profile and are estimates, not layer measurements. FSPM groups average distinct HRU soils and storage." if hru_water_results is not None else "SWAT+ storage is not connected.",
+                "method": "SWAT+ daily average storage excludes wilting-point water. Divide it by soils.sol profile field-capacity storage above wilting point, then apply that available-water fraction to each layer intersecting the FSPM root zone and add layer-specific wilting-point water. Calendar-group values are HRU crop-area weighted." if hru_water_results is not None else "constant 24 vol%",
+                "limitation": "SWAT+ daily output lacks layer water states; the root-zone estimate assumes a uniform available-water fraction across layers, not measured layer moisture. FSPM groups average distinct HRU soils and storage." if hru_water_results is not None else "SWAT+ storage is not connected.",
             },
             "thermal_maturity_gdd": {
                 "value": PlantPopulation(seed=seed, count=1).thermal_maturity_gdd,

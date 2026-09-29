@@ -69,15 +69,20 @@ test("FSPM growth follows recorded samples and resets at season boundary", () =>
 });
 
 test("South Fork 2019 playback example reaches the visual adapter with all three scales", () => {
-  const path = new URL("../../backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v1/playback_example_2019-07-15.json", import.meta.url);
-  const actual = JSON.parse(readFileSync(path, "utf8")) as PlaybackRecord;
+  const path = new URL("../../backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v2/playback_api_example_2019-07-15.json", import.meta.url);
+  const page = JSON.parse(readFileSync(path, "utf8")) as PlaybackPage;
+  const actual = page.records[0];
   const visual = adaptPlaybackVisual(actual, { simulationId: actual.simulation_id });
+  assert.equal(page.total, 1);
+  assert.equal(page.resolution, "DAILY");
+  assert.equal(page.simulation_id, "phase234-sf-2019-v2");
   assert.equal(actual.date, "2019-07-15");
   assert.equal(visual.mode, "SCIENTIFIC_ACTIVE");
   assert.equal(visual.plantSamples.length, 70);
   assert.equal(visual.hruStates.length, 36);
   assert.equal(visual.channelStates.length, 37);
   assert.equal(visual.fspmMoisturePercent?.evidence, "DERIVED");
+  assert.ok((visual.fspmMoisturePercent?.value as number) > 25);
   assert.equal(visual.channelStates.find((channel) => channel.gis_id === "153")?.variables.streamflow_m3s.unit, "m3/s");
 });
 

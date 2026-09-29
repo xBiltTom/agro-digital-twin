@@ -165,6 +165,8 @@
               "plant_id": "test-plant-1",
               "x_m": 0.5,
               "y_m": 1.0,
+              "calendar_id": null,
+              "hru_ids": [],
               "variables": {
                 "height_m": {
                   "value": 0.2,
@@ -219,6 +221,7 @@
             }
           },
           "hru_results": [],
+          "channel_results": [],
           "availability": {
             "weather": "AVAILABLE",
             "field": "AVAILABLE",
@@ -378,6 +381,8 @@
               "plant_id": "test-plant-1",
               "x_m": 0.5,
               "y_m": 1.0,
+              "calendar_id": null,
+              "hru_ids": [],
               "variables": {
                 "height_m": {
                   "value": 2.1,
@@ -432,6 +437,7 @@
             }
           },
           "hru_results": [],
+          "channel_results": [],
           "availability": {
             "weather": "NOT_AVAILABLE",
             "field": "AVAILABLE",
@@ -494,6 +500,7 @@
             }
           },
           "hru_results": [],
+          "channel_results": [],
           "availability": {
             "weather": "AVAILABLE",
             "field": "NOT_AVAILABLE",
@@ -571,6 +578,7 @@
             }
           },
           "hru_results": [],
+          "channel_results": [],
           "availability": {
             "weather": "AVAILABLE",
             "field": "NOT_AVAILABLE",
@@ -795,6 +803,7 @@
             }
           },
           "hru_results": [],
+          "channel_results": [],
           "availability": {
             "weather": "AVAILABLE",
             "field": "AVAILABLE",
@@ -873,6 +882,7 @@
             }
           },
           "hru_results": [],
+          "channel_results": [],
           "availability": {
             "weather": "AVAILABLE",
             "field": "NOT_AVAILABLE",

@@ -293,7 +293,7 @@ def _variable_catalog() -> dict[str, dict[str, Any]]:
     }.items():
         add(name, unit, "HRU soil profile or FSPM calendar group",
             "SWAT+ hru_wb_day.sw_ave; hru-data.hru soil; soils.sol", "DERIVED",
-            "Whole-profile storage projected uniformly to the root zone; no daily layer water state is available")
+            "SWAT+ storage excludes wilting-point water; available-water fraction is projected uniformly to the root zone; no daily layer water state is available")
 
     plant_units = {
         "plant_id": ("identifier", "modeled representative plant slot"),
@@ -524,7 +524,7 @@ def run(args: argparse.Namespace) -> Path:
             "fspm_soil_water": coupled.fspm.provenance["soil_moisture"],
             "calendar": coupled.calendar.as_dict(),
         }, limitations=[
-            "Root-zone water is estimated from whole-profile SWAT+ storage under a uniform-depth assumption",
+            "Root-zone water adds layer-specific wilting-point water to SWAT+ available storage under a uniform available-water-fraction assumption; daily layer water is unavailable",
             "Representative FSPM plant slots are simulated, not observed individuals",
             "Channel flow is m3/s and storage is m3; river depth is unavailable",
         ])
