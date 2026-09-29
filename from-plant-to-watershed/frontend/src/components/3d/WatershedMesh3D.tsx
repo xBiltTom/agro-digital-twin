@@ -34,6 +34,7 @@ interface WatershedMesh3DProps {
   showHruBorders?: boolean;
   showHydrologyFlow?: boolean;
   showScientificLabels?: boolean;
+  onOpenExplorer?: () => void;
 }
 
 /**
@@ -391,11 +392,12 @@ function SouthForkRiverNetwork3D({
     return geo;
   }, [channels]);
 
-  // Animación física de corriente fluvial continua con velocidad relativa ilustrativa
+  // Animación física ambiental de corriente continua (efecto puramente visual; no representa velocidad hidráulica)
   useFrame(({ clock }) => {
     if (!meshRef.current || !animate) return;
     const time = clock.getElapsedTime();
-    const flowSpeed = 2.2 + Math.min(3.2, ((streamflowM3s ?? 5) / 10) * 1.5);
+    const baseSpeed = streamflowM3s != null ? Math.min(3.2, (Math.max(0, streamflowM3s) / 10) * 1.5) : 0;
+    const flowSpeed = 2.0 + baseSpeed;
     const pos = meshRef.current.geometry.attributes.position;
     const count = pos.count;
 
@@ -615,6 +617,7 @@ export default function WatershedMesh3D({
   showHruBorders = true,
   showHydrologyFlow = true,
   showScientificLabels = true,
+  onOpenExplorer,
 }: WatershedMesh3DProps) {
   const [hoveredSubbasin, setHoveredSubbasin] = useState<number | null>(null);
 
@@ -714,10 +717,21 @@ export default function WatershedMesh3D({
                 e.stopPropagation();
                 onSelectSubbasin();
               }}
-              className="mt-2.5 w-full cursor-pointer rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 py-1 text-[11px] font-bold text-cyan-200 transition text-center"
+              className="mt-2 w-full cursor-pointer rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 py-1 text-[11px] font-bold text-cyan-200 transition text-center"
             >
               {fieldNavigationLabel} →
             </button>}
+            {onOpenExplorer && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenExplorer();
+                }}
+                className="mt-1.5 w-full cursor-pointer rounded-lg bg-teal-600/20 hover:bg-teal-600/40 border border-teal-500/30 py-1 text-[10px] font-bold text-teal-300 transition text-center"
+              >
+                Explorar 36 HRUs / 37 Canales →
+              </button>
+            )}
           </div>
         </Html>
       )}
