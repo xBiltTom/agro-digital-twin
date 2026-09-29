@@ -1,5 +1,6 @@
 import io
 from datetime import datetime
+import math
 from typing import List
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -29,6 +30,20 @@ def _provenance_text(sim_run: SimulationRun) -> str:
 def _text(value: object | None) -> str:
     """Report backends require strings; legacy nullable fields remain explicit."""
     return "NOT_AVAILABLE" if value is None else str(value)
+
+
+def _metric_text(metrics: dict, key: str, precision: int) -> str:
+    value = metrics.get(key)
+    if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
+        return "No disponible"
+    return f"{value:.{precision}f}"
+
+
+def _metric_cell(metrics: dict, key: str) -> float | int | None:
+    value = metrics.get(key)
+    if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
+        return None
+    return value
 
 class ReportGeneratorService:
     """Servicio de generación de reportes técnicos multiformato (PDF, Word, Excel)."""
@@ -135,13 +150,13 @@ class ReportGeneratorService:
         metrics = sim_run.summary_metrics or {}
         kpi_data = [
             ["Indicador Biofísico / Hidrológico", "Valor Obtenido", "Unidad", "Estado"],
-            ["Precipitación Total Acumulada", f"{metrics.get('total_precip_mm', 0):.1f}", "mm", "Forzamiento"],
-            ["Escorrentía Superficial (Q_surf)", f"{metrics.get('total_surface_runoff_mm', 0):.1f}", "mm", "Modelo simplificado SCS-CN"],
-            ["Evapotranspiración Real (E_a)", f"{metrics.get('total_actual_et_mm', 0):.1f}", "mm", "Modelo simplificado"],
-            ["Volumen Total en Exutorio", f"{metrics.get('total_discharge_hm3', 0):.2f}", "hm³", "Río Cuenca"],
-            ["Caudal Máximo Pico", f"{metrics.get('peak_streamflow_m3s', 0):.2f}", "m³/s", "Crecida"],
-            ["Estrés Hídrico Medio (CWSI)", f"{metrics.get('mean_cwsi', 0):.3f}", "0 a 1", metrics.get('drought_stress_status', 'Normal')],
-            ["Rendimiento estacional proxy", f"{metrics.get('seasonal_crop_yield_proxy_t_ha', 0):.2f}", "t/ha", "DERIVED; no NASS observado"],
+            ["Precipitación Total Acumulada", _metric_text(metrics, "total_precip_mm", 1), "mm", "Forzamiento"],
+            ["Escorrentía Superficial (Q_surf)", _metric_text(metrics, "total_surface_runoff_mm", 1), "mm", "Modelo simplificado SCS-CN"],
+            ["Evapotranspiración Real (E_a)", _metric_text(metrics, "total_actual_et_mm", 1), "mm", "Modelo simplificado"],
+            ["Volumen Total en Exutorio", _metric_text(metrics, "total_discharge_hm3", 2), "hm³", "Río Cuenca"],
+            ["Caudal Máximo Pico", _metric_text(metrics, "peak_streamflow_m3s", 2), "m³/s", "Crecida"],
+            ["Estrés Hídrico Medio (CWSI)", _metric_text(metrics, "mean_cwsi", 3), "0 a 1", metrics.get('drought_stress_status', 'No disponible')],
+            ["Rendimiento estacional proxy", _metric_text(metrics, "seasonal_crop_yield_proxy_t_ha", 2), "t/ha", "DERIVED; no NASS observado"],
         ]
         t_kpi = Table(kpi_data, colWidths=[190, 110, 80, 160])
         t_kpi.setStyle(TableStyle([
@@ -263,13 +278,13 @@ class ReportGeneratorService:
         kpi_table = doc.add_table(rows=8, cols=4)
         kpi_table.alignment = WD_TABLE_ALIGNMENT.CENTER
         kpis = [
-            ("Precipitación Total", f"{metrics.get('total_precip_mm', 0):.1f}", "mm", "Forzamiento"),
-            ("Escorrentía Superficial", f"{metrics.get('total_surface_runoff_mm', 0):.1f}", "mm", "Modelo simplificado SCS-CN"),
-            ("Evapotranspiración Real", f"{metrics.get('total_actual_et_mm', 0):.1f}", "mm", "SimplifiedPlantModel"),
-            ("Descarga Acumulada Río", f"{metrics.get('total_discharge_hm3', 0):.2f}", "hm³", "Volumen Cuenca"),
-            ("Caudal Máximo Pico", f"{metrics.get('peak_streamflow_m3s', 0):.2f}", "m³/s", "Crecida"),
-            ("Estrés Hídrico Medio (CWSI)", f"{metrics.get('mean_cwsi', 0):.3f}", "0 - 1", metrics.get('drought_stress_status', 'Normal')),
-            ("Rendimiento estacional proxy", f"{metrics.get('seasonal_crop_yield_proxy_t_ha', 0):.2f}", "t/ha", "DERIVED; no NASS observado"),
+            ("Precipitación Total", _metric_text(metrics, "total_precip_mm", 1), "mm", "Forzamiento"),
+            ("Escorrentía Superficial", _metric_text(metrics, "total_surface_runoff_mm", 1), "mm", "Modelo simplificado SCS-CN"),
+            ("Evapotranspiración Real", _metric_text(metrics, "total_actual_et_mm", 1), "mm", "SimplifiedPlantModel"),
+            ("Descarga Acumulada Río", _metric_text(metrics, "total_discharge_hm3", 2), "hm³", "Volumen Cuenca"),
+            ("Caudal Máximo Pico", _metric_text(metrics, "peak_streamflow_m3s", 2), "m³/s", "Crecida"),
+            ("Estrés Hídrico Medio (CWSI)", _metric_text(metrics, "mean_cwsi", 3), "0 - 1", metrics.get('drought_stress_status', 'No disponible')),
+            ("Rendimiento estacional proxy", _metric_text(metrics, "seasonal_crop_yield_proxy_t_ha", 2), "t/ha", "DERIVED; no NASS observado"),
         ]
         # Encabezados
         headers = ["Indicador", "Valor", "Unidad", "Componente"]
@@ -369,13 +384,13 @@ class ReportGeneratorService:
             ws_resumen[col].alignment = center_align
 
         kpis = [
-            ("Precipitación Total Acumulada", metrics.get("total_precip_mm", 0), "mm"),
-            ("Escorrentía superficial (modelo simplificado)", metrics.get("total_surface_runoff_mm", 0), "mm"),
-            ("Evapotranspiración Real Acumulada", metrics.get("total_actual_et_mm", 0), "mm"),
-            ("Volumen Descargado en Río", metrics.get("total_discharge_hm3", 0), "hm³"),
-            ("Caudal Máximo Pico", metrics.get("peak_streamflow_m3s", 0), "m³/s"),
-            ("Estrés Hídrico Medio (CWSI)", metrics.get("mean_cwsi", 0), "0 a 1"),
-            ("Rendimiento estacional proxy (DERIVED)", metrics.get("seasonal_crop_yield_proxy_t_ha", 0), "t/ha"),
+            ("Precipitación Total Acumulada", _metric_cell(metrics, "total_precip_mm"), "mm"),
+            ("Escorrentía superficial (modelo simplificado)", _metric_cell(metrics, "total_surface_runoff_mm"), "mm"),
+            ("Evapotranspiración Real Acumulada", _metric_cell(metrics, "total_actual_et_mm"), "mm"),
+            ("Volumen Descargado en Río", _metric_cell(metrics, "total_discharge_hm3"), "hm³"),
+            ("Caudal Máximo Pico", _metric_cell(metrics, "peak_streamflow_m3s"), "m³/s"),
+            ("Estrés Hídrico Medio (CWSI)", _metric_cell(metrics, "mean_cwsi"), "0 a 1"),
+            ("Rendimiento estacional proxy (DERIVED)", _metric_cell(metrics, "seasonal_crop_yield_proxy_t_ha"), "t/ha"),
         ]
         for idx, (k, v, u) in enumerate(kpis, start=13):
             ws_resumen[f"A{idx}"] = k

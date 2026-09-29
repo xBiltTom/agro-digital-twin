@@ -1,0 +1,151 @@
+{
+  "calendar_group_count": 7,
+  "crop": "corn",
+  "event_count": 64,
+  "groups": [
+    {
+      "calendar_id": "corn-2019-05-15-to-2019-08-27-01",
+      "crop": "corn",
+      "harvest_date": "2019-08-27",
+      "hru_ids": [
+        19,
+        26
+      ],
+      "planting_date": "2019-05-15",
+      "spatial_weight": 5016.304982796718,
+      "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+    },
+    {
+      "calendar_id": "corn-2019-05-15-to-2019-08-28-02",
+      "crop": "corn",
+      "harvest_date": "2019-08-28",
+      "hru_ids": [
+        15,
+        18,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "planting_date": "2019-05-15",
+      "spatial_weight": 6995.05267900265,
+      "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+    },
+    {
+      "calendar_id": "corn-2019-05-15-to-2019-08-29-03",
+      "crop": "corn",
+      "harvest_date": "2019-08-29",
+      "hru_ids": [
+        7,
+        11,
+        13,
+        17,
+        27,
+        32
+      ],
+      "planting_date": "2019-05-15",
+      "spatial_weight": 6016.566254573367,
+      "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+    },
+    {
+      "calendar_id": "corn-2019-05-15-to-2019-08-30-04",
+      "crop": "corn",
+      "harvest_date": "2019-08-30",
+      "hru_ids": [
+        2,
+        9,
+        10,
+        12,
+        14,
+        16,
+        29,
+        30,
+        33,
+        34,
+        36
+      ],
+      "planting_date": "2019-05-15",
+      "spatial_weight": 10081.79930351075,
+      "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+    },
+    {
+      "calendar_id": "corn-2019-05-16-to-2019-08-31-05",
+      "crop": "corn",
+      "harvest_date": "2019-08-31",
+      "hru_ids": [
+        5,
+        6
+      ],
+      "planting_date": "2019-05-16",
+      "spatial_weight": 1262.467333223739,
+      "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+    },
+    {
+      "calendar_id": "corn-2019-05-16-to-2019-09-01-06",
+      "crop": "corn",
+      "harvest_date": "2019-09-01",
+      "hru_ids": [
+        1,
+        31,
+        35
+      ],
+      "planting_date": "2019-05-16",
+      "spatial_weight": 1276.9172960936412,
+      "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+    },
+    {
+      "calendar_id": "corn-2019-05-16-to-2019-09-03-07",
+      "crop": "corn",
+      "harvest_date": "2019-09-03",
+      "hru_ids": [
+        8
+      ],
+      "planting_date": "2019-05-16",
+      "spatial_weight": 1163.1627320635478,
+      "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+    }
+  ],
+  "hru_calendar": {
+    "1": "corn-2019-05-16-to-2019-09-01-06",
+    "10": "corn-2019-05-15-to-2019-08-30-04",
+    "11": "corn-2019-05-15-to-2019-08-29-03",
+    "12": "corn-2019-05-15-to-2019-08-30-04",
+    "13": "corn-2019-05-15-to-2019-08-29-03",
+    "14": "corn-2019-05-15-to-2019-08-30-04",
+    "15": "corn-2019-05-15-to-2019-08-28-02",
+    "16": "corn-2019-05-15-to-2019-08-30-04",
+    "17": "corn-2019-05-15-to-2019-08-29-03",
+    "18": "corn-2019-05-15-to-2019-08-28-02",
+    "19": "corn-2019-05-15-to-2019-08-27-01",
+    "2": "corn-2019-05-15-to-2019-08-30-04",
+    "20": "corn-2019-05-15-to-2019-08-28-02",
+    "21": "corn-2019-05-15-to-2019-08-28-02",
+    "22": "corn-2019-05-15-to-2019-08-28-02",
+    "23": "corn-2019-05-15-to-2019-08-28-02",
+    "24": "corn-2019-05-15-to-2019-08-28-02",
+    "26": "corn-2019-05-15-to-2019-08-27-01",
+    "27": "corn-2019-05-15-to-2019-08-29-03",
+    "29": "corn-2019-05-15-to-2019-08-30-04",
+    "30": "corn-2019-05-15-to-2019-08-30-04",
+    "31": "corn-2019-05-16-to-2019-09-01-06",
+    "32": "corn-2019-05-15-to-2019-08-29-03",
+    "33": "corn-2019-05-15-to-2019-08-30-04",
+    "34": "corn-2019-05-15-to-2019-08-30-04",
+    "35": "corn-2019-05-16-to-2019-09-01-06",
+    "36": "corn-2019-05-15-to-2019-08-30-04",
+    "5": "corn-2019-05-16-to-2019-08-31-05",
+    "6": "corn-2019-05-16-to-2019-08-31-05",
+    "7": "corn-2019-05-15-to-2019-08-29-03",
+    "8": "corn-2019-05-16-to-2019-09-03-07",
+    "9": "corn-2019-05-15-to-2019-08-30-04"
+  },
+  "hru_count": 32,
+  "limitation": "Management dates are SWAT+ simulated execution events at daily resolution, not observed field operation dates. FSPM applies the date to the complete day because subdaily operation timing is unavailable.",
+  "requested_period": [
+    "2019-01-01",
+    "2019-12-31"
+  ],
+  "source_file": "mgt_out.txt",
+  "status": "EXECUTED_SWAT_MANAGEMENT_EVENTS"
+}

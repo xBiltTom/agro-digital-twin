@@ -57,7 +57,7 @@ def test_drought_reduces_actual_transpiration_but_not_potential():
     assert low["cwsi_stress_index"] > moderate["cwsi_stress_index"] >= adequate["cwsi_stress_index"]
     wilted = model.compute_daily_plant_step(25, 20, 60, 8)
     assert wilted["actual_transpiration_mm"] == 0
-    assert wilted["sap_flow_velocity_cmh"] == 0
+    assert "sap_flow_velocity_cmh" not in wilted
 
 
 def test_population_field_and_proxy_hru_share_percent_contract_and_seed():

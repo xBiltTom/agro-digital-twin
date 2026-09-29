@@ -62,6 +62,6 @@ class SimplifiedPlantModel:
         return {"et0_mm": round(et0, 6), "potential_transpiration_mm": round(potential, 6),
                 "actual_transpiration_mm": round(actual, 6), "root_water_uptake_mm": round(actual, 6),
                 "feddes_alpha": round(self.feddes_reduction_factor(soil_moisture_vol), 6),
-                "cwsi_stress_index": round(cwsi, 6), "sap_flow_velocity_cmh": round(actual / 6.0 * 18.0, 6),
+                "cwsi_stress_index": round(cwsi, 6),
                 "leaf_water_potential_mpa": round(-0.4 - cwsi * 1.8, 6),
                 "stomatal_conductance_mmol": round(320.0 * (1.0 - cwsi * 0.85), 6)}

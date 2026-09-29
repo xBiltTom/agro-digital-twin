@@ -19,6 +19,7 @@ import SwatRunEvidencePanel from "../../../components/scientific/SwatRunEvidence
 import HypothesisValidationPanel from "../../../components/scientific/HypothesisValidationPanel";
 import ClimateScenariosPanel from "../../../components/scientific/ClimateScenariosPanel";
 import StatisticalBatteryPanel from "../../../components/scientific/StatisticalBatteryPanel";
+import { AIInsightsCard } from "../../../components/simulations/AIInsightsCard";
 import {
   Sliders,
   Play,
@@ -401,6 +402,7 @@ export default function SimulationsPage() {
           output_frequency: "DAILY",
           warmup_period: 0,
           target_plant_name: "corn",
+          outlet_unit: "153",
         } : undefined,
       });
       setSimulations([newSim, ...simulations]);
@@ -923,32 +925,52 @@ export default function SimulationsPage() {
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-1.5 p-2 rounded-lg bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 text-[11px] font-mono">
-                          <div>
-                            <span className="text-[9px] text-zinc-400 uppercase block">Lluvia</span>
-                            <span className="text-zinc-800 dark:text-zinc-200 font-bold">
-                              {sim.summary_metrics?.total_precip_mm != null ? `${Number(sim.summary_metrics.total_precip_mm).toFixed(0)} mm` : "-"}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] text-zinc-400 uppercase block">Descarga</span>
-                            <span className="text-teal-600 dark:text-teal-400 font-bold">
-                              {sim.summary_metrics?.total_discharge_hm3 != null ? `${Number(sim.summary_metrics.total_discharge_hm3).toFixed(1)} hm³` : "-"}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] text-zinc-400 uppercase block">CWSI Medio</span>
-                            <span
-                              className={`font-bold ${
-                                (sim.summary_metrics?.mean_cwsi ?? 0) < 0.25
-                                  ? "text-emerald-600 dark:text-emerald-400"
-                                  : "text-amber-600 dark:text-amber-400"
-                              }`}
-                            >
-                              {sim.summary_metrics?.mean_cwsi != null ? Number(sim.summary_metrics.mean_cwsi).toFixed(3) : "-"}
-                            </span>
-                          </div>
-                        </div>
+                        {(() => {
+                          const precipVal = sim.summary_metrics?.total_precip_mm ?? sim.summary_metrics?.total_precipitation_mm;
+                          const runoffVal = sim.summary_metrics?.total_runoff_mm ?? sim.summary_metrics?.total_surface_runoff_mm;
+                          const col1Label = precipVal != null ? "Lluvia" : (runoffVal != null ? "Escorrentía" : "Lluvia");
+                          const col1Value = precipVal != null
+                            ? `${Number(precipVal).toFixed(0)} mm`
+                            : (runoffVal != null ? `${Number(runoffVal).toFixed(0)} mm` : "—");
+
+                          const dischargeHm3 = sim.summary_metrics?.total_discharge_hm3 != null
+                            ? Number(sim.summary_metrics.total_discharge_hm3)
+                            : (sim.summary_metrics?.water_balance?.mean_streamflow_m3s != null && sim.duration_days
+                              ? (Number(sim.summary_metrics.water_balance.mean_streamflow_m3s) * sim.duration_days * 86400) / 1_000_000
+                              : (runoffVal != null ? (Number(runoffVal) * 580.15) / 1000 : null));
+                          const col2Value = dischargeHm3 != null ? `${dischargeHm3.toFixed(1)} hm³` : "—";
+
+                          const cwsiVal = sim.summary_metrics?.mean_cwsi ?? sim.field_aggregates?.mean_water_stress;
+                          const etVal = sim.summary_metrics?.total_evapotranspiration_mm ?? sim.summary_metrics?.total_actual_et_mm;
+                          const col3Label = cwsiVal != null ? "CWSI Medio" : (etVal != null ? "ET Real" : "CWSI");
+                          const col3Value = cwsiVal != null
+                            ? Number(cwsiVal).toFixed(3)
+                            : (etVal != null ? `${Number(etVal).toFixed(0)} mm` : "—");
+                          const col3IsGood = cwsiVal != null ? Number(cwsiVal) < 0.25 : true;
+
+                          return (
+                            <div className="grid grid-cols-3 gap-1.5 p-2 rounded-lg bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 text-[11px] font-mono">
+                              <div>
+                                <span className="text-[9px] text-zinc-400 uppercase block truncate">{col1Label}</span>
+                                <span className="text-zinc-800 dark:text-zinc-200 font-bold">
+                                  {col1Value}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-zinc-400 uppercase block truncate">Descarga</span>
+                                <span className="text-teal-600 dark:text-teal-400 font-bold">
+                                  {col2Value}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-zinc-400 uppercase block truncate">{col3Label}</span>
+                                <span className={`font-bold ${col3IsGood ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                                  {col3Value}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })
@@ -960,6 +982,12 @@ export default function SimulationsPage() {
             <div className="lg:col-span-8 flex flex-col gap-5">
               {selectedSim ? (
                 <>
+                  <AIInsightsCard
+                    key={selectedSim.id}
+                    simulationId={selectedSim.id}
+                    initialInsights={(selectedSim.provenance as Record<string, any>)?.ai_insights}
+                  />
+
                   {isSelectedRealSwat && swatResults ? (
                     <SwatRunEvidencePanel simulation={selectedSim} result={swatResults} />
                   ) : (

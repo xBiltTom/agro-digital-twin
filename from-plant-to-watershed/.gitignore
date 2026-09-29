@@ -39,6 +39,15 @@ digitaltwin.db
 *.db-shm
 backend/data/*.db
 backend/data/playback/
+backend/data/phase34-cdl-2019/
+backend/data/phase34-verification/
+backend/data/phase35-sensitivity-verification*/
+backend/data/phase1-south-fork-2019/workspaces/
+backend/data/phase1-south-fork-2019/results/*
+!backend/data/phase1-south-fork-2019/results/phase1-sf-2019-v3/
+!backend/data/phase1-south-fork-2019/results/phase1-sf-2019-v3/**
+!backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v1/
+!backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v1/**
 data/playback/
 
 # Python & Testing Cache

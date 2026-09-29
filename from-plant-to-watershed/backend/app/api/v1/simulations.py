@@ -12,21 +12,63 @@ from app.models.watershed import Watershed
 from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
 from app.models.observation import Dataset, DatasetArtifact
 from app.core.config import settings
-from app.services.swat_plus_adapter import SwatPlusAdapter
+from app.services.swat_plus_adapter import (
+    SwatCoupledPreflightBlockedError,
+    SwatPlusAdapter,
+    swat_run_config_from_request,
+)
 from app.schemas.simulation import (
     SimulationRunCreate,
     SimulationRunResponse,
     SimulationResultResponse,
     ClimateScenarioResponse,
-    WatershedResponse
+    WatershedResponse,
+    AIInsightsResponse,
 )
 from app.api.deps import get_current_active_user, require_roles
 from app.services.twin_coupling_engine import TwinCouplingEngine
 from app.services.playback_artifact import PlaybackArtifactStore
+from app.services.ai_insights import AICopilotService
 from app.schemas.playback import PlaybackPage, Resolution
+from app.schemas.playback_diagnostic import SimulationAvailability
+from app.services.playback_diagnostic import diagnose_simulation
+from app.services.simulation_provenance import (
+    SimulationProvenanceClass,
+    classify_simulation_provenance,
+)
 from scientific_core import RunConfig
 
 router = APIRouter(prefix="/simulations", tags=["Simulaciones simplificadas"])
+
+
+def _preflight_block_detail(preflight: dict) -> dict:
+    return {
+        "type": "SWAT_COUPLED_PREFLIGHT_BLOCKED",
+        "message": "La configuración SWAT+ no puede ejecutar el acoplamiento FSPM solicitado.",
+        "blockers": preflight.get("blockers", []),
+        "checks": preflight.get("checks", {}),
+    }
+
+
+def _is_coupled_swat_request(simulation_request: SimulationRunCreate) -> bool:
+    """Match both fields that route execution into the real SWAT+ backend."""
+    uses_swat = simulation_request.hydrology_backend == "SWAT_PLUS" or simulation_request.mode == "SWAT_PLUS"
+    requested_swat = simulation_request.swat_plus
+    return bool(
+        uses_swat
+        and requested_swat is not None
+        and requested_swat.run_type == "SWAT_MULTISCALE_COUPLED"
+    )
+
+
+async def _visible_simulation(db: AsyncSession, sim_id: str, user: User) -> SimulationRun:
+    stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
+    if "SUPERADMIN" not in {role.name for role in user.roles}:
+        stmt = stmt.where(SimulationRun.user_id == user.id)
+    sim = await db.scalar(stmt)
+    if sim is None:
+        raise HTTPException(status_code=404, detail="Simulation not found")
+    return sim
 
 @router.get("/scenarios/all", response_model=List[ClimateScenarioResponse])
 async def list_climate_scenarios(
@@ -55,7 +97,10 @@ async def list_simulations(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):
-    stmt = select(SimulationRun).order_by(desc(SimulationRun.created_at)).offset(skip).limit(limit)
+    stmt = select(SimulationRun)
+    if "SUPERADMIN" not in {role.name for role in _user.roles}:
+        stmt = stmt.where(SimulationRun.user_id == _user.id)
+    stmt = stmt.order_by(desc(SimulationRun.created_at), desc(SimulationRun.id)).offset(skip).limit(limit)
     res = await db.execute(stmt)
     return res.scalars().all()
 
@@ -87,20 +132,34 @@ async def preflight_simulation(
 
     is_swat = sim_in.hydrology_backend == "SWAT_PLUS"
     if is_swat:
-        capability = SwatPlusAdapter(
-            executable=settings.SWAT_PLUS_EXECUTABLE,
-            project_dir=settings.SWAT_PLUS_PROJECT_DIR,
-            working_directory=settings.SWAT_PLUS_WORKING_DIRECTORY,
-        ).capability()
-        ready = capability["status"] == "ACTIVE"
+        if sim_in.swat_plus is None:
+            raise HTTPException(status_code=422, detail="SWAT+ configuration is required for preflight")
+        requested = sim_in.swat_plus
+        executable = requested.executable_path or settings.SWAT_PLUS_EXECUTABLE
+        project = requested.project_path or settings.SWAT_PLUS_PROJECT_DIR
+        working_directory = requested.working_directory or settings.SWAT_PLUS_WORKING_DIRECTORY
+        if not executable or not project:
+            return {
+                "status": "BLOCKED", "backend": "SWAT_PLUS", "run_type": requested.run_type,
+                "estimated_executions": 2 if requested.run_type == "SWAT_MULTISCALE_COUPLED" else 1,
+                "blockers": [{"code": "SWAT_CONFIGURATION_MISSING", "message": "Configure the SWAT+ executable and project path"}],
+                "provenance_only": [dataset.dataset_name for dataset in datasets],
+                "watershed": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
+                "scenario": {"id": scenario.id, "code": scenario.code, "application": "CONTEXT_ONLY; SWAT+ forcing comes from the configured project"},
+            }
+        config = swat_run_config_from_request(
+            requested.model_dump(), simulation_start=sim_in.start_date,
+            simulation_end=sim_in.end_date, watershed_id=watershed.code,
+            run_id="preflight-read-only",
+        )
+        preflight = SwatPlusAdapter(executable, project, working_directory).preflight(
+            config, target_crop=requested.target_plant_name
+        )
         return {
-            "status": "READY" if ready else "BLOCKED",
+            **preflight,
             "backend": "SWAT_PLUS",
-            "run_type": sim_in.swat_plus.run_type,
-            "estimated_executions": 2 if sim_in.swat_plus.run_type == "SWAT_MULTISCALE_COUPLED" else 1,
-            "will_consume": ["SWAT+ project forcing", "SWAT+ project HRUs/soils/management", "start_date", "end_date", "seed", "plant_count"] + (["plant population -> plants.plt"] if sim_in.swat_plus.run_type == "SWAT_MULTISCALE_COUPLED" else []),
+            "will_consume": ["SWAT+ project forcing", "SWAT+ project HRUs/soils/management", "start_date", "end_date", "seed", "plant_count"] + (["plant population -> plants.plt"] if requested.run_type == "SWAT_MULTISCALE_COUPLED" else []),
             "provenance_only": [dataset.dataset_name for dataset in datasets],
-            "resource_status": capability,
             "watershed": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
             "scenario": {"id": scenario.id, "code": scenario.code, "application": "CONTEXT_ONLY; SWAT+ forcing comes from the configured project"},
         }
@@ -178,6 +237,23 @@ async def create_and_run_simulation(
             detail="External climate forcing already defines its climate signal; select a neutral scenario (0 C, precipitation factor 1) until scenario transformations are implemented",
         )
 
+    requested_swat = requested_config.get("swat_plus") or {}
+    is_coupled = _is_coupled_swat_request(sim_in)
+    if is_coupled:
+        config = swat_run_config_from_request(
+            requested_swat, simulation_start=sim_in.start_date,
+            simulation_end=sim_in.end_date, watershed_id=watershed.code,
+            run_id="coupled-preflight-read-only",
+        )
+        preflight = SwatPlusAdapter(
+            config.executable_path, config.project_path, config.working_directory
+        ).preflight(config, target_crop=requested_swat.get("target_plant_name", "corn"))
+        if preflight.get("status") != "READY":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=_preflight_block_detail(preflight),
+            )
+
     new_sim = SimulationRun(
         user_id=current_user.id,
         watershed_id=sim_in.watershed_id,
@@ -205,7 +281,6 @@ async def create_and_run_simulation(
     await db.flush()
 
     try:
-        is_coupled = (requested_config.get("swat_plus") or {}).get("run_type") == "SWAT_MULTISCALE_COUPLED"
         if is_coupled:
             # A coupled request always materializes its experimental control first.
             # Both rows preserve the identical source/configuration except run type.
@@ -247,7 +322,11 @@ async def create_and_run_simulation(
         else:
             completed_sim = await TwinCouplingEngine.execute_simulation_run(db, new_sim.id)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail={
+        await db.rollback()
+        error_status = (status.HTTP_422_UNPROCESSABLE_ENTITY
+                        if isinstance(exc, SwatCoupledPreflightBlockedError)
+                        else status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise HTTPException(status_code=error_status, detail={
             "message": str(exc), "type": getattr(exc, "code", type(exc).__name__),
             **({"details": exc.details} if hasattr(exc, "details") else {}),
         }) from exc
@@ -259,12 +338,7 @@ async def get_simulation_detail(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):
-    stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
-    res = await db.execute(stmt)
-    sim = res.scalar_one_or_none()
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulación no encontrada")
-    return sim
+    return await _visible_simulation(db, sim_id, _user)
 
 @router.get("/{sim_id}/results", response_model=List[SimulationResultResponse])
 async def get_simulation_results(
@@ -273,9 +347,7 @@ async def get_simulation_results(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):
-    exists = await db.scalar(select(SimulationRun.id).where(SimulationRun.id == sim_id))
-    if not exists:
-        raise HTTPException(status_code=404, detail="Simulación no encontrada")
+    await _visible_simulation(db, sim_id, _user)
     stmt = (
         select(SimulationResult)
         .where(SimulationResult.simulation_run_id == sim_id)
@@ -291,18 +363,52 @@ async def get_swat_results(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user),
 ):
-    """Return persisted normalized SWAT+ records without proxy/FSPM fields."""
-    sim = await db.scalar(select(SimulationRun).where(SimulationRun.id == sim_id))
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulación no encontrada")
-    if (sim.provenance or {}).get("evidence_type") not in {"REAL_SWAT_PLUS", "REAL_SWAT_PLUS_COUPLED"}:
-        raise HTTPException(status_code=409, detail={"type": "NOT_AVAILABLE", "message": "This run is not a completed real SWAT+ execution"})
+    """Return persisted SWAT+ output with its executed or imported origin intact."""
+    sim = await _visible_simulation(db, sim_id, _user)
+    provenance = sim.provenance or {}
+    provenance_class = classify_simulation_provenance(sim)
+    imported = provenance_class is SimulationProvenanceClass.HISTORICAL_IMPORT
+    executed = provenance_class in {
+        SimulationProvenanceClass.SWAT_EXECUTED,
+        SimulationProvenanceClass.COUPLED_EXECUTED,
+    }
+    if imported:
+        records = sim.monthly_outputs or []
+        if not records:
+            raise HTTPException(status_code=409, detail={
+                "type": "HISTORICAL_RESULTS_NOT_AVAILABLE",
+                "message": "This historical import has no persisted hydrological records",
+            })
+        origin = "HISTORICAL_IMPORT"
+    elif executed:
+        records = sim.monthly_outputs or []
+        origin = "EXECUTED"
+    else:
+        raise HTTPException(status_code=409, detail={"type": "NOT_AVAILABLE", "message": "This run has no supported SWAT+ result provenance"})
+    effective = sim.effective_config or {}
+    requested = sim.requested_config or {}
+    temporal_resolution = ((sim.validation or {}).get("temporal_resolution")
+                           or effective.get("output_frequency")
+                           or (requested.get("swat_plus") or {}).get("output_frequency"))
     return {
-        "status": sim.status, "run_id": sim.id, "records": sim.monthly_outputs or [],
+        "status": sim.status, "origin": origin, "run_id": sim.id,
+        "provenance_class": provenance_class.value,
+        "temporal_resolution": temporal_resolution, "records": records,
         "hru_results": (sim.hru_aggregates or {}).get("results", []),
         "water_balance": (sim.summary_metrics or {}).get("water_balance"),
-        "provenance": sim.provenance,
+        "provenance": provenance,
     }
+
+
+@router.get("/{sim_id}/availability", response_model=SimulationAvailability)
+async def get_simulation_availability(
+    sim_id: str,
+    on: date | None = Query(None, alias="date"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    sim = await _visible_simulation(db, sim_id, current_user)
+    return diagnose_simulation(sim, on=on)
 
 
 @router.get("/{sim_id}/playback", response_model=PlaybackPage)
@@ -318,9 +424,7 @@ async def get_simulation_playback(
     current_user: User = Depends(get_current_active_user),
 ):
     """Indexed, owner-scoped read of versioned dated scientific states."""
-    sim = await db.scalar(select(SimulationRun).where(SimulationRun.id == sim_id))
-    if sim is None or (sim.user_id != current_user.id and "SUPERADMIN" not in {role.name for role in current_user.roles}):
-        raise HTTPException(status_code=404, detail="Simulation not found")
+    sim = await _visible_simulation(db, sim_id, current_user)
     if (on is not None and (start is not None or end is not None)) or (start and end and start > end):
         raise HTTPException(status_code=422, detail="Use either date or a valid start/end interval")
     manifest = (sim.provenance or {}).get("playback")
@@ -347,3 +451,82 @@ async def get_simulation_playback(
                         total=total, offset=offset, limit=limit, records=records,
                         variables=manifest.get("variables", {}), provenance=manifest.get("provenance", {}),
                         limitations=manifest.get("limitations", []))
+
+
+@router.get("/{sim_id}/ai-insights", response_model=AIInsightsResponse)
+async def get_simulation_ai_insights(
+    sim_id: str,
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user),
+):
+    """Retrieve or compute AI scientific insights for a simulation run."""
+    sim = await _visible_simulation(db, sim_id, _user)
+
+    # Return cached insights if already computed
+    cached = (sim.provenance or {}).get("ai_insights")
+    if cached and isinstance(cached, dict) and "executive_summary" in cached:
+        return cached
+
+    watershed_name = None
+    if sim.watershed_id:
+        w_stmt = select(Watershed.name).where(Watershed.id == sim.watershed_id)
+        watershed_name = await db.scalar(w_stmt)
+
+    sim_data = {
+        "id": sim.id,
+        "name": sim.name,
+        "duration_days": sim.duration_days,
+        "management_scenario": sim.management_scenario,
+        "climate_source": sim.climate_source,
+        "summary_metrics": sim.summary_metrics or {},
+        "field_aggregates": sim.field_aggregates or {},
+        "validation": sim.validation or {},
+        "scenario": sim.scenario.__dict__ if hasattr(sim.scenario, "__dict__") else {},
+        "watershed_name": watershed_name,
+    }
+
+    insights = await AICopilotService.analyze_simulation(sim_data)
+
+    new_prov = dict(sim.provenance or {})
+    new_prov["ai_insights"] = insights
+    sim.provenance = new_prov
+    await db.commit()
+
+    return insights
+
+
+@router.post("/{sim_id}/ai-insights", response_model=AIInsightsResponse)
+async def generate_simulation_ai_insights(
+    sim_id: str,
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user),
+):
+    """Force re-generate AI scientific insights for a simulation run using LangChain."""
+    sim = await _visible_simulation(db, sim_id, _user)
+
+    watershed_name = None
+    if sim.watershed_id:
+        w_stmt = select(Watershed.name).where(Watershed.id == sim.watershed_id)
+        watershed_name = await db.scalar(w_stmt)
+
+    sim_data = {
+        "id": sim.id,
+        "name": sim.name,
+        "duration_days": sim.duration_days,
+        "management_scenario": sim.management_scenario,
+        "climate_source": sim.climate_source,
+        "summary_metrics": sim.summary_metrics or {},
+        "field_aggregates": sim.field_aggregates or {},
+        "validation": sim.validation or {},
+        "scenario": sim.scenario.__dict__ if hasattr(sim.scenario, "__dict__") else {},
+        "watershed_name": watershed_name,
+    }
+
+    insights = await AICopilotService.analyze_simulation(sim_data)
+
+    new_prov = dict(sim.provenance or {})
+    new_prov["ai_insights"] = insights
+    sim.provenance = new_prov
+    await db.commit()
+
+    return insights

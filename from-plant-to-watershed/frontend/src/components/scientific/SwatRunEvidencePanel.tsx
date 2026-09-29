@@ -29,7 +29,8 @@ interface Props {
 const number = (value: number | null | undefined, digits = 2) =>
   value === null || value === undefined ? "—" : value.toFixed(digits);
 
-function MetricRow({ label, metric, unit }: { label: string; metric: PairedMetric; unit: string }) {
+function MetricRow({ label, metric, unit }: { label: string; metric?: PairedMetric | null; unit: string }) {
+  if (!metric) return null;
   const percentage = metric.delta_percentage === null || metric.delta_percentage === undefined
     ? "—"
     : `${metric.delta_percentage >= 0 ? "+" : ""}${metric.delta_percentage.toFixed(2)}%`;
@@ -67,7 +68,22 @@ export default function SwatRunEvidencePanel({ simulation, result }: Props) {
   const isCoupled = provenance.evidence_type === "REAL_SWAT_PLUS_COUPLED";
   const updates = provenance.parameter_updates ?? provenance.workspace_modifications?.parameter_updates ?? [];
   const notCoupled = provenance.workspace_modifications?.not_coupled ?? [];
-  const comparison = (simulation.summary_metrics?.paired_comparison ?? provenance.experiment) as PairedComparison | undefined;
+  const rawComparison = simulation.summary_metrics?.paired_comparison ?? provenance.experiment;
+  const isPairedComparison = Boolean(
+    rawComparison &&
+    typeof rawComparison === "object" &&
+    ("runoff_mm" in rawComparison || "evapotranspiration_mm" in rawComparison || "streamflow_m3s" in rawComparison)
+  );
+  const comparison = isPairedComparison ? (rawComparison as PairedComparison) : undefined;
+  const isScenarioDeltas = Boolean(
+    rawComparison &&
+    typeof rawComparison === "object" &&
+    !isPairedComparison &&
+    ("TEMPERATURE_PLUS_2C" in rawComparison || "PRECIPITATION_MINUS_15PCT" in rawComparison || "MAIZE_TO_SORGHUM" in rawComparison)
+  );
+  const scenarioDeltas = isScenarioDeltas
+    ? (rawComparison as unknown as Record<string, { streamflow_pct?: number | null; runoff_pct?: number | null; et_pct?: number | null; soil_water_pct?: number | null }>)
+    : undefined;
   const totals = result.water_balance?.totals_mm ?? {};
   const chartData = result.records.map((row) => ({
     period: row.period,
@@ -160,20 +176,66 @@ export default function SwatRunEvidencePanel({ simulation, result }: Props) {
         </div>
       </div>
 
-      {/* Paired Comparison */}
-      {comparison && (
+      {/* Paired Comparison (Standard Coupled vs Baseline) */}
+      {comparison && (comparison.runoff_mm || comparison.evapotranspiration_mm || comparison.streamflow_m3s) && (
         <div className="space-y-3 pt-2">
           <div className="flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-zinc-100">
             <FileCheck2 className="h-4 w-4 text-cyan-600" />
             <span>Comparación Emparejada Reproducible: Baseline vs Acoplado</span>
           </div>
-          <p className="text-[11px] font-mono text-zinc-500">
-            ID Experimento: {comparison.experiment_id} · Control: {comparison.baseline_run_id} · Acoplado: {comparison.coupled_run_id}
-          </p>
+          {comparison.experiment_id && (
+            <p className="text-[11px] font-mono text-zinc-500">
+              ID Experimento: {comparison.experiment_id} · Control: {comparison.baseline_run_id ?? "—"} · Acoplado: {comparison.coupled_run_id ?? "—"}
+            </p>
+          )}
           <div className="space-y-2">
-            <MetricRow label="Escorrentía Superficial (Runoff)" metric={comparison.runoff_mm} unit="mm" />
-            <MetricRow label="Evapotranspiración Real (ET)" metric={comparison.evapotranspiration_mm} unit="mm" />
-            <MetricRow label="Caudal Medio Fluvial" metric={comparison.streamflow_m3s} unit="m³/s" />
+            {comparison.runoff_mm && <MetricRow label="Escorrentía Superficial (Runoff)" metric={comparison.runoff_mm} unit="mm" />}
+            {comparison.evapotranspiration_mm && <MetricRow label="Evapotranspiración Real (ET)" metric={comparison.evapotranspiration_mm} unit="mm" />}
+            {comparison.streamflow_m3s && <MetricRow label="Caudal Medio Fluvial" metric={comparison.streamflow_m3s} unit="m³/s" />}
+          </div>
+        </div>
+      )}
+
+      {/* Scenario Sensitivity Deltas (e.g. +2°C, -15% Precip, No-Till, Sorghum) */}
+      {scenarioDeltas && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-zinc-100">
+            <FileCheck2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <span>Sensibilidad ante Escenarios Climáticos y de Manejo (SWAT+)</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {Object.entries(scenarioDeltas).map(([scKey, deltas]) => {
+              const labelMap: Record<string, string> = {
+                TEMPERATURE_PLUS_2C: "+2°C Temperatura",
+                PRECIPITATION_MINUS_15PCT: "-15% Precipitación",
+                NO_TILL: "Siembra Directa (No-Till)",
+                MAIZE_TO_SORGHUM: "Rotación a Sorgo",
+              };
+              const title = labelMap[scKey] || scKey;
+              return (
+                <div key={scKey} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/50 p-3 text-xs font-mono space-y-1.5">
+                  <span className="font-bold text-zinc-800 dark:text-zinc-200 block text-[11px] truncate">{title}</span>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-zinc-500">Caudal Q:</span>
+                    <span className={`font-bold ${(deltas.streamflow_pct ?? 0) < 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                      {deltas.streamflow_pct != null ? `${deltas.streamflow_pct >= 0 ? "+" : ""}${deltas.streamflow_pct.toFixed(2)}%` : "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-zinc-500">Escorrentía:</span>
+                    <span className={`font-bold ${(deltas.runoff_pct ?? 0) < 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                      {deltas.runoff_pct != null ? `${deltas.runoff_pct >= 0 ? "+" : ""}${deltas.runoff_pct.toFixed(2)}%` : "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-zinc-500">ET Real:</span>
+                    <span className={`font-bold ${(deltas.et_pct ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                      {deltas.et_pct != null ? `${deltas.et_pct >= 0 ? "+" : ""}${deltas.et_pct.toFixed(2)}%` : "—"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

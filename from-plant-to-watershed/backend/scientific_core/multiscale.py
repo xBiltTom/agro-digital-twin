@@ -63,6 +63,26 @@ class PlantPopulation:
 
     VERSION = "3.0-simplified-fspm"
 
+    @staticmethod
+    def representative_sample(states: Iterable[PlantState], max_samples: int = 10) -> tuple[PlantState, ...]:
+        """Select evenly spaced, stable representative slots from a modeled population.
+
+        These are deterministic model members, not observed or field-census plants.
+        The population order follows stable plant IDs and local grid coordinates.
+        """
+        if max_samples < 1:
+            raise ValueError("max_samples must be positive")
+        rows = tuple(states)
+        if len(rows) <= max_samples:
+            return rows
+        if max_samples == 1:
+            return (rows[(len(rows) - 1) // 2],)
+        last = len(rows) - 1
+        denominator = max_samples - 1
+        indexes = [(position * last + denominator // 2) // denominator
+                   for position in range(max_samples)]
+        return tuple(rows[index] for index in indexes)
+
     def __init__(self, count: int = 1000, seed: int = 42, *, base_kc: float = 1.05,
                  max_root_depth_cm: float = 120.0, crop: str = "maize",
                  plant_density_plants_m2: float = 8.0,
@@ -107,7 +127,8 @@ class PlantPopulation:
             ) for index in range(count)
         )
 
-    def step(self, day_index: int, forcing: dict[str, float], soil_moisture_vol: float) -> tuple[PlantState, ...]:
+    def step(self, day_index: int, forcing: dict[str, float], soil_moisture_vol: float,
+             soil_thresholds: tuple[float, float, float] | None = None) -> tuple[PlantState, ...]:
         """Evaluate representative plants at volumetric soil moisture in percent."""
         validate_soil_moisture_vol_percent(soil_moisture_vol)
         for name in ("temp_c", "solar_rad_mj", "rh_percent", "co2_ppm", "gdd_c_day", "cumulative_absorbed_par_mj_m2"):
@@ -123,7 +144,10 @@ class PlantPopulation:
         cumulative_apar = max(0.0, float(forcing.get("cumulative_absorbed_par_mj_m2", 0.0)))
         states = []
         for plant in self.plants:
-            model = SimplifiedPlantModel(plant.base_kc, plant.root_depth_cm)
+            model = SimplifiedPlantModel(
+                plant.base_kc, plant.root_depth_cm,
+                *(soil_thresholds or (12.0, 32.0, 44.0)),
+            )
             moisture = min(100.0, max(0.0, soil_moisture_vol + plant.soil_moisture_offset))
             result = model.compute_daily_plant_step(
                 forcing["temp_c"], forcing["solar_rad_mj"], forcing["rh_percent"], moisture, forcing["co2_ppm"]

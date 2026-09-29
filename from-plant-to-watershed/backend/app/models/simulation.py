@@ -90,7 +90,7 @@ class SimulationResult(Base, TimestampMixin):
     plant_transpiration_mm: Mapped[float] = mapped_column(Float, nullable=False)
     root_water_uptake_mm: Mapped[float] = mapped_column(Float, nullable=False) # Feddes RWU
     cwsi_stress_index: Mapped[float] = mapped_column(Float, default=0.15) # 0.0 (Sin estrés) a 1.0 (Estrés severo)
-    sap_flow_velocity_cmh: Mapped[float] = mapped_column(Float, default=12.4) # Flujo de savia en cm/h
+    sap_flow_velocity_cmh: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=None) # No modelled by current FSPM
     water_balance_residual_mm: Mapped[float] = mapped_column(Float, default=0.0)
 
     simulation_run: Mapped[SimulationRun] = relationship("SimulationRun", back_populates="results")

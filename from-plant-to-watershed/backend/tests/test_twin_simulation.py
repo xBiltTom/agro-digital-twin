@@ -58,7 +58,7 @@ def test_plant_model_feddes_reduction():
     )
     assert step["actual_transpiration_mm"] > 0.0
     assert 0.0 <= step["cwsi_stress_index"] <= 1.0
-    assert step["sap_flow_velocity_cmh"] > 0.0
+    assert "sap_flow_velocity_cmh" not in step
 
 def test_simplified_hydrology_water_balance():
     swat = SWATHydrologyEngine(

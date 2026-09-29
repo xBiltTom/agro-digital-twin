@@ -1,0 +1,4320 @@
+{
+  "corrections_by_file": {
+    "plants.plt": [
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 3,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 3,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 4,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 4,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 5,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 5,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 6,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 6,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 7,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 7,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 8,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 8,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 9,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 9,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 10,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "1",
+        "before": "1.00000",
+        "field": "yrs_mat",
+        "line": 10,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 11,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 11,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "105",
+        "before": "105.00000",
+        "field": "days_mat",
+        "line": 12,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 12,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 13,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 13,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "105",
+        "before": "105.00000",
+        "field": "days_mat",
+        "line": 14,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 14,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 15,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 15,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 16,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 16,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 17,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 17,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 18,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 18,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 19,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 19,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 20,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 20,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 21,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 21,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 22,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 22,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 23,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "61",
+        "before": "61.00000",
+        "field": "yrs_mat",
+        "line": 23,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 24,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 24,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 25,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 25,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 26,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 26,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 27,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 27,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 28,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 28,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 29,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 29,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 30,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 30,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 31,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 31,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 32,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 32,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 33,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "1",
+        "before": "1.00000",
+        "field": "yrs_mat",
+        "line": 33,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 34,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 34,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 35,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 35,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 36,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 36,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 37,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 37,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 38,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 38,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 39,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 39,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 40,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 40,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 41,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 41,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 42,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 42,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 43,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 43,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 44,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 44,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 45,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 45,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 46,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 46,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 47,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 47,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "days_mat",
+        "line": 48,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 48,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 49,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 49,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "180",
+        "before": "180.00000",
+        "field": "days_mat",
+        "line": 50,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 50,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "135",
+        "before": "135.00000",
+        "field": "days_mat",
+        "line": 51,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 51,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "145",
+        "before": "145.00000",
+        "field": "days_mat",
+        "line": 52,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 52,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "155",
+        "before": "155.00000",
+        "field": "days_mat",
+        "line": 53,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 53,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "180",
+        "before": "180.00000",
+        "field": "days_mat",
+        "line": 54,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 54,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "180",
+        "before": "180.00000",
+        "field": "days_mat",
+        "line": 55,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 55,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "135",
+        "before": "135.00000",
+        "field": "days_mat",
+        "line": 56,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 56,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "145",
+        "before": "145.00000",
+        "field": "days_mat",
+        "line": 57,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 57,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "155",
+        "before": "155.00000",
+        "field": "days_mat",
+        "line": 58,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 58,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "180",
+        "before": "180.00000",
+        "field": "days_mat",
+        "line": 59,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 59,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 60,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 60,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 61,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 61,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "160",
+        "before": "160.00000",
+        "field": "days_mat",
+        "line": 62,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 62,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 63,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "73",
+        "before": "73.00000",
+        "field": "yrs_mat",
+        "line": 63,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 64,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "73",
+        "before": "73.00000",
+        "field": "yrs_mat",
+        "line": 64,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 65,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "73",
+        "before": "73.00000",
+        "field": "yrs_mat",
+        "line": 65,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 66,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 66,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 67,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "68",
+        "before": "68.00000",
+        "field": "yrs_mat",
+        "line": 67,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 68,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 68,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 69,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 69,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 70,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 70,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 71,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 71,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 72,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 72,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 73,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 73,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 74,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 74,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 75,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 75,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 76,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 76,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 77,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 77,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 78,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 78,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 79,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 79,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 80,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 80,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 81,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 81,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 82,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 82,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 83,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 83,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 84,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 84,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 85,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "66",
+        "before": "66.00000",
+        "field": "yrs_mat",
+        "line": 85,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 86,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "66",
+        "before": "66.00000",
+        "field": "yrs_mat",
+        "line": 86,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 87,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "55",
+        "before": "55.00000",
+        "field": "yrs_mat",
+        "line": 87,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 88,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "55",
+        "before": "55.00000",
+        "field": "yrs_mat",
+        "line": 88,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 89,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "60",
+        "before": "60.00000",
+        "field": "yrs_mat",
+        "line": 89,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 90,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 90,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 91,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 91,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 92,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 92,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 93,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 93,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 94,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 94,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 95,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 95,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 96,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 96,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 97,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 97,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 98,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 98,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 99,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 99,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 100,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 100,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 101,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 101,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 102,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 102,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 103,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 103,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 104,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 104,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 105,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 105,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 106,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 106,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 107,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 107,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 108,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 108,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 109,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 109,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 110,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 110,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 111,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 111,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 112,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 112,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 113,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 113,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 114,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 114,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 115,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 115,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 116,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 116,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 117,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 117,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 118,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 118,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 119,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 119,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 120,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 120,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 121,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "69",
+        "before": "69.00000",
+        "field": "yrs_mat",
+        "line": 121,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 122,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 122,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 123,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 123,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 124,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 124,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "105",
+        "before": "105.00000",
+        "field": "days_mat",
+        "line": 125,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 125,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 126,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 126,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "95",
+        "before": "95.00000",
+        "field": "days_mat",
+        "line": 127,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 127,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 128,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 128,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 129,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 129,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 130,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 130,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 131,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 131,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 132,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 132,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 133,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 133,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 134,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 134,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "85",
+        "before": "85.00000",
+        "field": "days_mat",
+        "line": 135,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 135,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 136,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 136,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 137,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 137,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 138,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 138,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 139,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 139,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 140,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "65",
+        "before": "65.00000",
+        "field": "yrs_mat",
+        "line": 140,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 141,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 141,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 142,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "77",
+        "before": "77.00000",
+        "field": "yrs_mat",
+        "line": 142,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 143,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 143,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 144,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 144,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 145,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 145,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 146,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 146,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 147,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 147,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 148,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 148,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 149,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 149,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 150,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 150,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 151,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 151,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 152,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 152,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 153,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 153,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 154,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 154,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 155,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 155,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 156,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 156,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 157,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 157,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 158,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 158,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 159,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 159,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 160,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 160,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 161,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 161,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 162,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 162,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 163,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 163,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 164,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 164,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "105",
+        "before": "105.00000",
+        "field": "days_mat",
+        "line": 165,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 165,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 166,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 166,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "95",
+        "before": "95.00000",
+        "field": "days_mat",
+        "line": 167,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 167,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 168,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 168,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 169,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 169,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 170,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 170,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 171,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 171,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 172,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 172,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 173,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 173,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 174,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 174,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 175,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 175,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "130",
+        "before": "130.00000",
+        "field": "days_mat",
+        "line": 176,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 176,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 177,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 177,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "140",
+        "before": "140.00000",
+        "field": "days_mat",
+        "line": 178,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 178,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "160",
+        "before": "160.00000",
+        "field": "days_mat",
+        "line": 179,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 179,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "180",
+        "before": "180.00000",
+        "field": "days_mat",
+        "line": 180,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 180,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 181,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 181,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 182,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 182,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 183,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 183,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 184,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 184,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 185,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 185,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 186,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 186,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 187,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 187,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 188,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 188,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 189,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 189,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 190,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 190,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 191,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 191,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 192,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 192,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 193,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 193,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 194,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 194,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 195,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 195,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 196,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 196,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 197,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 197,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 198,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 198,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 199,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 199,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 200,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 200,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 201,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 201,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 202,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 202,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 203,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 203,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 204,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 204,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 205,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 205,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 206,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 206,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 207,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 207,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 208,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 208,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 209,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "65",
+        "before": "65.00000",
+        "field": "yrs_mat",
+        "line": 209,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 210,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 210,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 211,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 211,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 212,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 212,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 213,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 213,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 214,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 214,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 215,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "61",
+        "before": "61.00000",
+        "field": "yrs_mat",
+        "line": 215,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 216,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 216,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 217,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 217,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 218,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 218,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 219,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 219,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "105",
+        "before": "105.00000",
+        "field": "days_mat",
+        "line": 220,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 220,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 221,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 221,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "115",
+        "before": "115.00000",
+        "field": "days_mat",
+        "line": 222,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 222,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 223,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 223,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 224,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 224,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 225,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 225,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 226,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 226,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 227,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 227,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 228,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 228,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 229,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 229,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 230,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 230,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 231,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 231,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 232,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 232,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 233,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 233,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 234,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 234,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 235,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 235,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 236,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 236,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "110",
+        "before": "110.00000",
+        "field": "days_mat",
+        "line": 237,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 237,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "120",
+        "before": "120.00000",
+        "field": "days_mat",
+        "line": 238,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 238,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 239,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 239,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 240,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 240,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 241,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 241,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "160",
+        "before": "160.00000",
+        "field": "days_mat",
+        "line": 242,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 242,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 243,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 243,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 244,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 244,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 245,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "60",
+        "before": "60.00000",
+        "field": "yrs_mat",
+        "line": 245,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 246,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "59",
+        "before": "59.00000",
+        "field": "yrs_mat",
+        "line": 246,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 247,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "60",
+        "before": "60.00000",
+        "field": "yrs_mat",
+        "line": 247,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 248,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "60",
+        "before": "60.00000",
+        "field": "yrs_mat",
+        "line": 248,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 249,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 249,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 250,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 250,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 251,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 251,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "100",
+        "before": "100.00000",
+        "field": "days_mat",
+        "line": 252,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 252,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 253,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "69",
+        "before": "69.00000",
+        "field": "yrs_mat",
+        "line": 253,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 254,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 254,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 255,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 255,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 256,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 256,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 257,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 257,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 258,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "30",
+        "before": "30.00000",
+        "field": "yrs_mat",
+        "line": 258,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 259,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "66",
+        "before": "66.00000",
+        "field": "yrs_mat",
+        "line": 259,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 260,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "10",
+        "before": "10.00000",
+        "field": "yrs_mat",
+        "line": 260,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "90",
+        "before": "90.00000",
+        "field": "days_mat",
+        "line": 261,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 261,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 262,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 262,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 263,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "50",
+        "before": "50.00000",
+        "field": "yrs_mat",
+        "line": 263,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "days_mat",
+        "line": 264,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "2",
+        "before": "2.00000",
+        "field": "yrs_mat",
+        "line": 264,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "160",
+        "before": "160.00000",
+        "field": "days_mat",
+        "line": 265,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 265,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "150",
+        "before": "150.00000",
+        "field": "days_mat",
+        "line": 266,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 266,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "160",
+        "before": "160.00000",
+        "field": "days_mat",
+        "line": 267,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 267,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "170",
+        "before": "170.00000",
+        "field": "days_mat",
+        "line": 268,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      },
+      {
+        "after": "0",
+        "before": "0.00000",
+        "field": "yrs_mat",
+        "line": 268,
+        "numeric_value_preserved": true,
+        "scientific_parameter_change": false
+      }
+    ]
+  },
+  "files_validated": [
+    "management.sch",
+    "plant.ini",
+    "plants.plt",
+    "print.prt",
+    "time.sim"
+  ],
+  "integer_fields_validated": {
+    "management.sch": [
+      "day",
+      "mon",
+      "numb_auto",
+      "numb_ops"
+    ],
+    "plant.ini": [
+      "plt_cnt",
+      "rot_yr_ini"
+    ],
+    "plants.plt": [
+      "days_mat",
+      "yrs_mat"
+    ],
+    "print.prt": [
+      "control_1",
+      "control_2",
+      "control_3",
+      "control_4",
+      "control_5",
+      "control_6"
+    ],
+    "time.sim": [
+      "control_1",
+      "control_2",
+      "control_3",
+      "control_4",
+      "control_5"
+    ]
+  },
+  "numeric_values_changed": false,
+  "scientific_parameters_changed_by_compatibility_layer": false,
+  "scope": "copied_run_workspace_only",
+  "sha256_after": {
+    "plants.plt": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8"
+  },
+  "sha256_before": {
+    "plants.plt": "5eb07cc86c74ecf20ccbd78ca16e69c5a6ec35b76cf322a6160813f63d134df0"
+  },
+  "source_references": {
+    "management_operation_reader": "https://raw.githubusercontent.com/swat-model/swatplus/61.0.2.61/src/read_mgtops.f90",
+    "management_reader": "https://raw.githubusercontent.com/swat-model/swatplus/61.0.2.61/src/mgt_read_mgtops.f90",
+    "plant_community_reader": "https://raw.githubusercontent.com/swat-model/swatplus/61.0.2.61/src/readpcom.f90",
+    "plant_ini_types": "https://docs.swat.tamu.edu/input-reference/ini/",
+    "plant_reader": "https://raw.githubusercontent.com/swat-model/swatplus/61.0.2.61/src/plant_parm_read.f90",
+    "plant_table_reference": "https://docs.swat.tamu.edu/input-reference/plt/",
+    "plant_types": "https://raw.githubusercontent.com/swat-model/swatplus/61.0.2.61/src/plant_data_module.f90"
+  },
+  "status": "VALIDATED_WITH_FORMAT_NORMALIZATION",
+  "swat_source_version": "61.0.2.61"
+}

@@ -1,0 +1,342 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { rainIntensity, sceneFromRecord, periodLabel, variableText, chartPointFromRecord, hasSouthForkContext } from "../src/lib/playback-scene.ts";
+import { PlaybackClient } from "../src/lib/playback-client.ts";
+import { historicalFallbackEligible, simplifiedHistoricalPoints, swatHistoricalPoints } from "../src/lib/historical-charts.ts";
+import { accessibleSimulations, collectSimulationPages } from "../src/lib/simulation-access.ts";
+import { fieldCanopyAvailable, maizeFromScene, maizeReproductive } from "../src/lib/visual-state.ts";
+import type { PlaybackPage, PlaybackRecord, VariableState } from "../src/types/playback.ts";
+import type { SimulationResult, SimulationRun } from "../src/types/simulation.ts";
+import type { SwatResultsResponse } from "../src/types/simulation.ts";
+import type { User } from "../src/types/auth.ts";
+import { adaptPlaybackVisual } from "../src/lib/playback-visual-adapter.ts";
+import { readFileSync } from "node:fs";
+import { firstCropNavigation } from "../src/lib/playback-navigation.ts";
+import type { SimulationAvailability } from "../src/types/playback-availability.ts";
+
+function variable(value: number | string | null, unit: string, evidence: VariableState["evidence"] = "SIMPLIFIED_FSPM"): VariableState {
+  return { value, unit, evidence: value === null ? "NOT_AVAILABLE" : evidence, source: "fixture",
+    availability: value === null ? "NOT_AVAILABLE" : "AVAILABLE", limitation: null };
+}
+
+function record(date: string, options: { rain?: number | null; crop?: boolean; height?: number; season?: string } = {}): PlaybackRecord {
+  const active = options.crop ?? true;
+  return {
+    schema_version: "twin-playback-v1", simulation_id: "run-a", date, resolution: "DAILY", run_type: "SWAT_MULTISCALE_COUPLED",
+    watershed_id: "basin", watershed_code: null, outlet_unit: null, spatial_support: "WATERSHED_OUTLET_AND_BASIN",
+    weather: { precipitation_mm: variable(options.rain ?? null, "mm/day", "DERIVED") },
+    crop: { active, crop: active ? "maize" : null, season_id: active ? options.season ?? "season-1" : null,
+      phenological_stage: active ? "V6" : null, window_status: "APPROXIMATE_PLANTING_WINDOW", source: "fixture", limitation: null },
+    field: active ? {
+      lai: variable(options.height ?? 1, "m2_leaf/m2_ground"), height_m: variable(options.height ?? 1, "m"),
+      root_depth_m: variable(0.5, "m"), canopy_cover_fraction: variable(0.4, "fraction"),
+      water_stress: variable(0.73, "fraction"), actual_transpiration_mm_day: variable(0.84, "mm/day"),
+      soil_moisture_vol_percent: variable(24, "volumetric percent", "ASSUMED"),
+    } : {},
+    plant_samples: active ? [{ plant_id: "p-7", x_m: 1, y_m: 2, variables: {
+      height_m: variable(options.height ?? 1, "m"), lai: variable(1.4, "m2_leaf/m2_ground"),
+    } }] : [],
+    hydrology: { soil_water_mm: variable(170, "mm", "MODELLED_SWAT_PLUS"),
+      evapotranspiration_mm: variable(5.8, "mm/day", "MODELLED_SWAT_PLUS"),
+      streamflow_m3s: variable(8, "m3/s", "MODELLED_SWAT_PLUS") },
+    hru_results: [], channel_results: [], availability: {}, limitations: [],
+  };
+}
+
+test("daily rain distinguishes dry, wet and unknown; monthly totals do not cause storms", () => {
+  assert.equal(rainIntensity(record("2020-02-28", { rain: 0 })), 0);
+  assert.ok((rainIntensity(record("2020-02-29", { rain: 5 })) ?? 0) > 0);
+  assert.equal(rainIntensity(record("2020-03-01", { rain: null })), null);
+  const monthly = { ...record("2020-02-01", { rain: 50 }), resolution: "MONTHLY" as const };
+  assert.equal(rainIntensity(monthly), null);
+  assert.equal(periodLabel(monthly), "2020-02");
+  assert.equal(periodLabel({ ...monthly, resolution: "ANNUAL", date: "2020-01-01" }), "2020");
+});
+
+test("FSPM growth follows recorded samples and resets at season boundary", () => {
+  const early = sceneFromRecord(record("2020-05-01", { height: 0.2, season: "one" }), "p-7");
+  const mature = sceneFromRecord(record("2020-08-01", { height: 2.1, season: "one" }), "p-7");
+  const fallow = sceneFromRecord(record("2020-11-01", { crop: false }), "p-7");
+  const newSeason = sceneFromRecord(record("2021-05-01", { height: 0.15, season: "two" }), "p-7");
+  assert.equal(early.fieldHeightM, 0.2);
+  assert.equal(mature.fieldHeightM, 2.1);
+  assert.equal(fallow.cropActive, false);
+  assert.equal(fallow.sample, null);
+  assert.equal(fallow.fieldHeightM, null);
+  assert.equal(newSeason.fieldHeightM, 0.15);
+  assert.equal(newSeason.record.crop?.season_id, "two");
+  assert.equal(sceneFromRecord(record("2021-05-02", { season: "two" }), "missing-id").sample, null);
+});
+
+test("South Fork 2019 playback example reaches the visual adapter with all three scales", () => {
+  const path = new URL("../../backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v1/playback_example_2019-07-15.json", import.meta.url);
+  const actual = JSON.parse(readFileSync(path, "utf8")) as PlaybackRecord;
+  const visual = adaptPlaybackVisual(actual, { simulationId: actual.simulation_id });
+  assert.equal(actual.date, "2019-07-15");
+  assert.equal(visual.mode, "SCIENTIFIC_ACTIVE");
+  assert.equal(visual.plantSamples.length, 70);
+  assert.equal(visual.hruStates.length, 36);
+  assert.equal(visual.channelStates.length, 37);
+  assert.equal(visual.fspmMoisturePercent?.evidence, "DERIVED");
+  assert.equal(visual.channelStates.find((channel) => channel.gis_id === "153")?.variables.streamflow_m3s.unit, "m3/s");
+});
+
+test("rich plant geometry receives exactly the selected sample dimensions and phenology", () => {
+  const early = maizeFromScene(sceneFromRecord(record("2020-05-01", { height: 0.2 }), "p-7"));
+  const matureRecord = record("2020-08-01", { height: 2.1 });
+  matureRecord.plant_samples[0].variables.phenological_stage = variable("REPRODUCTIVE", "category");
+  const mature = maizeFromScene(sceneFromRecord(matureRecord, "p-7"));
+  assert.equal(early.heightM, 0.2);
+  assert.equal(mature.heightM, 2.1);
+  assert.equal(maizeReproductive(early.stage), false);
+  assert.equal(maizeReproductive(mature.stage), true);
+  assert.equal(mature.sampleId, "p-7");
+  assert.equal(mature.reference, false);
+});
+
+test("fallow and baseline hide the scientific canopy; historical mode stays labelled reference", () => {
+  const fallow = sceneFromRecord(record("2020-11-01", { crop: false }), "p-7");
+  const baseline = sceneFromRecord({ ...record("2020-06-01"), crop: null, field: {}, plant_samples: [] }, null);
+  assert.equal(fieldCanopyAvailable(fallow), false);
+  assert.equal(fieldCanopyAvailable(baseline), false);
+  assert.equal(maizeFromScene(fallow).heightM, null);
+  assert.equal(maizeFromScene(baseline).reference, false);
+  assert.equal(fieldCanopyAvailable(null), true);
+  assert.equal(maizeFromScene(null).reference, true);
+  assert.equal(maizeFromScene(null).soilMoisturePercent, null);
+});
+
+test("baseline has no FSPM; soil-water mm is distinct from assumed volumetric percent", () => {
+  const baseline = { ...record("2020-06-01", { rain: 0 }), crop: null, field: {}, plant_samples: [] };
+  const view = sceneFromRecord(baseline, "p-7");
+  assert.equal(view.cropActive, false);
+  assert.equal(view.sample, null);
+  assert.equal(view.stress, null);
+  assert.equal(view.transpirationMmDay, null);
+  assert.equal(view.soilMoisturePercent, null);
+  assert.equal(view.soilWaterMm, 170);
+  const coupled = sceneFromRecord(record("2020-06-01"), "p-7");
+  assert.equal(coupled.soilMoisturePercent, 24);
+  assert.equal(coupled.stress, 0.73);
+  assert.equal(coupled.transpirationMmDay, 0.84);
+});
+
+test("zero is displayed as zero and missing is explicit", () => {
+  assert.equal(variableText(variable(0, "mm/day")), "0 mm/day");
+  assert.equal(variableText(variable(null, "mm/day")), "No disponible");
+});
+
+test("scene, HUD variable and chart point share the same dated record", () => {
+  const row = record("2020-06-20", { rain: 4, height: 1.5 });
+  const scene = sceneFromRecord(row, "p-7");
+  const chart = chartPointFromRecord(row);
+  assert.equal(chart.period, periodLabel(scene.record));
+  assert.equal(chart.precipitation, scene.rainMm);
+  assert.equal(chart.stress, scene.stress);
+  assert.equal(variableText(scene.record.weather.precipitation_mm), "4 mm/day");
+});
+
+test("South Fork contextual geometry is not assigned to unrelated basins", () => {
+  assert.equal(hasSouthForkContext(record("2020-06-20")), false);
+  assert.equal(hasSouthForkContext({ ...record("2020-06-20"), watershed_code: "USGS-05451210-PARTIAL" }), true);
+});
+
+function page(simulationId: string, offset: number, count = 100): PlaybackPage {
+  const dates = Array.from({ length: count }, (_, i) => new Date(Date.UTC(2020, 0, offset + i + 1)).toISOString().slice(0, 10));
+  return { schema_version: "twin-playback-v1", simulation_id: simulationId, simulation_status: "COMPLETED",
+    artifact_status: "AVAILABLE", resolution: "DAILY", available_resolutions: ["DAILY"], total: 205,
+    offset, limit: 100, records: dates.map((date) => ({ ...record(date), simulation_id: simulationId })),
+    variables: {}, provenance: {}, limitations: [] };
+}
+
+test("pagination keeps exact dates and caches fetched pages", async () => {
+  let calls = 0;
+  const client = new PlaybackClient(async (id, query) => { calls++; return page(id, query.offset ?? 0); });
+  client.select("run-a", "DAILY");
+  await client.pageFor(0);
+  await client.pageFor(99);
+  await client.pageFor(100);
+  assert.equal(calls, 2);
+  assert.equal(client.recordAt(99)?.date, "2020-04-09");
+  assert.equal(client.recordAt(100)?.date, "2020-04-10");
+});
+
+test("response from previous simulation is discarded even when network ignores abort", async () => {
+  let finishOld: ((result: PlaybackPage) => void) | undefined;
+  const client = new PlaybackClient((id, query) => id === "old"
+    ? new Promise((resolve) => { finishOld = resolve; })
+    : Promise.resolve(page(id, query.offset ?? 0)));
+  client.select("old");
+  const oldRequest = client.pageFor(0);
+  client.select("new");
+  await client.pageFor(0);
+  finishOld!(page("old", 0));
+  assert.equal(await oldRequest, null);
+  assert.equal(client.recordAt(0)?.simulation_id, "new");
+});
+
+test("date lookup resolves a day inside a monthly period without fetching the whole series", async () => {
+  const months = ["2020-01-01", "2020-02-01", "2020-03-01"].map((day) =>
+    ({ ...record(day), resolution: "MONTHLY" as const }));
+  let calls = 0;
+  const client = new PlaybackClient(async (id, query) => {
+    calls++;
+    const matched = query.date ? months.filter((row) => row.date.slice(0, 7) === query.date?.slice(0, 7)) : months;
+    return { ...page(id, query.offset ?? 0, 0), resolution: "MONTHLY", available_resolutions: ["MONTHLY"],
+      total: matched.length, records: matched };
+  });
+  client.select("run-a", "MONTHLY");
+  assert.equal(await client.findDate("2020-02-28", 3), 1);
+  assert.equal(client.recordAt(1)?.date, "2020-02-01");
+  assert.equal(await client.findDate("2020-04-01", 3), null);
+  assert.equal(calls, 3);
+});
+
+test("historical SWAT+ charts retain real stored variables without rainfall or FSPM proxies", () => {
+  const point = swatHistoricalPoints([{ period: "2020-02-01", runoff_mm: 0,
+    streamflow_m3s: 4.2, evapotranspiration_mm: 6, soil_water_mm: 170 }])[0];
+  assert.equal(point.period, "2020-02-01");
+  assert.equal(point.runoff, 0);
+  assert.equal(point.precipitation, null);
+  assert.equal(point.stress, null);
+  assert.equal(point.transpiration, null);
+  assert.equal(point.soilWater, 170);
+});
+
+test("historical simplified charts use persisted daily values and keep absent SWAT storage null", () => {
+  const row: SimulationResult = {
+    day_index: 1, date_str: "2020-02-29", precip_mm: 0, temp_c: 12,
+    solar_rad_mj: 15, potential_et_mm: 2, actual_et_mm: 1.5,
+    surface_runoff_mm: 0.2, percolation_mm: 0.4, streamflow_m3s: 3,
+    soil_moisture_vol: 24, plant_transpiration_mm: 0.8, root_water_uptake_mm: 0.7,
+    cwsi_stress_index: 0.6, sap_flow_velocity_cmh: 1, water_balance_residual_mm: 0,
+  };
+  const point = simplifiedHistoricalPoints([row])[0];
+  assert.equal(point.period, "2020-02-29");
+  assert.equal(point.precipitation, 0);
+  assert.equal(point.stress, 0.6);
+  assert.equal(point.transpiration, 0.8);
+  assert.equal(point.soilWater, null);
+});
+
+test("playback selector excludes runs the current user cannot open", () => {
+  const runs = [{ id: "own", user_id: "u1" }, { id: "other", user_id: "u2" }] as SimulationRun[];
+  const researcher = { id: "u1", roles: [{ id: "r", name: "INVESTIGADOR_HIDROLOGO" }] } as User;
+  const admin = { id: "admin", roles: [{ id: "a", name: "SUPERADMIN" }] } as User;
+  assert.deepEqual(accessibleSimulations(runs, researcher).map((run) => run.id), ["own"]);
+  assert.deepEqual(accessibleSimulations(runs, admin).map((run) => run.id), ["own", "other"]);
+});
+
+test("simulation selector follows server pagination past the former 50-run window", async () => {
+  const runs = Array.from({ length: 101 }, (_, index) => ({ id: `run-${index}` } as SimulationRun));
+  const offsets: number[] = [];
+  const result = await collectSimulationPages(async (skip, limit) => {
+    offsets.push(skip);
+    return runs.slice(skip, skip + limit);
+  });
+  assert.equal(result.length, 101);
+  assert.deepEqual(offsets, [0, 100]);
+});
+
+test("historical charts appear only for completed runs without a playback artifact", () => {
+  assert.equal(historicalFallbackEligible("COMPLETED", "NOT_AVAILABLE"), true);
+  assert.equal(historicalFallbackEligible("COMPLETED", "AVAILABLE"), false);
+  assert.equal(historicalFallbackEligible("RUNNING", "NOT_AVAILABLE"), false);
+  assert.equal(historicalFallbackEligible(undefined, null), false);
+});
+
+test("historical SWAT import charts preserve stored periods and identify the import origin", () => {
+  const response: SwatResultsResponse = {
+    status: "COMPLETED", origin: "HISTORICAL_IMPORT", run_id: "historical-v2",
+    provenance_class: "HISTORICAL_IMPORT",
+    temporal_resolution: "monthly", records: [{ period: "2018-01-01", streamflow_m3s: 0, runoff_mm: 1.2,
+      evapotranspiration_mm: 3.4, percolation_mm: null, soil_water_mm: 158 }],
+    hru_results: [], water_balance: null,
+    provenance: { source_kind: "HISTORICAL_IMPORT", schema_version: "south-fork-final-v2" },
+  };
+  const points = swatHistoricalPoints(response.records);
+  assert.equal(response.origin, "HISTORICAL_IMPORT");
+  assert.equal(response.temporal_resolution, "monthly");
+  assert.equal(points[0].period, "2018-01-01");
+  assert.equal(points[0].streamflow, 0);
+  assert.equal(points[0].precipitation, null);
+  assert.equal(points[0].percolation, null);
+});
+
+test("first-crop navigation uses only the selected resolution's representable stored date", () => {
+  const availability: SimulationAvailability = {
+    simulation_id: "fixture-coupled", simulation_name: "fixture", simulation_status: "COMPLETED",
+    run_type: "SWAT_MULTISCALE_COUPLED", origin: "EXECUTED" as const,
+    provenance_class: "COUPLED_EXECUTED",
+    stored_hydrology_available: true, stored_fspm_summary_available: true,
+    stored_fspm_trajectory_available: true, stored_fspm_samples_available: true, fspm_results_available: true,
+    available_resolutions: ["MONTHLY", "DAILY"], codes: [], limitations: [],
+    resolutions: [
+      { resolution: "MONTHLY" as const, artifact_status: "AVAILABLE" as const, record_count: 12,
+        first_record: "2020-01-01", last_record: "2020-12-01", first_active_crop: null,
+        first_representable_field: null, first_plant_samples: null, crop_intervals: [],
+        hydrology_available: true, fspm_trajectory_available: false, plant_samples_available: false,
+        hru_ids: [], selected_date: null, codes: [] },
+      { resolution: "DAILY" as const, artifact_status: "AVAILABLE" as const, record_count: 365,
+        first_record: "2020-01-01", last_record: "2020-12-31", first_active_crop: "2020-05-01",
+        first_representable_field: "2020-05-03", first_plant_samples: "2020-05-03", crop_intervals: [],
+        hydrology_available: false, fspm_trajectory_available: true, plant_samples_available: true,
+        hru_ids: [], selected_date: null, codes: [] },
+    ],
+  };
+  assert.deepEqual(firstCropNavigation(availability, "DAILY"), { status: "READY", date: "2020-05-03" });
+  assert.deepEqual(firstCropNavigation(availability, "MONTHLY"), { status: "SELECT_DAILY" });
+  const baseline = { ...availability, run_type: "SWAT_STANDARD_BASELINE",
+    stored_fspm_summary_available: false, stored_fspm_trajectory_available: false,
+    stored_fspm_samples_available: false, fspm_results_available: false,
+    resolutions: [{ ...availability.resolutions[0], first_representable_field: null,
+      fspm_trajectory_available: false, plant_samples_available: false }] };
+  assert.deepEqual(firstCropNavigation(baseline, "MONTHLY"), { status: "UNAVAILABLE" });
+});
+
+test("Pydantic generated fixtures feed the official visual adapter and current 3D inputs", () => {
+  const data = JSON.parse(readFileSync(new URL("./fixtures/twin-visual-fixtures.json", import.meta.url), "utf8"));
+  assert.equal(data.test_only, true);
+  const pages = data.pages as Record<string, PlaybackPage>;
+  const [young, mature, fallow] = pages.coupled_daily.records;
+  const first = adaptPlaybackVisual(young, { simulationId: young.simulation_id, selectedPlantId: "test-plant-1" });
+  const second = adaptPlaybackVisual(mature, { simulationId: mature.simulation_id, selectedPlantId: "test-plant-1" });
+  assert.equal(first.mode, "SCIENTIFIC_ACTIVE");
+  assert.equal(first.height?.value, 0.2);
+  assert.equal(first.laiDistribution?.p10?.value, young.field.lai_p10.value);
+  assert.equal(first.rootDepthDistribution?.p90?.value, young.field.root_depth_p90_m.value);
+  assert.equal(first.representativePlantCount?.value, 1000);
+  assert.equal(first.plantSampleContext?.population_count, 1000);
+  assert.equal(first.plantSampleContext?.captured_count, 1);
+  assert.equal(first.plantSampleContext?.selection_method, "EVENLY_SPACED_STABLE_IDS");
+  assert.equal(first.precipitation?.value, 0);
+  assert.equal(first.fspmMoisturePercent?.unit, "volumetric percent");
+  assert.equal(first.swatSoilWaterMm?.unit, "mm");
+  assert.equal(first.biomass?.unit, "g/plant");
+  assert.equal(second.phenologicalStage, "REPRODUCTIVE");
+  assert.equal(second.precipitation?.value, null);
+  assert.equal(adaptPlaybackVisual(fallow, { simulationId: fallow.simulation_id }).mode, "SCIENTIFIC_FALLOW");
+  assert.equal(adaptPlaybackVisual(pages.baseline.records[0], { simulationId: "fixture-baseline" }).mode, "HYDROLOGY_ONLY");
+  assert.equal(adaptPlaybackVisual(null, { simulationId: "fixture-historical", availability: {
+    simulation_id: "fixture-historical", simulation_name: "Historical", simulation_status: "COMPLETED",
+    run_type: "SWAT_MULTISCALE_COUPLED", origin: "HISTORICAL_IMPORT",
+    provenance_class: "HISTORICAL_IMPORT",
+    stored_hydrology_available: true, stored_fspm_summary_available: true,
+    stored_fspm_trajectory_available: false, stored_fspm_samples_available: false,
+    fspm_results_available: true, available_resolutions: [],
+    resolutions: [], codes: ["HISTORICAL_REFERENCE"], limitations: [],
+  } }).mode, "HISTORICAL_REFERENCE");
+  const incomplete = adaptPlaybackVisual(pages.incomplete.records[0], { simulationId: "fixture-incomplete" });
+  assert.equal(incomplete.mode, "DATA_UNAVAILABLE");
+  assert.ok(incomplete.missingVariables.includes("field.height_m"));
+  assert.equal(incomplete.height?.value, null);
+  assert.equal(incomplete.lai?.value, 1.2);
+  const monthly = adaptPlaybackVisual(pages.coupled_monthly.records[0], { simulationId: "fixture-coupled" });
+  assert.equal(monthly.mode, "HYDROLOGY_ONLY");
+  assert.equal(monthly.resolution, "MONTHLY");
+  assert.equal(monthly.periodEnd, "2020-05-31");
+  assert.equal(sceneFromRecord(young, "test-plant-1").visual.mode, "SCIENTIFIC_ACTIVE");
+  assert.equal(maizeFromScene(sceneFromRecord(young, "test-plant-1")).heightM, 0.2);
+  assert.equal(fieldCanopyAvailable(sceneFromRecord(young, null)), true);
+  assert.equal(fieldCanopyAvailable(sceneFromRecord(fallow, null)), false);
+});

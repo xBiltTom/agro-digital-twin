@@ -1,4 +1,5 @@
 import importlib
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -9,9 +10,9 @@ from starlette.websockets import WebSocketDisconnect
 
 from app.core.config import Settings, settings
 from app.core.migrations import SCHEMA_MIGRATIONS_DDL, apply_pending_migrations
-from app.core.database import Base
+from app.core.database import AsyncSessionLocal, Base
 from app.main import app
-from app.models.simulation import ClimateScenario, SimulationRun
+from app.models.simulation import ClimateScenario, SimulationResult, SimulationRun
 from app.models.user import Permission, Role, User
 from app.models.watershed import PlantSpecies, Watershed
 from app.services.seed_service import INITIAL_PERMISSIONS, INITIAL_ROLES
@@ -116,6 +117,41 @@ async def test_legacy_database_migration_is_idempotent(tmp_path: Path):
         await engine.dispose()
 
 
+@pytest.mark.asyncio
+async def test_unavailable_sap_flow_migration_preserves_legacy_rows_and_accepts_null(tmp_path: Path):
+    engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'sap-flow.sqlite'}")
+    try:
+        async with engine.begin() as connection:
+            await connection.exec_driver_sql("CREATE TABLE climate_scenarios (id VARCHAR PRIMARY KEY)")
+            await connection.exec_driver_sql("CREATE TABLE simulation_runs (id VARCHAR PRIMARY KEY)")
+            await connection.exec_driver_sql(
+                "CREATE TABLE simulation_results (id VARCHAR PRIMARY KEY, sap_flow_velocity_cmh FLOAT NOT NULL)"
+            )
+            await connection.exec_driver_sql(
+                "INSERT INTO simulation_results (id, sap_flow_velocity_cmh) VALUES ('legacy-result', 12.4)"
+            )
+
+        await apply_pending_migrations(engine)
+
+        async with engine.begin() as connection:
+            existing = await connection.exec_driver_sql(
+                "SELECT sap_flow_velocity_cmh FROM simulation_results WHERE id='legacy-result'"
+            )
+            assert existing.scalar_one() == 12.4
+            nullability = await connection.exec_driver_sql('PRAGMA table_info("simulation_results")')
+            sap_column = next(row for row in nullability if row[1] == "sap_flow_velocity_cmh")
+            assert sap_column[3] == 0
+            await connection.exec_driver_sql(
+                "INSERT INTO simulation_results (id, sap_flow_velocity_cmh) VALUES ('new-result', NULL)"
+            )
+            new_value = await connection.exec_driver_sql(
+                "SELECT sap_flow_velocity_cmh FROM simulation_results WHERE id='new-result'"
+            )
+            assert new_value.scalar_one() is None
+    finally:
+        await engine.dispose()
+
+
 def test_migration_sql_uses_portable_timestamp_types():
     migration_sql = (Path(__file__).parents[1] / "migrations" / "001_run_manifest_and_provenance.sql").read_text()
     assert "DATETIME" not in migration_sql.upper()
@@ -124,25 +160,56 @@ def test_migration_sql_uses_portable_timestamp_types():
     assert "TIMESTAMP" in SCHEMA_MIGRATIONS_DDL
 
 
-def test_websocket_rejects_anonymous_and_accepts_authenticated_playback():
+@pytest.mark.asyncio
+async def test_websocket_rejects_anonymous_and_accepts_authenticated_playback():
+    async with AsyncSessionLocal() as db:
+        owner = await db.scalar(select(User).where(User.email == "admin@digitaltwin.org"))
+        watershed = await db.scalar(select(Watershed).limit(1))
+        scenario = await db.scalar(select(ClimateScenario).limit(1))
+        run = SimulationRun(
+            user_id=owner.id, watershed_id=watershed.id, scenario_id=scenario.id,
+            name="WebSocket playback fixture", status="COMPLETED", duration_days=1,
+            start_date=date(2020, 1, 1), end_date=date(2020, 1, 1), seed=9,
+        )
+        db.add(run)
+        await db.flush()
+        db.add(SimulationResult(
+            simulation_run_id=run.id, day_index=1, date_str="2020-01-01",
+            precip_mm=0.0, temp_c=18.0, solar_rad_mj=18.5,
+            potential_et_mm=1.0, actual_et_mm=1.0, surface_runoff_mm=0.0,
+            percolation_mm=0.0, streamflow_m3s=0.0, soil_moisture_vol=24.0,
+            soil_water_depth_mm=180.0, plant_transpiration_mm=1.0,
+            root_water_uptake_mm=1.0, cwsi_stress_index=0.0,
+            sap_flow_velocity_cmh=None, water_balance_residual_mm=0.0,
+        ))
+        await db.commit()
+        simulation_id = run.id
+
     with TestClient(app) as client:
         with pytest.raises(WebSocketDisconnect) as rejected:
             with client.websocket_connect("/api/v1/twin/ws/not-a-run"):
                 pass
         assert rejected.value.code == 1008
 
+        # The legacy demo simulation belongs to the first seeded user
+        # (SUPERADMIN); use its owner-scoped list for this websocket check.
         login = client.post("/api/v1/auth/login", json={
-            "email": "investigador@digitaltwin.org", "password": "Investiga123!",
+            "email": "admin@digitaltwin.org", "password": "Admin123!",
         })
         assert login.status_code == 200
         token = login.json()["access_token"]
         simulations = client.get("/api/v1/simulations", headers={"Authorization": f"Bearer {token}"})
         assert simulations.status_code == 200
-        simulation_id = simulations.json()[0]["id"]
+        assert any(item["id"] == simulation_id for item in simulations.json())
         with client.websocket_connect(f"/api/v1/twin/ws/{simulation_id}?token={token}") as websocket:
             tick = websocket.receive_json()
         assert tick["type"] == "SIMULATION_PLAYBACK_TICK"
         assert tick["evidence_type"] == "DEMO"
+
+    async with AsyncSessionLocal() as db:
+        run = await db.scalar(select(SimulationRun).where(SimulationRun.id == simulation_id))
+        await db.delete(run)
+        await db.commit()
 
 
 def test_final_scientific_report_requires_authentication_and_never_exposes_v1_as_current_v2():

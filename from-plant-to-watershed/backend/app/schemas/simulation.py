@@ -157,7 +157,7 @@ class SimulationResultResponse(BaseModel):
     plant_transpiration_mm: float
     root_water_uptake_mm: float
     cwsi_stress_index: float
-    sap_flow_velocity_cmh: float
+    sap_flow_velocity_cmh: Optional[float] = None
     water_balance_residual_mm: float
     model_config = ConfigDict(from_attributes=True)
 
@@ -209,3 +209,17 @@ class SimulationRunResponse(BaseModel):
     @classmethod
     def normalize_legacy_dataset_roles(cls, value):
         return {} if value is None else value
+
+
+class AIInsightsResponse(BaseModel):
+    simulation_id: Optional[str] = None
+    simulation_name: Optional[str] = None
+    provider: str
+    generated_at: str
+    executive_summary: str
+    multiscale_biophysical_diagnosis: Dict[str, str]
+    climate_resilience_assessment: str
+    policy_recommendations: List[str]
+    limitations_and_uncertainty: str
+    raw_metrics_analyzed: Optional[Dict[str, Any]] = None
+    model_config = ConfigDict(from_attributes=True)

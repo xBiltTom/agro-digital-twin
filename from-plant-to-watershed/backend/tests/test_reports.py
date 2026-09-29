@@ -1,8 +1,16 @@
+from io import BytesIO
+
 import pytest
+from docx import Document
 from httpx import AsyncClient, ASGITransport
 from app.main import app
-from app.services.report_service import ReportGeneratorService
+from openpyxl import load_workbook
+from app.services.report_service import ReportGeneratorService, _metric_text
 from app.models.simulation import SimulationRun, SimulationResult, ClimateScenario
+from app.models.user import User
+from app.models.watershed import Watershed
+from app.core.database import AsyncSessionLocal
+from sqlalchemy import select
 
 def create_mock_simulation_and_results():
     scenario = ClimateScenario(
@@ -84,8 +92,42 @@ def test_generate_xlsx_structure():
     assert len(xlsx_bytes) > 1000
     assert xlsx_bytes.startswith(b"PK")
 
+
+def test_reports_keep_missing_metrics_distinct_from_measured_zero():
+    sim_run, results = create_mock_simulation_and_results()
+    sim_run.summary_metrics["total_precip_mm"] = 0.0
+    sim_run.summary_metrics["total_discharge_hm3"] = None
+
+    assert _metric_text(sim_run.summary_metrics, "total_precip_mm", 1) == "0.0"
+    assert _metric_text(sim_run.summary_metrics, "total_discharge_hm3", 2) == "No disponible"
+
+    workbook = load_workbook(BytesIO(ReportGeneratorService.generate_xlsx(sim_run, results).getvalue()))
+    assert workbook["Resumen Ejecutivo"]["B13"].value == 0.0
+    assert workbook["Resumen Ejecutivo"]["B16"].value is None
+
+    document = Document(BytesIO(ReportGeneratorService.generate_docx(sim_run, results).getvalue()))
+    document_text = "\n".join(
+        cell.text for table in document.tables for row in table.rows for cell in row.cells
+    )
+    assert "No disponible" in document_text
+    assert "0.0" in document_text
+    assert ReportGeneratorService.generate_pdf(sim_run, results).getvalue().startswith(b"%PDF-")
+
 @pytest.mark.asyncio
 async def test_api_download_reports():
+    async with AsyncSessionLocal() as db:
+        owner = await db.scalar(select(User).where(User.email == "investigador@digitaltwin.org"))
+        watershed = await db.scalar(select(Watershed).limit(1))
+        scenario = await db.scalar(select(ClimateScenario).limit(1))
+        run = SimulationRun(
+            user_id=owner.id, watershed_id=watershed.id, scenario_id=scenario.id,
+            name="Owner-scoped report fixture", status="COMPLETED", duration_days=1,
+            seed=17, parameters={}, summary_metrics={"total_precip_mm": 0.0},
+        )
+        db.add(run)
+        await db.commit()
+        simulation_id = run.id
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # 1. Login
         login_res = await ac.post("/api/v1/auth/login", json={
@@ -99,25 +141,24 @@ async def test_api_download_reports():
         sims_res = await ac.get("/api/v1/simulations", headers=headers)
         assert sims_res.status_code == 200
         sims = sims_res.json()
-        assert len(sims) >= 1
-        sim_id = sims[0]["id"]
+        assert any(sim["id"] == simulation_id for sim in sims)
 
         # 3. Descargar PDF
-        pdf_res = await ac.get(f"/api/v1/reports/download/{sim_id}/pdf", headers=headers)
+        pdf_res = await ac.get(f"/api/v1/reports/download/{simulation_id}/pdf", headers=headers)
         assert pdf_res.status_code == 200
         assert pdf_res.headers["content-type"] == "application/pdf"
         assert "attachment" in pdf_res.headers["content-disposition"]
         assert len(pdf_res.content) > 1000
 
         # 4. Descargar DOCX (Word)
-        docx_res = await ac.get(f"/api/v1/reports/download/{sim_id}/docx", headers=headers)
+        docx_res = await ac.get(f"/api/v1/reports/download/{simulation_id}/docx", headers=headers)
         assert docx_res.status_code == 200
         assert "wordprocessingml" in docx_res.headers["content-type"]
         assert "attachment" in docx_res.headers["content-disposition"]
         assert len(docx_res.content) > 1000
 
         # 5. Descargar XLSX (Excel)
-        xlsx_res = await ac.get(f"/api/v1/reports/download/{sim_id}/xlsx", headers=headers)
+        xlsx_res = await ac.get(f"/api/v1/reports/download/{simulation_id}/xlsx", headers=headers)
         assert xlsx_res.status_code == 200
         assert "spreadsheetml" in xlsx_res.headers["content-type"]
         assert "attachment" in xlsx_res.headers["content-disposition"]
