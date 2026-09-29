@@ -27,15 +27,15 @@ export default function Navbar() {
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "SUPERADMIN":
-        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30";
+        return "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900";
       case "ADMIN_CIENTIFICO":
-        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+        return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900";
       case "INVESTIGADOR_HIDROLOGO":
-        return "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30";
+        return "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-900";
       case "OPERADOR_AGROPECUARIO":
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
+        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900";
       default:
-        return "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/30";
+        return "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
     }
   };
 
@@ -46,60 +46,61 @@ export default function Navbar() {
   };
 
   return (
-    <header className="h-16 shrink-0 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md px-6 flex items-center justify-between z-30 transition-colors duration-200">
-      {/* Lado izquierdo: Título de Sección y Estado Activo */}
-      <div className="flex items-center gap-3">
-        <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight hidden sm:block">
+    <header className="z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-300 bg-white px-3 transition-colors duration-200 sm:px-6 dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex min-w-0 items-center gap-3">
+        <h2 className="hidden truncate text-sm font-semibold tracking-tight text-slate-900 sm:block dark:text-slate-100">
           {currentTitle}
         </h2>
-        <span className="text-zinc-300 dark:text-zinc-700 hidden sm:inline">|</span>
-        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-medium">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
+        <span
+          aria-hidden="true"
+          className="hidden h-4 w-px shrink-0 bg-slate-300 sm:block dark:bg-slate-700"
+        />
+        <div className="flex shrink-0 items-center gap-1.5 border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+          <span aria-hidden="true" className="h-1.5 w-1.5 bg-emerald-600 dark:bg-emerald-400" />
           <span>En línea</span>
         </div>
       </div>
 
-      {/* Lado derecho: Theme toggle, Perfil de Usuario y Logout */}
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <ThemeToggle />
 
         {user && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Link
               href="/profile"
-              className="flex items-center gap-2.5 px-2.5 py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 transition group"
+              aria-current={pathname === "/profile" ? "page" : undefined}
+              className="group flex items-center gap-2 border border-slate-200 bg-slate-50 px-1.5 py-1 transition-colors hover:border-slate-400 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-600 dark:hover:bg-slate-900 dark:focus-visible:ring-emerald-400 dark:focus-visible:ring-offset-slate-900 sm:gap-2.5 sm:px-2.5"
             >
-              <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700/50 flex items-center justify-center text-emerald-800 dark:text-emerald-300 font-bold text-xs shadow-xs">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center border border-emerald-300 bg-emerald-100 text-xs font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                 {getInitial(user.full_name)}
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 group-hover:text-zinc-950 dark:group-hover:text-white transition leading-tight">
+              </span>
+              <span className="hidden min-w-0 flex-col text-left sm:flex">
+                <span className="max-w-36 truncate text-xs font-semibold leading-tight text-slate-800 group-hover:text-slate-950 dark:text-slate-200 dark:group-hover:text-white">
                   {user.full_name}
                 </span>
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate max-w-[150px] leading-tight">
+                <span className="max-w-36 truncate text-[10px] leading-tight text-slate-500 dark:text-slate-400">
                   {user.profile?.institution || user.email}
                 </span>
-              </div>
+              </span>
             </Link>
 
             <span
-              className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${getRoleBadgeColor(
+              className={`hidden items-center gap-1 border px-2 py-1 font-mono text-[9px] font-semibold lg:inline-flex ${getRoleBadgeColor(
                 primaryRole
-              )} hidden md:inline-flex items-center gap-1`}
+              )}`}
             >
-              <Shield className="w-2.5 h-2.5" />
+              <Shield aria-hidden="true" className="h-2.5 w-2.5" />
               {primaryRole}
             </span>
 
             <button
+              type="button"
               onClick={logout}
               title="Cerrar sesión"
-              className="p-1.5 text-zinc-400 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50 rounded-lg transition cursor-pointer"
+              aria-label="Cerrar sesión"
+              className="flex h-9 w-9 items-center justify-center border border-transparent text-slate-500 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:text-slate-400 dark:hover:border-rose-900 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut aria-hidden="true" className="h-4 w-4" />
             </button>
           </div>
         )}
@@ -107,4 +108,3 @@ export default function Navbar() {
     </header>
   );
 }
-

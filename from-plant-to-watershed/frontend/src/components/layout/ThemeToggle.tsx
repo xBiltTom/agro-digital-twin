@@ -14,7 +14,10 @@ export default function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="w-9 h-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900" />
+      <div
+        aria-hidden="true"
+        className="h-9 w-9 border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950"
+      />
     );
   }
 
@@ -24,14 +27,14 @@ export default function ThemeToggle() {
     <button
       onClick={toggleTheme}
       type="button"
-      title={isDark ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro"}
-      aria-label="Alternar tema claro/oscuro"
-      className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-300 border border-zinc-200 dark:border-zinc-800 bg-zinc-100/90 hover:bg-zinc-200/90 dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-amber-500 dark:hover:text-amber-400 shadow-sm cursor-pointer group"
+      title={isDark ? "Activar tema claro" : "Activar tema oscuro"}
+      aria-label={isDark ? "Activar tema claro" : "Activar tema oscuro"}
+      className="group flex h-9 w-9 cursor-pointer items-center justify-center border border-slate-200 bg-slate-50 text-slate-700 transition-colors hover:border-slate-400 hover:bg-white hover:text-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-900 dark:hover:text-amber-400 dark:focus-visible:ring-emerald-400"
     >
       {isDark ? (
-        <Sun className="w-4 h-4 text-amber-400 transition-transform duration-300 group-hover:rotate-45 group-hover:scale-110" />
+        <Sun aria-hidden="true" className="h-4 w-4 text-amber-500 dark:text-amber-400" />
       ) : (
-        <Moon className="w-4 h-4 text-indigo-600 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110" />
+        <Moon aria-hidden="true" className="h-4 w-4 text-slate-600 dark:text-slate-300" />
       )}
     </button>
   );
