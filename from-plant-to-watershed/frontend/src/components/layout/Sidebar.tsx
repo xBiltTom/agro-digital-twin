@@ -13,7 +13,7 @@ import {
   UserCheck,
   Layers,
   Sprout,
-  Database
+  Database,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -69,30 +69,31 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 flex flex-col justify-between shrink-0 h-full overflow-hidden select-none transition-colors duration-200">
-      <div className="p-5 flex flex-col gap-6 flex-1 min-h-0 overflow-y-auto">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-[1px] shadow-lg shadow-emerald-500/20">
-            <div className="w-full h-full bg-white dark:bg-zinc-950 rounded-[11px] flex items-center justify-center transition-colors">
-              <Sprout className="w-5 h-5 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition" />
-            </div>
+    <aside className="flex h-full w-64 shrink-0 select-none flex-col justify-between overflow-hidden border-r border-slate-300 bg-white text-slate-900 transition-colors duration-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
+        <Link
+          href="/"
+          className="group flex items-center gap-3 border-b border-slate-200 pb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 dark:border-slate-800 dark:focus-visible:ring-offset-slate-900"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+            <Sprout className="h-5 w-5 text-emerald-700 transition-transform group-hover:scale-105 dark:text-emerald-400" />
           </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5">
+          <div className="flex min-w-0 flex-col">
+            <span className="flex items-center gap-1.5 whitespace-nowrap text-[11px] font-bold tracking-tight text-slate-900 dark:text-slate-100">
               PLANT TO WATERSHED
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/50">
+              <span className="border border-slate-300 bg-white px-1 py-0.5 font-mono text-[9px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                 SWAT+
               </span>
             </span>
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Gemelo Digital Multiescala</span>
+            <span className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+              Gemelo Digital Multiescala
+            </span>
           </div>
         </Link>
 
-        {/* Navigation list */}
-        <nav className="flex flex-col gap-1">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-3 py-1 font-semibold">
-            Módulos del Sistema
+        <nav aria-label="Navegación principal" className="flex flex-col gap-1">
+          <span className="mb-1 px-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            Módulos
           </span>
           {navigation.map((item) => {
             const isAllowed =
@@ -106,28 +107,27 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition ${
+                title={item.name}
+                aria-current={isActive ? "page" : undefined}
+                className={`relative flex min-h-10 items-center justify-between gap-2 border px-2.5 py-2 text-xs transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:focus-visible:ring-emerald-400 ${
                   isActive
-                    ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-500/20 shadow-sm font-semibold"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900/60"
+                    ? "border-slate-300 border-l-2 border-l-slate-900 bg-slate-100 font-semibold text-slate-900 dark:border-slate-700 dark:border-l-slate-100 dark:bg-slate-800/80 dark:text-slate-50"
+                    : "border-transparent border-l-2 text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:border-slate-800 dark:hover:bg-slate-800/50 dark:hover:text-slate-100"
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <span className="flex min-w-0 items-center gap-2.5">
                   <Icon
-                    className={`w-4 h-4 ${
-                      isActive ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-500 dark:text-zinc-400"
+                    aria-hidden="true"
+                    className={`h-4 w-4 shrink-0 ${
+                      isActive
+                        ? "text-slate-900 dark:text-slate-100"
+                        : "text-slate-500 dark:text-slate-400"
                     }`}
                   />
-                  <span>{item.name}</span>
-                </div>
+                  <span className="truncate">{item.name}</span>
+                </span>
                 {item.badge && (
-                  <span
-                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                      item.badge === "3D"
-                        ? "bg-cyan-100 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-500/30"
-                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/50"
-                    }`}
-                  >
+                  <span className="shrink-0 border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[9px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                     {item.badge}
                   </span>
                 )}
@@ -137,15 +137,23 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Footer Info */}
-      <div className="p-4 shrink-0 border-t border-zinc-200 dark:border-zinc-900 text-[11px] text-zinc-500 dark:text-zinc-400 flex flex-col gap-1.5">
-        <div className="flex items-center gap-2">
-          <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span className="font-mono text-zinc-700 dark:text-zinc-300">Piloto: South Fork Iowa River</span>
+      <div className="shrink-0 border-t border-slate-300 p-3 dark:border-slate-800">
+        <div className="flex items-start gap-2.5 border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-950/70">
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <Layers className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[10px] font-medium text-slate-500 dark:text-slate-400">
+              Cuenca piloto
+            </span>
+            <span className="block truncate text-xs font-semibold text-slate-800 dark:text-slate-200">
+              South Fork Iowa River
+            </span>
+            <span className="mt-1 block font-mono text-[9px] leading-relaxed text-slate-500 dark:text-slate-400">
+              USGS 05451210 · FSPM ⇄ 1000 plantas ⇄ SWAT+
+            </span>
+          </div>
         </div>
-        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-          USGS 05451210 · FSPM ⇄ 1000 Plantas ⇄ SWAT+
-        </p>
       </div>
     </aside>
   );
