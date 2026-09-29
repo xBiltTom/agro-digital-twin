@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Loader2, Sprout, Waves, AlertCircle } from "lucide-react";
+import { Box, Loader2, Sprout, Waves, AlertCircle, Calendar as CalendarIcon, Table } from "lucide-react";
 import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine } from "recharts";
 import { api } from "../../../lib/api";
 import { chartPointFromRecord, periodLabel, sceneFromRecord } from "../../../lib/playback-scene";
@@ -13,10 +13,20 @@ import MultiScaleViewer3D, { type ScaleMode } from "../../../components/3d/Multi
 import TwinHUDOverlay from "../../../components/3d/TwinHUDOverlay";
 import HistoricalTwinCharts from "../../../components/3d/HistoricalTwinCharts";
 import HistoricalContext3D from "../../../components/3d/HistoricalContext3D";
+import MacroEntityExplorer from "../../../components/3d/MacroEntityExplorer";
 import { useAuth } from "../../../context/AuthContext";
 import { accessibleSimulations } from "../../../lib/simulation-access";
 import { historicalFallbackEligible } from "../../../lib/historical-charts";
 import { firstCropNavigation } from "../../../lib/playback-navigation";
+
+const SCIENTIFIC_LANDMARKS_2019 = [
+  { date: "2019-01-15", label: "15 Ene", desc: "Invierno · Barbecho" },
+  { date: "2019-05-15", label: "15 May", desc: "Inicio siembra FSPM" },
+  { date: "2019-07-15", label: "15 Jul", desc: "Pleno desarrollo" },
+  { date: "2019-08-30", label: "30 Ago", desc: "Cosecha escalonada" },
+  { date: "2019-09-15", label: "15 Sep", desc: "Post-cosecha" },
+  { date: "2019-12-15", label: "15 Dic", desc: "Hidrología anual" },
+];
 
 export default function Twin3DPage() {
   const { user } = useAuth();
@@ -33,6 +43,7 @@ export default function Twin3DPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dateMessage, setDateMessage] = useState<string | null>(null);
   const [navigatingToCrop, setNavigatingToCrop] = useState(false);
+  const [isExplorerOpen, setIsExplorerOpen] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const playback = useTwinPlayback(simulationId);
@@ -52,11 +63,14 @@ export default function Twin3DPage() {
       if (controller.signal.aborted) return;
       const accessible = accessibleSimulations(runs, user);
       setSimulations(accessible);
-      setSimulationId(accessible[0]?.id ?? null);
+      // Priorizar la simulación corregida v2 de South Fork 2019 si está disponible
+      const v2Run = accessible.find((run) => run.id === "phase234-sf-2019-v2");
+      const initialRun = v2Run ?? accessible[0] ?? null;
+      setSimulationId(initialRun?.id ?? null);
       setSimulationsLoaded(true);
     }).catch((cause: unknown) => {
       if (!controller.signal.aborted) {
-        setSimError(cause instanceof Error ? cause.message : "No se pudieron cargar simulaciones");
+        setSimError(cause instanceof Error ? cause.message : "Error de conexión con el backend FastAPI (localhost:8000)");
         setSimulationsLoaded(true);
       }
     });
@@ -89,11 +103,17 @@ export default function Twin3DPage() {
           <p className="text-xs text-zinc-500">Reproducción científica twin-playback-v1 · escenas ilustrativas basadas en estados persistidos</p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <label className="text-xs text-zinc-500">Simulación
           <select aria-label="Simulación" value={simulationId ?? ""} onChange={(event) => selectSimulation(event.target.value)}
             className="ml-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100">
-            {simulations.map((run) => <option key={run.id} value={run.id}>{run.name}</option>)}
+            {simulations.map((run) => (
+              <option key={run.id} value={run.id}>
+                {run.id === "phase234-sf-2019-v2"
+                  ? `${run.name} (v2 corregida · FSPM/SWAT+ Recomendada)`
+                  : run.name}
+              </option>
+            ))}
           </select>
         </label>
         <label className="text-xs text-zinc-500">Resolución
@@ -112,7 +132,7 @@ export default function Twin3DPage() {
           <label htmlFor="playback-date">Ir a fecha</label>
           <input id="playback-date" key={`${simulationId}-${record.date}`} ref={dateInputRef} type="date" defaultValue={record.date}
             className="rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-zinc-100" />
-          <button type="submit" className="rounded-lg bg-cyan-700 px-2 py-1.5 text-white">Ir</button>
+          <button type="submit" className="rounded-lg bg-cyan-700 px-2 py-1.5 text-white cursor-pointer hover:bg-cyan-600 transition">Ir</button>
         </form>}
         {cropNavigation.status === "READY" && <button type="button"
           disabled={playback.availabilityLoading || playback.loading || !playbackReadyForResolution || navigatingToCrop}
@@ -123,25 +143,81 @@ export default function Twin3DPage() {
               setDateMessage(found ? null : "No se pudo cargar la primera fecha con campo FSPM representable.");
             }).finally(() => setNavigatingToCrop(false));
           }}
-          className="rounded-lg bg-emerald-700 px-2 py-1.5 text-xs text-white disabled:cursor-not-allowed disabled:opacity-50">
+          className="rounded-lg bg-emerald-700 px-2 py-1.5 text-xs text-white disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer hover:bg-emerald-600 transition">
           {navigatingToCrop ? "Buscando cultivo…" : "Ir al primer cultivo"}
         </button>}
+        {record && (
+          <button
+            type="button"
+            onClick={() => setIsExplorerOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-teal-500/40 bg-teal-600/20 hover:bg-teal-600/40 px-3 py-1.5 text-xs font-semibold text-teal-200 transition cursor-pointer"
+          >
+            <Table className="h-3.5 w-3.5" />
+            <span>36 HRUs / 37 Canales</span>
+          </button>
+        )}
       </div>
     </header>
+
+    {/* Barra de hitos científicos del año 2019 */}
+    {(simulationId === "phase234-sf-2019-v2" || (record && record.date.startsWith("2019"))) && (
+      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-950/20 px-3 py-2 text-xs">
+        <span className="font-semibold text-teal-300 flex items-center gap-1 mr-1">
+          <CalendarIcon className="h-3.5 w-3.5" /> Hitos 2019:
+        </span>
+        {SCIENTIFIC_LANDMARKS_2019.map((lm) => {
+          const isCurrent = record?.date === lm.date;
+          return (
+            <button
+              key={lm.date}
+              type="button"
+              onClick={() => {
+                setDateMessage(null);
+                void playback.jumpToDate(lm.date).then((found) => {
+                  if (!found) setDateMessage(`No se encontró registro para ${lm.date}`);
+                });
+              }}
+              className={`rounded-lg px-2.5 py-1 text-xs font-mono transition flex items-center gap-1 cursor-pointer ${
+                isCurrent
+                  ? "bg-teal-500 text-zinc-950 font-bold shadow-md"
+                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
+              }`}
+              title={lm.desc}
+            >
+              <span>{lm.label}</span>
+              <span className="text-[10px] opacity-75 hidden sm:inline">· {lm.desc}</span>
+            </button>
+          );
+        })}
+      </div>
+    )}
+
     {dateMessage && <p className="text-xs text-amber-600">{dateMessage}</p>}
     {cropNavigation.status === "SELECT_DAILY" && <p className="text-xs text-amber-600">La trayectoria vegetal está disponible en DAILY. Selecciona esa resolución para ir al primer cultivo.</p>}
     {playback.availabilityLoading && <p className="text-xs text-zinc-500">Consultando disponibilidad FSPM…</p>}
     {playback.error && record && <p className="text-xs text-rose-600">Error de reproducción: {playback.error}</p>}
+    {simError && (
+      <div className="flex items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-950/40 p-3 text-xs text-rose-200">
+        <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+        <div>
+          <b>Estado de conexión FastAPI:</b> {simError}. Asegúrese de que el backend esté en ejecución y cuente con autenticación activa.
+        </div>
+      </div>
+    )}
 
     {record?.plant_samples.length ? <div className="flex items-center gap-3 text-xs text-zinc-500">
       <label>Muestra individual persistida
         <select aria-label="Muestra de planta" className="ml-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-zinc-100"
           value={scene?.sample?.plant_id ?? ""} onChange={(event) => setPlantId(event.target.value)}>
-          {!scene?.sample && <option value="">Muestra seleccionada no disponible</option>}
-          {record.plant_samples.map((sample) => <option key={sample.plant_id} value={sample.plant_id}>{sample.plant_id}</option>)}
+          {!scene?.sample && <option value="">Muestra seleccionada no activa en esta fecha</option>}
+          {record.plant_samples.map((sample) => (
+            <option key={sample.plant_id} value={sample.plant_id}>
+              {sample.plant_id} {sample.calendar_id ? `(${sample.calendar_id.split("-").pop()})` : ""}
+            </option>
+          ))}
         </select>
       </label>
-      <span>{record.plant_samples.length} muestras en este registro; el campo usa promedios.</span>
+      <span>{record.plant_samples.length} muestras activas hoy; el campo meso usa promedios ponderados.</span>
     </div> : null}
 
     <div ref={viewerRef} className={isFullscreen
@@ -152,7 +228,9 @@ export default function Twin3DPage() {
           stationId={simulation?.station_id}
           onSelectPlant={(id) => { if (id) setPlantId(id); }}
           showHydrologyFlow={showHydrologyFlow} showSoilHorizons={showSoilHorizons}
-          showSensors={showSensors} showScientificLabels={showScientificLabels} />
+          showSensors={showSensors} showScientificLabels={showScientificLabels}
+          onOpenExplorer={() => setIsExplorerOpen(true)}
+          selectedPlantId={plantId} />
         <TwinHUDOverlay record={record!} simulationName={simulation?.name ?? record!.simulation_id}
           scaleMode={scaleMode} onChangeScale={setScaleMode} isPlaying={playback.playing}
           onTogglePlay={() => playback.setPlaying((old) => !old)} index={playback.index}
@@ -164,7 +242,11 @@ export default function Twin3DPage() {
           isFullscreen={isFullscreen} onToggleFullscreen={() => {
             if (document.fullscreenElement) void document.exitFullscreen();
             else void viewerRef.current?.requestFullscreen();
-          }} />
+          }}
+          onOpenExplorer={() => setIsExplorerOpen(true)}
+          selectedPlantId={plantId}
+          onSelectPlant={(id) => { if (id) setPlantId(id); }}
+          visualMode={scene.visual.mode} />
       </> : simulation && historicalFallbackEligible(simulation.status, playback.page?.artifact_status ?? null) ? <HistoricalContext3D simulation={simulation}
         scaleMode={scaleMode} onChangeScale={setScaleMode}
         onToggleFullscreen={() => {
@@ -173,14 +255,28 @@ export default function Twin3DPage() {
         }} /> : <div className="flex h-full flex-col items-center justify-center gap-3 bg-zinc-950 p-8 text-center text-zinc-300">
         {!simulationsLoaded || playback.loading ? <Loader2 className="h-8 w-8 animate-spin text-cyan-400" /> : <AlertCircle className="h-8 w-8 text-amber-400" />}
         <strong>{!simulationsLoaded ? "Cargando simulaciones…" : playback.loading ? "Cargando periodo…" :
-          simulations.length === 0 ? "No hay simulaciones accesibles" : playback.page?.artifact_status === "NOT_AVAILABLE"
+          simulations.length === 0 ? (simError ? "Error de conexión con FastAPI" : "No hay simulaciones accesibles") : playback.page?.artifact_status === "NOT_AVAILABLE"
           ? "Reproducción científica no disponible para esta corrida" : "No hay estado temporal para mostrar"}</strong>
-        <p className="max-w-xl text-xs text-zinc-400">{simError ?? playback.error ??
+        <p className="max-w-xl text-xs text-zinc-400">{simError ? `No se pudo conectar con FastAPI: ${simError}. Verifique que el servicio backend esté en ejecución.` : playback.error ??
           playback.page?.limitations.join(" · ") ?? "Se requiere un artefacto twin-playback-v1. No se generan estados vegetales o meteorológicos sustitutos."}</p>
         {playback.page && <span className="text-xs">Estado de simulación: {playback.page.simulation_status}</span>}
         {historical.status === "ready" && <span className="text-xs text-cyan-300">Los gráficos históricos de esta corrida están debajo del visor.</span>}
       </div>}
     </div>
+
+    {/* Modal Explorador Multiescala de HRUs y Canales */}
+    {record && (
+      <MacroEntityExplorer
+        record={record}
+        isOpen={isExplorerOpen}
+        onClose={() => setIsExplorerOpen(false)}
+        onSelectPlant={(id) => {
+          setPlantId(id);
+          setScaleMode("MICRO");
+        }}
+        onNavigateToScale={(scale) => setScaleMode(scale)}
+      />
+    )}
 
     {record && <div className="grid gap-4 lg:grid-cols-2">
       <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/60">

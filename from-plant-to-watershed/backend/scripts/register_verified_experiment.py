@@ -29,10 +29,12 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal, engine
+from app.core.migrations import apply_pending_migrations
 from app.models.simulation import ClimateScenario, SimulationRun
 from app.models.user import User
 from app.models.watershed import Watershed
 from app.services.playback_artifact import PlaybackArtifactStore
+from app.services.playback_database import PlaybackDatabaseStore
 
 
 DEFAULT_DATA = BACKEND_DIR / "data"
@@ -393,7 +395,7 @@ def _identity_payload(row: SimulationRun) -> dict[str, Any]:
         "end_date": row.end_date.isoformat() if row.end_date else None,
         "experiment": provenance.get("experiment"),
         "classification": provenance.get("scientific_classification"),
-        "playback_sha256": ((provenance.get("playback") or {}).get("sha256")),
+        "playback_sha256": ((provenance.get("registration") or {}).get("playback_sha256")),
         "variant_manifest_sha256": ((provenance.get("registration") or {}).get("variant_manifest_sha256")),
         "plants_plt_sha256": ((provenance.get("registration") or {}).get("plants_plt_sha256")),
     }
@@ -405,11 +407,14 @@ async def _persist(args: argparse.Namespace, artifacts: dict[str, Any]) -> dict[
         raise ValueError("Writes require --database-scope development")
     if settings.APP_ENV.lower() != "development":
         raise ValueError("Writes are allowed only while APP_ENV=development")
-    if not target.drivername.startswith("postgresql") or target.host not in {"localhost", "127.0.0.1", "::1"}:
+    socket_host = target.query.get("host")
+    if (not target.drivername.startswith("postgresql") or
+            (target.host not in {"localhost", "127.0.0.1", "::1"}
+             and socket_host != "/tmp/from-plant-to-watershed-pg")):
         raise ValueError("Writes require a loopback PostgreSQL DATABASE_URL; target details were not printed")
     payloads = _paired_run_payloads(args, artifacts)
     ids = [payload["id"] for payload in payloads]
-    result: dict[str, Any] = {"database_scope": "development", "database_host": target.host, "run_ids": ids}
+    result: dict[str, Any] = {"database_scope": "development", "database_host": target.host or "local socket", "run_ids": ids}
 
     async with AsyncSessionLocal() as session:
         if args.verify_existing:
@@ -447,12 +452,24 @@ async def _persist(args: argparse.Namespace, artifacts: dict[str, Any]) -> dict[
                 raise ValueError("The explicit target scenario must exist and be neutral (temperature anomaly 0, precipitation factor 1)")
             if scenario.source_type.upper() not in {"LOCAL_VERIFICATION", "SWAT_PROJECT", "NEUTRAL"}:
                 raise ValueError("The explicit target scenario is not a development verification scenario")
-            for payload in payloads:
-                session.add(SimulationRun(**payload))
+            rows = [SimulationRun(**payload) for payload in payloads]
+            for row in rows:
+                session.add(row)
             try:
                 await session.flush()
             except IntegrityError as exc:
                 raise ValueError("Atomic registration failed a database constraint; transaction rolled back") from exc
+            legacy_store = PlaybackArtifactStore(Path(args.playback_root))
+            database_store = PlaybackDatabaseStore(session)
+            for row, payload in zip(rows, payloads, strict=True):
+                legacy = payload["provenance"]["playback"]
+                stored = await database_store.write(
+                    row.id, legacy_store.iter_records(row.id, legacy),
+                    provenance=legacy.get("provenance", {}), limitations=legacy.get("limitations", []),
+                )
+                if stored["record_count"] != legacy["record_count"]:
+                    raise ValueError("Playback import count differs from verified manifest")
+                row.provenance = {**row.provenance, "legacy_playback_artifact": legacy, "playback": stored}
         result.update({"status": "REGISTERED", "rows": [_paired_run_identity_dict(payload) for payload in payloads]})
     return result
 
@@ -481,9 +498,9 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--experiment-id", required=True)
     parser.add_argument("--baseline-run-id", required=True)
     parser.add_argument("--coupled-run-id", required=True)
-    parser.add_argument("--owner-id", type=int)
-    parser.add_argument("--watershed-id", type=int)
-    parser.add_argument("--scenario-id", type=int)
+    parser.add_argument("--owner-id")
+    parser.add_argument("--watershed-id")
+    parser.add_argument("--scenario-id")
     parser.add_argument("--database-scope", choices=["development"])
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--check-only", action="store_true", help="Verify manifests, workspaces, rows, and playback without a database connection")
@@ -509,6 +526,8 @@ async def _main(args: argparse.Namespace) -> dict[str, Any]:
         }
     if not all((args.owner_id, args.watershed_id, args.scenario_id, args.database_scope)):
         raise ValueError("Database operations require --database-scope development, --owner-id, --watershed-id, and --scenario-id")
+    if args.apply:
+        await apply_pending_migrations(engine)
     return await _persist(args, artifacts)
 
 

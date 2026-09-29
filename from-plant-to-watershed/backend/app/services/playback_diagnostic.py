@@ -150,7 +150,8 @@ def diagnose_record(record: PlaybackRecord) -> DateAvailability:
                             sample_representable=bool(sample_ok), missing_variables=missing)
 
 
-def diagnose_simulation(sim, *, on: date | None = None) -> SimulationAvailability:
+def diagnose_simulation(sim, *, on: date | None = None,
+                        records_by_resolution: dict[str, list[PlaybackRecord]] | None = None) -> SimulationAvailability:
     provenance = sim.provenance or {}
     requested = sim.requested_config or {}
     run_type = (requested.get("swat_plus") or {}).get("run_type") or (sim.effective_config or {}).get("run_type") or "RESEARCH_MULTISCALE"
@@ -180,7 +181,9 @@ def diagnose_simulation(sim, *, on: date | None = None) -> SimulationAvailabilit
             previous_active: date | None = None
             current_interval: DateInterval | None = None
             sample_representable_seen = False
-            for record in store.iter_records(sim.id, manifest):
+            records = (records_by_resolution.get(resolution, []) if records_by_resolution is not None
+                       else store.iter_records(sim.id, manifest))
+            for record in records:
                 summary.record_count += 1
                 summary.first_record = summary.first_record or record.date
                 summary.last_record = record.date

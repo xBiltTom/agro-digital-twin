@@ -16,6 +16,7 @@ from app.models.user import User
 from app.models.watershed import Watershed
 from app.schemas.playback import Evidence, VariableState
 from app.services.playback_artifact import PlaybackArtifactStore
+from app.services.playback_database import PlaybackDatabaseStore
 from app.services.playback_builder import _weather, simplified_frames, swat_frames
 from app.services.swat_plant_parameter_mapper import SwatClimateForcingReader, SwatPlantMappingError
 from app.services.swat_plus_parser import SwatOutputParser, _date_from_row
@@ -195,7 +196,7 @@ async def test_playback_api_auth_owner_and_pagination(tmp_path, monkeypatch):
                             start_date=date(2020, 1, 1), end_date=date(2020, 1, 2), seed=7)
         db.add(run)
         await db.flush()
-        manifest = PlaybackArtifactStore().write(run.id, swat_frames(
+        manifest = await PlaybackDatabaseStore(db).write(run.id, swat_frames(
             simulation_id=run.id, watershed_id=watershed.code, run_type="SWAT_STANDARD_BASELINE",
             resolution="DAILY", records=[{"period": "2020-01-01", "runoff_mm": 1.},
                                          {"period": "2020-01-02", "runoff_mm": 2.}], hru_results=[],
@@ -249,13 +250,12 @@ async def test_monthly_swat_can_expose_daily_fspm_without_daily_hydrology(tmp_pa
         db.add(run)
         await db.flush()
         forcing = [{"date": day, "temp_c": 15., "precip_mm": 1.} for day in ("2020-02-28", "2020-02-29")]
-        monthly = PlaybackArtifactStore().write(run.id, swat_frames(
+        monthly = await PlaybackDatabaseStore(db).write(run.id, swat_frames(
             simulation_id=run.id, watershed_id=watershed.code, run_type="SWAT_MULTISCALE_COUPLED",
             resolution="MONTHLY", records=[{"period": "2020-02-01", "runoff_mm": 5.}], hru_results=[],
             forcing=forcing, forcing_source="fixture", start_date=run.start_date, end_date=run.end_date),
             provenance={"fixture": True})
-        daily_store = PlaybackArtifactStore(tmp_path / "playback" / "v1" / "fspm-daily")
-        daily = daily_store.write(run.id, swat_frames(
+        daily = await PlaybackDatabaseStore(db).write(run.id, swat_frames(
             simulation_id=run.id, watershed_id=watershed.code, run_type="SWAT_MULTISCALE_COUPLED",
             resolution="DAILY", records=[], hru_results=[], forcing=forcing, forcing_source="fixture",
             fspm_days={"2020-02-28": {"crop": {"active": True, "crop": "maize", "source": "fixture"},
@@ -368,7 +368,8 @@ async def test_backfill_uses_persisted_baseline_without_fspm_or_swat_execution(t
     manifest = await backfill(run_id)
     assert manifest["record_count"] == 1
     assert manifest["provenance"]["forcing"]["status"] == "NOT_AVAILABLE"
-    _, records = PlaybackArtifactStore().page(run_id, manifest)
+    async with AsyncSessionLocal() as db:
+        _, records = await PlaybackDatabaseStore(db).page(run_id, manifest["resolution"])
     assert records[0].field == {} and records[0].crop is None
     assert records[0].weather["precipitation_mm"].value is None
     assert records[0].hydrology["soil_water_mm"].value == 100.

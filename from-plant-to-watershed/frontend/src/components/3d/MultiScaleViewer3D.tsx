@@ -25,6 +25,8 @@ interface MultiScaleViewer3DProps {
   showSensors?: boolean;
   showScientificLabels?: boolean;
   onSelectPlant?: (plantId?: string) => void;
+  onOpenExplorer?: () => void;
+  selectedPlantId?: string | null;
 }
 
 import { maizeFromScene } from "../../lib/visual-state";
@@ -146,6 +148,8 @@ export default function MultiScaleViewer3D({
   showSensors = true,
   showScientificLabels = true,
   onSelectPlant,
+  onOpenExplorer,
+  selectedPlantId,
 }: MultiScaleViewer3DProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const southForkContext = scene ? hasSouthForkContext(scene.record, stationId) : stationId === "05451210";
@@ -318,6 +322,7 @@ export default function MultiScaleViewer3D({
             showHruBorders={showSoilHorizons}
             showHydrologyFlow={showHydrologyFlow}
             showScientificLabels={showScientificLabels}
+            onOpenExplorer={onOpenExplorer}
           />
         )}
         {scaleMode === "MACRO" && !southForkContext && <group>
@@ -353,6 +358,8 @@ export default function MultiScaleViewer3D({
             showHydrologyFlow={showHydrologyFlow}
             showSoilHorizons={showSoilHorizons}
             showScientificLabels={showScientificLabels}
+            selectedPlantId={selectedPlantId}
+            onSelectPlant={(plantId) => onSelectPlant?.(plantId)}
           />
         )}
 

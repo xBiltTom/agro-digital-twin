@@ -28,12 +28,9 @@ async def lifespan(app: FastAPI):
                 "\n"
                 "================================================================================\n"
                 "ERROR DE CONEXIÓN A LA BASE DE DATOS:\n"
-                f"No se pudo conectar a: {settings.DATABASE_URL}\n\n"
+                "No se pudo conectar a la base PostgreSQL configurada.\n\n"
                 "Causas comunes y solución:\n"
-                "1. Si estás usando PostgreSQL local (puerto 5432):\n"
-                "   -> Verifica que el servicio esté iniciado: sudo systemctl start postgresql\n"
-                "2. Si deseas usar SQLite local (sin PostgreSQL):\n"
-                "   -> Configura en backend/.env: DATABASE_URL=sqlite+aiosqlite:///./digitaltwin.db\n"
+                "Verifica que la instancia local PostgreSQL esté iniciada y que DATABASE_URL apunte a digitaltwin.\n"
                 "================================================================================\n"
             )
         raise exc

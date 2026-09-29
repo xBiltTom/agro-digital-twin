@@ -1,0 +1,61 @@
+{
+  "artifact_count": 20,
+  "checks": {
+    "basin_daily_dates": 365,
+    "calendar_converged": true,
+    "channel_rows_all_channels": 13505,
+    "expected_daily_dates": 365,
+    "fspm_climate_daily_dates": 365,
+    "fspm_daily_dates": 365,
+    "hru_plant_rows": 13140,
+    "hru_water_balance_rows": 13140,
+    "management_event_rows": 72,
+    "no_severe_output_warnings": true,
+    "required_hydrology_complete": {
+      "evapotranspiration_mm": true,
+      "precip_mm": true,
+      "runoff_mm": true,
+      "soil_water_mm": true,
+      "streamflow_m3s": true
+    }
+  },
+  "executable": "/home/bilton/.swatplus_builder/engines/61.0.2.61/swatplus-61.0.2.61-gnu-lin_x86_64-Rel",
+  "manifest": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESI\u00d3N-O1/gemelos-digitales/from-plant-to-watershed/backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v2/manifest.json",
+  "preflight": {
+    "active_target_hru_count": 32,
+    "blockers": [],
+    "calendar_source": "SWAT+ executed mgt_out.txt, obtained after the first real baseline run",
+    "checks": {
+      "control_files": true,
+      "coupled_crop_management": true,
+      "dated_fspm_forcing": true,
+      "executable": true,
+      "executed_crop_calendar": "READ_FROM_MGT_OUT_AFTER_BASELINE_EXECUTION",
+      "input_compatibility": true,
+      "integer_format_corrections_required_in_workspace": 532,
+      "project_and_declared_inputs": true,
+      "working_directory": true
+    },
+    "estimated_executions": 4,
+    "run_type": "SWAT_MULTISCALE_COUPLED",
+    "status": "READY",
+    "storage_estimate": {
+      "free_disk_bytes": 46790561792,
+      "minimum_workspace_copy_bytes": 2847564100,
+      "note": "Lower bound for isolated source copies; SWAT+ output growth and runtime depend on the requested period and print frequency.",
+      "source_project_bytes": 711891025,
+      "workspace_project_copy_count": 4
+    }
+  },
+  "project": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESI\u00d3N-O1/gemelos-digitales/from-plant-to-watershed/backend/data/phase34-cdl-2019/project",
+  "requested_period": [
+    "2019-01-01",
+    "2019-12-31"
+  ],
+  "results_dir": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESI\u00d3N-O1/gemelos-digitales/from-plant-to-watershed/backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v2",
+  "run_id": "phase234-sf-2019-v2",
+  "source_project_unchanged": true,
+  "started_on": "2026-09-28",
+  "status": "COMPLETED",
+  "workspace_root": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESI\u00d3N-O1/gemelos-digitales/from-plant-to-watershed/backend/data/phase1-south-fork-2019/workspaces/phase234-sf-2019-v2"
+}

@@ -27,7 +27,7 @@ from app.schemas.simulation import (
 )
 from app.api.deps import get_current_active_user, require_roles
 from app.services.twin_coupling_engine import TwinCouplingEngine
-from app.services.playback_artifact import PlaybackArtifactStore
+from app.services.playback_database import PlaybackDatabaseStore
 from app.services.ai_insights import AICopilotService
 from app.schemas.playback import PlaybackPage, Resolution
 from app.schemas.playback_diagnostic import SimulationAvailability
@@ -408,7 +408,18 @@ async def get_simulation_availability(
     current_user: User = Depends(get_current_active_user),
 ):
     sim = await _visible_simulation(db, sim_id, current_user)
-    return diagnose_simulation(sim, on=on)
+    manifests = [(sim.provenance or {}).get(key) for key in ("playback", "playback_daily_fspm")]
+    store = PlaybackDatabaseStore(db)
+    records = {}
+    for manifest in manifests:
+        if manifest and manifest.get("resolution") in {"DAILY", "MONTHLY", "ANNUAL"}:
+            resolution = manifest["resolution"]
+            try:
+                records[resolution] = await store.records(sim.id, resolution)
+            except ValueError:
+                # The diagnostic reports INVALID without exposing partial dates.
+                records[resolution] = []
+    return diagnose_simulation(sim, on=on, records_by_resolution=records)
 
 
 @router.get("/{sim_id}/playback", response_model=PlaybackPage)
@@ -439,13 +450,13 @@ async def get_simulation_playback(
         raise HTTPException(status_code=422, detail={"message": "Requested resolution is not available", "available_resolutions": available})
     if daily_requested:
         manifest = daily_manifest
-        store = PlaybackArtifactStore(Path(settings.DATA_ARTIFACT_ROOT) / "playback" / "v1" / "fspm-daily")
-    else:
-        store = PlaybackArtifactStore()
+    store = PlaybackDatabaseStore(db)
     try:
-        total, records = store.page(sim.id, manifest, on=on, start=start, end=end, offset=offset, limit=limit)
-    except (FileNotFoundError, ValueError) as exc:
-        raise HTTPException(status_code=503, detail=f"Playback artifact unavailable or invalid: {exc}") from exc
+        if await store.count(sim.id, manifest["resolution"]) != manifest.get("record_count"):
+            raise ValueError("PostgreSQL playback count differs from the published manifest")
+        total, records = await store.page(sim.id, manifest["resolution"], on=on, start=start, end=end, offset=offset, limit=limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=f"Playback state unavailable or invalid: {exc}") from exc
     return PlaybackPage(simulation_id=sim.id, simulation_status=sim.status,
                         artifact_status="AVAILABLE", resolution=manifest["resolution"], available_resolutions=available,
                         total=total, offset=offset, limit=limit, records=records,

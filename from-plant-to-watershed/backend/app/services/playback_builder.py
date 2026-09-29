@@ -257,7 +257,7 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
                                    ("estimated_root_zone_depth_mm", "mm")):
                     variables[name] = value(estimate[name], unit, Evidence.DERIVED,
                                             "SWAT+ hru_wb_day.sw_ave + hru-data.hru + soils.sol",
-                                            "Uniform profile projection; root-zone layer water is not printed")
+                                            "SWAT+ storage excludes wilting-point water; uniform available-water fraction across layers; daily layer water is not printed")
             plant = plants_by_date_hru.get((day, str(identifier)))
             if plant is not None:
                 plant_units = {

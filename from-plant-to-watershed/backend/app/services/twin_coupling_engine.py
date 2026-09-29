@@ -23,7 +23,7 @@ from app.services.swat_plus_adapter import (
     swat_run_config_from_request,
 )
 from app.services.swat_plant_parameter_mapper import SwatClimateForcingReader, SwatPlantParameterMapper, SwatPlantMappingError
-from app.services.playback_artifact import PlaybackArtifactStore
+from app.services.playback_database import PlaybackDatabaseStore
 from app.services.playback_builder import simplified_frames, swat_frames
 from app.services.swat_soil_water import read_hru_gis_ids, read_hru_soils
 from app.services.swat_crop_chain_diagnostic import SwatCropChainDiagnostic
@@ -172,7 +172,7 @@ class TwinCouplingEngine:
         }
 
     @staticmethod
-    async def _execute_swat_baseline(sim_run: SimulationRun, watershed: Watershed,
+    async def _execute_swat_baseline(db: AsyncSession, sim_run: SimulationRun, watershed: Watershed,
                                      observations: dict[str, float] | None = None,
                                      observation_source: str | None = None) -> None:
         """Execute SWAT+ without leaking project/process details into the engine."""
@@ -199,7 +199,7 @@ class TwinCouplingEngine:
             "watershed_snapshot": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
             "code_version": _code_version(),
         }
-        playback = PlaybackArtifactStore().write(sim_run.id, swat_frames(
+        playback = await PlaybackDatabaseStore(db).write(sim_run.id, swat_frames(
             simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
             outlet_unit=config.outlet_unit, run_type=config.run_type,
             resolution=config.output_frequency, records=result.records, hru_results=result.hru_results,
@@ -241,7 +241,7 @@ class TwinCouplingEngine:
         }
 
     @staticmethod
-    async def _execute_swat_coupled(sim_run: SimulationRun, watershed: Watershed,
+    async def _execute_swat_coupled(db: AsyncSession, sim_run: SimulationRun, watershed: Watershed,
                                     observations: dict[str, float] | None = None,
                                     observation_source: str | None = None) -> None:
         """Couple existing FSPM dynamics to a converged SWAT+ event calendar."""
@@ -305,7 +305,7 @@ class TwinCouplingEngine:
             **peak_dates,
             "code_version": _code_version(),
         }
-        playback = PlaybackArtifactStore().write(sim_run.id, swat_frames(
+        playback = await PlaybackDatabaseStore(db).write(sim_run.id, swat_frames(
             simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
             outlet_unit=config.outlet_unit, run_type=config.run_type,
             resolution=config.output_frequency, records=result.records, hru_results=result.hru_results,
@@ -334,8 +334,7 @@ class TwinCouplingEngine:
             ])
         sim_run.provenance = {**sim_run.provenance, "playback": playback}
         if config.output_frequency != "DAILY":
-            daily_store = PlaybackArtifactStore(Path(settings.DATA_ARTIFACT_ROOT) / "playback" / "v1" / "fspm-daily")
-            daily_manifest = daily_store.write(sim_run.id, swat_frames(
+            daily_manifest = await PlaybackDatabaseStore(db).write(sim_run.id, swat_frames(
                 simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
                 outlet_unit=config.outlet_unit, run_type=config.run_type,
                 resolution="DAILY", records=[], hru_results=[], plant_results=[],
@@ -436,9 +435,9 @@ class TwinCouplingEngine:
                             swat_observations[observed_on] = observation.value_m3s
                     observation_source = f"USGS station {sim_run.station_id}; linked observation datasets"
                 if ((sim_run.requested_config or {}).get("swat_plus") or {}).get("run_type") == "SWAT_MULTISCALE_COUPLED":
-                    await TwinCouplingEngine._execute_swat_coupled(sim_run, watershed, swat_observations, observation_source)
+                    await TwinCouplingEngine._execute_swat_coupled(db, sim_run, watershed, swat_observations, observation_source)
                 else:
-                    await TwinCouplingEngine._execute_swat_baseline(sim_run, watershed, swat_observations, observation_source)
+                    await TwinCouplingEngine._execute_swat_baseline(db, sim_run, watershed, swat_observations, observation_source)
                 sim_run.status = "COMPLETED"
                 sim_run.finished_at = datetime.now(timezone.utc)
                 await db.commit()
@@ -505,7 +504,7 @@ class TwinCouplingEngine:
                     if observed_on not in observation_for_playback:
                         observed_by_month.setdefault(observation.observed_on.strftime("%Y-%m"), []).append(observation.value_m3s)
                         observation_for_playback[observed_on] = observation.value_m3s
-            playback = PlaybackArtifactStore().write(sim_run.id, simplified_frames(
+            playback = await PlaybackDatabaseStore(db).write(sim_run.id, simplified_frames(
                 simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
                 rows=core_run.results,
                 daily_fields=core_run.playback_daily, climate_source=sim_run.climate_source,

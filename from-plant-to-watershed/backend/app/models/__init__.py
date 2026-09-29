@@ -2,7 +2,7 @@ from app.core.database import Base
 from app.models.base import TimestampMixin
 from app.models.user import User, Role, Permission, UserProfile, user_roles, role_permissions
 from app.models.watershed import Watershed, Subbasin, HRU, PlantSpecies
-from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
+from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult, PlaybackFrame
 from app.models.report import GeneratedReport
 from app.models.observation import Dataset, DatasetArtifact, StreamflowObservation
 from app.models.external_model import ExternalModel
@@ -23,6 +23,7 @@ __all__ = [
     "ClimateScenario",
     "SimulationRun",
     "SimulationResult",
+    "PlaybackFrame",
     "GeneratedReport",
     "Dataset",
     "DatasetArtifact",

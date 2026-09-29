@@ -148,16 +148,23 @@ migraciones SQL versionadas de `backend/migrations/` de manera no destructiva y
 registra cada archivo en `schema_migrations`. Respaldar la base antes de una
 actualización sigue siendo una práctica obligatoria.
 
-El runner y las migraciones versionadas usan SQL común a SQLite y PostgreSQL
-(`sqlite+aiosqlite` y `postgresql+asyncpg`). Para verificar PostgreSQL se requiere
-una instancia disponible y se puede iniciar la API con, por ejemplo:
+La aplicación local usa la instancia PostgreSQL existente y la base `digitaltwin`.
+El playback operativo está en `playback_frames` (JSONB), con clave por simulación,
+resolución y fecha. SQLite se conserva únicamente en pruebas aisladas y como
+formato histórico de importación. Para iniciar la instancia local existente y
+la API:
 
 ```bash
-DATABASE_URL='postgresql+asyncpg://usuario:clave@host:5432/ap3' APP_ENV=production ENABLE_DEMO_SEED=false uvicorn app.main:app
+backend/scripts/start_local_postgres.sh
+cd backend
+venv/bin/uvicorn app.main:app
 ```
 
-Esta iteración no levantó una instancia PostgreSQL; la portabilidad se verificó
-por SQL común y las pruebas SQLite.
+`backend/scripts/register_phase234_south_fork_2019.py` importa archivos
+históricos comprimidos de forma idempotente. La ejecución hídrica corregida
+`phase234-sf-2019-v2` se consulta directamente desde PostgreSQL; los
+artefactos reproducibles siguen versionados. Véase
+`docs/PHASE_2_3_4_DYNAMIC_TWIN_BACKEND.md`.
 
 La migración `001_run_manifest_and_provenance.sql` incorpora el manifiesto de
 corrida y diagnóstico de balance. No borra filas existentes: las corridas sin
