@@ -67,6 +67,11 @@ export default function SwatRunEvidencePanel({ simulation, result }: Props) {
   const provenance = result.provenance;
   const isCoupled = result.provenance_class === "COUPLED_EXECUTED";
   const isHistoricalImport = result.origin === "HISTORICAL_IMPORT";
+  const provenanceLabel = isHistoricalImport
+    ? "Importación histórica"
+    : isCoupled
+      ? "SWAT+ acoplado"
+      : "SWAT+ línea base";
   const updates = provenance.parameter_updates ?? provenance.workspace_modifications?.parameter_updates ?? [];
   const notCoupled = provenance.workspace_modifications?.not_coupled ?? [];
   const rawComparison = simulation.summary_metrics?.paired_comparison ?? provenance.experiment;
@@ -128,7 +133,7 @@ export default function SwatRunEvidencePanel({ simulation, result }: Props) {
         </div>
         <div className="flex flex-wrap gap-2 text-[10px] font-mono shrink-0">
           <span className="border border-emerald-300 bg-emerald-50 px-2 py-1 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold">
-            {result.provenance_class}
+            {provenanceLabel}
           </span>
           {provenance.exit_code != null && !isHistoricalImport && (
             <span className="border border-slate-300 px-2 py-1 text-slate-600 dark:border-slate-700 dark:text-slate-300">

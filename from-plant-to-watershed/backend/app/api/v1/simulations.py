@@ -141,7 +141,7 @@ async def preflight_simulation(
         if not executable or not project:
             return {
                 "status": "BLOCKED", "backend": "SWAT_PLUS", "run_type": requested.run_type,
-                "estimated_executions": 2 if requested.run_type == "SWAT_MULTISCALE_COUPLED" else 1,
+                "estimated_executions": 4 if requested.run_type == "SWAT_MULTISCALE_COUPLED" else 1,
                 "blockers": [{"code": "SWAT_CONFIGURATION_MISSING", "message": "Configure the SWAT+ executable and project path"}],
                 "provenance_only": [dataset.dataset_name for dataset in datasets],
                 "watershed": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
@@ -158,7 +158,7 @@ async def preflight_simulation(
         return {
             **preflight,
             "backend": "SWAT_PLUS",
-            "will_consume": ["SWAT+ project forcing", "SWAT+ project HRUs/soils/management", "start_date", "end_date", "seed", "plant_count"] + (["plant population -> plants.plt"] if requested.run_type == "SWAT_MULTISCALE_COUPLED" else []),
+            "will_consume": ["SWAT+ project forcing", "SWAT+ project HRUs/soils/management", "start_date", "end_date"] + (["seed", "plant_count", "plant population -> plants.plt"] if requested.run_type == "SWAT_MULTISCALE_COUPLED" else []),
             "provenance_only": [dataset.dataset_name for dataset in datasets],
             "watershed": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2},
             "scenario": {"id": scenario.id, "code": scenario.code, "application": "CONTEXT_ONLY; SWAT+ forcing comes from the configured project"},
@@ -177,7 +177,7 @@ async def preflight_simulation(
         "status": "READY" if ready else "BLOCKED",
         "backend": "SIMPLIFIED",
         "blockers": blockers,
-        "will_consume": ["watershed area", "climate forcing", "seed", "plant_count", "base_kc", "max_root_depth_cm", "curve_number", "initial_soil_moisture_vol", "management scenario"],
+        "will_consume": ["watershed area", "climate forcing", "seed", "plant_count", "base_kc", "max_root_depth_cm", "curve_number", "initial_soil_moisture_vol", "irrigation_mm_per_day", "management scenario"],
         "provenance_only": [dataset.dataset_name for dataset in datasets if dataset != forcing_dataset],
         "forcing": {"source": sim_in.climate_source, "dataset_id": forcing_dataset.id if forcing_dataset else None, "normalized_artifact_count": len(normalized)},
         "watershed": {"id": watershed.id, "code": watershed.code, "area_km2": watershed.area_km2, "hru_representation": "COARSE_HRU_PROXY"},

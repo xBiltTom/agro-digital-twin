@@ -68,7 +68,73 @@ const DEFAULT_SIMPLIFIED_PARAMETERS = {
   max_root_depth_cm: 120,
   curve_number: 74,
   initial_soil_moisture_vol: 24.5,
+  irrigation_mm_per_day: 0,
 };
+
+type SimplifiedParameterInputs = Record<keyof typeof DEFAULT_SIMPLIFIED_PARAMETERS, string>;
+
+const INITIAL_SIMPLIFIED_PARAMETER_INPUTS: SimplifiedParameterInputs = {
+  base_kc: String(DEFAULT_SIMPLIFIED_PARAMETERS.base_kc),
+  max_root_depth_cm: String(DEFAULT_SIMPLIFIED_PARAMETERS.max_root_depth_cm),
+  curve_number: String(DEFAULT_SIMPLIFIED_PARAMETERS.curve_number),
+  initial_soil_moisture_vol: String(DEFAULT_SIMPLIFIED_PARAMETERS.initial_soil_moisture_vol),
+  irrigation_mm_per_day: String(DEFAULT_SIMPLIFIED_PARAMETERS.irrigation_mm_per_day),
+};
+
+const PREFLIGHT_INPUT_LABELS: Record<string, string> = {
+  "SWAT+ project forcing": "Clima configurado en el proyecto SWAT+",
+  "SWAT+ project HRUs/soils/management": "HRU, suelo y manejo del proyecto SWAT+",
+  "start_date": "Fecha inicial",
+  "end_date": "Fecha final",
+  "watershed area": "Área de la cuenca",
+  "climate forcing": "Datos de clima",
+  "seed": "Semilla de reproducibilidad",
+  "plant_count": "Población de plantas",
+  "base_kc": "Coeficiente de cultivo (Kc)",
+  "max_root_depth_cm": "Profundidad máxima de raíces",
+  "curve_number": "Número de curva SCS",
+  "initial_soil_moisture_vol": "Humedad inicial del suelo",
+  "irrigation_mm_per_day": "Riego diario",
+  "management scenario": "Práctica de manejo",
+  "plant population -> plants.plt": "Parámetros vegetales aplicados en SWAT+",
+};
+
+const PREFLIGHT_BLOCKER_LABELS: Record<string, string> = {
+  SWAT_CONFIGURATION_MISSING: "El servidor no tiene configurados el ejecutable y el proyecto SWAT+.",
+  SWAT_EXECUTABLE_NOT_FOUND: "El servidor no encuentra el ejecutable SWAT+.",
+  SWAT_PROJECT_NOT_FOUND: "El servidor no encuentra el proyecto SWAT+.",
+  SWAT_PROJECT_INVALID: "El proyecto SWAT+ tiene archivos requeridos ausentes o no válidos.",
+  SWAT_CONTROL_FILES_MISSING: "El proyecto SWAT+ debe incluir time.sim y print.prt.",
+  SWAT_WORK_DIRECTORY_NOT_WRITABLE: "El servidor no puede escribir en el directorio de trabajo SWAT+.",
+  SWAT_WORKSPACE_DISK_SPACE_LOW: "El servidor no tiene suficiente espacio para copiar el proyecto SWAT+.",
+  COUPLED_CROP_CONFIGURATION_INVALID: "No se pudo validar la configuración de manejo del cultivo para el acoplamiento.",
+  COUPLED_FSPM_FORCING_INVALID: "Faltan datos climáticos diarios para completar el acoplamiento vegetal.",
+};
+
+function preflightBlockerLabel(blocker: string | { code?: string; message?: string }): string {
+  if (typeof blocker === "string") {
+    if (blocker.includes("NORMALIZED forcing artifact")) return "Elige un conjunto de datos climáticos preparado para una corrida.";
+    if (blocker.includes("neutral catalog scenario")) return "El conjunto de datos ya contiene el clima y no hay un escenario neutro disponible para combinarlo.";
+    return blocker;
+  }
+  return (blocker.code && PREFLIGHT_BLOCKER_LABELS[blocker.code]) || blocker.message || blocker.code || "El servidor no pudo validar este requisito.";
+}
+
+function preflightInputLabel(input: string): string {
+  return PREFLIGHT_INPUT_LABELS[input] ?? input;
+}
+
+function climateSourceLabel(source: SimulationRun["climate_source"] | null | undefined): string {
+  switch (source) {
+    case undefined:
+    case null: return "Origen no registrado";
+    case "SYNTHETIC": return "Clima sintético";
+    case "OBSERVED": return "Clima observado";
+    case "CMIP6_FILE": return "Proyección CMIP6";
+    case "OBSERVED_HYBRID": return "Clima observado híbrido";
+    case "SWAT_PROJECT": return "Clima del proyecto SWAT+";
+  }
+}
 
 interface PeriodPreset {
   id: "3M" | "4M" | "6M" | "1Y" | "5Y" | "CUSTOM";
@@ -181,6 +247,16 @@ function isSwatBackend(simulation: SimulationRun) {
   return simulation.hydrology_backend === "SWAT_PLUS";
 }
 
+function runIncludesPlantPopulation(simulation: SimulationRun) {
+  if (simulation.hydrology_backend === "SIMPLIFIED") return true;
+  const swatConfig = simulation.requested_config?.swat_plus;
+  const evidence = simulation.provenance && "evidence_type" in simulation.provenance
+    ? simulation.provenance.evidence_type
+    : undefined;
+  return (typeof swatConfig === "object" && swatConfig !== null && "run_type" in swatConfig && swatConfig.run_type === "SWAT_MULTISCALE_COUPLED")
+    || evidence === "REAL_SWAT_PLUS_COUPLED";
+}
+
 export default function SimulationsPage() {
   const { hasAnyRole } = useAuth();
 
@@ -245,9 +321,12 @@ export default function SimulationsPage() {
   const [formSeed, setFormSeed] = useState(42);
   const [formPlantCount, setFormPlantCount] = useState(1000);
   const [formWarmupYears, setFormWarmupYears] = useState(3);
+  const [formOutputFrequency, setFormOutputFrequency] = useState<"DAILY" | "MONTHLY" | "ANNUAL">("DAILY");
+  const [formOutletUnit, setFormOutletUnit] = useState("");
   const [formClimateSource, setFormClimateSource] = useState<"SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "SWAT_PROJECT">("SYNTHETIC");
   const [formHydrologyBackend, setFormHydrologyBackend] = useState<"SIMPLIFIED" | "SWAT_PLUS">("SIMPLIFIED");
   const [formSwatRunType, setFormSwatRunType] = useState<SwatRunType>("SWAT_MULTISCALE_COUPLED");
+  const [formParameters, setFormParameters] = useState<SimplifiedParameterInputs>(INITIAL_SIMPLIFIED_PARAMETER_INPUTS);
   const [formManagement, setFormManagement] = useState<"BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM">("BASELINE");
   const [formDatasetIds, setFormDatasetIds] = useState<string[]>([]);
   const [formForcingDatasetId, setFormForcingDatasetId] = useState("");
@@ -268,6 +347,8 @@ export default function SimulationsPage() {
       setFormManagement("BASELINE");
       setFormClimateSource("SWAT_PROJECT");
       setFormForcingDatasetId("");
+      const neutralScenario = scenarios.find((scenario) => scenario.temp_anomaly_c === 0 && scenario.precip_factor === 1);
+      if (neutralScenario) setFormScenarioId(neutralScenario.id);
       setFormDatasetRoles((current) => Object.fromEntries(Object.keys(current).map((id) => [id, "CONTEXT_ONLY"])) as typeof current);
     } else if (formClimateSource === "SWAT_PROJECT") {
       setFormClimateSource("SYNTHETIC");
@@ -276,6 +357,10 @@ export default function SimulationsPage() {
 
   const changeClimateSource = (source: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "SWAT_PROJECT") => {
     setFormClimateSource(source);
+    if (source !== "SYNTHETIC") {
+      const neutralScenario = scenarios.find((scenario) => scenario.temp_anomaly_c === 0 && scenario.precip_factor === 1);
+      if (neutralScenario) setFormScenarioId(neutralScenario.id);
+    }
     setFormForcingDatasetId("");
     setFormDatasetIds([]);
     setFormDatasetRoles({});
@@ -350,7 +435,10 @@ export default function SimulationsPage() {
         const gauge = watersData[0].dem_metadata?.gauge;
         if (typeof gauge === "string") setFormStationId(gauge);
       }
-      if (scenData.length > 0) setFormScenarioId(scenData[0].id);
+      if (scenData.length > 0) {
+        const neutralScenario = scenData.find((scenario) => scenario.temp_anomaly_c === 0 && scenario.precip_factor === 1);
+        setFormScenarioId((neutralScenario ?? scenData[0]).id);
+      }
 
       if (simsData.length > 0) {
         selectSimulation(simsData[0]);
@@ -398,7 +486,16 @@ export default function SimulationsPage() {
     const durationDays = formStartDate && formEndDate
       ? Math.floor((Date.parse(`${formEndDate}T00:00:00Z`) - Date.parse(`${formStartDate}T00:00:00Z`)) / 86_400_000) + 1
       : 0;
-    if (durationDays < 1 || !formWatershedId || !formScenarioId) return null;
+    if (durationDays < 1 || durationDays > 3650 || !formWatershedId || !formScenarioId) return null;
+    if (usesSimplifiedModel && Object.values(formParameters).some((value) => !value.trim() || !Number.isFinite(Number(value)))) return null;
+
+    const simplifiedParameters: Record<string, number> = {
+      base_kc: Number(formParameters.base_kc),
+      max_root_depth_cm: Number(formParameters.max_root_depth_cm),
+      curve_number: Number(formParameters.curve_number),
+      initial_soil_moisture_vol: Number(formParameters.initial_soil_moisture_vol),
+      irrigation_mm_per_day: Number(formParameters.irrigation_mm_per_day),
+    };
 
     return {
       name: formName,
@@ -406,7 +503,7 @@ export default function SimulationsPage() {
       scenario_id: formScenarioId,
       duration_days: durationDays,
       seed: formSeed,
-      parameters: usesSimplifiedModel ? DEFAULT_SIMPLIFIED_PARAMETERS : {},
+      parameters: usesSimplifiedModel ? simplifiedParameters : {},
       mode: formHydrologyBackend === "SWAT_PLUS" ? "SWAT_PLUS" : "RESEARCH_MULTISCALE",
       plant_count: formPlantCount,
       hydrology_backend: formHydrologyBackend,
@@ -419,16 +516,19 @@ export default function SimulationsPage() {
       end_date: formEndDate,
       swat_plus: formHydrologyBackend === "SWAT_PLUS" ? {
         run_type: formSwatRunType,
-        output_frequency: "DAILY",
+        output_frequency: formOutputFrequency,
         warmup_period: formWarmupYears,
         target_plant_name: "corn",
-        outlet_unit: watersheds.find((watershed) => watershed.id === formWatershedId)?.code.includes("05451210") ? "153" : undefined,
+        outlet_unit: formOutletUnit || (watersheds.find((watershed) => watershed.id === formWatershedId)?.code.includes("05451210") ? "153" : undefined),
       } : undefined,
     };
   };
 
   const currentFormPayload = buildSimulationPayload();
   const currentPeriodPreset = SIMULATION_PERIOD_PRESETS.find((preset) => preset.id === selectedPeriodPreset);
+  const maxSimulationEndDate = formStartDate
+    ? new Date(Date.parse(`${formStartDate}T00:00:00Z`) + 3649 * 86_400_000).toISOString().slice(0, 10)
+    : undefined;
   const currentPayloadSignature = currentFormPayload ? JSON.stringify(currentFormPayload) : "";
   const preflightMatchesCurrentForm = Boolean(
     preflight && currentPayloadSignature && preflightSignature === currentPayloadSignature,
@@ -438,16 +538,9 @@ export default function SimulationsPage() {
   const runPreflight = async () => {
     const payload = buildSimulationPayload();
     if (!payload) {
-      setFeedbackMsg({ type: "error", text: "Selecciona una cuenca, un escenario y un rango de fechas válido." });
+      setFeedbackMsg({ type: "error", text: "Completa los campos obligatorios y corrige los valores marcados." });
       return;
     }
-    const selectedScenario = scenarios.find((s) => s.id === formScenarioId);
-    const usesExternalForcing = formClimateSource === "OBSERVED" || formClimateSource === "CMIP6_FILE";
-    if (usesExternalForcing && selectedScenario && (selectedScenario.temp_anomaly_c !== 0 || selectedScenario.precip_factor !== 1)) {
-      setFeedbackMsg({ type: "error", text: "El forzamiento externo ya incluye su anomalía. Elige un escenario neutro." });
-      return;
-    }
-
     setIsPreflighting(true);
     setFeedbackMsg(null);
     try {
@@ -470,7 +563,7 @@ export default function SimulationsPage() {
     e.preventDefault();
     const payload = buildSimulationPayload();
     if (!payload) {
-      setFeedbackMsg({ type: "error", text: "Selecciona una cuenca, un escenario y un rango de fechas válido." });
+      setFeedbackMsg({ type: "error", text: "Completa los campos obligatorios y corrige los valores marcados." });
       return;
     }
     if (!preflightReady || preflightSignature !== JSON.stringify(payload)) {
@@ -828,6 +921,7 @@ export default function SimulationsPage() {
                   filteredSimulations.map((sim) => {
                     const isSelected = selectedSim?.id === sim.id;
                     const evidence = classifySimulationEvidence(sim);
+                    const includesPlantPopulation = runIncludesPlantPopulation(sim);
                     const statusLabel = sim.status === "COMPLETED" ? "Completada" : sim.status === "FAILED" ? "Fallida" : sim.status === "RUNNING" ? "En ejecución" : "Pendiente";
                     const statusTone = sim.status === "COMPLETED"
                       ? "text-emerald-700 dark:text-emerald-300"
@@ -869,8 +963,10 @@ export default function SimulationsPage() {
 
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                           <span>{sim.duration_days} días</span>
-                          <span className="border-l border-slate-300 pl-2 dark:border-slate-700">{sim.plant_count?.toLocaleString() ?? "No disponible"} plantas</span>
-                          <span className="border-l border-slate-300 pl-2 font-mono text-[10px] dark:border-slate-700">{sim.climate_source || "Fuente no registrada"}</span>
+                          <span className="border-l border-slate-300 pl-2 dark:border-slate-700">
+                            {includesPlantPopulation ? `${sim.plant_count?.toLocaleString() ?? "No disponible"} plantas` : "Sin modelo de planta"}
+                          </span>
+                          <span className="border-l border-slate-300 pl-2 dark:border-slate-700">{climateSourceLabel(sim.climate_source)}</span>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800/80">
@@ -1061,7 +1157,7 @@ export default function SimulationsPage() {
                       <div className="px-3 py-2">
                         <dt className="text-[11px] text-slate-500">Rendimiento estimado</dt>
                         <dd className="text-xs sm:text-sm font-semibold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5">
-                          {selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha · proxy` : "No disponible"}
+                          {selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "No disponible"}
                         </dd>
                       </div>
                     </dl>
@@ -1625,7 +1721,7 @@ export default function SimulationsPage() {
                                 Micro a meso: Planta a parcela
                               </span>
                               <div className="mt-2 space-y-1 text-slate-600 dark:text-slate-400">
-                                <div>Población: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.plant_count?.toLocaleString()} plantas FSPM</strong></div>
+                                <div>Población: <strong className="text-slate-800 dark:text-slate-200">{runIncludesPlantPopulation(selectedSim) ? `${selectedSim.plant_count?.toLocaleString() ?? "No disponible"} plantas modeladas` : "Sin modelo FSPM en esta línea base"}</strong></div>
                                 <div>Índice foliar: <strong className="text-slate-800 dark:text-slate-200">{meanLai != null ? `${Number(meanLai).toFixed(3)} m²/m²` : "No disponible"}</strong></div>
                                 <div>Profundidad raíz: <strong className="text-slate-800 dark:text-slate-200">{meanRootDepth}</strong></div>
                               </div>
@@ -1677,8 +1773,8 @@ export default function SimulationsPage() {
                                 <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedSim.hydrology_backend}</span>
                               </div>
                               <div>
-                                <span className="text-slate-400 block text-[10px]">Fuente climática</span>
-                                <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedSim.climate_source || "SINTÉTICO"}</span>
+                                <span className="text-slate-400 block text-[10px]">Datos de clima</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">{climateSourceLabel(selectedSim.climate_source)}</span>
                               </div>
                               <div>
                                 <span className="text-slate-400 block text-[10px]">Duración</span>
@@ -1865,7 +1961,7 @@ export default function SimulationsPage() {
                     <div><span className="text-slate-400 block text-[10px]">Población modelada:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.plant_count?.toLocaleString()} plantas</strong></div>
                     <div><span className="text-slate-400 block text-[10px]">Evapotranspiración:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.total_actual_et_mm != null ? `${Number(selectedSim.summary_metrics.total_actual_et_mm).toFixed(1)} mm` : "No disponible"}</strong></div>
                     <div><span className="text-slate-400 block text-[10px]">Índice foliar LAI:</span><strong className="text-emerald-700 dark:text-emerald-400">{meanLai != null ? `${Number(meanLai).toFixed(2)} m²/m²` : "No disponible"}</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Rendimiento estimado (proxy):</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "No disponible"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Rendimiento estimado:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "No disponible"}</strong></div>
                   </>
                 ) : (
                   <>
@@ -1909,7 +2005,7 @@ export default function SimulationsPage() {
               {/* Sección 1: Identificación y Horizonte */}
               <div className="p-3.5 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col gap-3">
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  1. Ámbito temporal y cuenca de estudio
+                  1. Estudio y periodo
                 </span>
 
                 <div>
@@ -1919,14 +2015,15 @@ export default function SimulationsPage() {
                   <input
                     type="text"
                     required
+                    maxLength={150}
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    placeholder="e.g. Evaluación multiescala maíz con siembra directa SSP2-4.5"
+                    placeholder="p. ej., Efecto de siembra directa en South Fork"
                     className="w-full px-3 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-slate-400"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
                       Cuenca hidrográfica
@@ -1938,6 +2035,7 @@ export default function SimulationsPage() {
                         setFormWatershedId(watershedId);
                         const gauge = watersheds.find((w) => w.id === watershedId)?.dem_metadata?.gauge;
                         setFormStationId(typeof gauge === "string" ? gauge : "");
+                        setFormOutletUnit("");
                       }}
                       className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     >
@@ -1948,46 +2046,31 @@ export default function SimulationsPage() {
                       ))}
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
-                      Estación USGS de aforo
-                    </label>
-                    <input
-                      type="text"
-                      value={formStationId}
-                      onChange={(e) => setFormStationId(e.target.value)}
-                      placeholder="05451210"
-                      className="w-full px-2.5 py-1.5 text-xs font-mono rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
-                    />
-                  </div>
                 </div>
+                <p className="border-l-2 border-l-slate-300 pl-3 text-[11px] text-slate-600 dark:border-l-slate-700 dark:text-slate-400">
+                  {formStationId
+                    ? `Estación de aforo asociada: USGS ${formStationId}`
+                    : "No hay una estación de aforo asociada a esta cuenca."}
+                </p>
 
                 {/* Presets de Periodo */}
                 <div className="flex flex-col gap-1.5 pt-1">
                   <label className="block text-slate-600 dark:text-slate-400 font-medium text-[11px]">
-                    Horizonte temporal estandarizado
+                    Periodo de interés
                   </label>
-                   <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 xl:grid-cols-6">
-                    {SIMULATION_PERIOD_PRESETS.map((p) => {
-                      const isSel = selectedPeriodPreset === p.id;
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => handleSelectPeriodPreset(p)}
-                          className={`p-2 rounded-none border text-left transition cursor-pointer flex flex-col justify-between ${
-                            isSel
-                              ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 border-slate-900 dark:border-slate-100 font-medium"
-                              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300"
-                          }`}
-                        >
-                          <span className="text-xs font-semibold">{p.label}</span>
-                          <span className="text-[10px] opacity-75">{p.durationBadge}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <select
+                    aria-label="Periodo sugerido"
+                    value={selectedPeriodPreset}
+                    onChange={(event) => {
+                      const preset = SIMULATION_PERIOD_PRESETS.find((item) => item.id === event.target.value);
+                      if (preset) handleSelectPeriodPreset(preset);
+                    }}
+                    className="w-full border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    {SIMULATION_PERIOD_PRESETS.map((preset) => (
+                      <option key={preset.id} value={preset.id}>{preset.label} · {preset.durationBadge}</option>
+                    ))}
+                  </select>
                   {currentPeriodPreset && <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">{currentPeriodPreset.shortDesc}</p>}
                 </div>
 
@@ -2011,6 +2094,7 @@ export default function SimulationsPage() {
                     <input
                       type="date"
                       required
+                      max={maxSimulationEndDate}
                       value={formEndDate}
                       onChange={(e) => handleEndDateChange(e.target.value)}
                       className="w-full px-2.5 py-1.5 text-xs font-mono rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
@@ -2022,7 +2106,7 @@ export default function SimulationsPage() {
               {/* Sección 2: Motor Hidrológico y Clima */}
               <div className="p-3.5 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col gap-3">
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  2. Motor numérico y escenario climático
+                  2. Método y datos de clima
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2035,34 +2119,48 @@ export default function SimulationsPage() {
                       onChange={(e) => changeHydrologyBackend(e.target.value as "SIMPLIFIED" | "SWAT_PLUS")}
                       className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-medium"
                     >
-                       <option value="SIMPLIFIED">Modelo multiescala simplificado (proxy)</option>
-                      <option value="SWAT_PLUS" disabled={capabilities.swat_plus?.status !== "ACTIVE"}>
-                        Simulador Físico SWAT+ ({capabilities.swat_plus?.status ?? "No disponible"})
-                      </option>
+                       <option value="SIMPLIFIED">Modelo simplificado</option>
+                       <option value="SWAT_PLUS" disabled={capabilities.swat_plus?.status !== "ACTIVE"}>
+                         SWAT+ {capabilities.swat_plus?.status === "ACTIVE" ? "(disponible)" : "(no disponible en este servidor)"}
+                       </option>
                     </select>
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                      {usesSimplifiedModel
+                        ? "Para explorar escenarios con una representación simplificada de planta y cuenca. No ejecuta SWAT+."
+                        : "Ejecuta el proyecto SWAT+ configurado en este servidor."}
+                    </p>
                   </div>
 
-                  <div>
-                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
-                      Escenario climático
-                    </label>
-                    <select
-                      value={formScenarioId}
-                      onChange={(e) => setFormScenarioId(e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
-                    >
-                      {scenarios.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.code}: {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {formHydrologyBackend === "SIMPLIFIED" && formClimateSource === "SYNTHETIC" ? (
+                    <div>
+                      <label className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                        Cambio climático
+                      </label>
+                      <select
+                        value={formScenarioId}
+                        onChange={(event) => setFormScenarioId(event.target.value)}
+                        className="w-full border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                      >
+                        {scenarios.map((scenario) => (
+                          <option key={scenario.id} value={scenario.id}>{scenario.name}</option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        {scenarios.find((scenario) => scenario.id === formScenarioId)?.description ?? "Elige un cambio climático para esta corrida."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center border-l-2 border-l-slate-300 pl-3 text-[11px] leading-relaxed text-slate-600 dark:border-l-slate-700 dark:text-slate-400">
+                      {formHydrologyBackend === "SWAT_PLUS"
+                        ? "El proyecto SWAT+ aporta el clima; no se aplican cambios del catálogo de escenarios."
+                        : "El dataset aporta el clima; se usa un escenario neutro para no duplicar sus cambios."}
+                    </div>
+                  )}
                 </div>
 
                 {formHydrologyBackend === "SWAT_PLUS" ? (
                   <div className="p-3 rounded-none border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/20 text-xs text-purple-900 dark:text-purple-200">
-                    <span className="font-semibold block mb-1">Modalidad SWAT+</span>
+                    <span className="font-semibold block mb-1">Tipo de ejecución</span>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <select
                         aria-label="Modalidad SWAT+"
@@ -2070,14 +2168,15 @@ export default function SimulationsPage() {
                         onChange={(e) => setFormSwatRunType(e.target.value as SwatRunType)}
                         className="w-full rounded-none border border-purple-300 bg-white px-2 py-1 text-xs text-slate-900 dark:border-purple-800 dark:bg-slate-950 dark:text-slate-100"
                       >
-                        <option value="SWAT_MULTISCALE_COUPLED">Corrida acoplada</option>
-                        <option value="SWAT_STANDARD_BASELINE">Línea base SWAT+</option>
+                        <option value="SWAT_MULTISCALE_COUPLED">SWAT+ con acoplamiento de cultivo</option>
+                        <option value="SWAT_STANDARD_BASELINE">SWAT+ sin acoplamiento</option>
                       </select>
                       <label className="flex items-center justify-between gap-2 text-[11px]">
-                        <span>Años de warm-up</span>
+                        <span>Años previos para estabilizar el modelo</span>
                         <input
                           type="number"
                           min={0}
+                          max={36500}
                           value={formWarmupYears}
                           onChange={(event) => setFormWarmupYears(Number(event.target.value))}
                           className="w-24 border border-purple-300 bg-white px-2 py-1 font-mono text-xs text-slate-900 dark:border-purple-800 dark:bg-slate-950 dark:text-slate-100"
@@ -2085,25 +2184,25 @@ export default function SimulationsPage() {
                       </label>
                     </div>
                     <p className="mt-2 text-[11px] leading-relaxed text-purple-800 dark:text-purple-200">
-                      SWAT+ comienza este número de años antes de la fecha inicial; el periodo de warm-up no forma parte de los resultados evaluados.
+                      SWAT+ empieza antes del periodo elegido. Estos años ayudan a estabilizar el modelo y no se incluyen en los resultados mostrados.
                     </p>
                   </div>
                 ) : (
                   <div>
                     <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
-                      Fuente de forzamiento meteorológico
+                      Datos meteorológicos
                     </label>
                     <select
                       value={formClimateSource}
                       onChange={(e) => changeClimateSource(e.target.value as "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "SWAT_PROJECT")}
                       className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     >
-                      <option value="SYNTHETIC">SYNTHETIC — Generador estocástico reproducible con estacionalidad de Iowa</option>
-                       <option value="OBSERVED" disabled={!hasObservedForcing}>
-                         OBSERVED — {hasObservedForcing ? "Forzamiento observado listo" : "Requiere exactamente un artefacto normalizado CHIRPS u OBSERVED_CLIMATE"}
+                      <option value="SYNTHETIC">Clima sintético (generado para explorar)</option>
+                      <option value="OBSERVED" disabled={!hasObservedForcing}>
+                        Datos observados {!hasObservedForcing && "(no disponibles)"}
                       </option>
                       <option value="CMIP6_FILE" disabled={!hasCmip6Forcing}>
-                        CMIP6_FILE — {hasCmip6Forcing ? "Proyecciones NEX-GDDP-CMIP6" : "Requiere exactamente un artefacto normalizado CMIP6"}
+                        Proyección climática {!hasCmip6Forcing && "(no disponible)"}
                       </option>
                     </select>
                   </div>
@@ -2112,7 +2211,7 @@ export default function SimulationsPage() {
                 {formHydrologyBackend === "SIMPLIFIED" && ["OBSERVED", "CMIP6_FILE"].includes(formClimateSource) && (
                   <div>
                     <label htmlFor="forcing-dataset" className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                      Dataset de forzamiento
+                      Datos climáticos
                     </label>
                     <select
                       id="forcing-dataset"
@@ -2121,16 +2220,16 @@ export default function SimulationsPage() {
                       onChange={(event) => selectForcingDataset(event.target.value)}
                       className="w-full border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                     >
-                      <option value="">Selecciona un dataset normalizado</option>
+                      <option value="">Elige un conjunto de datos</option>
                       {availableForcingDatasets.map((dataset) => (
                         <option key={dataset.id} value={dataset.id}>
-                          {dataset.dataset_name} · {dataset.provider} · {dataset.normalized_artifact_count} archivos
+                          {dataset.dataset_name}{dataset.version ? ` · versión ${dataset.version}` : ""}
                         </option>
                       ))}
                     </select>
                     {availableForcingDatasets.length === 0 && (
                       <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
-                        No hay un dataset de esta fuente con exactamente un artefacto normalizado. Revisa el <Link href="/datasets" className="font-semibold underline">Catálogo de datos</Link>.
+                        No hay un conjunto de datos preparado para esta fuente. Revísalo en el <Link href="/datasets" className="font-semibold underline">Catálogo de datos</Link>.
                       </p>
                     )}
                   </div>
@@ -2140,13 +2239,13 @@ export default function SimulationsPage() {
               {/* Sección 3: Fisiología de Cultivo y Parámetros */}
               <div className="p-3.5 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col gap-3">
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  3. Fisiología vegetal y manejo agronómico
+                  3. Cultivo y manejo
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(usesSimplifiedModel || formSwatRunType === "SWAT_MULTISCALE_COUPLED") && (
                   <div>
                     <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
-                      Población de plantas
+                      Plantas representadas en el cultivo
                     </label>
                     <input
                       type="number"
@@ -2156,39 +2255,118 @@ export default function SimulationsPage() {
                       onChange={(e) => setFormPlantCount(Number(e.target.value))}
                       className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-mono"
                     />
+                    <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                      Representantes usados por el modelo de cultivo; no son un conteo observado en campo.
+                    </p>
                   </div>
-
-                  <div>
-                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
-                      Semilla aleatoria (Monte Carlo)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={formSeed}
-                      onChange={(e) => setFormSeed(Number(e.target.value))}
-                      className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-mono"
-                    />
-                  </div>
-                </div>
+                )}
 
                 {usesSimplifiedModel && (
                   <div>
                     <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
-                      Práctica agronómica de manejo
+                      Práctica de manejo
                     </label>
                     <select
                       value={formManagement}
                       onChange={(e) => setFormManagement(e.target.value as "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM")}
                       className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     >
-                      <option value="BASELINE">Maíz convencional (labranza tradicional)</option>
-                      <option value="NO_TILL">Siembra directa / No-Till (mayor retención edáfica)</option>
-                      <option value="MAIZE_TO_SORGHUM">Transición a sorgo (cultivo C4 tolerante a sequía)</option>
+                      <option value="BASELINE">Manejo base de maíz</option>
+                      <option value="NO_TILL">Siembra directa (aproximación simplificada)</option>
+                      <option value="MAIZE_TO_SORGHUM">Sorgo en lugar de maíz (aproximación)</option>
                     </select>
                   </div>
                 )}
               </div>
+
+              <details className="border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                <summary className="cursor-pointer px-3.5 py-3 text-xs font-semibold text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600 dark:text-slate-200">
+                  Opciones avanzadas y reproducibilidad
+                </summary>
+                <div className="grid grid-cols-1 gap-4 border-t border-slate-200 p-3.5 dark:border-slate-800 md:grid-cols-2">
+                  {(usesSimplifiedModel || formSwatRunType === "SWAT_MULTISCALE_COUPLED") && (
+                    <div>
+                      <label htmlFor="simulation-seed" className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                        Semilla para repetir la misma corrida
+                      </label>
+                      <input
+                        id="simulation-seed"
+                        type="number"
+                        min={0}
+                        max={4294967295}
+                        value={formSeed}
+                        onChange={(event) => setFormSeed(Number(event.target.value))}
+                        className="w-full border border-slate-200 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+                      />
+                    </div>
+                  )}
+
+                  {usesSimplifiedModel && (
+                    <>
+                      <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 md:col-span-2">
+                        Parámetros del modelo simplificado. Déjalos como están si no necesitas modificar la configuración científica.
+                      </p>
+                      <label className="text-[11px] text-slate-600 dark:text-slate-400">
+                        Coeficiente de cultivo (Kc)
+                        <input type="number" required min={0.1} max={2} step={0.01} value={formParameters.base_kc}
+                          onChange={(event) => setFormParameters((current) => ({ ...current, base_kc: event.target.value }))}
+                          className="mt-1 w-full border border-slate-200 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100" />
+                      </label>
+                      <label className="text-[11px] text-slate-600 dark:text-slate-400">
+                        Profundidad máxima de raíces (cm)
+                        <input type="number" required min={1} max={500} step={1} value={formParameters.max_root_depth_cm}
+                          onChange={(event) => setFormParameters((current) => ({ ...current, max_root_depth_cm: event.target.value }))}
+                          className="mt-1 w-full border border-slate-200 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100" />
+                      </label>
+                      <label className="text-[11px] text-slate-600 dark:text-slate-400">
+                        Número de curva SCS
+                        <input type="number" required min={30} max={98} step={1} value={formParameters.curve_number}
+                          onChange={(event) => setFormParameters((current) => ({ ...current, curve_number: event.target.value }))}
+                          className="mt-1 w-full border border-slate-200 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100" />
+                      </label>
+                      <label className="text-[11px] text-slate-600 dark:text-slate-400">
+                        Humedad inicial del suelo (%)
+                        <input type="number" required min={0} max={44} step={0.1} value={formParameters.initial_soil_moisture_vol}
+                          onChange={(event) => setFormParameters((current) => ({ ...current, initial_soil_moisture_vol: event.target.value }))}
+                          className="mt-1 w-full border border-slate-200 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100" />
+                      </label>
+                      <label className="text-[11px] text-slate-600 dark:text-slate-400">
+                        Riego diario (mm/día)
+                        <input type="number" required min={0} max={100} step={0.1} value={formParameters.irrigation_mm_per_day}
+                          onChange={(event) => setFormParameters((current) => ({ ...current, irrigation_mm_per_day: event.target.value }))}
+                          className="mt-1 w-full border border-slate-200 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100" />
+                      </label>
+                    </>
+                  )}
+
+                  {formHydrologyBackend === "SWAT_PLUS" && (
+                    <>
+                      <label className="text-[11px] text-slate-600 dark:text-slate-400">
+                        Frecuencia de resultados SWAT+
+                        <select value={formOutputFrequency} onChange={(event) => setFormOutputFrequency(event.target.value as "DAILY" | "MONTHLY" | "ANNUAL")}
+                          className="mt-1 w-full border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
+                          <option value="DAILY">Diaria</option>
+                          <option value="MONTHLY">Mensual</option>
+                          <option value="ANNUAL">Anual</option>
+                        </select>
+                      </label>
+                      <label className="text-[11px] text-slate-600 dark:text-slate-400">
+                        Unidad de salida (opcional)
+                        <input value={formOutletUnit} onChange={(event) => setFormOutletUnit(event.target.value)} placeholder="Automática según cuenca"
+                          className="mt-1 w-full border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100" />
+                      </label>
+                    </>
+                  )}
+
+                  {formHydrologyBackend === "SIMPLIFIED" && (
+                    <label className="text-[11px] text-slate-600 dark:text-slate-400">
+                      Estación USGS (opcional)
+                        <input value={formStationId} onChange={(event) => setFormStationId(event.target.value)} minLength={8} maxLength={15} pattern="\d{8,15}" placeholder="Usar estación asociada a la cuenca"
+                        className="mt-1 w-full border border-slate-200 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100" />
+                    </label>
+                  )}
+                </div>
+              </details>
 
               {preflightMatchesCurrentForm && preflight && (
                 <section
@@ -2203,19 +2381,23 @@ export default function SimulationsPage() {
                   </h4>
                   {preflight.blockers && preflight.blockers.length > 0 && (
                     <ul className="mt-2 list-disc space-y-1 pl-4">
-                      {preflight.blockers.map((blocker, index) => {
-                        const message = typeof blocker === "string" ? blocker : blocker.message ?? blocker.code ?? "Requisito no disponible";
-                        return <li key={`${index}-${message}`}>{message}</li>;
-                      })}
+                      {preflight.blockers.map((blocker, index) => (
+                        <li key={`${index}-${typeof blocker === "string" ? blocker : blocker.code ?? blocker.message ?? index}`}>
+                          {preflightBlockerLabel(blocker)}
+                        </li>
+                      ))}
                     </ul>
+                  )}
+                  {preflight.status === "BLOCKED" && (!preflight.blockers || preflight.blockers.length === 0) && (
+                    <p className="mt-2">El servidor no pudo validar esta configuración. Revisa los datos y vuelve a intentarlo.</p>
                   )}
                   {preflight.status === "READY" && (
                     <div className="mt-2 space-y-1">
                       {preflight.estimated_executions != null && preflight.estimated_executions > 1 && (
-                        <p>El acoplamiento requiere {preflight.estimated_executions} ejecuciones SWAT+.</p>
+                        <p>Para preparar esta corrida, SWAT+ hará {preflight.estimated_executions} ejecuciones internas.</p>
                       )}
                       {preflight.will_consume && preflight.will_consume.length > 0 && (
-                        <p><span className="font-semibold">Entradas utilizadas:</span> {preflight.will_consume.join(", ")}.</p>
+                        <p><span className="font-semibold">El modelo usará:</span> {preflight.will_consume.map(preflightInputLabel).join(", ")}.</p>
                       )}
                       {preflight.provenance_only && preflight.provenance_only.length > 0 && (
                         <p><span className="font-semibold">Solo como referencia:</span> {preflight.provenance_only.join(", ")}.</p>
@@ -2229,7 +2411,7 @@ export default function SimulationsPage() {
             {/* Pie Fijo del Modal */}
             <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between gap-3">
               <span className="text-[11px] text-slate-500 font-mono">
-                {formHydrologyBackend === "SWAT_PLUS" ? "SWAT+" : `Modelo simplificado · ${formClimateSource}`}
+                {formHydrologyBackend === "SWAT_PLUS" ? "Método: SWAT+" : `Método: modelo simplificado; ${climateSourceLabel(formClimateSource)}`}
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -2249,7 +2431,7 @@ export default function SimulationsPage() {
                   disabled={isSubmitting || isPreflighting}
                   className="px-4 py-1.5 rounded-none bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-medium transition cursor-pointer disabled:cursor-wait disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
                 >
-                  {isPreflighting ? "Validando…" : isSubmitting ? "Ejecutando corrida…" : preflightReady ? "Ejecutar corrida" : "Validar configuración"}
+                  {isPreflighting ? "Comprobando…" : isSubmitting ? "Ejecutando corrida…" : preflightReady ? "Ejecutar corrida" : "Revisar antes de ejecutar"}
                 </button>
               </div>
             </div>
