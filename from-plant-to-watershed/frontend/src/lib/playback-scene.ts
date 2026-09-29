@@ -50,6 +50,7 @@ export interface SceneState {
   rootDepthM: number | null;
   stress: number | null;
   transpirationMmDay: number | null;
+  activeCropAreaFraction: number | null;
   cropActive: boolean;
   cropSupported: boolean;
   sample: PlantSample | null;
@@ -74,6 +75,7 @@ export function sceneFromRecord(record: PlaybackRecord, selectedPlantId: string 
     rootDepthM: cropActive ? numeric(record.field.root_depth_m) : null,
     stress: cropActive ? numeric(record.field.water_stress) : null,
     transpirationMmDay: cropActive ? numeric(record.field.actual_transpiration_mm_day) : null,
+    activeCropAreaFraction: cropActive ? (numeric(record.field.active_crop_area_fraction) ?? 1.0) : 0,
     cropActive,
     cropSupported,
     sample: activePlantSample(record, selectedPlantId),

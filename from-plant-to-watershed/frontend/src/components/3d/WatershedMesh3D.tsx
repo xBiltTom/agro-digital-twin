@@ -729,7 +729,7 @@ export default function WatershedMesh3D({
                 }}
                 className="mt-1.5 w-full cursor-pointer rounded-lg bg-teal-600/20 hover:bg-teal-600/40 border border-teal-500/30 py-1 text-[10px] font-bold text-teal-300 transition text-center"
               >
-                Explorar 36 HRUs / 37 Canales →
+                Explorar HRUs y Canales SWAT+ →
               </button>
             )}
           </div>
