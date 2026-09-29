@@ -2,17 +2,18 @@
 
 import React, { useState } from "react";
 import {
-  Sparkles,
   RefreshCw,
   Cpu,
   Sprout,
   Layers,
   Waves,
   ShieldCheck,
-  FileCheck2,
+  FileText,
   AlertTriangle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Maximize2,
+  X,
 } from "lucide-react";
 import { AIInsightsResponse } from "@/types/simulation";
 import { api } from "@/lib/api";
@@ -26,13 +27,13 @@ interface AIInsightsCardProps {
 export const AIInsightsCard: React.FC<AIInsightsCardProps> = ({
   simulationId,
   initialInsights,
-  onInsightsUpdated
+  onInsightsUpdated,
 }) => {
   const [insights, setInsights] = useState<AIInsightsResponse | null>(initialInsights || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"plant" | "field" | "watershed">("watershed");
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [scaleTab, setScaleTab] = useState<"plant" | "field" | "watershed">("watershed");
+  const [isReaderModalOpen, setIsReaderModalOpen] = useState(false);
 
   const fetchInsights = async (forceRegenerate = false) => {
     try {
@@ -46,7 +47,7 @@ export const AIInsightsCard: React.FC<AIInsightsCardProps> = ({
         onInsightsUpdated(res);
       }
     } catch (err: unknown) {
-      console.error("Error loading AI insights:", err);
+      console.error("Error al cargar diagnóstico de IA:", err);
       setError(err instanceof Error ? err.message : "Error al procesar el análisis de IA");
     } finally {
       setLoading(false);
@@ -54,228 +55,336 @@ export const AIInsightsCard: React.FC<AIInsightsCardProps> = ({
   };
 
   return (
-    <div className="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-5 shadow-xl relative overflow-hidden backdrop-blur-sm">
-      {/* Decorative background glow */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-4 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 text-emerald-400 shadow-sm">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-none overflow-hidden transition-colors">
+      {/* Encabezado del Documento de Diagnóstico */}
+      <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-950/40">
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-serif font-semibold text-slate-900 dark:text-slate-100">
+              Diagnóstico biofísico y recomendaciones de manejo
+            </h3>
+            <span className="text-xs px-2 py-0.5 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-mono">
+              LangChain
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-semibold text-white tracking-wide">
-                Diagnóstico Científico & Recomendaciones de Política (IA)
-              </h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 flex items-center gap-1 font-mono">
-                <Cpu className="w-3 h-3 text-emerald-400" />
-                LangChain
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Síntesis biofísica multiescala (Planta FSPM ➔ Parcela ➔ Cuenca SWAT+) y sugerencias de manejo
-            </p>
-          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Evaluación automatizada del balance hídrico, resiliencia climática y recomendaciones agronómicas.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {insights && (
             <button
-              onClick={() => fetchInsights(true)}
-              disabled={loading}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
-              title="Regenerar análisis con el motor de IA"
+              type="button"
+              onClick={() => setIsReaderModalOpen(true)}
+              className="px-3 py-1.5 rounded-none border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
+              title="Abrir en modal de lectura a pantalla completa"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-400" : ""}`} />
-              {loading ? "Sintetizando..." : "Regenerar"}
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Modo lector / Modal</span>
             </button>
           )}
-
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-            title={isExpanded ? "Plegar tarjeta" : "Desplegar tarjeta"}
+            type="button"
+            onClick={() => fetchInsights(Boolean(insights))}
+            disabled={loading}
+            className="px-3 py-1.5 rounded-none bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
           >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <span>{loading ? "Procesando..." : insights ? "Actualizar" : "Generar"}</span>
           </button>
         </div>
       </div>
 
-      {/* Main Body */}
-      {isExpanded && (
-        <div className="space-y-5 relative z-10">
-          {error && (
-            <div className="p-3 bg-red-950/40 border border-red-800/60 rounded-lg text-xs text-red-300 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+      <div className="p-5 space-y-5">
+        {error && (
+          <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-none text-xs text-rose-800 dark:text-rose-300 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
-          {!insights && !loading && (
-            <div className="text-center py-8 px-4 border border-dashed border-slate-800 rounded-xl bg-slate-950/40">
-              <Sparkles className="w-8 h-8 text-emerald-400/60 mx-auto mb-2.5" />
-              <h4 className="text-sm font-medium text-slate-200">
-                Generar Síntesis Inteligente de la Simulación
+        {!insights && !loading && (
+          <div className="text-center py-10 px-4 border border-dashed border-slate-200 dark:border-slate-800 rounded-none bg-slate-50/40 dark:bg-slate-950/20">
+            <FileText className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-70" />
+            <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              Sin diagnóstico generado para este experimento
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1 mb-4 leading-relaxed">
+              El agente de LangChain analiza las series temporales de la simulación, el balance de masa hídrico y evalúa la adaptación agronómica bajo el protocolo de la Ficha Técnica.
+            </p>
+            <button
+              type="button"
+              onClick={() => fetchInsights(false)}
+              className="px-4 py-2 rounded-none bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-medium transition cursor-pointer shadow-none"
+            >
+              Generar diagnóstico con LangChain
+            </button>
+          </div>
+        )}
+
+        {loading && !insights && (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-6 h-6 rounded-none border-2 border-slate-900 dark:border-slate-100 border-t-transparent animate-spin" />
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+              Evaluando tensores biofísicos y formulando directrices de manejo...
+            </p>
+          </div>
+        )}
+
+        {insights && (
+          <>
+            {/* Metadatos del Informe */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <span className="font-mono text-[11px]">
+                Motor: <strong className="text-slate-800 dark:text-slate-200 font-normal">{insights.provider}</strong>
+              </span>
+              <span className="font-mono text-[11px]">
+                Fecha de generación: {new Date(insights.generated_at).toLocaleString()}
+              </span>
+            </div>
+
+            {/* 1. Resumen Ejecutivo del Balance */}
+            <div>
+              <h4 className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 mb-1.5 flex items-center gap-1.5 uppercase tracking-wide">
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                Resumen ejecutivo del balance hídrico
               </h4>
-              <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 mb-4">
-                El agente de IA analizará los resultados biofísicos de la simulación, el balance de masa hídrico y formulará directrices de política adaptativa.
-              </p>
-              <button
-                onClick={() => fetchInsights(false)}
-                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-lg shadow-emerald-900/30 flex items-center gap-2 mx-auto transition-all"
-              >
-                <Sparkles className="w-4 h-4" />
-                Analizar Simulación con IA
-              </button>
-            </div>
-          )}
-
-          {loading && !insights && (
-            <div className="flex flex-col items-center justify-center py-10 gap-3">
-              <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-              <p className="text-xs text-slate-300 font-mono animate-pulse">
-                Sintetizando balance hídrico y evaluando resiliencia multiescala...
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50/70 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80 rounded-none p-3.5">
+                {insights.executive_summary}
               </p>
             </div>
-          )}
 
-          {insights && (
-            <>
-              {/* Provider Badge */}
-              <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/60 border border-slate-800/80 px-3 py-1.5 rounded-lg">
-                <span className="flex items-center gap-1.5 font-mono">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                  Motor: <strong className="text-slate-200">{insights.provider}</strong>
+            {/* 2. Diagnóstico Multiescala (Planta / Suelo / Cuenca) */}
+            <div className="border border-slate-200/80 dark:border-slate-800/80 rounded-none p-3.5 bg-slate-50/40 dark:bg-slate-950/30">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Diagnóstico por nivel de escala
                 </span>
-                <span>Generado: {new Date(insights.generated_at).toLocaleString()}</span>
+
+                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-0.5 rounded-none border border-slate-200 dark:border-slate-800 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setScaleTab("plant")}
+                    className={`px-2.5 py-1 rounded-none text-xs transition cursor-pointer ${
+                      scaleTab === "plant"
+                        ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-medium shadow-none"
+                        : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    Micro (Planta)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScaleTab("field")}
+                    className={`px-2.5 py-1 rounded-none text-xs transition cursor-pointer ${
+                      scaleTab === "field"
+                        ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-medium shadow-none"
+                        : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    Meso (Parcela)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScaleTab("watershed")}
+                    className={`px-2.5 py-1 rounded-none text-xs transition cursor-pointer ${
+                      scaleTab === "watershed"
+                        ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-medium shadow-none"
+                        : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    Macro (Cuenca)
+                  </button>
+                </div>
               </div>
 
-              {/* 1. Executive Summary */}
-              <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-                  <FileCheck2 className="w-4 h-4" />
-                  Resumen Ejecutivo del Balance Hídrico
+              <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed min-h-[3.5rem]">
+                {scaleTab === "plant" && (
+                  <div>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-1">
+                      Fisiología individual y dosel foliar
+                    </span>
+                    <p>{insights.multiscale_biophysical_diagnosis.micro_scale_plant}</p>
+                  </div>
+                )}
+
+                {scaleTab === "field" && (
+                  <div>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-1">
+                      Perfil edáfico y dinámica de raíces
+                    </span>
+                    <p>{insights.multiscale_biophysical_diagnosis.meso_scale_field}</p>
+                  </div>
+                )}
+
+                {scaleTab === "watershed" && (
+                  <div>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-1">
+                      Enrutamiento hidrológico y aforo en exutorio
+                    </span>
+                    <p>{insights.multiscale_biophysical_diagnosis.macro_scale_watershed}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 3. Resiliencia Climática & Recomendaciones de Política */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <div className="p-3.5 rounded-none border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/30 flex flex-col justify-between">
+                <div>
+                  <h4 className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 mb-1.5 flex items-center gap-1.5 uppercase tracking-wide">
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    Evaluación de resiliencia climática
+                  </h4>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {insights.climate_resilience_assessment}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-200 leading-relaxed font-sans">
-                  {insights.executive_summary}
+              </div>
+
+              <div className="p-3.5 rounded-none border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/30">
+                <h4 className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+                  <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  Recomendaciones de manejo y política hídrica
+                </h4>
+                <ul className="space-y-2">
+                  {insights.policy_recommendations.map((rec, idx) => (
+                    <li key={idx} className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2">
+                      <span className="font-mono text-[10px] text-slate-400 mt-0.5 shrink-0">
+                        [{idx + 1}]
+                      </span>
+                      <span className="leading-relaxed">{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* 4. Declaración de Incertidumbre y Límites del Modelo */}
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-slate-950/50 border border-slate-200/60 dark:border-slate-800/60 rounded-none p-3 flex items-start gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <span className="font-medium text-slate-700 dark:text-slate-300 mr-1">Incertidumbre y límites del modelo:</span>
+                {insights.limitations_and_uncertainty}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+      {/* Modal Lector de Diagnóstico Científico */}
+      {isReaderModalOpen && insights && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+          <div className="w-full max-w-4xl max-h-[92vh] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-2xl flex flex-col text-slate-900 dark:text-slate-100 overflow-hidden">
+            {/* Cabecera del Modal Lector */}
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-serif font-semibold text-base text-slate-900 dark:text-slate-100">
+                    Diagnóstico biofísico y recomendaciones de manejo
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono">
+                    LangChain Agent
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  Generado: {new Date(insights.generated_at).toLocaleString()} · Motor: {insights.provider}
                 </p>
               </div>
 
-              {/* 2. Multiscale Biophysical Diagnosis */}
-              <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3 border-b border-slate-800/60 pb-2">
-                  <span className="text-xs font-semibold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Layers className="w-4 h-4" />
-                    Diagnóstico Biofísico Multiescala
-                  </span>
+              <button
+                type="button"
+                onClick={() => setIsReaderModalOpen(false)}
+                className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition cursor-pointer"
+                title="Cerrar modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setActiveTab("plant")}
-                      className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-colors ${
-                        activeTab === "plant"
-                          ? "bg-emerald-600/30 text-emerald-300 border border-emerald-500/40"
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      <Sprout className="w-3 h-3" /> Micro (Planta)
-                    </button>
-                    <button
-                      onClick={() => setActiveTab("field")}
-                      className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-colors ${
-                        activeTab === "field"
-                          ? "bg-amber-600/30 text-amber-300 border border-amber-500/40"
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      <Layers className="w-3 h-3" /> Meso (Parcela)
-                    </button>
-                    <button
-                      onClick={() => setActiveTab("watershed")}
-                      className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-colors ${
-                        activeTab === "watershed"
-                          ? "bg-blue-600/30 text-blue-300 border border-blue-500/40"
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      <Waves className="w-3 h-3" /> Macro (Cuenca)
-                    </button>
-                  </div>
-                </div>
-
-                <div className="text-xs text-slate-300 leading-relaxed min-h-[4rem]">
-                  {activeTab === "plant" && (
-                    <div className="bg-emerald-950/20 border border-emerald-900/30 p-3 rounded-lg">
-                      <div className="font-medium text-emerald-300 mb-1 flex items-center gap-1.5">
-                        <Sprout className="w-3.5 h-3.5" /> Nivel 1: Fisiología y Dosel de Maíz (1,000 plantas FSPM)
-                      </div>
-                      <p>{insights.multiscale_biophysical_diagnosis.micro_scale_plant}</p>
-                    </div>
-                  )}
-
-                  {activeTab === "field" && (
-                    <div className="bg-amber-950/20 border border-amber-900/30 p-3 rounded-lg">
-                      <div className="font-medium text-amber-300 mb-1 flex items-center gap-1.5">
-                        <Layers className="w-3.5 h-3.5" /> Nivel 2: Dinámica de Parcela y Suelo Radicular (0-100 cm)
-                      </div>
-                      <p>{insights.multiscale_biophysical_diagnosis.meso_scale_field}</p>
-                    </div>
-                  )}
-
-                  {activeTab === "watershed" && (
-                    <div className="bg-blue-950/20 border border-blue-900/30 p-3 rounded-lg">
-                      <div className="font-medium text-blue-300 mb-1 flex items-center gap-1.5">
-                        <Waves className="w-3.5 h-3.5" /> Nivel 3: Enrutamiento SWAT+ Cuenca South Fork Iowa (USGS 05451210)
-                      </div>
-                      <p>{insights.multiscale_biophysical_diagnosis.macro_scale_watershed}</p>
-                    </div>
-                  )}
+            {/* Contenido Completo del Reporte */}
+            <div className="p-6 space-y-6 flex-1 min-h-0 overflow-y-auto">
+              {/* 1. Resumen Ejecutivo */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-slate-500" />
+                  1. Resumen ejecutivo del balance hídrico
+                </h4>
+                <div className="p-4 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-200">
+                  {insights.executive_summary}
                 </div>
               </div>
 
-              {/* 3. Climate Resilience & Policy Recommendations */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Resilience */}
-                <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-orange-400 uppercase tracking-wider">
-                      <ShieldCheck className="w-4 h-4" />
-                      Evaluación de Resiliencia Climática
-                    </div>
-                    <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                      {insights.climate_resilience_assessment}
-                    </p>
+              {/* 2. Diagnóstico Multiescala */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-800">
+                  <h4 className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                    2. Diagnóstico biofísico multiescala
+                  </h4>
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 text-xs font-mono">
+                    <button
+                      type="button"
+                      onClick={() => setScaleTab("plant")}
+                      className={`px-2.5 py-1 ${scaleTab === "plant" ? "bg-white dark:bg-slate-900 font-bold text-slate-900 dark:text-slate-100" : "text-slate-500 hover:text-slate-900"}`}
+                    >Micro (Planta)</button>
+                    <button
+                      type="button"
+                      onClick={() => setScaleTab("field")}
+                      className={`px-2.5 py-1 ${scaleTab === "field" ? "bg-white dark:bg-slate-900 font-bold text-slate-900 dark:text-slate-100" : "text-slate-500 hover:text-slate-900"}`}
+                    >Meso (Parcela)</button>
+                    <button
+                      type="button"
+                      onClick={() => setScaleTab("watershed")}
+                      className={`px-2.5 py-1 ${scaleTab === "watershed" ? "bg-white dark:bg-slate-900 font-bold text-slate-900 dark:text-slate-100" : "text-slate-500 hover:text-slate-900"}`}
+                    >Macro (Cuenca)</button>
                   </div>
                 </div>
 
-                {/* Recommendations */}
-                <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2.5 text-xs font-semibold text-teal-400 uppercase tracking-wider">
-                    <FileCheck2 className="w-4 h-4" />
-                    Recomendaciones de Política y Manejo
-                  </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-200">
+                  {scaleTab === "plant" && insights.multiscale_biophysical_diagnosis.micro_scale_plant}
+                  {scaleTab === "field" && insights.multiscale_biophysical_diagnosis.meso_scale_field}
+                  {scaleTab === "watershed" && insights.multiscale_biophysical_diagnosis.macro_scale_watershed}
+                </div>
+              </div>
+
+              {/* 3. Resiliencia y Políticas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2">
+                  <h4 className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    3. Resiliencia climática
+                  </h4>
+                  <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {insights.climate_resilience_assessment}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2">
+                  <h4 className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    4. Recomendaciones de política
+                  </h4>
                   <ul className="space-y-2">
                     {insights.policy_recommendations.map((rec, idx) => (
-                      <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
-                        <span className="w-4 h-4 rounded-full bg-teal-950 text-teal-300 border border-teal-700/60 flex items-center justify-center text-[10px] shrink-0 mt-0.5 font-mono">
-                          {idx + 1}
-                        </span>
-                        <span>{rec}</span>
+                      <li key={idx} className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2">
+                        <span className="font-mono text-[11px] text-slate-400 mt-0.5">[{idx + 1}]</span>
+                        <span className="leading-relaxed">{rec}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               </div>
 
-              {/* 4. Limitations Footer */}
-              <div className="text-[11px] text-slate-400/90 bg-slate-950/40 border border-slate-800/50 rounded-lg p-2.5 flex items-start gap-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400/80 shrink-0 mt-0.5" />
-                <span>{insights.limitations_and_uncertainty}</span>
+              {/* 4. Incertidumbre */}
+              <div className="p-3 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-slate-700 dark:text-slate-300 mr-1">Incertidumbre y límites del modelo:</strong>
+                  {insights.limitations_and_uncertainty}
+                </div>
               </div>
-            </>
-          )}
+            </div>
+          </div>
         </div>
       )}
     </div>

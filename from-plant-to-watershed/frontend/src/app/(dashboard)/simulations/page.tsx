@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { useAuth } from "../../../context/AuthContext";
 import { api } from "../../../lib/api";
 import {
@@ -21,41 +22,33 @@ import ClimateScenariosPanel from "../../../components/scientific/ClimateScenari
 import StatisticalBatteryPanel from "../../../components/scientific/StatisticalBatteryPanel";
 import { AIInsightsCard } from "../../../components/simulations/AIInsightsCard";
 import {
-  Sliders,
+  Plus,
   Play,
   Pause,
-  Plus,
-  BarChart3,
-  Calendar,
-  Layers,
-  Droplets,
-  Mountain,
-  SunMedium,
-  Sprout,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-  Radio,
   RefreshCw,
-  TrendingUp,
-  Activity,
-  Scale,
-  Info,
-  Leaf,
-  ChevronDown,
-  ChevronUp,
-  ArrowRight,
-  Waves,
-  Filter,
-  Sparkles,
-  Check,
-  Gauge,
   Search,
   X,
+  ExternalLink,
+  Layers,
   Database,
-  Zap,
+  Sprout,
+  Droplets,
+  Mountain,
+  Waves,
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
   Clock,
-  CalendarRange,
+  Radio,
+  FileText,
+  SlidersHorizontal,
+  LayoutGrid,
+  Square,
+  Rows3,
+  Maximize2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -69,11 +62,10 @@ import {
   Tooltip,
   Legend,
   Area,
-  AreaChart,
   ReferenceLine,
 } from "recharts";
 
-const CAPABILITY_INFO: Record<string, { label: string; desc: string; category: "Física & Dinámica" | "Datos & Sensores" | "Inteligencia Artificial" | "Infraestructura" }> = {
+const CAPABILITY_INFO: Record<string, { label: string; desc: string; category: string }> = {
   postgresql: { label: "Base de Datos Relacional", desc: "Almacenamiento persistente de series temporales de clima, cuencas y corridas", category: "Infraestructura" },
   fastapi: { label: "Motor API Asíncrono", desc: "Orquestación de ejecuciones concurrentes y streaming de gemelo digital", category: "Infraestructura" },
   nextjs: { label: "Panel React Dashboard", desc: "Sincronización reactiva de estado y visualización multiescala", category: "Infraestructura" },
@@ -108,8 +100,6 @@ interface PeriodPreset {
   endDate: string;
   shortDesc: string;
   scientificPurpose: string;
-  agronomicScope: string;
-  protocolBadge: string;
 }
 
 const SIMULATION_PERIOD_PRESETS: PeriodPreset[] = [
@@ -123,8 +113,6 @@ const SIMULATION_PERIOD_PRESETS: PeriodPreset[] = [
     endDate: "2018-08-31",
     shortDesc: "Ventana crítica de floración y llenado de grano (Jun–Ago)",
     scientificPurpose: "Evalúa la máxima demanda transpiratoria y la sensibilidad de Sobol sobre el índice de estrés hídrico CWSI.",
-    agronomicScope: "Floración (VT) a llenado de grano (R1–R5)",
-    protocolBadge: "Estrés y Transpiración",
   },
   {
     id: "4M",
@@ -136,8 +124,6 @@ const SIMULATION_PERIOD_PRESETS: PeriodPreset[] = [
     endDate: "2018-08-31",
     shortDesc: "Ciclo fenológico completo del cultivo de maíz (May–Ago)",
     scientificPurpose: "Modela las 1,000 plantas FSPM desde emergencia hasta madurez para contrastar biomasa con rendimientos USDA NASS.",
-    agronomicScope: "Emergencia (VE) a madurez fisiológica (R6)",
-    protocolBadge: "FSPM Completo",
   },
   {
     id: "6M",
@@ -149,8 +135,6 @@ const SIMULATION_PERIOD_PRESETS: PeriodPreset[] = [
     endDate: "2018-09-30",
     shortDesc: "Temporada agronómica estival completa (Abr–Sep)",
     scientificPurpose: "Permite evaluar la respuesta hidrológica del suelo ante prácticas de manejo como Siembra Directa (No-Till).",
-    agronomicScope: "Siembra, desarrollo vegetativo y cosecha",
-    protocolBadge: "Manejo y Suelos",
   },
   {
     id: "1Y",
@@ -162,8 +146,6 @@ const SIMULATION_PERIOD_PRESETS: PeriodPreset[] = [
     endDate: "2018-12-31",
     shortDesc: "Año hidrológico continuo (Ene–Dic)",
     scientificPurpose: "Cierra el balance hídrico completo de la cuenca: precipitación, evapotranspiración, percolación y escorrentía.",
-    agronomicScope: "Ciclo hidrológico con recarga invernal y estiaje",
-    protocolBadge: "Balance Hídrico",
   },
   {
     id: "5Y",
@@ -175,8 +157,6 @@ const SIMULATION_PERIOD_PRESETS: PeriodPreset[] = [
     endDate: "2020-12-31",
     shortDesc: "Horizonte multianual del protocolo (2015–2020)",
     scientificPurpose: "Sustenta el contraste formal de la Hipótesis H1 de la Ficha Técnica: reducción de RMSE mensual ≥15% contra aforo USGS 05451210.",
-    agronomicScope: "Serie histórica multianual con variabilidad climática",
-    protocolBadge: "Validación H0 / H1",
   },
 ];
 
@@ -193,19 +173,39 @@ export default function SimulationsPage() {
   const [externalModels, setExternalModels] = useState<ExternalModelInfo[]>([]);
   const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
   const [finalReport, setFinalReport] = useState<CurrentFinalScientificReportResponse | null>(null);
+
+  // Navegación de vistas y disposición innovadora
   const [activeTab, setActiveTab] = useState<"RUNS" | "VALIDATION" | "SCENARIOS" | "STATISTICS">("RUNS");
-  const [chartViewMode, setChartViewMode] = useState<"ALL" | "STREAMFLOW" | "PLANT" | "SOIL" | "MONTHLY">("ALL");
-  const [showCapabilities, setShowCapabilities] = useState(false);
+  const [simDetailTab, setSimDetailTab] = useState<"CHARTS" | "AI" | "SPECIFICATIONS">("CHARTS");
+  const [chartViewMode, setChartViewMode] = useState<"ALL" | "STREAMFLOW" | "PLANT" | "SOIL" | "MONTHLY">("STREAMFLOW");
+  const [chartLayout, setChartLayout] = useState<"GRID" | "SPOTLIGHT" | "STACK">("GRID");
+  const [expandedChartModal, setExpandedChartModal] = useState<"MONTHLY" | "STREAMFLOW" | "PLANT" | "SOIL" | null>(null);
+  const [isCatalogCollapsed, setIsCatalogCollapsed] = useState(false);
+
+  // Listener para cerrar modal con tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExpandedChartModal(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Estado colapsable para arquitectura del sistema
+  const [showArchitectureOverview, setShowArchitectureOverview] = useState(false);
+
+  // Búsqueda y filtrado
   const [simSearchTerm, setSimSearchTerm] = useState("");
   const [simFilterModel, setSimFilterModel] = useState<"ALL" | "TWIN" | "SWAT">("ALL");
 
+  // Estados de carga y modal
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // New Simulation Form State
+  // Formulario de nueva corrida
   const [formName, setFormName] = useState("Experimento multiescala de maíz");
   const [formWatershedId, setFormWatershedId] = useState("");
   const [formScenarioId, setFormScenarioId] = useState("");
@@ -224,7 +224,7 @@ export default function SimulationsPage() {
   const [formDatasetIds, setFormDatasetIds] = useState<string[]>([]);
   const [formDatasetRoles, setFormDatasetRoles] = useState<Record<string, "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY">>({});
 
-  // Live WebSocket State
+  // Transmisión WebSocket
   const [isWsConnected, setIsWsConnected] = useState(false);
   const [liveTick, setLiveTick] = useState<TwinWebSocketTick | null>(null);
   const [wsSpeed, setWsSpeed] = useState(1);
@@ -240,7 +240,6 @@ export default function SimulationsPage() {
   const changeHydrologyBackend = (backend: "SIMPLIFIED" | "SWAT_PLUS") => {
     setFormHydrologyBackend(backend);
     if (backend === "SWAT_PLUS") {
-      // These switches are not applied by the current SWAT+ adapter.
       setFormManagement("BASELINE");
       setFormClimateSource("SWAT_PROJECT");
       setFormExternalModel("");
@@ -250,7 +249,6 @@ export default function SimulationsPage() {
     }
   };
 
-  // Carga inicial de datos
   const loadInitialData = async () => {
     setIsLoading(true);
     try {
@@ -296,7 +294,6 @@ export default function SimulationsPage() {
     setSelectedSim(sim);
     setIsLoadingResults(true);
     setSwatResults(null);
-    // Desconectar WS previo si existía
     if (wsRef.current) {
       wsRef.current.close();
       setIsWsConnected(false);
@@ -336,26 +333,6 @@ export default function SimulationsPage() {
         return;
       }
     }
-    checkPresetMatch(newStart, formEndDate);
-  };
-
-  const handleEndDateChange = (newEnd: string) => {
-    setFormEndDate(newEnd);
-    checkPresetMatch(formStartDate, newEnd);
-  };
-
-  const checkPresetMatch = (startStr: string, endStr: string) => {
-    if (!startStr || !endStr) {
-      setSelectedPeriodPreset("CUSTOM");
-      return;
-    }
-    const days = Math.floor((Date.parse(`${endStr}T00:00:00Z`) - Date.parse(`${startStr}T00:00:00Z`)) / 86_400_000) + 1;
-    const match = SIMULATION_PERIOD_PRESETS.find((p) => Math.abs(p.days - days) <= 2);
-    if (match) {
-      setSelectedPeriodPreset(match.id);
-    } else {
-      setSelectedPeriodPreset("CUSTOM");
-    }
   };
 
   const handleCreateSimulation = async (e: React.FormEvent) => {
@@ -364,13 +341,13 @@ export default function SimulationsPage() {
       ? Math.floor((Date.parse(`${formEndDate}T00:00:00Z`) - Date.parse(`${formStartDate}T00:00:00Z`)) / 86_400_000) + 1
       : 0;
     if (durationDays < 1) {
-      setFeedbackMsg({ type: "error", text: "Selecciona un periodo inicial y final válido." });
+      setFeedbackMsg({ type: "error", text: "Selecciona un rango de fechas válido." });
       return;
     }
-    const selectedScenario = scenarios.find((scenario) => scenario.id === formScenarioId);
+    const selectedScenario = scenarios.find((s) => s.id === formScenarioId);
     const usesExternalForcing = formClimateSource === "OBSERVED" || formClimateSource === "CMIP6_FILE";
     if (usesExternalForcing && selectedScenario && (selectedScenario.temp_anomaly_c !== 0 || selectedScenario.precip_factor !== 1)) {
-      setFeedbackMsg({ type: "error", text: "El forcing externo ya contiene su señal climática. Selecciona un escenario neutro (0 °C, precipitación ×1) hasta implementar transformaciones climáticas." });
+      setFeedbackMsg({ type: "error", text: "El forzamiento externo ya incluye su anomalía. Elige un escenario neutro." });
       return;
     }
     setIsSubmitting(true);
@@ -383,8 +360,6 @@ export default function SimulationsPage() {
         scenario_id: formScenarioId,
         duration_days: durationDays,
         seed: formSeed,
-        // The simplified route consumes these values. SWAT+ has its own
-        // documented mapper and must not receive inert controls from this form.
         parameters: usesSimplifiedModel ? formParameters : {},
         mode: formHydrologyBackend === "SWAT_PLUS" ? "SWAT_PLUS" : "RESEARCH_MULTISCALE",
         plant_count: formPlantCount,
@@ -407,16 +382,15 @@ export default function SimulationsPage() {
       });
       setSimulations([newSim, ...simulations]);
       setIsModalOpen(false);
-      setFeedbackMsg({ type: "success", text: `Experimento "${newSim.name}" ejecutado y versionado.` });
+      setFeedbackMsg({ type: "success", text: `Experimento "${newSim.name}" guardado.` });
       selectSimulation(newSim);
     } catch (err: any) {
-      setFeedbackMsg({ type: "error", text: err.message || "Error al ejecutar simulación" });
+      setFeedbackMsg({ type: "error", text: err.message || "Error al ejecutar experimento" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // WebSocket Live Stream Handlers
   const toggleWebSocket = () => {
     if (isWsConnected) {
       if (wsRef.current) wsRef.current.close();
@@ -441,7 +415,7 @@ export default function SimulationsPage() {
             setLiveTick(data);
           }
         } catch (e) {
-          console.error("Error parsing WS frame", e);
+          console.error("Error al procesar tick WS:", e);
         }
       };
 
@@ -461,12 +435,11 @@ export default function SimulationsPage() {
     }
   };
 
-  // Reducir serie para gráficos si es muy grande
   const chartData = results.filter((_, idx) => idx % Math.max(1, Math.floor(results.length / 90)) === 0);
   const monthlyComparisonData = selectedSim?.monthly_outputs ?? [];
   const isSelectedRealSwat = selectedSim ? isRealSwat(selectedSim) : false;
-  const hasObservedForcing = datasets.some((dataset) => ["CHIRPS", "OBSERVED_CLIMATE"].includes(dataset.provider) && dataset.normalized_artifact_count > 0);
-  const hasCmip6Forcing = datasets.some((dataset) => dataset.provider === "NEX-GDDP-CMIP6" && dataset.normalized_artifact_count > 0);
+  const hasObservedForcing = datasets.some((d) => ["CHIRPS", "OBSERVED_CLIMATE"].includes(d.provider) && d.normalized_artifact_count > 0);
+  const hasCmip6Forcing = datasets.some((d) => d.provider === "NEX-GDDP-CMIP6" && d.normalized_artifact_count > 0);
 
   const filteredSimulations = simulations.filter((sim) => {
     const term = simSearchTerm.trim().toLowerCase();
@@ -475,8 +448,7 @@ export default function SimulationsPage() {
       sim.name.toLowerCase().includes(term) ||
       (sim.scenario?.name?.toLowerCase().includes(term) ?? false) ||
       (sim.climate_source?.toLowerCase().includes(term) ?? false) ||
-      (sim.station_id?.includes(term) ?? false) ||
-      (sim.id?.toLowerCase().includes(term) ?? false);
+      (sim.station_id?.includes(term) ?? false);
     const matchesModel =
       simFilterModel === "ALL"
         ? true
@@ -487,1020 +459,1127 @@ export default function SimulationsPage() {
   });
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="flex flex-col border-x border-slate-300 dark:border-slate-800 w-full max-w-full min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* 1. Barra de Navegación de Vistas y Acciones Principales */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div>
-          <div className="flex items-center gap-2">
-            <Sliders className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-              Experimento multiescala Planta → Cuenca
-            </h1>
-          </div>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
-            Configura una corrida, revisa qué datos se usaron y entiende cómo los cambios en el cultivo llegan al agua de la cuenca.
+          <h1 className="text-xl font-serif text-slate-900 dark:text-slate-100 tracking-tight">
+            Consola de simulaciones ecohidrológicas
+          </h1>
+          <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1">
+            Acoplamiento multiescala desde fisiología celular hasta el balance de cuenca.
           </p>
         </div>
 
-        {canRunSimulations && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-zinc-950 text-xs font-semibold shadow-md shadow-emerald-500/20 transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nuevo experimento</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2.5">
+          {canRunSimulations && (
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-none bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-medium transition cursor-pointer shadow-none"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Configurar corrida</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {feedbackMsg && (
         <div
-          className={`p-3.5 rounded-xl border text-xs flex items-center gap-2 ${
+          className={`p-3 rounded-none border text-xs flex items-center gap-2 ${
             feedbackMsg.type === "success"
-              ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
-              : "bg-rose-50 dark:bg-rose-500/10 border-rose-300 dark:border-rose-500/30 text-rose-800 dark:text-rose-300"
+              ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200"
+              : "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200"
           }`}
         >
-          {feedbackMsg.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-          ) : (
-            <AlertCircle className="w-4 h-4 shrink-0" />
-          )}
+          {feedbackMsg.type === "success" ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
           <span>{feedbackMsg.text}</span>
         </div>
       )}
 
-      {/* Tab Navigation Segmented Bar */}
-      <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-zinc-100 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800">
+      {/* 2. Pestañas de Nivel Superior */}
+      <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 text-xs">
         <button
+          type="button"
           onClick={() => setActiveTab("RUNS")}
-          className={`flex-1 min-w-[180px] px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
+          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer ${
             activeTab === "RUNS"
-              ? "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-sm border border-zinc-200/60 dark:border-zinc-700/60 font-bold"
-              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40"
+              ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          <Play className="w-3.5 h-3.5 shrink-0" />
-          <div className="flex flex-col items-start leading-tight">
-            <span>Corridas y Resultados</span>
-            <span className="text-[10px] font-normal text-zinc-400 dark:text-zinc-500">
-              Micro → Macro · Series Diarias
-            </span>
-          </div>
+          Corridas de simulación
         </button>
-
         <button
+          type="button"
           onClick={() => setActiveTab("VALIDATION")}
-          className={`flex-1 min-w-[180px] px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
+          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer ${
             activeTab === "VALIDATION"
-              ? "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-sm border border-zinc-200/60 dark:border-zinc-700/60 font-bold"
-              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40"
+              ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          <Scale className="w-3.5 h-3.5 shrink-0" />
-          <div className="flex flex-col items-start leading-tight">
-            <span>Validación e Hipótesis</span>
-            <span className="text-[10px] font-normal text-zinc-400 dark:text-zinc-500">
-              H₀ vs H₁ · NSE, KGE, PBIAS
-            </span>
-          </div>
+          Validación de hipótesis (H0 / H1)
         </button>
-
         <button
+          type="button"
           onClick={() => setActiveTab("SCENARIOS")}
-          className={`flex-1 min-w-[180px] px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
+          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer ${
             activeTab === "SCENARIOS"
-              ? "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-sm border border-zinc-200/60 dark:border-zinc-700/60 font-bold"
-              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40"
+              ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          <SunMedium className="w-3.5 h-3.5 shrink-0" />
-          <div className="flex flex-col items-start leading-tight">
-            <span>Escenarios Climáticos</span>
-            <span className="text-[10px] font-normal text-zinc-400 dark:text-zinc-500">
-              SSP2-4.5 / SSP5-8.5 · Manejo
-            </span>
-          </div>
+          Escenarios climáticos
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("STATISTICS")}
+          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer ${
+            activeTab === "STATISTICS"
+              ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+          }`}
+        >
+          Batería estadística
         </button>
 
         <button
-          onClick={() => setActiveTab("STATISTICS")}
-          className={`flex-1 min-w-[180px] px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
-            activeTab === "STATISTICS"
-              ? "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-sm border border-zinc-200/60 dark:border-zinc-700/60 font-bold"
-              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40"
-          }`}
+          type="button"
+          onClick={() => setShowArchitectureOverview(!showArchitectureOverview)}
+          className="ml-auto text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 px-2 py-1 transition cursor-pointer"
         >
-          <Activity className="w-3.5 h-3.5 shrink-0" />
-          <div className="flex flex-col items-start leading-tight">
-            <span>Batería Estadística</span>
-            <span className="text-[10px] font-normal text-zinc-400 dark:text-zinc-500">
-              Sobol, KS, Wilcoxon, Bootstrap
-            </span>
-          </div>
+          {showArchitectureOverview ? "Ocultar arquitectura de acoplamiento" : "Ver arquitectura de acoplamiento"}
         </button>
       </div>
 
       {activeTab === "RUNS" && (
         <>
-          {/* Hero: 5-Stage Multiscale Coupling Architecture */}
-          <section className="rounded-2xl border border-emerald-200/80 dark:border-emerald-900/50 bg-white dark:bg-zinc-900/70 p-5 shadow-sm">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800/60">
-                  <Leaf className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                    Arquitectura de Acoplamiento Multiescala: ¿Cómo viaja el agua de la Planta a la Cuenca?
-                  </h2>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                    El clima impulsa la transpiración foliar; las raíces absorben agua del perfil edáfico; y el balance de humedad resultante define la escorrentía superficial y el flujo base hacia el río.
-                  </p>
-                </div>
+          {/* Explicación de Arquitectura de Acoplamiento (Opcional colapsable) */}
+          {showArchitectureOverview && (
+            <div className="p-4 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40 text-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  Esquema de acoplamiento multiescala (5 fases)
+                </span>
+                <span className="text-[11px] text-slate-400 font-mono">
+                  14 componentes activos en el stack
+                </span>
               </div>
-
-              <button
-                onClick={() => setShowCapabilities(!showCapabilities)}
-                className="self-start md:self-auto flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-              >
-                <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Capacidades del Sistema ({Object.values(capabilities).filter(c => c.status === "ACTIVE" || c.status === "ACTIVE_IN_STACK" || c.status === "READY").length}/{Object.keys(capabilities).length || 14})</span>
-                {showCapabilities ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-
-            {/* 5-Step Visual Multiscale Pipeline */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-5 gap-3">
-              <div className="p-3.5 rounded-xl border border-sky-200 dark:border-sky-900/50 bg-sky-50/50 dark:bg-sky-950/20 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-sky-700 dark:text-sky-400 mb-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">1. Clima & Forzamiento</span>
-                  <SunMedium className="w-3.5 h-3.5" />
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5 text-slate-600 dark:text-slate-400 text-xs">
+                <div className="p-2.5 rounded-none border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">1. Clima y forzamiento</span>
+                  Precipitación, temperatura y demanda evaporativa de referencia (ET0).
                 </div>
-                <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                  {selectedSim?.climate_source ?? "GridMET / Sintético"}
+                <div className="p-2.5 rounded-none border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">2. Micro (Planta FSPM)</span>
+                  Transpiración estomática, succión de xilema y desarrollo de área foliar (LAI).
                 </div>
-                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                  Lluvia, T° y demanda evaporativa (ET0) que aportan agua y radiación solar al ecosistema.
+                <div className="p-2.5 rounded-none border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">3. Meso (Parcela y suelo)</span>
+                  Extracción radicular según Feddes, humedad volumétrica edáfica y estrés CWSI.
                 </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 mb-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">2. Micro (Planta de Maíz)</span>
-                  <Sprout className="w-3.5 h-3.5" />
+                <div className="p-2.5 rounded-none border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">4. Macro (Cuenca)</span>
+                  Infiltración SCS-CN, retención edáfica y balance en Unidades de Respuesta Hidrológica (HRUs).
                 </div>
-                <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                  {selectedSim?.plant_count ?? 1000} plantas individuales
-                </div>
-                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                  Transpiración estomática, succión de savia por xilema (cm/h) y desarrollo del índice foliar (LAI).
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-amber-700 dark:text-amber-400 mb-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">3. Meso (Suelo & Raíces)</span>
-                  <Droplets className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                  Absorción Feddes & Estrés
-                </div>
-                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                  Humedad volumétrica del perfil θ (%), índice de estrés CWSI y recarga por percolación profunda.
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-teal-200 dark:border-teal-900/50 bg-teal-50/50 dark:bg-teal-950/20 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-teal-700 dark:text-teal-400 mb-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">4. Macro (Cuenca)</span>
-                  <Mountain className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                  {isSelectedRealSwat ? "SWAT+ Hidrología Física" : `${selectedSim?.hru_aggregates?.count ?? 6} HRUs Agregadas`}
-                </div>
-                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                  Escorrentía superficial (SCS-CN), retención edáfica y enrutamiento por red de drenaje.
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/20 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-indigo-700 dark:text-indigo-400 mb-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">5. Aforo & Salida</span>
-                  <Waves className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                  USGS 05451210
-                </div>
-                <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                  Caudal descargado en South Fork Iowa: evaluación de precisión empírica y balance hídrico final.
+                <div className="p-2.5 rounded-none border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">5. Aforo USGS 05451210</span>
+                  Caudal descargado en exutorio y contraste contra aforos observados.
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Collapsible Technical Capabilities Drawer */}
-            {showCapabilities && (
-              <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 animate-fadeIn">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
-                  <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                    Módulos y Componentes Técnicos del Sistema
+          {/* 3. Área de Trabajo Principal: Catálogo (Izquierda) + Consola de Análisis (Derecha) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch border-t border-slate-300 dark:border-slate-800">
+            {/* Panel Izquierdo: Catálogo de Corridas Registradas (Colapsable) */}
+            {!isCatalogCollapsed ? (
+              <div className="lg:col-span-4 xl:col-span-3 flex flex-col border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
+                <div className="flex items-center justify-between p-3 border-b border-slate-300 dark:border-slate-800">
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Experimentos ({filteredSimulations.length})
                   </span>
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
-                    Auditoría de estado vía <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-emerald-600">GET /api/v1/system/capabilities</code>
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={loadInitialData}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-none transition cursor-pointer"
+                      title="Refrescar catálogo"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsCatalogCollapsed(true)}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-none transition cursor-pointer"
+                      title="Ocultar catálogo para ganar espacio"
+                    >
+                      <PanelLeftClose className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                  {Object.entries(capabilities).map(([key, item]) => {
-                    const info = CAPABILITY_INFO[key] || {
-                      label: key.replaceAll("_", " "),
-                      desc: `Estado del componente: ${item.status}`,
-                      category: "Infraestructura",
-                    };
-                    const isActive = item.status === "ACTIVE" || item.status === "ACTIVE_IN_STACK" || item.status === "READY";
-                    return (
-                      <div
-                        key={key}
-                        className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/50 flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                              {info.label}
-                            </span>
-                            <span
-                              className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold shrink-0 ${
-                                isActive
-                                  ? "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
-                                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700"
-                              }`}
-                            >
-                              {item.status}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
-                            {info.desc}
-                          </p>
-                        </div>
-                        <div className="mt-3 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between text-[10px] font-mono text-zinc-500">
-                          <span className="font-semibold text-zinc-600 dark:text-zinc-300">{info.category}</span>
-                          {item.evidence_type && (
-                            <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/40">{item.evidence_type}</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+
+              {/* Buscador */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={simSearchTerm}
+                  onChange={(e) => setSimSearchTerm(e.target.value)}
+                  placeholder="Filtrar por nombre o escenario..."
+                  className="w-full pl-8 pr-7 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+                />
+                {simSearchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSimSearchTerm("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
               </div>
-            )}
-          </section>
 
-          {/* Grid: Simulations List (Left) + Detail & Charts (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column: Simulations List */}
-            <div className="lg:col-span-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 font-bold tracking-wide">
-                    Experimentos Registrados
-                  </span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-200/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold">
-                    {filteredSimulations.length}
-                    {filteredSimulations.length !== simulations.length ? ` / ${simulations.length}` : ""}
-                  </span>
-                </div>
+              {/* Filtro por Modelo */}
+              <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800/70 rounded-none text-xs">
                 <button
-                  onClick={loadInitialData}
-                  className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                  title="Refrescar lista de simulaciones"
+                  type="button"
+                  onClick={() => setSimFilterModel("ALL")}
+                  className={`flex-1 py-1 rounded-none text-center transition cursor-pointer ${
+                    simFilterModel === "ALL"
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium shadow-none"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  }`}
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                  Todos ({simulations.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSimFilterModel("TWIN")}
+                  className={`flex-1 py-1 rounded-none text-center transition cursor-pointer ${
+                    simFilterModel === "TWIN"
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium shadow-none"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  }`}
+                >
+                  Gemelo ({simulations.filter((s) => !isRealSwat(s)).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSimFilterModel("SWAT")}
+                  className={`flex-1 py-1 rounded-none text-center transition cursor-pointer ${
+                    simFilterModel === "SWAT"
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium shadow-none"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  }`}
+                >
+                  SWAT+ ({simulations.filter((s) => isRealSwat(s)).length})
                 </button>
               </div>
 
-              {/* Búsqueda y Filtros Rápidos */}
-              <div className="flex flex-col gap-2">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={simSearchTerm}
-                    onChange={(e) => setSimSearchTerm(e.target.value)}
-                    placeholder="Buscar experimento, escenario..."
-                    className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500/80 shadow-xs"
-                  />
-                  {simSearchTerm && (
-                    <button
-                      type="button"
-                      onClick={() => setSimSearchTerm("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5 cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Filtro por motor / backend */}
-                <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900/80 rounded-xl border border-zinc-200 dark:border-zinc-800 text-[11px] font-medium">
-                  <button
-                    type="button"
-                    onClick={() => setSimFilterModel("ALL")}
-                    className={`flex-1 py-1 px-2 rounded-lg text-center transition cursor-pointer ${
-                      simFilterModel === "ALL"
-                        ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs font-semibold"
-                        : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
-                    }`}
-                  >
-                    Todos ({simulations.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSimFilterModel("TWIN")}
-                    className={`flex-1 py-1 px-2 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1 ${
-                      simFilterModel === "TWIN"
-                        ? "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-xs font-semibold"
-                        : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
-                    }`}
-                  >
-                    <Sprout className="w-3 h-3" />
-                    <span>Gemelo ({simulations.filter((s) => !isRealSwat(s)).length})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSimFilterModel("SWAT")}
-                    className={`flex-1 py-1 px-2 rounded-lg text-center transition cursor-pointer flex items-center justify-center gap-1 ${
-                      simFilterModel === "SWAT"
-                        ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-xs font-semibold"
-                        : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
-                    }`}
-                  >
-                    <Waves className="w-3 h-3" />
-                    <span>SWAT+ ({simulations.filter((s) => isRealSwat(s)).length})</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Lista con scroll */}
-              <div className="flex flex-col gap-2.5 max-h-[820px] overflow-y-auto pr-1">
+              {/* Lista de Experimentos */}
+              <div className="flex flex-col gap-1.5 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
                 {filteredSimulations.length === 0 ? (
-                  <div className="p-8 text-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 flex flex-col items-center gap-2">
-                    <AlertCircle className="w-6 h-6 text-zinc-400" />
-                    <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                      No se encontraron experimentos
-                    </span>
-                    <p className="text-[11px] text-zinc-400 max-w-xs">
-                      Ninguna simulación coincide con el criterio de búsqueda o filtro seleccionado.
-                    </p>
-                    {(simSearchTerm || simFilterModel !== "ALL") && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSimSearchTerm("");
-                          setSimFilterModel("ALL");
-                        }}
-                        className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 underline cursor-pointer"
-                      >
-                        Limpiar filtros
-                      </button>
-                    )}
+                  <div className="p-6 text-center rounded-none border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400">
+                    No se encontraron simulaciones que coincidan con la búsqueda.
                   </div>
                 ) : (
                   filteredSimulations.map((sim) => {
                     const isSelected = selectedSim?.id === sim.id;
                     const simIsSwat = isRealSwat(sim);
-                    const isLatest = sim.id === simulations[0]?.id;
+
+                    const precipVal = sim.summary_metrics?.total_precip_mm ?? sim.summary_metrics?.total_precipitation_mm;
+                    const runoffVal = sim.summary_metrics?.total_runoff_mm ?? sim.summary_metrics?.total_surface_runoff_mm;
+                    const precipStr = precipVal != null ? `${Number(precipVal).toFixed(0)} mm` : (runoffVal != null ? `${Number(runoffVal).toFixed(0)} mm` : "—");
+
+                    const dischargeHm3 = sim.summary_metrics?.total_discharge_hm3 != null
+                      ? Number(sim.summary_metrics.total_discharge_hm3)
+                      : (sim.summary_metrics?.water_balance?.mean_streamflow_m3s != null && sim.duration_days
+                        ? (Number(sim.summary_metrics.water_balance.mean_streamflow_m3s) * sim.duration_days * 86400) / 1_000_000
+                        : (runoffVal != null ? (Number(runoffVal) * 580.15) / 1000 : null));
+                    const dischargeStr = dischargeHm3 != null ? `${dischargeHm3.toFixed(1)} hm³` : "—";
+
+                    const cwsiVal = sim.summary_metrics?.mean_cwsi ?? sim.field_aggregates?.mean_water_stress;
+                    const cwsiStr = cwsiVal != null ? Number(cwsiVal).toFixed(3) : "—";
+
                     return (
                       <div
                         key={sim.id}
                         onClick={() => selectSimulation(sim)}
-                        className={`p-4 rounded-xl border text-left cursor-pointer transition relative flex flex-col gap-2.5 ${
+                        className={`p-3 rounded-none border text-left cursor-pointer transition flex flex-col gap-1.5 ${
                           isSelected
-                            ? "bg-emerald-50/70 dark:bg-zinc-900 border-emerald-500 dark:border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
-                            : "bg-white dark:bg-zinc-950/60 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 shadow-xs"
+                            ? "bg-slate-50 dark:bg-slate-800/60 border-slate-400 dark:border-slate-600 shadow-none"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {isLatest && (
-                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                  <Zap className="w-2.5 h-2.5 text-amber-600 fill-amber-500" />
-                                  Más reciente
-                                </span>
-                              )}
-                              <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                                {sim.name}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
-                              <span className="inline-flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-zinc-400" />
-                                {sim.duration_days} días
-                              </span>
-                              <span>·</span>
-                              <span className="inline-flex items-center gap-1">
-                                <Sprout className="w-3 h-3 text-zinc-400" />
-                                {sim.plant_count?.toLocaleString?.() ?? sim.plant_count} plantas
-                              </span>
-                              {sim.climate_source && (
-                                <>
-                                  <span>·</span>
-                                  <span className="font-mono text-[9px] px-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                                    {sim.climate_source}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          <span
-                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold shrink-0 border uppercase tracking-wider ${
-                              simIsSwat
-                                ? "bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800"
-                                : "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800"
-                            }`}
-                          >
-                            {simIsSwat ? "SWAT+ FÍSICO" : "GEMELO MULTIESCALA"}
+                          <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
+                            {sim.name}
+                          </span>
+                          <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-none border shrink-0 ${
+                            simIsSwat
+                              ? "bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+                              : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                          }`}>
+                            {simIsSwat ? "SWAT+" : "Gemelo"}
                           </span>
                         </div>
 
-                        {(() => {
-                          const precipVal = sim.summary_metrics?.total_precip_mm ?? sim.summary_metrics?.total_precipitation_mm;
-                          const runoffVal = sim.summary_metrics?.total_runoff_mm ?? sim.summary_metrics?.total_surface_runoff_mm;
-                          const col1Label = precipVal != null ? "Lluvia" : (runoffVal != null ? "Escorrentía" : "Lluvia");
-                          const col1Value = precipVal != null
-                            ? `${Number(precipVal).toFixed(0)} mm`
-                            : (runoffVal != null ? `${Number(runoffVal).toFixed(0)} mm` : "—");
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                          <span>{sim.duration_days} días</span>
+                          <span>·</span>
+                          <span>{sim.plant_count?.toLocaleString()} plantas</span>
+                          <span>·</span>
+                          <span className="font-mono text-[10px]">{sim.climate_source || "SINTÉTICO"}</span>
+                        </div>
 
-                          const dischargeHm3 = sim.summary_metrics?.total_discharge_hm3 != null
-                            ? Number(sim.summary_metrics.total_discharge_hm3)
-                            : (sim.summary_metrics?.water_balance?.mean_streamflow_m3s != null && sim.duration_days
-                              ? (Number(sim.summary_metrics.water_balance.mean_streamflow_m3s) * sim.duration_days * 86400) / 1_000_000
-                              : (runoffVal != null ? (Number(runoffVal) * 580.15) / 1000 : null));
-                          const col2Value = dischargeHm3 != null ? `${dischargeHm3.toFixed(1)} hm³` : "—";
-
-                          const cwsiVal = sim.summary_metrics?.mean_cwsi ?? sim.field_aggregates?.mean_water_stress;
-                          const etVal = sim.summary_metrics?.total_evapotranspiration_mm ?? sim.summary_metrics?.total_actual_et_mm;
-                          const col3Label = cwsiVal != null ? "CWSI Medio" : (etVal != null ? "ET Real" : "CWSI");
-                          const col3Value = cwsiVal != null
-                            ? Number(cwsiVal).toFixed(3)
-                            : (etVal != null ? `${Number(etVal).toFixed(0)} mm` : "—");
-                          const col3IsGood = cwsiVal != null ? Number(cwsiVal) < 0.25 : true;
-
-                          return (
-                            <div className="grid grid-cols-3 gap-1.5 p-2 rounded-lg bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 text-[11px] font-mono">
-                              <div>
-                                <span className="text-[9px] text-zinc-400 uppercase block truncate">{col1Label}</span>
-                                <span className="text-zinc-800 dark:text-zinc-200 font-bold">
-                                  {col1Value}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-[9px] text-zinc-400 uppercase block truncate">Descarga</span>
-                                <span className="text-teal-600 dark:text-teal-400 font-bold">
-                                  {col2Value}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-[9px] text-zinc-400 uppercase block truncate">{col3Label}</span>
-                                <span className={`font-bold ${col3IsGood ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
-                                  {col3Value}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })()}
+                        <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-400">
+                          <span>Lluvia: <strong className="text-slate-800 dark:text-slate-200 font-normal">{precipStr}</strong></span>
+                          <span>Descarga: <strong className="text-slate-800 dark:text-slate-200 font-normal">{dischargeStr}</strong></span>
+                          <span>CWSI: <strong className="text-slate-800 dark:text-slate-200 font-normal">{cwsiStr}</strong></span>
+                        </div>
                       </div>
                     );
                   })
                 )}
               </div>
             </div>
+            ) : (
+              <div className="w-10 border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col items-center py-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCatalogCollapsed(false)}
+                  className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                  title="Expandir catálogo de experimentos"
+                >
+                  <PanelLeftOpen className="w-4 h-4" />
+                </button>
+                <div className="mt-8 [writing-mode:vertical-rl] text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+                  Catálogo ({filteredSimulations.length})
+                </div>
+              </div>
+            )}
 
-            {/* Right Column: Active Simulation Analysis & Charts */}
-            <div className="lg:col-span-8 flex flex-col gap-5">
+            {/* Panel Derecho: Consola de Trabajo del Experimento */}
+            <div className={`${!isCatalogCollapsed ? "lg:col-span-8 xl:col-span-9" : "lg:col-span-12 flex-1"} flex flex-col bg-slate-50 dark:bg-slate-950 min-h-[700px]`}>
               {selectedSim ? (
                 <>
-                  <AIInsightsCard
-                    key={selectedSim.id}
-                    simulationId={selectedSim.id}
-                    initialInsights={(selectedSim.provenance as Record<string, any>)?.ai_insights}
-                  />
+                  {/* Encabezado del Experimento Activo */}
+                  <div className="p-4 rounded-none border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                            {selectedSim.name}
+                          </h2>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                            {selectedSim.status}
+                          </span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                            {isSelectedRealSwat ? "SWAT+ Físico" : "Gemelo Multiescala"}
+                          </span>
+                        </div>
 
-                  {isSelectedRealSwat && swatResults ? (
-                    <SwatRunEvidencePanel simulation={selectedSim} result={swatResults} />
-                  ) : (
-                    <>
-                      {/* Selected Simulation Card & Controls */}
-                      <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-4 shadow-sm">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">{selectedSim.name}</h2>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 font-semibold">
-                                {selectedSim.status}
-                              </span>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800 font-medium">
-                                {selectedSim.climate_source || "SINTÉTICO"}
-                              </span>
-                            </div>
-                            <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                              <b>Escenario:</b> {selectedSim.scenario?.name || "Línea Base"} ({selectedSim.scenario?.pathway || "Histórico"}) · <b>Manejo:</b> {selectedSim.management_scenario === "BASELINE" ? "Convencional (Línea Base)" : selectedSim.management_scenario === "NO_TILL" ? "Siembra Directa (No-Till)" : "Rotación Maíz-Sorgo"}
-                            </span>
-                            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                              <b>Cuenca:</b> South Fork Iowa River (USGS 05451210) · <b>Población:</b> {selectedSim.plant_count} plantas de maíz · <b>Duración:</b> {selectedSim.duration_days} días
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1 flex-wrap">
+                          <span>Cuenca: South Fork Iowa (USGS {selectedSim.station_id || "05451210"})</span>
+                          <span>·</span>
+                          <span>Escenario: {selectedSim.scenario?.name || "Línea Base"}</span>
+                          <span>·</span>
+                          <span>Periodo: {selectedSim.start_date || "2018-06-01"} a {selectedSim.end_date || "2018-08-31"}</span>
+                        </div>
+                      </div>
 
-                          {/* WebSocket Controls */}
-                          <div className="flex items-center gap-2">
+                      {/* Controles de Acción: 3D y WebSocket Scrubber */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link
+                          href={`/twin-3d?simId=${selectedSim.id}`}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-none border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Abrir en gemelo 3D</span>
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={toggleWebSocket}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-medium border transition cursor-pointer ${
+                            isWsConnected
+                              ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800"
+                              : "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 hover:bg-slate-200"
+                          }`}
+                        >
+                          <Radio className={`w-3.5 h-3.5 ${isWsConnected ? "text-rose-500 animate-pulse" : ""}`} />
+                          <span>{isWsConnected ? "Pausar streaming" : "Reproducir streaming"}</span>
+                        </button>
+
+                        {isWsConnected && (
+                          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-none text-xs font-mono">
                             <button
-                              onClick={toggleWebSocket}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer border shadow-xs ${
-                                isWsConnected
-                                  ? "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 hover:bg-rose-100"
-                                  : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100"
-                              }`}
-                            >
-                              <Radio className={`w-3.5 h-3.5 ${isWsConnected ? "animate-pulse text-rose-500" : ""}`} />
-                              <span>{isWsConnected ? "Pausar WS" : "Reproducir WS"}</span>
-                            </button>
+                              type="button"
+                              onClick={() => handleWsSpeedChange(1)}
+                              className={`px-1.5 py-0.5 rounded-none cursor-pointer ${wsSpeed === 1 ? "bg-white dark:bg-slate-900 font-bold" : "text-slate-500"}`}
+                            >1x</button>
+                            <button
+                              type="button"
+                              onClick={() => handleWsSpeedChange(5)}
+                              className={`px-1.5 py-0.5 rounded-none cursor-pointer ${wsSpeed === 5 ? "bg-white dark:bg-slate-900 font-bold" : "text-slate-500"}`}
+                            >5x</button>
+                            <button
+                              type="button"
+                              onClick={() => handleWsSpeedChange(20)}
+                              className={`px-1.5 py-0.5 rounded-none cursor-pointer ${wsSpeed === 20 ? "bg-white dark:bg-slate-900 font-bold" : "text-slate-500"}`}
+                            >20x</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                            {isWsConnected && (
-                              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 px-2 py-1 rounded-xl border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono">
+                    {/* Barra de Reproducción en Vivo Sincronizada */}
+                    {isWsConnected && liveTick && (
+                      <div className="p-3 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">Día y clima</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            Día {liveTick.day_index} ({liveTick.date})
+                          </span>
+                          <span className="text-[10px] text-slate-500 block">
+                            {liveTick.weather.temp_c}°C · {liveTick.weather.precip_mm} mm
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">Planta micro</span>
+                          <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                            {liveTick.micro_plant.transpiration_mm} mm/d
+                          </span>
+                          <span className="text-[10px] text-slate-500 block">
+                            CWSI: {liveTick.micro_plant.cwsi_stress_index}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">Suelo meso</span>
+                          <span className="font-semibold text-amber-700 dark:text-amber-400">
+                            θ: {liveTick.meso_soil.soil_moisture_vol}%
+                          </span>
+                          <span className="text-[10px] text-slate-500 block">
+                            Percol: {liveTick.meso_soil.percolation_mm} mm
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block">Cuenca macro</span>
+                          <span className="font-semibold text-blue-700 dark:text-blue-400">
+                            Q: {liveTick.macro_watershed.streamflow_m3s} m³/s
+                          </span>
+                          <span className="text-[10px] text-slate-500 block">
+                            Escorrentía: {liveTick.macro_watershed.surface_runoff_mm} mm
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Strip de Balance Hídrico (6 Variables Consolidadas) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[11px] text-slate-500 block">Precipitación</span>
+                        <span className="text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
+                          {selectedSim.summary_metrics?.total_precip_mm != null ? `${Number(selectedSim.summary_metrics.total_precip_mm).toFixed(0)} mm` : "—"}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[11px] text-slate-500 block">Evapotranspiración</span>
+                        <span className="text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
+                          {selectedSim.summary_metrics?.total_actual_et_mm != null ? `${Number(selectedSim.summary_metrics.total_actual_et_mm).toFixed(1)} mm` : "—"}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[11px] text-slate-500 block">Volumen en río</span>
+                        <span className="text-sm font-semibold font-mono text-blue-700 dark:text-blue-400 mt-0.5 block">
+                          {selectedSim.summary_metrics?.total_discharge_hm3 != null ? `${Number(selectedSim.summary_metrics.total_discharge_hm3).toFixed(1)} hm³` : "—"}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[11px] text-slate-500 block">Caudal pico</span>
+                        <span className="text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
+                          {selectedSim.summary_metrics?.peak_streamflow_m3s != null ? `${Number(selectedSim.summary_metrics.peak_streamflow_m3s).toFixed(2)} m³/s` : "—"}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[11px] text-slate-500 block">Estrés CWSI</span>
+                        <span className="text-sm font-semibold font-mono text-amber-700 dark:text-amber-400 mt-0.5 block">
+                          {selectedSim.summary_metrics?.mean_cwsi != null ? Number(selectedSim.summary_metrics.mean_cwsi).toFixed(3) : "—"}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[11px] text-slate-500 block">Rendimiento</span>
+                        <span className="text-sm font-semibold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5 block">
+                          {selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sub-Pestañas de la Consola de Trabajo */}
+                  <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setSimDetailTab("CHARTS")}
+                      className={`px-3 py-2 font-medium border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+                        simDetailTab === "CHARTS"
+                          ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
+                          : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      <Waves className="w-3.5 h-3.5" />
+                      <span>Series temporales e hidrograma</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSimDetailTab("AI")}
+                      className={`px-3 py-2 font-medium border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+                        simDetailTab === "AI"
+                          ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
+                          : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Diagnóstico científico y políticas</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSimDetailTab("SPECIFICATIONS")}
+                      className={`px-3 py-2 font-medium border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+                        simDetailTab === "SPECIFICATIONS"
+                          ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
+                          : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>Acoplamiento multiescala y procedencia</span>
+                    </button>
+                  </div>
+
+                  {/* CONTENIDO DE LA SUB-PESTAÑA 1: SERIES TEMPORALES Y WORKBENCH */}
+                  {simDetailTab === "CHARTS" && (
+                    <>
+                      {isSelectedRealSwat && swatResults ? (
+                        <SwatRunEvidencePanel simulation={selectedSim} result={swatResults} />
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          {/* Barra de Control de Disposición y Modos de Visualización */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-mono text-slate-500 mr-1">Disposición:</span>
+                              <button
+                                type="button"
+                                onClick={() => setChartLayout("GRID")}
+                                className={`px-2.5 py-1 text-xs font-mono flex items-center gap-1.5 transition cursor-pointer ${
+                                  chartLayout === "GRID"
+                                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
+                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                }`}
+                                title="Cuadrante 2x2: Permite ver las 4 escalas simultáneas sin scrollear"
+                              >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                                <span>Cuadrante 2x2</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setChartLayout("SPOTLIGHT")}
+                                className={`px-2.5 py-1 text-xs font-mono flex items-center gap-1.5 transition cursor-pointer ${
+                                  chartLayout === "SPOTLIGHT"
+                                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
+                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                }`}
+                                title="Foco único: Un gráfico ampliado con conmutador rápido"
+                              >
+                                <Square className="w-3.5 h-3.5" />
+                                <span>Foco único</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setChartLayout("STACK")}
+                                className={`px-2.5 py-1 text-xs font-mono flex items-center gap-1.5 transition cursor-pointer ${
+                                  chartLayout === "STACK"
+                                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
+                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                }`}
+                                title="Pila vertical: Visualización continua estándar"
+                              >
+                                <Rows3 className="w-3.5 h-3.5" />
+                                <span>Pila vertical</span>
+                              </button>
+                            </div>
+
+                            {chartLayout === "SPOTLIGHT" && (
+                              <div className="flex items-center gap-1 text-xs font-mono">
+                                <span className="text-[11px] text-slate-500 mr-1">Variable activa:</span>
                                 <button
-                                  onClick={() => handleWsSpeedChange(1)}
-                                  className={`px-1.5 py-0.5 rounded cursor-pointer transition ${wsSpeed === 1 ? "bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white font-bold" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"}`}
+                                  type="button"
+                                  onClick={() => setChartViewMode("STREAMFLOW")}
+                                  className={`px-2 py-0.5 text-[11px] transition cursor-pointer ${chartViewMode === "STREAMFLOW" ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"}`}
                                 >
-                                  1x
+                                  Hidrograma
                                 </button>
                                 <button
-                                  onClick={() => handleWsSpeedChange(5)}
-                                  className={`px-1.5 py-0.5 rounded cursor-pointer transition ${wsSpeed === 5 ? "bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white font-bold" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"}`}
+                                  type="button"
+                                  onClick={() => setChartViewMode("PLANT")}
+                                  className={`px-2 py-0.5 text-[11px] transition cursor-pointer ${chartViewMode === "PLANT" ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"}`}
                                 >
-                                  5x
+                                  Fisiología
                                 </button>
                                 <button
-                                  onClick={() => handleWsSpeedChange(20)}
-                                  className={`px-1.5 py-0.5 rounded cursor-pointer transition ${wsSpeed === 20 ? "bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-white font-bold" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"}`}
+                                  type="button"
+                                  onClick={() => setChartViewMode("SOIL")}
+                                  className={`px-2 py-0.5 text-[11px] transition cursor-pointer ${chartViewMode === "SOIL" ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"}`}
                                 >
-                                  20x
+                                  Suelo/Estrés
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setChartViewMode("MONTHLY")}
+                                  className={`px-2 py-0.5 text-[11px] transition cursor-pointer ${chartViewMode === "MONTHLY" ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"}`}
+                                >
+                                  Validación USGS
                                 </button>
                               </div>
                             )}
-                          </div>
-                        </div>
 
-                        {/* WebSocket Playback Ticker */}
-                        {isWsConnected && liveTick && (
-                          <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 via-white to-cyan-50 dark:from-emerald-950/40 dark:via-zinc-950 dark:to-cyan-950/40 border border-emerald-300 dark:border-emerald-700/50 grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fadeIn shadow-sm">
-                            <div className="col-span-full text-[10px] font-mono text-zinc-500 dark:text-zinc-400">
-                              Reproducción temporal cronológica: variables sincronizadas día a día
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-[10px] uppercase font-mono text-zinc-500 dark:text-zinc-400 font-bold">Día / Clima</span>
-                              <span className="text-xs font-mono font-bold text-zinc-900 dark:text-zinc-100">
-                                Día {liveTick.day_index} ({liveTick.date})
-                              </span>
-                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                                {liveTick.weather.temp_c}°C · {liveTick.weather.precip_mm} mm
-                              </span>
-                            </div>
-
-                            <div className="flex flex-col">
-                              <span className="text-[10px] uppercase font-mono text-emerald-700 dark:text-emerald-400 font-bold">Micro (Planta)</span>
-                              <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-300">
-                                Tr: {liveTick.micro_plant.transpiration_mm} mm/d
-                              </span>
-                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                                CWSI: {liveTick.micro_plant.cwsi_stress_index}
-                              </span>
-                            </div>
-
-                            <div className="flex flex-col">
-                              <span className="text-[10px] uppercase font-mono text-cyan-700 dark:text-cyan-400 font-bold">Meso (Suelo)</span>
-                              <span className="text-xs font-mono font-bold text-cyan-700 dark:text-cyan-300">
-                                θ: {liveTick.meso_soil.soil_moisture_vol} %
-                              </span>
-                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                                Percol: {liveTick.meso_soil.percolation_mm} mm
-                              </span>
-                            </div>
-
-                            <div className="flex flex-col">
-                              <span className="text-[10px] uppercase font-mono text-teal-700 dark:text-teal-400 font-bold">Macro (Cuenca)</span>
-                              <span className="text-xs font-mono font-bold text-teal-700 dark:text-teal-300">
-                                Q: {liveTick.macro_watershed.streamflow_m3s} m³/s
-                              </span>
-                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                                Qsurf: {liveTick.macro_watershed.surface_runoff_mm} mm
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Water Balance & Multiscale Performance Ribbon */}
-                        <div>
-                          <span className="text-xs font-mono uppercase text-zinc-500 dark:text-zinc-400 font-bold tracking-wider block mb-2">
-                            Balance Hídrico y Métricas de la Corrida
-                          </span>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
-                            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between">
-                              <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400">Precipitación Total</span>
-                              <span className="text-base font-bold text-zinc-900 dark:text-zinc-100 mt-1">
-                                {selectedSim.summary_metrics?.total_precip_mm != null ? `${Number(selectedSim.summary_metrics.total_precip_mm).toFixed(0)} mm` : "-"}
-                              </span>
-                              <span className="text-[9px] text-zinc-400 mt-0.5">Lluvia acumulada</span>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between">
-                              <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400">Evapotranspiración</span>
-                              <span className="text-base font-bold text-cyan-600 dark:text-cyan-400 mt-1">
-                                {selectedSim.summary_metrics?.total_actual_et_mm != null ? `${Number(selectedSim.summary_metrics.total_actual_et_mm).toFixed(1)} mm` : "-"}
-                              </span>
-                              <span className="text-[9px] text-zinc-400 mt-0.5">Consumo vegetal real</span>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between">
-                              <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400">Volumen en Río</span>
-                              <span className="text-base font-bold text-teal-600 dark:text-teal-400 mt-1">
-                                {selectedSim.summary_metrics?.total_discharge_hm3 != null ? `${Number(selectedSim.summary_metrics.total_discharge_hm3).toFixed(1)} hm³` : "-"}
-                              </span>
-                              <span className="text-[9px] text-zinc-400 mt-0.5">Descarga en exutorio</span>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between">
-                              <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400">Caudal Máximo Pico</span>
-                              <span className="text-base font-bold text-amber-600 dark:text-amber-400 mt-1">
-                                {selectedSim.summary_metrics?.peak_streamflow_m3s != null ? `${Number(selectedSim.summary_metrics.peak_streamflow_m3s).toFixed(2)} m³/s` : "-"}
-                              </span>
-                              <span className="text-[9px] text-zinc-400 mt-0.5">Pico instantáneo</span>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between">
-                              <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400">Estrés CWSI Medio</span>
-                              <span
-                                className={`text-base font-bold mt-1 ${
-                                  (selectedSim.summary_metrics?.mean_cwsi ?? 0) < 0.25
-                                    ? "text-emerald-600 dark:text-emerald-400"
-                                    : "text-amber-600 dark:text-amber-400"
-                                }`}
-                              >
-                                {selectedSim.summary_metrics?.mean_cwsi != null ? Number(selectedSim.summary_metrics.mean_cwsi).toFixed(3) : "-"}
-                              </span>
-                              <span className="text-[9px] text-zinc-400 mt-0.5">
-                                {(selectedSim.summary_metrics?.mean_cwsi ?? 0) < 0.25 ? "Confort hídrico" : "Déficit hídrico"}
-                              </span>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between">
-                              <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400">Rendimiento Estimado</span>
-                              <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-                                {selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "-"}
-                              </span>
-                              <span className="text-[9px] text-zinc-400 mt-0.5">Biomasa foliar modelo</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Multiscale Transfer Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                          <div className="p-3.5 rounded-xl border border-emerald-200/80 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/10 flex flex-col justify-between">
-                            <div className="flex items-center gap-1.5 font-mono text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">
-                              <Sprout className="w-3.5 h-3.5" />
-                              MICRO → MESO (PLANTA A PARCELA)
-                            </div>
-                            <div className="mt-2 text-zinc-800 dark:text-zinc-200">
-                              <b>{selectedSim.plant_count}</b> plantas de maíz simuladas
-                            </div>
-                            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                              LAI medio: <b>{Number(selectedSim.field_aggregates?.mean_lai ?? 0).toFixed(3)}</b> · Raíz: <b>{Number(selectedSim.field_aggregates?.mean_root_depth_cm ?? 0).toFixed(1)} cm</b>
-                            </div>
-                          </div>
-
-                          <div className="p-3.5 rounded-xl border border-cyan-200/80 dark:border-cyan-900/50 bg-cyan-50/30 dark:bg-cyan-950/10 flex flex-col justify-between">
-                            <div className="flex items-center gap-1.5 font-mono text-cyan-700 dark:text-cyan-400 font-bold text-[11px]">
-                              <Droplets className="w-3.5 h-3.5" />
-                              MESO → MACRO (PARCELA A HRU)
-                            </div>
-                            <div className="mt-2 text-zinc-800 dark:text-zinc-200">
-                              <b>{selectedSim.hru_aggregates?.count ?? 0}</b> HRUs de suelo acopladas
-                            </div>
-                            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                              Fracción cuenca: <b>{Number(selectedSim.hru_aggregates?.area_fraction_sum ?? 0).toFixed(2)}</b> (SCS-CN = {(selectedSim as any).parameters?.curve_number ?? 74})
-                            </div>
-                          </div>
-
-                          <div className="p-3.5 rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-950/10 flex flex-col justify-between">
-                            <div className="flex items-center gap-1.5 font-mono text-amber-700 dark:text-amber-400 font-bold text-[11px]">
-                              <Scale className="w-3.5 h-3.5" />
-                              VALIDACIÓN (AJUSTE CON USGS)
-                            </div>
-                            <div className="mt-2 text-zinc-800 dark:text-zinc-200 font-semibold">
-                              {selectedSim.validation?.interpretation ?? (isSelectedRealSwat ? "SWAT+ CALIBRADO" : "EVALUACIÓN EXPERIMENTAL")}
-                            </div>
-                            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                              Meses alineados: <b>{selectedSim.validation?.aligned_months ?? 0}</b> · Mejora: <b>{selectedSim.validation?.improvement_percent?.value?.toFixed?.(2) ?? "0.00"}%</b>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Provenance Manifest Collapsible */}
-                        <details className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 text-[11px] text-zinc-600 dark:text-zinc-400">
-                          <summary className="cursor-pointer font-mono text-zinc-800 dark:text-zinc-200 font-medium">
-                            Ver Manifiesto de Procedencia y Datos de la Corrida
-                          </summary>
-                          <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 font-mono text-[10px]">
-                            <div><span className="text-zinc-400">Periodo:</span> {selectedSim.start_date ?? "2015-01-01"} → {selectedSim.end_date ?? "2020-12-31"}</div>
-                            <div><span className="text-zinc-400">Estación USGS:</span> {selectedSim.station_id ?? "05451210"}</div>
-                            <div><span className="text-zinc-400">Semilla Aleatoria:</span> seed {selectedSim.seed}</div>
-                            <div><span className="text-zinc-400">Dataset Roles:</span> {Object.entries(selectedSim.dataset_roles ?? {}).length || 3} asignados</div>
-                          </div>
-                        </details>
-                      </div>
-
-                      {/* Segmented Chart Scale Navigator */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 ml-2 mr-2 flex items-center gap-1.5">
-                            <Filter className="w-3.5 h-3.5 text-emerald-600" />
-                            Visualizar Gráficos:
-                          </span>
-                          <button
-                            onClick={() => setChartViewMode("ALL")}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
-                              chartViewMode === "ALL"
-                                ? "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-xs"
-                                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60"
-                            }`}
-                          >
-                            📊 Todas las Escalas
-                          </button>
-                          <button
-                            onClick={() => setChartViewMode("STREAMFLOW")}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
-                              chartViewMode === "STREAMFLOW"
-                                ? "bg-white dark:bg-zinc-800 text-teal-700 dark:text-teal-400 shadow-xs"
-                                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60"
-                            }`}
-                          >
-                            🌊 Hidrograma (Macro)
-                          </button>
-                          <button
-                            onClick={() => setChartViewMode("PLANT")}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
-                              chartViewMode === "PLANT"
-                                ? "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-xs"
-                                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60"
-                            }`}
-                          >
-                            🌱 Fisiología Planta (Micro)
-                          </button>
-                          <button
-                            onClick={() => setChartViewMode("SOIL")}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
-                              chartViewMode === "SOIL"
-                                ? "bg-white dark:bg-zinc-800 text-cyan-700 dark:text-cyan-400 shadow-xs"
-                                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60"
-                            }`}
-                          >
-                            🌾 Suelo & CWSI (Meso)
-                          </button>
-                          <button
-                            onClick={() => setChartViewMode("MONTHLY")}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
-                              chartViewMode === "MONTHLY"
-                                ? "bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-400 shadow-xs"
-                                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60"
-                            }`}
-                          >
-                            📈 Validación Mensual
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* CHART 1: VALIDACIÓN MENSUAL (USGS vs MODELOS) */}
-                      {(chartViewMode === "ALL" || chartViewMode === "MONTHLY") && (
-                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
-                                  Validación Empírica Mensual: Caudales Observados (USGS) vs Modelos Simulados
-                                </h3>
-                              </div>
-                              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                                Compara el registro real de aforo en la estación <b>USGS 05451210</b> contra la línea base sin acoplar, el Gemelo Digital Multiescala acoplado y la predicción híbrida ML.
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 font-semibold shrink-0 self-start sm:self-auto">
-                              {selectedSim.validation?.interpretation ?? "EVALUACIÓN MENSUAL"}
+                            <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">
+                              Haz clic en <Maximize2 className="w-3 h-3 inline text-slate-500" /> en cualquier gráfico para inspección modal
                             </span>
                           </div>
 
-                          <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={monthlyComparisonData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#d4d4d8" vertical={false} />
-                                <XAxis dataKey="month" stroke="#71717a" fontSize={10} tickLine={false} />
-                                <YAxis stroke="#71717a" fontSize={10} tickLine={false} label={{ value: "Caudal (m³/s)", angle: -90, position: "insideLeft", fill: "#71717a", fontSize: 10 }} />
-                                <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e4e4e7", borderRadius: "8px", fontSize: "11px", color: "var(--foreground)" }} />
-                                <Legend wrapperStyle={{ fontSize: "11px" }} />
-                                <Line type="monotone" dataKey="observed_streamflow_m3s" name="OBSERVADO REAL (USGS)" stroke="#111827" strokeWidth={2.5} dot={false} connectNulls={false} />
-                                <Line type="monotone" dataKey="baseline_streamflow_m3s" name="LÍNEA BASE (Sin acoplar)" stroke="#f97316" strokeWidth={1.8} dot={false} />
-                                <Line type="monotone" dataKey="twin_streamflow_m3s" name="GEMELO MULTIESCALA" stroke="#059669" strokeWidth={2.5} dot={false} />
-                                <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="ASISTIDO POR ML" stroke="#7c3aed" strokeWidth={1.8} strokeDasharray="4 3" dot={false} connectNulls={false} />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* CHART 2: HIDROGRAMA DE CUENCA (MACROESCALA) */}
-                      {(chartViewMode === "ALL" || chartViewMode === "STREAMFLOW") && (
-                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Mountain className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
-                                  Hidrograma de Cuenca: Caudal en Exutorio (m³/s) vs Lluvia de Forzamiento (mm)
-                                </h3>
+                          {/* Renderizado Condicional según Disposición */}
+                          {chartLayout === "GRID" && (
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                              {/* 1. Validación USGS */}
+                              <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+                                <div className="p-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/60 dark:bg-slate-950/40">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-[9px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">USGS</span>
+                                      <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">Validación mensual: Aforo vs Gemelo</h3>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 truncate mt-0.5">Estación USGS 05451210 South Fork Iowa</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedChartModal("MONTHLY")}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+                                    title="Inspeccionar en modal"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="h-48 sm:h-52 w-full p-2">
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={monthlyComparisonData}>
+                                      <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                      <XAxis dataKey="month" stroke="#9ca3af" fontSize={9} tickLine={false} />
+                                      <YAxis stroke="#9ca3af" fontSize={9} tickLine={false} />
+                                      <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "10px", color: "var(--foreground)" }} />
+                                      <Legend wrapperStyle={{ fontSize: "10px" }} />
+                                      <Line type="monotone" dataKey="observed_streamflow_m3s" name="USGS Observado" stroke="#09090b" className="dark:stroke-slate-100" strokeWidth={1.8} dot={false} />
+                                      <Line type="monotone" dataKey="baseline_streamflow_m3s" name="Línea base" stroke="#ea580c" strokeWidth={1.2} dot={false} />
+                                      <Line type="monotone" dataKey="twin_streamflow_m3s" name="Gemelo multiescala" stroke="#059669" strokeWidth={1.8} dot={false} />
+                                      <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="Híbrido ML" stroke="#7c3aed" strokeWidth={1.2} strokeDasharray="3 3" dot={false} />
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                </div>
                               </div>
-                              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                                Respuesta hidrológica global de la cuenca ante tormentas. Las barras de precipitación (azul) generan picos de escorrentía superficial seguidos por la recesión del caudal hacia el caudal base (área turquesa).
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-800 font-semibold shrink-0 self-start sm:self-auto">
-                              ESCALA MACRO
-                            </span>
-                          </div>
 
-                          {isLoadingResults ? (
-                            <div className="h-64 flex items-center justify-center text-zinc-400 text-xs">
-                              <Loader2 className="w-5 h-5 animate-spin mr-2 text-teal-500" />
-                              Cargando hidrograma de cuenca...
-                            </div>
-                          ) : (
-                            <div className="h-64 w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={chartData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#d4d4d8" className="dark:stroke-zinc-800" vertical={false} />
-                                  <XAxis dataKey="date_str" stroke="#71717a" fontSize={10} tickLine={false} />
-                                  <YAxis
-                                    yAxisId="left"
-                                    stroke="#0d9488"
-                                    fontSize={10}
-                                    tickLine={false}
-                                    label={{ value: "Caudal (m³/s)", angle: -90, position: "insideLeft", fill: "#0d9488", fontSize: 10 }}
-                                  />
-                                  <YAxis
-                                    yAxisId="right"
-                                    orientation="right"
-                                    stroke="#0284c7"
-                                    fontSize={10}
-                                    tickLine={false}
-                                    label={{ value: "Lluvia Diaria (mm)", angle: 90, position: "insideRight", fill: "#0284c7", fontSize: 10 }}
-                                  />
-                                  <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e4e4e7", borderRadius: "8px", fontSize: "11px", color: "var(--foreground)" }} />
-                                  <Legend wrapperStyle={{ fontSize: "11px" }} />
-                                  <Bar yAxisId="right" dataKey="precip_mm" name="Precipitación Diaria (mm)" fill="#0284c7" opacity={0.65} />
-                                  <Area yAxisId="left" type="monotone" dataKey="streamflow_m3s" name="Caudal Exutorio Simulado (m³/s)" stroke="#0d9488" fill="#0d9488" fillOpacity={0.2} strokeWidth={2} />
-                                </ComposedChart>
-                              </ResponsiveContainer>
+                              {/* 2. Hidrograma de Cuenca */}
+                              <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+                                <div className="p-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/60 dark:bg-slate-950/40">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-[9px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">Macro</span>
+                                      <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">Hidrograma de cuenca: Caudal y lluvia</h3>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 truncate mt-0.5">Respuesta de caudal en exutorio y lluvia diaria</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedChartModal("STREAMFLOW")}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+                                    title="Inspeccionar en modal"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="h-48 sm:h-52 w-full p-2">
+                                  {isLoadingResults ? (
+                                    <div className="h-full flex items-center justify-center text-slate-400 text-xs font-mono">
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> Cargando hidrograma...
+                                    </div>
+                                  ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <ComposedChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={9} tickLine={false} />
+                                        <YAxis yAxisId="left" stroke="#0d9488" fontSize={9} tickLine={false} />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#0284c7" fontSize={9} tickLine={false} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "10px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "10px" }} />
+                                        <Bar yAxisId="right" dataKey="precip_mm" name="Lluvia (mm)" fill="#0284c7" opacity={0.6} />
+                                        <Area yAxisId="left" type="monotone" dataKey="streamflow_m3s" name="Caudal (m³/s)" stroke="#0d9488" fill="#0d9488" fillOpacity={0.15} strokeWidth={1.5} />
+                                      </ComposedChart>
+                                    </ResponsiveContainer>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* 3. Fisiología Vegetal */}
+                              <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+                                <div className="p-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/60 dark:bg-slate-950/40">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-[9px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">Micro</span>
+                                      <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">Fisiología: Transpiración vs ET0</h3>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 truncate mt-0.5">Dinámica estomática celular y flujo de savia</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedChartModal("PLANT")}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+                                    title="Inspeccionar en modal"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="h-48 sm:h-52 w-full p-2">
+                                  {isLoadingResults ? (
+                                    <div className="h-full flex items-center justify-center text-slate-400 text-xs font-mono">
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> Cargando fisiología...
+                                    </div>
+                                  ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <ComposedChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={9} tickLine={false} />
+                                        <YAxis yAxisId="left" stroke="#059669" fontSize={9} tickLine={false} />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#0284c7" fontSize={9} tickLine={false} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "10px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "10px" }} />
+                                        <Line yAxisId="left" type="monotone" dataKey="potential_et_mm" name="Demanda ET0" stroke="#ea580c" strokeWidth={1.2} dot={false} strokeDasharray="3 3" />
+                                        <Line yAxisId="left" type="monotone" dataKey="plant_transpiration_mm" name="Transpiración" stroke="#059669" strokeWidth={1.8} dot={false} />
+                                        <Line yAxisId="right" type="monotone" dataKey="sap_flow_velocity_cmh" name="Savia (cm/h)" stroke="#0284c7" strokeWidth={1.2} dot={false} />
+                                      </ComposedChart>
+                                    </ResponsiveContainer>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* 4. Dinámica de Suelo y CWSI */}
+                              <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+                                <div className="p-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/60 dark:bg-slate-950/40">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-[9px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">Meso</span>
+                                      <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">Dinámica de suelo: Humedad θ y CWSI</h3>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 truncate mt-0.5">Umbrales de déficit: 0.25 (moderado) y 0.50 (crítico)</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedChartModal("SOIL")}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+                                    title="Inspeccionar en modal"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="h-48 sm:h-52 w-full p-2">
+                                  {isLoadingResults ? (
+                                    <div className="h-full flex items-center justify-center text-slate-400 text-xs font-mono">
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> Cargando suelo...
+                                    </div>
+                                  ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <ComposedChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={9} tickLine={false} />
+                                        <YAxis yAxisId="left" stroke="#0284c7" fontSize={9} tickLine={false} domain={[0, 45]} />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#e11d48" fontSize={9} tickLine={false} domain={[0, 1]} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "10px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "10px" }} />
+                                        <Area yAxisId="left" type="monotone" dataKey="soil_moisture_vol" name="Humedad θ (%)" stroke="#0284c7" fill="#0284c7" fillOpacity={0.15} strokeWidth={1.5} />
+                                        <Line yAxisId="right" type="monotone" dataKey="cwsi_stress_index" name="Estrés CWSI" stroke="#e11d48" strokeWidth={1.5} dot={false} />
+                                        <ReferenceLine yAxisId="right" y={0.25} stroke="#f59e0b" strokeDasharray="3 3" />
+                                        <ReferenceLine yAxisId="right" y={0.50} stroke="#ef4444" strokeDasharray="3 3" />
+                                      </ComposedChart>
+                                    </ResponsiveContainer>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           )}
-                        </div>
-                      )}
 
-                      {/* CHART 3: FISIOLOGÍA VEGETAL (MICROESCALA) - DUAL Y-AXES */}
-                      {(chartViewMode === "ALL" || chartViewMode === "PLANT") && (
-                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Sprout className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
-                                  Fisiología Vegetal: Transpiración Real vs Demanda Evaporativa (ET0) y Flujo de Savia
-                                </h3>
+                          {/* Modo SPOTLIGHT: Foco Único */}
+                          {chartLayout === "SPOTLIGHT" && (
+                            <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+                              <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/60 dark:bg-slate-950/40">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">
+                                    {chartViewMode === "STREAMFLOW" ? "Escala Macro" : chartViewMode === "PLANT" ? "Escala Micro" : chartViewMode === "SOIL" ? "Escala Meso" : "Validación USGS"}
+                                  </span>
+                                  <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    {chartViewMode === "STREAMFLOW" && "Hidrograma de cuenca: Caudal en exutorio y precipitación diaria"}
+                                    {chartViewMode === "PLANT" && "Fisiología vegetal: Transpiración foliar real vs demanda evaporativa (ET0)"}
+                                    {chartViewMode === "SOIL" && "Dinámica de suelo: Humedad volumétrica θ (%) e índice de estrés CWSI"}
+                                    {chartViewMode === "MONTHLY" && "Validación mensual: Aforo observado USGS vs Gemelo digital"}
+                                  </h3>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedChartModal(chartViewMode as any)}
+                                  className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer flex items-center gap-1 text-xs font-mono"
+                                  title="Inspeccionar en modal completo"
+                                >
+                                  <Maximize2 className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline">Inspeccionar</span>
+                                </button>
                               </div>
-                              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                                Contrasta la demanda meteorológica ($ET_0$, naranja, mm/d) con la transpiración real del maíz (verde, mm/d) en el eje izquierdo, y la velocidad de ascenso de savia por el tallo (azul, cm/h) en el eje derecho.
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-semibold shrink-0 self-start sm:self-auto">
-                              ESCALA MICRO
-                            </span>
-                          </div>
 
-                          {isLoadingResults ? (
-                            <div className="h-64 flex items-center justify-center text-zinc-400 text-xs">
-                              <Loader2 className="w-5 h-5 animate-spin mr-2 text-emerald-500" />
-                              Cargando curvas fisiológicas foliares...
-                            </div>
-                          ) : (
-                            <div className="h-64 w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={chartData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#d4d4d8" className="dark:stroke-zinc-800" vertical={false} />
-                                  <XAxis dataKey="date_str" stroke="#71717a" fontSize={10} tickLine={false} />
-                                  <YAxis
-                                    yAxisId="left"
-                                    stroke="#059669"
-                                    fontSize={10}
-                                    tickLine={false}
-                                    label={{ value: "Agua (mm/día)", angle: -90, position: "insideLeft", fill: "#059669", fontSize: 10 }}
-                                  />
-                                  <YAxis
-                                    yAxisId="right"
-                                    orientation="right"
-                                    stroke="#0284c7"
-                                    fontSize={10}
-                                    tickLine={false}
-                                    label={{ value: "Velocidad Savia (cm/h)", angle: 90, position: "insideRight", fill: "#0284c7", fontSize: 10 }}
-                                  />
-                                  <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e4e4e7", borderRadius: "8px", fontSize: "11px", color: "var(--foreground)" }} />
-                                  <Legend wrapperStyle={{ fontSize: "11px" }} />
-                                  <Line yAxisId="left" type="monotone" dataKey="potential_et_mm" name="Demanda Atmosférica ET0 (mm/d)" stroke="#ea580c" strokeWidth={1.5} dot={false} strokeDasharray="4 4" />
-                                  <Line yAxisId="left" type="monotone" dataKey="plant_transpiration_mm" name="Transpiración Real Cultivo (mm/d)" stroke="#059669" strokeWidth={2.5} dot={false} />
-                                  <Line yAxisId="right" type="monotone" dataKey="sap_flow_velocity_cmh" name="Velocidad Savia Xilema (cm/h)" stroke="#0284c7" strokeWidth={1.8} dot={false} />
-                                </ComposedChart>
-                              </ResponsiveContainer>
+                              <div className="h-72 sm:h-80 w-full p-3">
+                                {isLoadingResults && chartViewMode !== "MONTHLY" ? (
+                                  <div className="h-full flex items-center justify-center text-slate-400 text-xs font-mono">
+                                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Cargando serie temporal...
+                                  </div>
+                                ) : (
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    {chartViewMode === "MONTHLY" ? (
+                                      <LineChart data={monthlyComparisonData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="month" stroke="#9ca3af" fontSize={10} tickLine={false} />
+                                        <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "11px" }} />
+                                        <Line type="monotone" dataKey="observed_streamflow_m3s" name="Observado real (USGS)" stroke="#09090b" className="dark:stroke-slate-100" strokeWidth={2} dot={false} />
+                                        <Line type="monotone" dataKey="baseline_streamflow_m3s" name="Línea base sin acoplar" stroke="#ea580c" strokeWidth={1.5} dot={false} />
+                                        <Line type="monotone" dataKey="twin_streamflow_m3s" name="Gemelo multiescala" stroke="#059669" strokeWidth={2} dot={false} />
+                                        <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="Predicción híbrida ML" stroke="#7c3aed" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
+                                      </LineChart>
+                                    ) : chartViewMode === "STREAMFLOW" ? (
+                                      <ComposedChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={10} tickLine={false} />
+                                        <YAxis yAxisId="left" stroke="#0d9488" fontSize={10} tickLine={false} label={{ value: "Caudal (m³/s)", angle: -90, position: "insideLeft", fill: "#0d9488", fontSize: 10 }} />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#0284c7" fontSize={10} tickLine={false} label={{ value: "Lluvia (mm)", angle: 90, position: "insideRight", fill: "#0284c7", fontSize: 10 }} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "11px" }} />
+                                        <Bar yAxisId="right" dataKey="precip_mm" name="Precipitación diaria (mm)" fill="#0284c7" opacity={0.6} />
+                                        <Area yAxisId="left" type="monotone" dataKey="streamflow_m3s" name="Caudal simulado (m³/s)" stroke="#0d9488" fill="#0d9488" fillOpacity={0.15} strokeWidth={1.8} />
+                                      </ComposedChart>
+                                    ) : chartViewMode === "PLANT" ? (
+                                      <ComposedChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={10} tickLine={false} />
+                                        <YAxis yAxisId="left" stroke="#059669" fontSize={10} tickLine={false} label={{ value: "Agua (mm/d)", angle: -90, position: "insideLeft", fill: "#059669", fontSize: 10 }} />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#0284c7" fontSize={10} tickLine={false} label={{ value: "Savia (cm/h)", angle: 90, position: "insideRight", fill: "#0284c7", fontSize: 10 }} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "11px" }} />
+                                        <Line yAxisId="left" type="monotone" dataKey="potential_et_mm" name="Demanda atmosférica ET0 (mm/d)" stroke="#ea580c" strokeWidth={1.5} dot={false} strokeDasharray="3 3" />
+                                        <Line yAxisId="left" type="monotone" dataKey="plant_transpiration_mm" name="Transpiración real (mm/d)" stroke="#059669" strokeWidth={2} dot={false} />
+                                        <Line yAxisId="right" type="monotone" dataKey="sap_flow_velocity_cmh" name="Velocidad savia (cm/h)" stroke="#0284c7" strokeWidth={1.5} dot={false} />
+                                      </ComposedChart>
+                                    ) : (
+                                      <ComposedChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={10} tickLine={false} />
+                                        <YAxis yAxisId="left" stroke="#0284c7" fontSize={10} tickLine={false} domain={[0, 45]} label={{ value: "Humedad θ (%)", angle: -90, position: "insideLeft", fill: "#0284c7", fontSize: 10 }} />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#e11d48" fontSize={10} tickLine={false} domain={[0, 1]} label={{ value: "Estrés CWSI (0-1)", angle: 90, position: "insideRight", fill: "#e11d48", fontSize: 10 }} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "11px" }} />
+                                        <Area yAxisId="left" type="monotone" dataKey="soil_moisture_vol" name="Humedad volumétrica θ (%)" stroke="#0284c7" fill="#0284c7" fillOpacity={0.15} strokeWidth={1.8} />
+                                        <Line yAxisId="right" type="monotone" dataKey="cwsi_stress_index" name="Índice estrés CWSI" stroke="#e11d48" strokeWidth={1.8} dot={false} />
+                                        <ReferenceLine yAxisId="right" y={0.25} stroke="#f59e0b" strokeDasharray="3 3" />
+                                        <ReferenceLine yAxisId="right" y={0.50} stroke="#ef4444" strokeDasharray="3 3" />
+                                      </ComposedChart>
+                                    )}
+                                  </ResponsiveContainer>
+                                )}
+                              </div>
                             </div>
                           )}
-                        </div>
-                      )}
 
-                      {/* CHART 4: DINÁMICA DE HUMEDAD Y CWSI (MESOESCALA) - DUAL Y-AXES + REFERENCE LINES */}
-                      {(chartViewMode === "ALL" || chartViewMode === "SOIL") && (
-                        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Droplets className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
-                                  Dinámica Edáfica: Humedad Volumétrica del Suelo (θ %) e Índice de Estrés Hídrico (CWSI)
-                                </h3>
+                          {/* Modo STACK: Pila Vertical */}
+                          {chartLayout === "STACK" && (
+                            <div className="flex flex-col gap-4">
+                              {/* Gráfico 1: Validación Mensual USGS */}
+                              <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-2">
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                                  <div>
+                                    <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                      Validación mensual: Aforo observado USGS vs Gemelo digital multiescala
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                      Contraste directo contra la estación USGS 05451210 en el exutorio del río South Fork Iowa.
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedChartModal("MONTHLY")}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="h-60 w-full">
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={monthlyComparisonData}>
+                                      <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                      <XAxis dataKey="month" stroke="#9ca3af" fontSize={10} tickLine={false} />
+                                      <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} label={{ value: "Caudal (m³/s)", angle: -90, position: "insideLeft", fill: "#6b7280", fontSize: 10 }} />
+                                      <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
+                                      <Legend wrapperStyle={{ fontSize: "11px" }} />
+                                      <Line type="monotone" dataKey="observed_streamflow_m3s" name="Observado real (USGS)" stroke="#09090b" className="dark:stroke-slate-100" strokeWidth={2} dot={false} />
+                                      <Line type="monotone" dataKey="baseline_streamflow_m3s" name="Línea base sin acoplar" stroke="#ea580c" strokeWidth={1.5} dot={false} />
+                                      <Line type="monotone" dataKey="twin_streamflow_m3s" name="Gemelo multiescala" stroke="#059669" strokeWidth={2} dot={false} />
+                                      <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="Predicción híbrida ML" stroke="#7c3aed" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                </div>
                               </div>
-                              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                                Registra el contenido de agua en la zona radicular (% vol, eje izquierdo) y el índice de estrés CWSI del maíz (0 a 1, eje derecho). Valores de CWSI &gt; 0.25 marcan estrés hídrico; &gt; 0.50 cierre estomático crítico.
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800 font-semibold shrink-0 self-start sm:self-auto">
-                              ESCALA MESO (PARCELA)
-                            </span>
-                          </div>
 
-                          {isLoadingResults ? (
-                            <div className="h-64 flex items-center justify-center text-zinc-400 text-xs">
-                              <Loader2 className="w-5 h-5 animate-spin mr-2 text-cyan-500" />
-                              Cargando perfil edáfico y estrés hídrico...
-                            </div>
-                          ) : (
-                            <div className="h-64 w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart data={chartData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#d4d4d8" className="dark:stroke-zinc-800" vertical={false} />
-                                  <XAxis dataKey="date_str" stroke="#71717a" fontSize={10} tickLine={false} />
-                                  <YAxis
-                                    yAxisId="left"
-                                    stroke="#0284c7"
-                                    fontSize={10}
-                                    tickLine={false}
-                                    domain={[0, 45]}
-                                    label={{ value: "Humedad Suelo θ (% vol)", angle: -90, position: "insideLeft", fill: "#0284c7", fontSize: 10 }}
-                                  />
-                                  <YAxis
-                                    yAxisId="right"
-                                    orientation="right"
-                                    stroke="#e11d48"
-                                    fontSize={10}
-                                    tickLine={false}
-                                    domain={[0, 1]}
-                                    label={{ value: "Estrés CWSI (0 a 1)", angle: 90, position: "insideRight", fill: "#e11d48", fontSize: 10 }}
-                                  />
-                                  <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e4e4e7", borderRadius: "8px", fontSize: "11px", color: "var(--foreground)" }} />
-                                  <Legend wrapperStyle={{ fontSize: "11px" }} />
-                                  <Area yAxisId="left" type="monotone" dataKey="soil_moisture_vol" name="Humedad Volumétrica Suelo θ (%)" stroke="#0284c7" fill="#0284c7" fillOpacity={0.2} strokeWidth={2} />
-                                  <Line yAxisId="right" type="monotone" dataKey="cwsi_stress_index" name="Índice Estrés Hídrico CWSI (0-1)" stroke="#e11d48" strokeWidth={2} dot={false} />
-                                  <ReferenceLine yAxisId="right" y={0.25} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: "Estrés Moderado (0.25)", position: "top", fill: "#f59e0b", fontSize: 9 }} />
-                                  <ReferenceLine yAxisId="right" y={0.50} stroke="#ef4444" strokeDasharray="3 3" label={{ value: "Estrés Severo (0.50)", position: "top", fill: "#ef4444", fontSize: 9 }} />
-                                </ComposedChart>
-                              </ResponsiveContainer>
+                              {/* Gráfico 2: Hidrograma de Cuenca */}
+                              <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-2">
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                                  <div>
+                                    <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                      Hidrograma de cuenca: Caudal en exutorio y precipitación diaria
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                      Respuesta hidrológica superficial y recesión del caudal base ante eventos de lluvia.
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedChartModal("STREAMFLOW")}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="h-60 w-full">
+                                  {isLoadingResults ? (
+                                    <div className="h-full flex items-center justify-center text-slate-400 text-xs">
+                                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Cargando hidrograma...
+                                    </div>
+                                  ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <ComposedChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={10} tickLine={false} />
+                                        <YAxis yAxisId="left" stroke="#0d9488" fontSize={10} tickLine={false} label={{ value: "Caudal (m³/s)", angle: -90, position: "insideLeft", fill: "#0d9488", fontSize: 10 }} />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#0284c7" fontSize={10} tickLine={false} label={{ value: "Lluvia (mm)", angle: 90, position: "insideRight", fill: "#0284c7", fontSize: 10 }} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "11px" }} />
+                                        <Bar yAxisId="right" dataKey="precip_mm" name="Precipitación diaria (mm)" fill="#0284c7" opacity={0.6} />
+                                        <Area yAxisId="left" type="monotone" dataKey="streamflow_m3s" name="Caudal simulado (m³/s)" stroke="#0d9488" fill="#0d9488" fillOpacity={0.15} strokeWidth={1.8} />
+                                      </ComposedChart>
+                                    </ResponsiveContainer>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Gráfico 3: Fisiología de Cultivo */}
+                              <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-2">
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                                  <div>
+                                    <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                      Fisiología vegetal: Transpiración foliar real vs demanda evaporativa (ET0) y flujo de savia
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                      Dinámica estomática del maíz acoplada con el flujo xilemático de la población celular.
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedChartModal("PLANT")}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="h-60 w-full">
+                                  {isLoadingResults ? (
+                                    <div className="h-full flex items-center justify-center text-slate-400 text-xs">
+                                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Cargando fisiología...
+                                    </div>
+                                  ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <ComposedChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={10} tickLine={false} />
+                                        <YAxis yAxisId="left" stroke="#059669" fontSize={10} tickLine={false} label={{ value: "Agua (mm/d)", angle: -90, position: "insideLeft", fill: "#059669", fontSize: 10 }} />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#0284c7" fontSize={10} tickLine={false} label={{ value: "Savia (cm/h)", angle: 90, position: "insideRight", fill: "#0284c7", fontSize: 10 }} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "11px" }} />
+                                        <Line yAxisId="left" type="monotone" dataKey="potential_et_mm" name="Demanda atmosférica ET0 (mm/d)" stroke="#ea580c" strokeWidth={1.5} dot={false} strokeDasharray="3 3" />
+                                        <Line yAxisId="left" type="monotone" dataKey="plant_transpiration_mm" name="Transpiración real (mm/d)" stroke="#059669" strokeWidth={2} dot={false} />
+                                        <Line yAxisId="right" type="monotone" dataKey="sap_flow_velocity_cmh" name="Velocidad savia (cm/h)" stroke="#0284c7" strokeWidth={1.5} dot={false} />
+                                      </ComposedChart>
+                                    </ResponsiveContainer>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Gráfico 4: Dinámica de Suelo y CWSI */}
+                              <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-2">
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                                  <div>
+                                    <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                                      Dinámica de suelo: Humedad volumétrica θ (%) e índice de estrés hídrico CWSI
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                      Umbrales de estrés: CWSI &gt; 0.25 déficit moderado; CWSI &gt; 0.50 cierre estomático crítico.
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedChartModal("SOIL")}
+                                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition cursor-pointer"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <div className="h-60 w-full">
+                                  {isLoadingResults ? (
+                                    <div className="h-full flex items-center justify-center text-slate-400 text-xs">
+                                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Cargando suelo...
+                                    </div>
+                                  ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <ComposedChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={10} tickLine={false} />
+                                        <YAxis yAxisId="left" stroke="#0284c7" fontSize={10} tickLine={false} domain={[0, 45]} label={{ value: "Humedad θ (%)", angle: -90, position: "insideLeft", fill: "#0284c7", fontSize: 10 }} />
+                                        <YAxis yAxisId="right" orientation="right" stroke="#e11d48" fontSize={10} tickLine={false} domain={[0, 1]} label={{ value: "Estrés CWSI (0-1)", angle: 90, position: "insideRight", fill: "#e11d48", fontSize: 10 }} />
+                                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
+                                        <Legend wrapperStyle={{ fontSize: "11px" }} />
+                                        <Area yAxisId="left" type="monotone" dataKey="soil_moisture_vol" name="Humedad volumétrica θ (%)" stroke="#0284c7" fill="#0284c7" fillOpacity={0.15} strokeWidth={1.8} />
+                                        <Line yAxisId="right" type="monotone" dataKey="cwsi_stress_index" name="Índice estrés CWSI" stroke="#e11d48" strokeWidth={1.8} dot={false} />
+                                        <ReferenceLine yAxisId="right" y={0.25} stroke="#f59e0b" strokeDasharray="3 3" />
+                                        <ReferenceLine yAxisId="right" y={0.50} stroke="#ef4444" strokeDasharray="3 3" />
+                                      </ComposedChart>
+                                    </ResponsiveContainer>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
                       )}
                     </>
                   )}
+
+                  {/* CONTENIDO DE LA SUB-PESTAÑA 2: DIAGNÓSTICO CIENTÍFICO (LANGCHAIN) */}
+                  {simDetailTab === "AI" && (
+                    <AIInsightsCard
+                      key={selectedSim.id}
+                      simulationId={selectedSim.id}
+                      initialInsights={(selectedSim.provenance as Record<string, any>)?.ai_insights}
+                    />
+                  )}
+
+                  {/* CONTENIDO DE LA SUB-PESTAÑA 3: ESPECIFICACIONES & PROCEDENCIA */}
+                  {simDetailTab === "SPECIFICATIONS" && (
+                    <div className="flex flex-col gap-4">
+                      {/* Tarjetas de Transferencia de Escala */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                        <div className="p-3.5 rounded-none border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+                          <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <Sprout className="w-3.5 h-3.5 text-emerald-600" />
+                            Micro a meso: Planta a parcela
+                          </span>
+                          <div className="mt-2 space-y-1 text-slate-600 dark:text-slate-400">
+                            <div>Población simulada: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.plant_count?.toLocaleString()} plantas FSPM</strong></div>
+                            <div>Índice foliar medio: <strong className="text-slate-800 dark:text-slate-200">{Number(selectedSim.field_aggregates?.mean_lai ?? 0).toFixed(3)} m²/m²</strong></div>
+                            <div>Profundidad radicular: <strong className="text-slate-800 dark:text-slate-200">{Number(selectedSim.field_aggregates?.mean_root_depth_cm ?? 0).toFixed(1)} cm</strong></div>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-none border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+                          <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <Droplets className="w-3.5 h-3.5 text-blue-600" />
+                            Meso a macro: Parcela a HRU
+                          </span>
+                          <div className="mt-2 space-y-1 text-slate-600 dark:text-slate-400">
+                            <div>Unidades de respuesta de suelo: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.hru_aggregates?.count ?? 0} HRUs</strong></div>
+                            <div>Fracción de área de cuenca: <strong className="text-slate-800 dark:text-slate-200">{Number(selectedSim.hru_aggregates?.area_fraction_sum ?? 0).toFixed(2)}</strong></div>
+                            <div>Número de curva SCS: <strong className="text-slate-800 dark:text-slate-200">CN = {(selectedSim as any).parameters?.curve_number ?? 74}</strong></div>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-none border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+                          <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <Waves className="w-3.5 h-3.5 text-teal-600" />
+                            Macro a aforo: Contraste USGS
+                          </span>
+                          <div className="mt-2 space-y-1 text-slate-600 dark:text-slate-400">
+                            <div>Estación de referencia: <strong className="text-slate-800 dark:text-slate-200">USGS {selectedSim.station_id || "05451210"}</strong></div>
+                            <div>Meses alineados de aforo: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.aligned_months ?? 0} meses</strong></div>
+                            <div>Reducción de RMSE vs baseline: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.improvement_percent?.value?.toFixed?.(2) ?? "0.00"}%</strong></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Parámetros Criptográficos y Datos de Entrada */}
+                      <div className="p-4 rounded-none border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-3 text-xs">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                          <span className="font-semibold text-slate-900 dark:text-slate-100">
+                            Auditoría de parámetros y procedencia
+                          </span>
+                          <span className="font-mono text-[10px] text-slate-400">
+                            Identificador: {selectedSim.id}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                          <div>
+                            <span className="text-slate-400 block text-[10px]">Semilla estocástica</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">seed = {selectedSim.seed}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[10px]">Motor numérico</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedSim.hydrology_backend}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[10px]">Fuente climática</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedSim.climate_source || "SINTÉTICO"}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[10px]">Duración total</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedSim.duration_days} días</span>
+                          </div>
+                        </div>
+
+                        {/* Detalle JSON de Procedencia */}
+                        <details className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-slate-500">
+                          <summary className="cursor-pointer font-medium hover:text-slate-800 dark:hover:text-slate-300">
+                            Inspeccionar registro completo de procedencia (JSON)
+                          </summary>
+                          <pre className="mt-2 p-3 rounded-none bg-slate-950 text-slate-300 font-mono text-[11px] overflow-x-auto max-h-56">
+                            {JSON.stringify(selectedSim.provenance, null, 2)}
+                          </pre>
+                        </details>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
-                <div className="p-16 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-800 text-center text-zinc-500 text-xs bg-white dark:bg-zinc-900/40 flex flex-col items-center justify-center gap-2">
-                  <Sliders className="w-8 h-8 text-zinc-400 stroke-1" />
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 text-sm">Ninguna simulación seleccionada</span>
-                  <span>Selecciona una corrida en la lista de la izquierda para desplegar su balance hídrico y gráficos multiescala.</span>
+                <div className="p-12 rounded-none border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+                  Selecciona una corrida en la lista de la izquierda para desplegar sus series temporales y diagnóstico.
                 </div>
               )}
             </div>
@@ -1520,55 +1599,175 @@ export default function SimulationsPage() {
         <StatisticalBatteryPanel report={finalReport} />
       )}
 
-      {/* Modal: New Simulation Run */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden">
-          <div className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col text-zinc-900 dark:text-zinc-100 overflow-hidden">
-            {/* Header Fijo */}
-            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/40">
+      {/* Modal Interactivo de Telemetría e Inspección Detallada */}
+      {expandedChartModal && selectedSim && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+          <div className="w-full max-w-5xl max-h-[92vh] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-2xl flex flex-col text-slate-900 dark:text-slate-100 overflow-hidden">
+            {/* Cabecera del Modal de Gráfico */}
+            <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-                  <Sliders className="w-4 h-4" />
-                </div>
+                <span className="font-mono text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">
+                  {expandedChartModal === "MONTHLY" ? "Validación USGS" : expandedChartModal === "STREAMFLOW" ? "Escala Macro" : expandedChartModal === "PLANT" ? "Escala Micro" : "Escala Meso"}
+                </span>
                 <div>
-                  <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                    Crear una corrida
+                  <h3 className="font-serif font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                    {expandedChartModal === "MONTHLY" && "Validación mensual: Aforo observado USGS vs Gemelo digital multiescala"}
+                    {expandedChartModal === "STREAMFLOW" && "Hidrograma de cuenca: Caudal en exutorio y precipitación diaria"}
+                    {expandedChartModal === "PLANT" && "Fisiología vegetal: Transpiración foliar real vs demanda evaporativa (ET0) y flujo de savia"}
+                    {expandedChartModal === "SOIL" && "Dinámica de suelo: Humedad volumétrica θ (%) e índice de estrés hídrico CWSI"}
                   </h3>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Primero elige cómo calcular; luego verás solamente las opciones que sí se aplican.
+                  <p className="text-[11px] text-slate-500 font-mono">
+                    Experimento: {selectedSim.name} · Periodo: {selectedSim.start_date || "2018-06-01"} a {selectedSim.end_date || "2018-08-31"}
                   </p>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">[Esc para cerrar]</span>
+                <button
+                  type="button"
+                  onClick={() => setExpandedChartModal(null)}
+                  className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition cursor-pointer"
+                  title="Cerrar modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Cuerpo del Modal con Gráfico en Alta Resolución */}
+            <div className="p-5 flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto">
+              <div className="h-80 sm:h-[400px] w-full bg-slate-50/40 dark:bg-slate-950/40 p-3 border border-slate-200 dark:border-slate-800">
+                {isLoadingResults && expandedChartModal !== "MONTHLY" ? (
+                  <div className="h-full flex items-center justify-center text-slate-400 text-xs font-mono">
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" /> Cargando telemetría en alta resolución...
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    {expandedChartModal === "MONTHLY" ? (
+                      <LineChart data={monthlyComparisonData}>
+                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                        <XAxis dataKey="month" stroke="#9ca3af" fontSize={11} tickLine={false} />
+                        <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} label={{ value: "Caudal mensual (m³/s)", angle: -90, position: "insideLeft", fill: "#6b7280", fontSize: 11 }} />
+                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "12px", color: "var(--foreground)" }} />
+                        <Legend wrapperStyle={{ fontSize: "12px" }} />
+                        <Line type="monotone" dataKey="observed_streamflow_m3s" name="Observado real (USGS 05451210)" stroke="#09090b" className="dark:stroke-slate-100" strokeWidth={2.5} dot={{ r: 4 }} />
+                        <Line type="monotone" dataKey="baseline_streamflow_m3s" name="Línea base sin acoplar" stroke="#ea580c" strokeWidth={2} dot={{ r: 3 }} />
+                        <Line type="monotone" dataKey="twin_streamflow_m3s" name="Gemelo digital multiescala" stroke="#059669" strokeWidth={2.5} dot={{ r: 4 }} />
+                        <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="Predicción híbrida ML" stroke="#7c3aed" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} />
+                      </LineChart>
+                    ) : expandedChartModal === "STREAMFLOW" ? (
+                      <ComposedChart data={chartData}>
+                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={11} tickLine={false} />
+                        <YAxis yAxisId="left" stroke="#0d9488" fontSize={11} tickLine={false} label={{ value: "Caudal descargado (m³/s)", angle: -90, position: "insideLeft", fill: "#0d9488", fontSize: 11 }} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#0284c7" fontSize={11} tickLine={false} label={{ value: "Precipitación diaria (mm)", angle: 90, position: "insideRight", fill: "#0284c7", fontSize: 11 }} />
+                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "12px", color: "var(--foreground)" }} />
+                        <Legend wrapperStyle={{ fontSize: "12px" }} />
+                        <Bar yAxisId="right" dataKey="precip_mm" name="Precipitación diaria (mm)" fill="#0284c7" opacity={0.65} />
+                        <Area yAxisId="left" type="monotone" dataKey="streamflow_m3s" name="Caudal simulado (m³/s)" stroke="#0d9488" fill="#0d9488" fillOpacity={0.18} strokeWidth={2.2} />
+                      </ComposedChart>
+                    ) : expandedChartModal === "PLANT" ? (
+                      <ComposedChart data={chartData}>
+                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={11} tickLine={false} />
+                        <YAxis yAxisId="left" stroke="#059669" fontSize={11} tickLine={false} label={{ value: "Lámina de agua (mm/d)", angle: -90, position: "insideLeft", fill: "#059669", fontSize: 11 }} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#0284c7" fontSize={11} tickLine={false} label={{ value: "Velocidad de savia (cm/h)", angle: 90, position: "insideRight", fill: "#0284c7", fontSize: 11 }} />
+                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "12px", color: "var(--foreground)" }} />
+                        <Legend wrapperStyle={{ fontSize: "12px" }} />
+                        <Line yAxisId="left" type="monotone" dataKey="potential_et_mm" name="Demanda atmosférica ET0 (mm/d)" stroke="#ea580c" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+                        <Line yAxisId="left" type="monotone" dataKey="plant_transpiration_mm" name="Transpiración real maíz (mm/d)" stroke="#059669" strokeWidth={2.5} dot={false} />
+                        <Line yAxisId="right" type="monotone" dataKey="sap_flow_velocity_cmh" name="Velocidad de flujo xilemático (cm/h)" stroke="#0284c7" strokeWidth={2} dot={false} />
+                      </ComposedChart>
+                    ) : (
+                      <ComposedChart data={chartData}>
+                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+                        <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={11} tickLine={false} />
+                        <YAxis yAxisId="left" stroke="#0284c7" fontSize={11} tickLine={false} domain={[0, 45]} label={{ value: "Humedad volumétrica θ (%)", angle: -90, position: "insideLeft", fill: "#0284c7", fontSize: 11 }} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#e11d48" fontSize={11} tickLine={false} domain={[0, 1]} label={{ value: "Índice de estrés CWSI (0-1)", angle: 90, position: "insideRight", fill: "#e11d48", fontSize: 11 }} />
+                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "12px", color: "var(--foreground)" }} />
+                        <Legend wrapperStyle={{ fontSize: "12px" }} />
+                        <Area yAxisId="left" type="monotone" dataKey="soil_moisture_vol" name="Humedad volumétrica edáfica θ (%)" stroke="#0284c7" fill="#0284c7" fillOpacity={0.2} strokeWidth={2.2} />
+                        <Line yAxisId="right" type="monotone" dataKey="cwsi_stress_index" name="Índice de estrés hídrico CWSI" stroke="#e11d48" strokeWidth={2.2} dot={false} />
+                        <ReferenceLine yAxisId="right" y={0.25} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: "Umbral Déficit (0.25)", fill: "#f59e0b", fontSize: 10 }} />
+                        <ReferenceLine yAxisId="right" y={0.50} stroke="#ef4444" strokeDasharray="4 4" label={{ value: "Cierre Estomático (0.50)", fill: "#ef4444", fontSize: 10 }} />
+                      </ComposedChart>
+                    )}
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              {/* Barra de Estadísticas Clave del Gráfico Expandido */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 text-xs font-mono">
+                {expandedChartModal === "MONTHLY" ? (
+                  <>
+                    <div><span className="text-slate-400 block text-[10px]">Meses evaluados:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.aligned_months ?? 0} meses</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Reducción RMSE:</span><strong className="text-emerald-700 dark:text-emerald-400">{selectedSim.validation?.improvement_percent?.value?.toFixed?.(2) ?? "0.00"}%</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Criterio H1:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.criterion_met ? "CUMPLE (≥15%)" : "NO CUMPLE"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Estación:</span><strong className="text-slate-800 dark:text-slate-200">USGS 05451210</strong></div>
+                  </>
+                ) : expandedChartModal === "STREAMFLOW" ? (
+                  <>
+                    <div><span className="text-slate-400 block text-[10px]">Caudal pico:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.peak_streamflow_m3s != null ? `${Number(selectedSim.summary_metrics.peak_streamflow_m3s).toFixed(2)} m³/s` : "—"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Volumen descargado:</span><strong className="text-blue-700 dark:text-blue-400">{selectedSim.summary_metrics?.total_discharge_hm3 != null ? `${Number(selectedSim.summary_metrics.total_discharge_hm3).toFixed(1)} hm³` : "—"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Precipitación total:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.total_precip_mm != null ? `${Number(selectedSim.summary_metrics.total_precip_mm).toFixed(0)} mm` : "—"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Duración:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.duration_days} días</strong></div>
+                  </>
+                ) : expandedChartModal === "PLANT" ? (
+                  <>
+                    <div><span className="text-slate-400 block text-[10px]">Población modelada:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.plant_count?.toLocaleString()} plantas</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Evapotranspiración:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.total_actual_et_mm != null ? `${Number(selectedSim.summary_metrics.total_actual_et_mm).toFixed(1)} mm` : "—"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Índice foliar LAI:</span><strong className="text-emerald-700 dark:text-emerald-400">{Number(selectedSim.field_aggregates?.mean_lai ?? 0).toFixed(2)} m²/m²</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Rendimiento prox:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "—"}</strong></div>
+                  </>
+                ) : (
+                  <>
+                    <div><span className="text-slate-400 block text-[10px]">Estrés medio CWSI:</span><strong className="text-amber-700 dark:text-amber-400">{selectedSim.summary_metrics?.mean_cwsi != null ? Number(selectedSim.summary_metrics.mean_cwsi).toFixed(3) : "—"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Umbral estrés crítico:</span><strong className="text-rose-700 dark:text-rose-400">CWSI &gt; 0.50</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Profundidad raíz:</span><strong className="text-slate-800 dark:text-slate-200">{Number(selectedSim.field_aggregates?.mean_root_depth_cm ?? 0).toFixed(1)} cm</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Número de curva SCS:</span><strong className="text-slate-800 dark:text-slate-200">CN = {(selectedSim as any).parameters?.curve_number ?? 74}</strong></div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Configuración de Corrida de Simulación */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+          <div className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-none shadow-none flex flex-col text-slate-900 dark:text-slate-100 overflow-hidden">
+            {/* Cabecera del Modal */}
+            <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40">
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                  Configurar corrida de simulación
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Define la cuenca, periodo temporal, población de cultivo y motor hidrológico.
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer text-base"
+                className="w-7 h-7 rounded-none flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               >
                 ✕
               </button>
             </div>
 
-            {/* Contenido con Scroll Propio e Independiente */}
-            <form id="simulation-form" onSubmit={handleCreateSimulation} className="flex-1 min-h-0 overflow-y-auto p-6 flex flex-col gap-5 text-xs">
-              {/* Tarjeta 1: Identificación y Ámbito Espaciotemporal */}
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 flex flex-col gap-4">
-                <div className="flex items-center gap-2 pb-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
-                  <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
-                    1
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">
-                      Identificación y Horizonte Temporal de Simulación
-                    </h4>
-                    <p className="text-[10px] text-zinc-500">
-                      Define el experimento, la cuenca de estudio y el periodo temporal según la Ficha Técnica (ventanas de 3 o más meses).
-                    </p>
-                  </div>
-                </div>
+            {/* Formulario */}
+            <form id="simulation-form" onSubmit={handleCreateSimulation} className="flex-1 min-h-0 overflow-y-auto p-5 flex flex-col gap-4 text-xs">
+              {/* Sección 1: Identificación y Horizonte */}
+              <div className="p-3.5 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col gap-3">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  1. Ámbito temporal y cuenca de estudio
+                </span>
 
                 <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                    Nombre del Experimento *
+                  <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                    Nombre del experimento *
                   </label>
                   <input
                     type="text"
@@ -1576,24 +1775,24 @@ export default function SimulationsPage() {
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="e.g. Evaluación multiescala maíz con siembra directa SSP2-4.5"
-                    className="w-full px-3.5 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs"
+                    className="w-full px-3 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-slate-400"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Cuenca Hidrográfica Representativa
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Cuenca hidrográfica
                     </label>
                     <select
                       value={formWatershedId}
                       onChange={(e) => {
                         const watershedId = e.target.value;
                         setFormWatershedId(watershedId);
-                        const gauge = watersheds.find((item) => item.id === watershedId)?.dem_metadata?.gauge;
+                        const gauge = watersheds.find((w) => w.id === watershedId)?.dem_metadata?.gauge;
                         setFormStationId(typeof gauge === "string" ? gauge : "");
                       }}
-                      className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     >
                       {watersheds.map((w) => (
                         <option key={w.id} value={w.id}>
@@ -1604,196 +1803,105 @@ export default function SimulationsPage() {
                   </div>
 
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Estación USGS de Aforo (Gauge)
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Estación USGS de aforo
                     </label>
                     <input
                       type="text"
-                      inputMode="numeric"
-                      pattern="\d{8,15}"
                       value={formStationId}
                       onChange={(e) => setFormStationId(e.target.value)}
                       placeholder="05451210"
-                      className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs"
+                      className="w-full px-2.5 py-1.5 text-xs font-mono rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
 
-                {/* Horizontes Temporales Estandarizados (Ficha Técnica) */}
-                <div className="flex flex-col gap-2 pt-1">
-                  <div className="flex items-center justify-between">
-                    <label className="block font-mono uppercase text-zinc-700 dark:text-zinc-300 font-bold text-[10px] tracking-wide">
-                      Horizontes Fijos del Protocolo Científico
-                    </label>
-                    <span className="text-[10px] text-zinc-400 font-mono hidden sm:inline">
-                      Ficha Técnica: ventanas fijas de 3 a más meses
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-                    {SIMULATION_PERIOD_PRESETS.map((preset) => {
-                      const isSelected = selectedPeriodPreset === preset.id;
+                {/* Presets de Periodo */}
+                <div className="flex flex-col gap-1.5 pt-1">
+                  <label className="block text-slate-600 dark:text-slate-400 font-medium text-[11px]">
+                    Horizonte temporal estandarizado
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                    {SIMULATION_PERIOD_PRESETS.map((p) => {
+                      const isSel = selectedPeriodPreset === p.id;
                       return (
                         <button
-                          key={preset.id}
+                          key={p.id}
                           type="button"
-                          onClick={() => handleSelectPeriodPreset(preset)}
-                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between gap-1.5 ${
-                            isSelected
-                              ? "bg-emerald-50/80 dark:bg-emerald-950/60 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-xs ring-2 ring-emerald-500/20"
-                              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 text-zinc-700 dark:text-zinc-300"
+                          onClick={() => handleSelectPeriodPreset(p)}
+                          className={`p-2 rounded-none border text-left transition cursor-pointer flex flex-col justify-between ${
+                            isSel
+                              ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 border-slate-900 dark:border-slate-100 font-medium"
+                              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300"
                           }`}
                         >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-xs font-bold truncate">{preset.label}</span>
-                            <span
-                              className={`text-[9px] font-mono px-1 py-0.2 rounded font-semibold shrink-0 ${
-                                isSelected
-                                  ? "bg-emerald-200/80 dark:bg-emerald-800/80 text-emerald-900 dark:text-emerald-100"
-                                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                              }`}
-                            >
-                              {preset.durationBadge}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-tight">
-                            {preset.shortDesc}
-                          </span>
+                          <span className="text-xs font-semibold">{p.label}</span>
+                          <span className="text-[10px] opacity-75">{p.durationBadge}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Fechas Manuales y Sincronizadas */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Fecha de Inicio *
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Fecha de inicio
                     </label>
                     <input
                       type="date"
                       required
                       value={formStartDate}
                       onChange={(e) => handleStartDateChange(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs font-mono"
+                      className="w-full px-2.5 py-1.5 text-xs font-mono rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Fecha de Término *
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Fecha de término
                     </label>
                     <input
                       type="date"
                       required
                       value={formEndDate}
-                      onChange={(e) => handleEndDateChange(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs font-mono"
+                      onChange={(e) => setFormEndDate(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs font-mono rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
-
-                {/* Diagnóstico del Periodo según la Ficha Técnica */}
-                {formStartDate && formEndDate && (
-                  <div
-                    className={`p-3 rounded-xl border flex flex-col gap-1.5 transition ${
-                      Date.parse(`${formEndDate}T00:00:00Z`) < Date.parse(`${formStartDate}T00:00:00Z`)
-                        ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300"
-                        : "bg-gradient-to-r from-emerald-50/90 via-white to-cyan-50/90 dark:from-emerald-950/40 dark:via-zinc-900 dark:to-cyan-950/40 border-emerald-300 dark:border-emerald-800 text-zinc-800 dark:text-zinc-200"
-                    }`}
-                  >
-                    {Date.parse(`${formEndDate}T00:00:00Z`) < Date.parse(`${formStartDate}T00:00:00Z`) ? (
-                      <div className="flex items-center gap-2 text-xs font-semibold">
-                        <AlertCircle className="w-4 h-4 text-rose-600" />
-                        <span>Error en rango de fechas: La fecha de término no puede ser anterior a la fecha de inicio.</span>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-1.5 font-bold text-xs text-zinc-900 dark:text-zinc-100">
-                            <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                            <span>
-                              Horizonte Calculado:{" "}
-                              <b className="font-mono text-emerald-700 dark:text-emerald-400">
-                                {Math.max(
-                                  0,
-                                  Math.floor(
-                                    (Date.parse(`${formEndDate}T00:00:00Z`) - Date.parse(`${formStartDate}T00:00:00Z`)) / 86_400_000
-                                  ) + 1
-                                )}{" "}
-                                días
-                              </b>{" "}
-                              (
-                              {(
-                                Math.max(
-                                  0,
-                                  Math.floor(
-                                    (Date.parse(`${formEndDate}T00:00:00Z`) - Date.parse(`${formStartDate}T00:00:00Z`)) / 86_400_000
-                                  ) + 1
-                                ) / 30.4
-                              ).toFixed(1)}{" "}
-                              meses hidrológicos)
-                            </span>
-                          </div>
-
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold">
-                            {SIMULATION_PERIOD_PRESETS.find((p) => p.id === selectedPeriodPreset)?.protocolBadge ?? "Horizonte Personalizado"}
-                          </span>
-                        </div>
-
-                        <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                          {SIMULATION_PERIOD_PRESETS.find((p) => p.id === selectedPeriodPreset)?.scientificPurpose ??
-                            (Math.floor((Date.parse(`${formEndDate}T00:00:00Z`) - Date.parse(`${formStartDate}T00:00:00Z`)) / 86_400_000) + 1 < 90
-                              ? "⚠️ Atención: Periodos menores a 3 meses (90 días) pueden no capturar el ciclo completo de transpiración y estrés de la planta ni la dinámica mensual de escorrentía para validar la hipótesis H1."
-                              : "Horizonte temporal adecuado para la captura del balance hídrico multiescala planta-cuenca.")}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
 
-              {/* Tarjeta 2: Motor de Simulación y Clima */}
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 flex flex-col gap-3.5">
-                <div className="flex items-center gap-2 pb-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
-                  <div className="w-6 h-6 rounded-md bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-400 flex items-center justify-center font-bold text-xs">
-                    2
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">
-                      Motor de Simulación y Forzamiento Climático
-                    </h4>
-                    <p className="text-[10px] text-zinc-500">
-                      Selecciona la arquitectura de cálculo hidrológico y la procedencia de las series de temperatura y precipitación.
-                    </p>
-                  </div>
-                </div>
+              {/* Sección 2: Motor Hidrológico y Clima */}
+              <div className="p-3.5 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col gap-3">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  2. Motor numérico y escenario climático
+                </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Método de Cálculo Hidrológico
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Motor hidrológico
                     </label>
                     <select
                       value={formHydrologyBackend}
                       onChange={(e) => changeHydrologyBackend(e.target.value as "SIMPLIFIED" | "SWAT_PLUS")}
-                      className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs font-medium"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-medium"
                     >
-                      <option value="SIMPLIFIED">Exploración Rápida (Gemelo Multiescala Acoplado)</option>
+                      <option value="SIMPLIFIED">Gemelo Digital Multiescala Acoplado</option>
                       <option value="SWAT_PLUS" disabled={capabilities.swat_plus?.status !== "ACTIVE"}>
-                        Ejecución Física SWAT+ — {capabilities.swat_plus?.status ?? "No disponible"}
+                        Simulador Físico SWAT+ ({capabilities.swat_plus?.status ?? "No disponible"})
                       </option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Escenario Climático {usesSimplifiedModel ? "" : "(Referencia en Manifiesto)"}
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Escenario climático
                     </label>
                     <select
                       value={formScenarioId}
                       onChange={(e) => setFormScenarioId(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     >
                       {scenarios.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -1804,66 +1912,50 @@ export default function SimulationsPage() {
                   </div>
                 </div>
 
-                {/* SWAT+ Specific Config */}
                 {formHydrologyBackend === "SWAT_PLUS" ? (
-                  <div className="rounded-xl border border-purple-200 bg-purple-50/70 p-3.5 dark:border-purple-900/60 dark:bg-purple-950/30 flex flex-col gap-2">
-                    <label className="block font-mono uppercase text-[10px] text-purple-900 dark:text-purple-300 font-bold">
-                      Modalidad de Corrida SWAT+
-                    </label>
+                  <div className="p-3 rounded-none border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/20 text-xs text-purple-900 dark:text-purple-200">
+                    <span className="font-semibold block mb-1">Modalidad SWAT+</span>
                     <select
                       value={formSwatRunType}
                       onChange={(e) => setFormSwatRunType(e.target.value as SwatRunType)}
-                      className="w-full rounded-lg border border-purple-300 bg-white px-3 py-2 text-xs text-zinc-900 dark:border-purple-800 dark:bg-zinc-950 dark:text-zinc-100"
+                      className="w-full rounded-none border border-purple-300 dark:border-purple-800 bg-white dark:bg-slate-950 px-2 py-1 text-xs text-slate-900 dark:text-slate-100"
                     >
-                      <option value="SWAT_MULTISCALE_COUPLED">Comparar cultivo acoplado contra un control (Doble Corrida)</option>
-                      <option value="SWAT_STANDARD_BASELINE">Solo control SWAT+ físico (sin sobreescritura de parámetros)</option>
+                      <option value="SWAT_MULTISCALE_COUPLED">Acoplamiento bidireccional (Doble corrida con plants.plt)</option>
+                      <option value="SWAT_STANDARD_BASELINE">Control SWAT+ físico sin sobreescritura</option>
                     </select>
-                    <p className="text-[10px] text-purple-800 dark:text-purple-300 leading-relaxed">
-                      💡 <b>Acoplamiento bidireccional:</b> Genera una réplica aislada de <code>plants.plt</code> inyectando los parámetros fenológicos derivados del cultivo antes de invocar el binario SWAT+.
-                    </p>
                   </div>
                 ) : (
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Fuente de Forzamiento Climático
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Fuente de forzamiento meteorológico
                     </label>
                     <select
                       value={formClimateSource}
-                      onChange={(e) => setFormClimateSource(e.target.value as "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED")}
-                      className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs"
+                      onChange={(e) => setFormClimateSource(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     >
                       <option value="SYNTHETIC">SYNTHETIC — Generador estocástico reproducible con estacionalidad de Iowa</option>
                       <option value="OBSERVED" disabled={!hasObservedForcing}>
-                        OBSERVED — {hasObservedForcing ? "CHIRPS / GridMET observado disponible" : "No disponible: Requiere dataset CHIRPS"}
+                        OBSERVED — {hasObservedForcing ? "CHIRPS / GridMET observado disponible" : "Requiere dataset CHIRPS"}
                       </option>
                       <option value="CMIP6_FILE" disabled={!hasCmip6Forcing}>
-                        CMIP6_FILE — {hasCmip6Forcing ? "Proyecciones NEX-GDDP-CMIP6 disponibles" : "No disponible: Requiere dataset CMIP6"}
+                        CMIP6_FILE — {hasCmip6Forcing ? "Proyecciones NEX-GDDP-CMIP6" : "Requiere dataset CMIP6"}
                       </option>
                     </select>
                   </div>
                 )}
               </div>
 
-              {/* Tarjeta 3: Fisiología Vegetal y Práctica Agronómica */}
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 flex flex-col gap-3.5">
-                <div className="flex items-center gap-2 pb-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
-                  <div className="w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold text-xs">
-                    3
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">
-                      Fisiología Vegetal y Manejo Agrícola
-                    </h4>
-                    <p className="text-[10px] text-zinc-500">
-                      Configura la densidad de la población celular y las prácticas de labranza o cobertura.
-                    </p>
-                  </div>
-                </div>
+              {/* Sección 3: Fisiología de Cultivo y Parámetros */}
+              <div className="p-3.5 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col gap-3">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  3. Fisiología vegetal y manejo agronómico
+                </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Población de Plantas ({formPlantCount.toLocaleString()})
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Población de plantas
                     </label>
                     <input
                       type="number"
@@ -1871,341 +1963,53 @@ export default function SimulationsPage() {
                       max={10000}
                       value={formPlantCount}
                       onChange={(e) => setFormPlantCount(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-mono"
                     />
-                    <span className="text-[10px] text-zinc-500 mt-0.5 block">
-                      Rango permitido: 1 a 10,000 plantas individuales representadas.
-                    </span>
                   </div>
 
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Semilla Aleatoria (Seed Monte Carlo)
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Semilla aleatoria (Monte Carlo)
                     </label>
                     <input
                       type="number"
                       min={0}
                       value={formSeed}
                       onChange={(e) => setFormSeed(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-mono"
                     />
-                    <span className="text-[10px] text-zinc-500 mt-0.5 block">
-                      Permite reproducibilidad determinista idéntica entre corridas.
-                    </span>
                   </div>
                 </div>
 
-                {/* Manejo Agronómico */}
-                {usesSimplifiedModel ? (
+                {usesSimplifiedModel && (
                   <div>
-                    <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                      Escenario de Manejo Agronómico
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium text-[11px]">
+                      Práctica agronómica de manejo
                     </label>
                     <select
                       value={formManagement}
-                      onChange={(e) => setFormManagement(e.target.value as "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM")}
-                      className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500/80 shadow-xs"
+                      onChange={(e) => setFormManagement(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     >
-                      <option value="BASELINE">🌽 Maíz Convencional (Línea Base: labranza intensiva estándar)</option>
-                      <option value="NO_TILL">🌱 Siembra Directa / No-Till (Mayor retención edáfica y reducción de escorrentía CN)</option>
-                      <option value="MAIZE_TO_SORGHUM">🌾 Transición Maíz → Sorgo (Cultivo C4 más tolerante a sequía, menor Kc)</option>
+                      <option value="BASELINE">Maíz convencional (labranza tradicional)</option>
+                      <option value="NO_TILL">Siembra directa / No-Till (mayor retención edáfica)</option>
+                      <option value="MAIZE_TO_SORGHUM">Transición a sorgo (cultivo C4 tolerante a sequía)</option>
                     </select>
-                    <p className="mt-1 text-[10px] text-zinc-500">
-                      Modifica directamente los coeficientes biológicos y la tasa de infiltración del suelo en el gemelo digital.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                    <div className="flex items-center gap-1.5 font-semibold">
-                      <Info className="h-3.5 w-3.5" /> Manejo agronómico en SWAT+
-                    </div>
-                    <p className="mt-1 text-[10px]">
-                      El modelo físico SWAT+ utiliza las operaciones agronómicas (fertilización, siembra y cosecha) preconfiguradas en sus archivos de management (<code>management.sch</code>).
-                    </p>
                   </div>
                 )}
-
-                {/* ML Estimator (Optional) */}
-                <div>
-                  <label className="block font-mono uppercase text-zinc-600 dark:text-zinc-400 mb-1 font-semibold text-[10px]">
-                    Estimador ML Externo Opcional {usesSimplifiedModel ? "" : "(No aplicable a SWAT+)"}
-                  </label>
-                  <select
-                    value={formExternalModel}
-                    onChange={(e) => setFormExternalModel(e.target.value)}
-                    disabled={!usesSimplifiedModel}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 disabled:opacity-50 shadow-xs"
-                  >
-                    <option value="">Ninguno (usar solver puramente biofísico)</option>
-                    {externalModels.map((model) => (
-                      <option key={model.id} value={model.id}>
-                        {model.name} · {model.target} · {model.framework}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Tarjeta 4: Parámetros Biofísicos Explicados */}
-              {usesSimplifiedModel && (
-                <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 flex flex-col gap-3.5">
-                  <div className="flex items-center gap-2 pb-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
-                    <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
-                      4
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">
-                        Parámetros Biofísicos de Suelo y Cultivo (Sensibilidad)
-                      </h4>
-                      <p className="text-[10px] text-zinc-500">
-                        Ajusta los coeficientes físicos que gobiernan la transpiración vegetal, el enraizamiento y la escorrentía superficial.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {/* Demanda de agua Kc */}
-                    <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs">
-                          Demanda de Agua (Kc Base)
-                        </span>
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-bold text-emerald-700 dark:text-emerald-400">
-                          {formParameters.base_kc}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-zinc-500">
-                        Coeficiente de transpiración FAO-56. Rango: 0.1 a 2.0 (Maíz en floración ≈ 1.05 - 1.20).
-                      </p>
-                      <input
-                        type="number"
-                        step={0.01}
-                        min={0.1}
-                        max={2.0}
-                        value={formParameters.base_kc}
-                        onChange={(e) =>
-                          setFormParameters((prev) => ({ ...prev, base_kc: Number(e.target.value) }))
-                        }
-                        className="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-950"
-                      />
-                    </div>
-
-                    {/* Profundidad radicular */}
-                    <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs">
-                          Profundidad Radicular (Z_root)
-                        </span>
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-bold text-cyan-700 dark:text-cyan-400">
-                          {formParameters.max_root_depth_cm} cm
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-zinc-500">
-                        Profundidad máxima de absorción radicular. Rango: 1 a 500 cm (Maíz maduro ≈ 120 cm).
-                      </p>
-                      <input
-                        type="number"
-                        step={1}
-                        min={1}
-                        max={500}
-                        value={formParameters.max_root_depth_cm}
-                        onChange={(e) =>
-                          setFormParameters((prev) => ({ ...prev, max_root_depth_cm: Number(e.target.value) }))
-                        }
-                        className="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-950"
-                      />
-                    </div>
-
-                    {/* Número de Curva CN */}
-                    <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs">
-                          Número de Curva SCS (CN)
-                        </span>
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-bold text-teal-700 dark:text-teal-400">
-                          {formParameters.curve_number}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-zinc-500">
-                        Potencial de escorrentía USDA-SCS. A mayor CN, menor infiltración y mayor descarga. Rango: 30 a 98 (Iowa agrícola ≈ 74).
-                      </p>
-                      <input
-                        type="number"
-                        step={1}
-                        min={30}
-                        max={98}
-                        value={formParameters.curve_number}
-                        onChange={(e) =>
-                          setFormParameters((prev) => ({ ...prev, curve_number: Number(e.target.value) }))
-                        }
-                        className="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-950"
-                      />
-                    </div>
-
-                    {/* Humedad inicial edáfica */}
-                    <div className="p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs">
-                          Humedad Inicial del Suelo (θ₀)
-                        </span>
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-bold text-blue-700 dark:text-blue-400">
-                          {formParameters.initial_soil_moisture_vol}%
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-zinc-500">
-                        Contenido hídrico volumétrico inicial en los primeros 100 cm. Rango: 0 a 44% (Capacidad de campo ≈ 24.5%).
-                      </p>
-                      <input
-                        type="number"
-                        step={0.1}
-                        min={0}
-                        max={44}
-                        value={formParameters.initial_soil_moisture_vol}
-                        onChange={(e) =>
-                          setFormParameters((prev) => ({ ...prev, initial_soil_moisture_vol: Number(e.target.value) }))
-                        }
-                        className="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-950"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tarjeta 5: Datasets y Sensores Vinculados */}
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 flex flex-col gap-3.5">
-                <div className="flex items-center gap-2 pb-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
-                  <div className="w-6 h-6 rounded-md bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
-                    5
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">
-                      Vinculación de Evidencia y Datos de Sensores
-                    </h4>
-                    <p className="text-[10px] text-zinc-500">
-                      Asigna el rol funcional que cumplirá cada artefacto espacial o sensor hidrométrico en esta corrida.
-                    </p>
-                  </div>
-                </div>
-
-                {datasets.length === 0 ? (
-                  <p className="text-[11px] text-zinc-500 py-2">
-                    No hay artefactos externos registrados en el catálogo. Se utilizará el modo estocástico SYNTHETIC.
-                  </p>
-                ) : (
-                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                    {datasets.map((dataset) => {
-                      const isChecked = formDatasetIds.includes(dataset.id);
-                      return (
-                        <div
-                          key={dataset.id}
-                          className={`p-2.5 rounded-lg border text-[11px] transition flex items-center justify-between gap-2 ${
-                            isChecked
-                              ? "bg-white dark:bg-zinc-900 border-emerald-300 dark:border-emerald-800/60 shadow-xs"
-                              : "bg-zinc-100/50 dark:bg-zinc-900/30 border-zinc-200/60 dark:border-zinc-800/50 text-zinc-600 dark:text-zinc-400"
-                          }`}
-                        >
-                          <label className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(event) => {
-                                setFormDatasetIds((current) =>
-                                  event.target.checked ? [...current, dataset.id] : current.filter((id) => id !== dataset.id)
-                                );
-                                setFormDatasetRoles((current) => {
-                                  const next = { ...current };
-                                  if (event.target.checked) next[dataset.id] = "CONTEXT_ONLY";
-                                  else delete next[dataset.id];
-                                  return next;
-                                });
-                              }}
-                              className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                            />
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                                {dataset.provider}: {dataset.dataset_name}
-                              </span>
-                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                                {dataset.evidence_type} · {dataset.normalized_artifact_count} archivos normalizados
-                              </span>
-                            </div>
-                          </label>
-
-                          {isChecked && (
-                            <div className="shrink-0">
-                              {formHydrologyBackend === "SWAT_PLUS" ? (
-                                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                                  EVIDENCIA
-                                </span>
-                              ) : (
-                                <select
-                                  value={formDatasetRoles[dataset.id] ?? "CONTEXT_ONLY"}
-                                  onChange={(event) =>
-                                    setFormDatasetRoles((current) => ({
-                                      ...current,
-                                      [dataset.id]: event.target.value as any,
-                                    }))
-                                  }
-                                  className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-[10px] font-medium"
-                                >
-                                  <option value="FORCING">FORCING (Clima primario)</option>
-                                  <option value="OBSERVATION">OBSERVATION (Aforo real)</option>
-                                  <option value="VALIDATION">VALIDATION (Calibración)</option>
-                                  <option value="CONTEXT_ONLY">CONTEXT_ONLY (Referencia)</option>
-                                </select>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="p-2.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-[10px] text-amber-800 dark:text-amber-300">
-                  {usesSimplifiedModel
-                    ? "📌 Para forzar el clima observado o CMIP6, selecciona al menos un artefacto con rol FORCING. Para comparar el caudal estimado contra el hidrograma real, vincula el dataset de USGS como OBSERVATION."
-                    : "📌 En corridas físicas SWAT+, los datasets seleccionados se registran en el manifiesto criptográfico de procedencia, respetando la estructura hidrológica nativa de SWAT+."}
-                </div>
-              </div>
-
-              {/* Resumen de Ejecución */}
-              <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-50/80 via-white to-cyan-50/80 dark:from-emerald-950/30 dark:via-zinc-900 dark:to-cyan-950/30 border border-emerald-200 dark:border-emerald-800/60 text-[11px] text-zinc-700 dark:text-zinc-300 flex flex-col gap-1 shadow-xs">
-                <span className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  {formHydrologyBackend === "SWAT_PLUS"
-                    ? "Flujo de Ejecución: Micro-Fisiología Vegetal → Calibración plants.plt → Binario SWAT+"
-                    : "Flujo de Ejecución: Célula/Planta → Lote Agrícola → HRU Hidrológica → Aforo de Cuenca"}
-                </span>
-                <p className="text-[10px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  {formHydrologyBackend === "SWAT_PLUS"
-                    ? `Simulará la dinámica transpiratoria de ${formPlantCount.toLocaleString()} plantas, derivará coeficientes fenológicos y ejecutará el motor SWAT+ sobre la cuenca South Fork Iowa.`
-                    : `Simulará de forma integrada la fenología celular de ${formPlantCount.toLocaleString()} plantas acoplándolas con el balance edáfico diario de la cuenca.`}
-                </p>
               </div>
             </form>
 
-            {/* Footer Fijo con Botones Siempre Visibles */}
-            <div className="px-6 py-3.5 border-t border-zinc-200 dark:border-zinc-800 shrink-0 bg-zinc-50 dark:bg-zinc-950/60 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-                <span className="hidden sm:inline">
-                  Duración:{" "}
-                  <b className="text-zinc-800 dark:text-zinc-200 font-mono">
-                    {formStartDate && formEndDate
-                      ? `${Math.max(0, Math.floor((Date.parse(`${formEndDate}T00:00:00Z`) - Date.parse(`${formStartDate}T00:00:00Z`)) / 86_400_000) + 1)} días`
-                      : "0 días"}
-                  </b>
-                </span>
-                <span className="hidden sm:inline">·</span>
-                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 font-semibold">
-                  {formHydrologyBackend === "SWAT_PLUS" ? "SWAT+ FÍSICO" : "GEMELO MULTIESCALA"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 ml-auto">
+            {/* Pie Fijo del Modal */}
+            <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-slate-500 font-mono">
+                {formHydrologyBackend === "SWAT_PLUS" ? "SWAT+ FÍSICO" : "GEMELO MULTIESCALA"}
+              </span>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium transition cursor-pointer text-xs"
+                  className="px-3.5 py-1.5 rounded-none border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium transition cursor-pointer"
                 >
                   Cancelar
                 </button>
@@ -2213,19 +2017,9 @@ export default function SimulationsPage() {
                   type="submit"
                   form="simulation-form"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-zinc-950 font-semibold transition flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md shadow-emerald-500/20 text-xs"
+                  className="px-4 py-1.5 rounded-none bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-medium transition cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>{formHydrologyBackend === "SWAT_PLUS" ? "Ejecutando SWAT+..." : "Ejecutando..."}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3.5 h-3.5" />
-                      <span>Ejecutar experimento</span>
-                    </>
-                  )}
+                  {isSubmitting ? "Ejecutando..." : "Ejecutar experimento"}
                 </button>
               </div>
             </div>
