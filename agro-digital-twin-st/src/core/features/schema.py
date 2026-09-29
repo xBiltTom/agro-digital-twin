@@ -108,6 +108,13 @@ TARGET_REGISTRY: Dict[str, TargetSchema] = {
         baseline_variable="swat_baseline_streamflow_m3s",
         target_type="streamflow"
     ),
+    "next_day_streamflow_m3s": TargetSchema(
+        target_name="next_day_streamflow_m3s",
+        unit="m3/s",
+        description="Next-day outlet streamflow forecast",
+        baseline_variable="streamflow_lag_1",
+        target_type="streamflow"
+    ),
     "maize_yield_t_ha": TargetSchema(
         target_name="maize_yield_t_ha",
         unit="t/ha",

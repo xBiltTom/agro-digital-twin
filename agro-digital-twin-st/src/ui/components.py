@@ -8,7 +8,14 @@ import streamlit as st
 from src.locales.i18n import t
 from src.core.hardware import detect_compute_device
 from src.core.statistics_core import load_training_history
-from src.core.datasets.catalog import configured_real_artifact_dir, load_lab_dataset, source_labels
+from src.core.datasets.catalog import (
+    API_SOURCE_PREFIX,
+    configured_real_artifact_dir,
+    load_api_simulation_dataset,
+    load_lab_dataset,
+    source_labels,
+)
+from src.core.integrations.fastapi_client import FastAPIClient, FastAPIConnectionError
 
 
 def render_synthetic_data_badge():
@@ -33,7 +40,22 @@ def get_active_dataset():
     """Load the source selected in the sidebar."""
     source = st.session_state.get("active_dataset_source", "synthetic_demo")
     artifact_dir = st.session_state.get("active_dataset_artifact_dir", str(configured_real_artifact_dir()))
-    frame, metadata, variable_catalog = load_selected_dataset(source, artifact_dir)
+    if source.startswith(API_SOURCE_PREFIX):
+        client = st.session_state.get("fastapi_client")
+        if client is None or not client.is_authenticated:
+            st.error("La fuente FastAPI requiere autenticación en el panel lateral.")
+            st.stop()
+        try:
+            frame, metadata, variable_catalog = load_api_simulation_dataset(
+                client,
+                source.removeprefix(API_SOURCE_PREFIX),
+                simulation=st.session_state.get("fastapi_selected_simulation"),
+            )
+        except FastAPIConnectionError as exc:
+            st.error(f"No fue posible cargar el playback FastAPI: {exc}")
+            st.stop()
+    else:
+        frame, metadata, variable_catalog = load_selected_dataset(source, artifact_dir)
     st.session_state["active_dataset_metadata"] = metadata
     st.session_state["dataset_loaded"] = True
     return frame, metadata, variable_catalog
@@ -41,7 +63,58 @@ def get_active_dataset():
 
 def render_dataset_selector():
     """Select synthetic demo or one validated artifact run for all tabs."""
-    labels = source_labels()
+    api_labels = {}
+    with st.sidebar.expander("FastAPI: playback de simulaciones", expanded=False):
+        base_url = st.text_input(
+            "URL base",
+            value=os.environ.get("AGRO_TWIN_FASTAPI_URL", "http://localhost:8000"),
+            key="fastapi_base_url",
+        )
+        client = st.session_state.get("fastapi_client")
+        if client is None or client.base_url.removesuffix("/api/v1") != base_url.rstrip("/"):
+            client = FastAPIClient(base_url=base_url)
+            st.session_state["fastapi_client"] = client
+            st.session_state["fastapi_simulations"] = []
+        email = st.text_input("Correo FastAPI", key="fastapi_email")
+        password = st.text_input("Contraseña FastAPI", type="password", key="fastapi_password")
+        if st.button("Autenticar y listar simulaciones", key="fastapi_login"):
+            try:
+                client.login(email, password)
+                st.session_state["fastapi_simulations"] = client.list_simulations()
+                st.success("FastAPI autenticado en memoria.")
+            except FastAPIConnectionError as exc:
+                client.token = None
+                st.session_state["fastapi_simulations"] = []
+                st.error(str(exc))
+        simulations = st.session_state.get("fastapi_simulations", [])
+        if client.is_authenticated and not simulations:
+            try:
+                simulations = client.list_simulations()
+                st.session_state["fastapi_simulations"] = simulations
+            except FastAPIConnectionError as exc:
+                st.warning(f"No se pudo listar simulaciones: {exc}")
+        if simulations:
+            simulations_by_id = {str(item.get("id")): item for item in simulations if item.get("id")}
+            simulation_options = {
+                str(item.get("id")): (
+                    f"{item.get('name') or item.get('external_model_id') or item.get('id')} "
+                    f"[{item.get('status', 'UNKNOWN')}]"
+                )
+                for item in simulations
+                if item.get("id")
+            }
+            if simulation_options:
+                selected_simulation = st.selectbox(
+                    "Simulación API",
+                    options=list(simulation_options),
+                    format_func=simulation_options.get,
+                    key="fastapi_simulation_selector",
+                )
+                api_labels[f"{API_SOURCE_PREFIX}{selected_simulation}"] = (
+                    f"FastAPI: {simulation_options[selected_simulation]}"
+                )
+                st.session_state["fastapi_selected_simulation"] = simulations_by_id[selected_simulation]
+    labels = {**source_labels(), **api_labels}
     source_keys = list(labels)
     source_options = [labels[key] for key in source_keys]
     current = st.session_state.get("active_dataset_source", source_keys[0])

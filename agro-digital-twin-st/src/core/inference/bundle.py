@@ -70,6 +70,8 @@ class ModelBundle:
         dataset_version: Optional[str] = None,
         is_champion: bool = False,
         dataset_metadata: Optional[Dict[str, Any]] = None,
+        forecast_horizon: Optional[Dict[str, Any]] = None,
+        inference_contract: Optional[Dict[str, Any]] = None,
     ) -> "ModelBundle":
         """
         Creates and writes the complete artifact bundle to disk.
@@ -158,6 +160,15 @@ class ModelBundle:
             "dataset_id": dataset_metadata.get("dataset_id"),
             "dataset_limitations": dataset_metadata.get("limitations", []),
             "aggregation_rules": dataset_metadata.get("aggregation_rules", {}),
+            "experiment_status": dataset_metadata.get("experiment_status"),
+            "forecast_horizon": forecast_horizon,
+            "inference_contract": inference_contract or {
+                "required_features": schema.feature_names,
+                "target": target_name,
+                "target_unit": get_target_schema(target_name).unit,
+                "missing_feature_policy": "schema_validation",
+            },
+            "bundle_version": "1.1",
             "library_versions": library_versions
         }
 
@@ -311,6 +322,9 @@ class ModelBundle:
                     "swat_baseline_value": round(baseline_val, 3),
                     "unit": self.target_schema.unit,
                     "model_used": self.metadata.get("model_name"),
+                    "model_version": self.metadata.get("bundle_version"),
+                    "forecast_horizon": self.metadata.get("forecast_horizon"),
+                    "artifact_classification": self.metadata.get("artifact_classification"),
                     "artifact_dir": self.artifact_dir
                 }
             else:
@@ -336,7 +350,10 @@ class ModelBundle:
                     "predicted_residuals": [round(float(r), 3) for r in raw_pred],
                     "swat_baseline_values": [round(float(b), 3) for b in baseline_vals],
                     "unit": self.target_schema.unit,
-                    "model_used": self.metadata.get("model_name")
+                    "model_used": self.metadata.get("model_name"),
+                    "model_version": self.metadata.get("bundle_version"),
+                    "forecast_horizon": self.metadata.get("forecast_horizon"),
+                    "artifact_classification": self.metadata.get("artifact_classification")
                 }
         else:
             # Mode A: Direct Prediction
@@ -348,6 +365,9 @@ class ModelBundle:
                     "value": round(val, 3),
                     "unit": self.target_schema.unit,
                     "model_used": self.metadata.get("model_name"),
+                    "model_version": self.metadata.get("bundle_version"),
+                    "forecast_horizon": self.metadata.get("forecast_horizon"),
+                    "artifact_classification": self.metadata.get("artifact_classification"),
                     "artifact_dir": self.artifact_dir
                 }
             else:
@@ -357,7 +377,10 @@ class ModelBundle:
                     "mode": "direct_prediction",
                     "values": vals,
                     "unit": self.target_schema.unit,
-                    "model_used": self.metadata.get("model_name")
+                    "model_used": self.metadata.get("model_name"),
+                    "model_version": self.metadata.get("bundle_version"),
+                    "forecast_horizon": self.metadata.get("forecast_horizon"),
+                    "artifact_classification": self.metadata.get("artifact_classification")
                 }
 
 

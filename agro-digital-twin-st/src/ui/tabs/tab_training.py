@@ -4,7 +4,7 @@ import streamlit as st
 import pandas as pd
 
 from src.core.features.schema import TARGET_REGISTRY, get_available_feature_schema, get_default_feature_schema
-from src.core.training.trainer import MultiScaleTrainer
+from src.core.experiments.next_day_flow import NextDayExperiment
 from src.ui.components import get_active_dataset, render_hardware_analyzer, render_synthetic_data_badge
 from src.utils.config import ARTIFACTS_DIR
 from src.infrastructure.auth import Permission
@@ -26,6 +26,10 @@ def render():
     st.caption("🏷️ **[CRISP-DM: Modeling]**")
     df, metadata, _ = get_active_dataset()
     render_synthetic_data_badge()
+    if metadata.get("temporal_resolution") == "DAILY" and "streamflow_m3s" in df.columns:
+        _render_next_day_experiment(df, metadata)
+        return
+    from src.core.training.trainer import MultiScaleTrainer
     is_synthetic = bool(metadata.get("is_synthetic_training_data", False))
     available_targets = [target for target in TARGET_REGISTRY if target in df.columns and df[target].notna().any()]
     if not is_synthetic and not metadata.get("is_observation", False):
@@ -185,3 +189,76 @@ def render():
                 "Bundle": details["artifact_dir"],
             })
         st.dataframe(pd.DataFrame(rows), width="stretch")
+
+
+def _render_next_day_experiment(df: pd.DataFrame, metadata: dict):
+    """Expose the daily, one-day-ahead experiment separately from monthly training."""
+    st.subheader("🌊 Experimento diario: pronóstico de caudal a un día")
+    st.caption(
+        "Resultado preliminar sobre playback simulado. El split es cronológico y la línea base usa el último caudal conocido."
+    )
+    st.caption(
+        f"Muestras disponibles: `{len(df):,}`. Con menos de 60 filas el experimento sigue siendo exploratorio y no debe interpretarse como validación robusta."
+    )
+    st.info(
+        f"Fuente: `{metadata.get('dataset_id', 'n/d')}` | "
+        "Los valores son estados modelados, no observaciones de campo."
+    )
+    m1, m2, m3 = st.columns(3)
+    with m1:
+        use_rf = st.checkbox("🌲 Random Forest", value=True, key="next_day_rf")
+        use_svr = st.checkbox("📐 SVR", value=True, key="next_day_svr")
+    with m2:
+        use_xgb = st.checkbox("⚡ XGBoost", value=False, key="next_day_xgb")
+        fast_mode = st.checkbox("Modo rápido", value=True, key="next_day_fast")
+    with m3:
+        random_seed = st.number_input("Semilla", min_value=1, max_value=9999, value=42, key="next_day_seed")
+        st.caption("TRAIN 60% → VALIDATION 20% → TEST 20%")
+
+    selected_models = [
+        name for enabled, name in [
+            (use_rf, "random_forest"),
+            (use_svr, "svr"),
+            (use_xgb, "xgboost"),
+        ] if enabled
+    ]
+    current_user = st.session_state.get("auth_user")
+    if current_user and not current_user.can(Permission.RUN_TRAINING):
+        st.warning("El usuario actual no tiene permisos de entrenamiento.")
+        return
+    if st.button("▶️ Ejecutar experimento diario", type="primary", key="run_next_day_experiment"):
+        if not selected_models:
+            st.error("Selecciona al menos un modelo.")
+            return
+        with st.spinner("Preparando features, entrenando y exportando bundles..."):
+            try:
+                result = NextDayExperiment(
+                    artifact_base_dir=ARTIFACTS_DIR,
+                    dataset_metadata=metadata,
+                    random_seed=int(random_seed),
+                    fast_dev_mode=fast_mode,
+                ).run(df, selected_models=selected_models)
+            except (KeyError, ValueError, RuntimeError, OSError) as exc:
+                st.error(f"El experimento no pudo completarse: {exc}")
+                return
+        st.session_state["next_day_experiment_result"] = result
+
+    result = st.session_state.get("next_day_experiment_result")
+    if not result:
+        return
+    st.success(f"Mejor modelo de la corrida: `{result['best_model']}`")
+    st.caption(f"Reporte: `{result['report_path']}` | Champion: `{result['champion_dir']}`")
+    rows = []
+    for name, details in result["results"].items():
+        metrics = details["metrics"]
+        rows.append({
+            "Modelo": name,
+            "RMSE": metrics.get("rmse"),
+            "MAE": metrics.get("mae"),
+            "NSE": metrics.get("nse"),
+            "KGE": metrics.get("kge"),
+            "PBIAS (%)": metrics.get("pbias"),
+            "Bundle": details.get("artifact_dir"),
+        })
+    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+    st.caption("Interpretar las métricas como comparación interna de esta corrida simulada; no como validación observacional.")

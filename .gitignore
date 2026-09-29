@@ -75,6 +75,9 @@ digitaltwin.db
 *.bin
 *.weights
 
+# Local Phase 6B experiment outputs
+agro-digital-twin-st/artifacts/next_day_streamflow_m3s/
+
 # SWAT+ Simulation Outputs & Runtime Diagnostics
 *.out
 *.fin

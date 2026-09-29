@@ -173,6 +173,69 @@ class RealArtifactDataset:
         monthly = monthly.drop(columns=["month"])
         return monthly.sort_values("date").reset_index(drop=True)
 
+    def build_daily_learning_dataset(self) -> pd.DataFrame:
+        """Build a daily basin/outlet table for next-day forecasting.
+
+        The outlet target is kept at its native daily resolution.  FSPM values
+        are joined only as labelled model states; derived root-zone moisture is
+        exposed under an explicit name and is never treated as a measurement.
+        """
+        climate = self.frames["climate_daily.csv"].copy()
+        basin = self.frames["basin_daily.csv"].copy()
+        climate["date"] = pd.to_datetime(climate["date"], errors="raise")
+        basin["date"] = pd.to_datetime(basin["date"], errors="raise")
+        climate = climate.rename(columns={
+            "temp_c": "temp_mean_c",
+            "solar_rad_mj": "solar_radiation",
+        })
+        climate_columns = [
+            "date", "precip_mm", "temp_mean_c", "solar_radiation",
+            "rh_percent", "wind_speed_ms", "pet_mm",
+        ]
+        basin_columns = [
+            "date", "percolation_mm", "evapotranspiration_mm",
+            "runoff_mm", "streamflow_m3s", "soil_water_mm",
+            "soil_water_average_mm",
+        ]
+        daily = climate[[column for column in climate_columns if column in climate]].merge(
+            basin[[column for column in basin_columns if column in basin]],
+            on="date", how="inner", validate="one_to_one",
+        )
+        daily = daily.rename(columns={
+            "percolation_mm": "infiltration_mm",
+            "evapotranspiration_mm": "et_mm",
+            "soil_water_mm": "soil_water_storage_mm",
+        })
+
+        field = self.frames["fspm_field_daily.csv"].copy()
+        field["date"] = pd.to_datetime(field["date"], errors="raise")
+        field_columns = {
+            "field.soil_moisture_vol": "soil_moisture_derived_percent",
+            "field.mean_LAI": "lai",
+            "field.mean_lai": "lai",
+            "field.root_depth_mean_m": "root_depth_m",
+            "field.actual_ET_mm_day": "fspm_et_mm",
+            "field.transpiration_mm_day": "transpiration_mm",
+            "field.water_stress": "water_stress",
+            "field.biomass_g_plant": "fspm_biomass_g_plant",
+        }
+        selected_field = field[["date", *[column for column in field_columns if column in field]]].copy()
+        selected_field = selected_field.rename(columns=field_columns)
+        if "lai" in selected_field.columns:
+            duplicate_lai = [column for column in selected_field.columns if column == "lai"]
+            if len(duplicate_lai) > 1:
+                selected_field = selected_field.loc[:, ~selected_field.columns.duplicated()]
+        daily = daily.merge(selected_field, on="date", how="left", validate="one_to_one")
+        daily["watershed_id"] = "south_fork"
+        daily["hru_id"] = "basin"
+        daily["dataset_id"] = self.dataset_id
+        daily["data_classification"] = REAL_DATASET_CLASSIFICATION
+        daily["data_provenance"] = REAL_DATASET_ORIGIN
+        daily["is_synthetic"] = False
+        daily["is_observation"] = False
+        daily["temporal_resolution"] = "DAILY"
+        return daily.sort_values("date").reset_index(drop=True)
+
     def hru_monthly_tables(self) -> Dict[str, pd.DataFrame]:
         """Aggregate HRU files while preserving their spatial support."""
         result: Dict[str, pd.DataFrame] = {}
@@ -288,4 +351,9 @@ def load_real_artifact_dataset(
 def default_south_fork_artifact_dir() -> Path:
     """Resolve the published run relative to the repository, not a user machine."""
     project_root = Path(__file__).resolve().parents[4]
-    return project_root / "from-plant-to-watershed" / "backend" / "data" / "phase1-south-fork-2019" / "results" / "phase1-sf-2019-v3"
+    results_root = project_root / "from-plant-to-watershed" / "backend" / "data" / "phase1-south-fork-2019" / "results"
+    for run_id in ("phase234-sf-2019-v2", "phase234-sf-2019-v1", "phase1-sf-2019-v3"):
+        candidate = results_root / run_id
+        if (candidate / "manifest.json").is_file():
+            return candidate
+    return results_root / "phase234-sf-2019-v2"

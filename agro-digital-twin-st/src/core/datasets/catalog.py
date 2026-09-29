@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 import pandas as pd
@@ -12,12 +13,15 @@ from src.core.datasets.real_loader import (
     default_south_fork_artifact_dir,
     load_real_artifact_dataset,
 )
+from src.core.datasets.simulation_dataset import playback_records_to_dataframe
+from src.core.integrations.fastapi_client import FastAPIClient
 from src.core.dataset_generator import get_dataset
 from src.core.features.schema import TARGET_REGISTRY, get_default_feature_schema, get_target_schema
 
 
 SYNTHETIC_SOURCE = "synthetic_demo"
 SOUTH_FORK_SOURCE = "south_fork_2019_v3"
+API_SOURCE_PREFIX = "api_simulation:"
 
 
 def configured_real_artifact_dir() -> Path:
@@ -54,7 +58,25 @@ def load_lab_dataset(source: str, artifact_dir: Optional[str] = None) -> Tuple[p
     if source != SOUTH_FORK_SOURCE:
         raise ValueError(f"Unknown dataset source: {source}")
     artifact = load_real_artifact_dataset(artifact_dir or configured_real_artifact_dir())
-    return artifact.build_monthly_learning_dataset(), artifact.metadata, artifact.variable_summary()
+    metadata = dict(artifact.metadata)
+    metadata["temporal_resolution"] = "DAILY"
+    metadata["imported_at"] = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    return artifact.build_daily_learning_dataset(), metadata, artifact.variable_summary()
+
+
+def load_api_simulation_dataset(
+    client: FastAPIClient,
+    simulation_id: str,
+    simulation: Optional[Dict[str, Any]] = None,
+):
+    """Load one API playback snapshot through the client cache."""
+    snapshot = client.get_simulation_snapshot(simulation_id, resolution="DAILY", simulation=simulation)
+    return playback_records_to_dataframe(
+        list(snapshot["playback"].get("records", [])),
+        simulation=snapshot.get("simulation"),
+        availability=snapshot.get("availability"),
+        source_label="FastAPI playback verificado",
+    )
 
 
 def source_labels() -> Dict[str, str]:
@@ -64,5 +86,5 @@ def source_labels() -> Dict[str, str]:
         if os.environ.get("AGRO_TWIN_ARTIFACT_DIR") or os.environ.get("AGRO_TWIN_REAL_ARTIFACT_DIR"):
             labels[SOUTH_FORK_SOURCE] = f"Resultados reales configurados ({artifact_dir.name})"
         else:
-            labels[SOUTH_FORK_SOURCE] = "South Fork 2019 v3 (resultados simulados SWAT+ / FSPM)"
+            labels[SOUTH_FORK_SOURCE] = f"{artifact_dir.name} (resultados simulados SWAT+ / FSPM)"
     return labels

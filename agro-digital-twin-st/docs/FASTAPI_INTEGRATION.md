@@ -168,3 +168,28 @@ un periodo compatible de al menos 24 muestras mensuales; así no se presenta
 una validación temporal frágil como resultado de producción. La conexión
 posterior con FastAPI debe copiar el bundle sin cambiar sus metadatos y validar
 el payload contra `feature_schema.json`.
+
+## 6. Playback FastAPI y experimento diario
+
+La pestaña de entrenamiento puede consumir, en modo lectura, el catálogo de
+simulaciones y su playback diario mediante:
+
+- `POST /api/v1/auth/login` para obtener un token en memoria.
+- `GET /api/v1/simulations` con paginación `skip/limit`.
+- `GET /api/v1/simulations/{simulation_id}/availability`.
+- `GET /api/v1/simulations/{simulation_id}/playback` con paginación `offset/limit`.
+
+El cliente no persiste credenciales, tokens ni playback. La UI conserva el
+registro seleccionado del catálogo y no depende de un endpoint individual de
+simulación no confirmado.
+
+Para una fuente diaria se habilita `next_day_outlet_streamflow`. El pipeline:
+
+- construye lags disponibles únicamente hasta `issue_date`;
+- excluye saltos de calendario y usa `target_date = issue_date + 1 día`;
+- divide cronológicamente en TRAIN 60%, VALIDATION 20% y TEST 20%;
+- compara persistencia contra Random Forest, SVR y opcionalmente XGBoost;
+- exporta bundles bajo `artifacts/next_day_streamflow_m3s/` y un `experiment.json`.
+
+Estos bundles quedan clasificados como `EXPERIMENTAL_SIMULATION_ONLY` y no
+representan validación con observaciones de campo.
