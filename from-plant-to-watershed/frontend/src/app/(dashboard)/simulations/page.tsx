@@ -593,10 +593,10 @@ export default function SimulationsPage() {
           )}
 
           {/* 3. Área de Trabajo Principal: Catálogo (Izquierda) + Consola de Análisis (Derecha) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch border-t border-slate-300 dark:border-slate-800">
+          <div className="flex flex-col lg:flex-row items-stretch border-t border-slate-300 dark:border-slate-800">
             {/* Panel Izquierdo: Catálogo de Corridas Registradas (Colapsable) */}
             {!isCatalogCollapsed ? (
-              <div className="lg:col-span-4 xl:col-span-3 flex flex-col border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
                 <div className="flex items-center justify-between p-3 border-b border-slate-300 dark:border-slate-800">
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Experimentos ({filteredSimulations.length})
@@ -747,7 +747,7 @@ export default function SimulationsPage() {
               </div>
             </div>
             ) : (
-              <div className="w-10 border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col items-center py-3">
+              <div className="w-full lg:w-10 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-row lg:flex-col items-center justify-between lg:justify-start p-2 lg:py-3">
                 <button
                   type="button"
                   onClick={() => setIsCatalogCollapsed(false)}
@@ -756,14 +756,14 @@ export default function SimulationsPage() {
                 >
                   <PanelLeftOpen className="w-4 h-4" />
                 </button>
-                <div className="mt-8 [writing-mode:vertical-rl] text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+                <div className="lg:mt-8 [writing-mode:horizontal-tb] lg:[writing-mode:vertical-rl] text-[10px] font-mono text-slate-400 uppercase tracking-widest">
                   Catálogo ({filteredSimulations.length})
                 </div>
               </div>
             )}
 
             {/* Panel Derecho: Consola de Trabajo del Experimento */}
-            <div className={`${!isCatalogCollapsed ? "lg:col-span-8 xl:col-span-9" : "lg:col-span-12 flex-1"} flex flex-col bg-slate-50 dark:bg-slate-950 min-h-[700px]`}>
+            <div className="flex-1 min-w-0 flex flex-col bg-slate-50 dark:bg-slate-950 min-h-[700px]">
               {selectedSim ? (
                 <>
                   {/* Encabezado del Experimento Activo */}
