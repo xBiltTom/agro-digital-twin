@@ -1,3 +1,4 @@
+import sys
 from datetime import date
 import os
 from pathlib import Path
@@ -51,10 +52,35 @@ def _project(tmp_path: Path) -> Path:
 
 
 def _executable(tmp_path: Path, body: str = "exit 0") -> Path:
+    if os.name == "nt":
+        executable = tmp_path / "swat-plus-fixture.bat"
+        py_script = tmp_path / f"run_{executable.stem}.py"
+        lines = []
+        for line in body.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("echo ") and ">&2" in line:
+                msg = line.replace("echo ", "").replace(">&2", "").strip()
+                lines.append(f"sys.stderr.write('{msg}\\n')")
+            elif line.startswith("exit "):
+                code = line.split("exit ")[1].strip()
+                lines.append(f"sys.exit({code})")
+            elif line.startswith("printf ") and ">" in line:
+                parts = line.split(">")
+                out_file = parts[1].strip()
+                content = parts[0].replace("printf ", "").strip().strip("'").strip('"')
+                content = content.replace("\\n", "\n")
+                lines.append(f"Path('{out_file}').write_text({repr(content)}, encoding='utf-8')")
+        code_str = "import sys\nfrom pathlib import Path\n" + "\n".join(lines) + "\n"
+        py_script.write_text(code_str, encoding="utf-8")
+        executable.write_text(f'@echo off\n"{sys.executable}" "{py_script}"\n', encoding="utf-8")
+        return executable
     executable = tmp_path / "swat-plus-fixture"
     executable.write_text(f"#!/bin/sh\n{body}\n", encoding="utf-8")
     executable.chmod(0o755)
     return executable
+
 
 
 def _config(tmp_path: Path, project: Path, executable: Path, run_id: str = "run-001") -> SwatPlusRunConfig:

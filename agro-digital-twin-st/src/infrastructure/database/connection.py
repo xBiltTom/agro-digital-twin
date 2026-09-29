@@ -9,6 +9,12 @@ import logging
 from typing import Generator, Optional
 from datetime import datetime
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from sqlalchemy import (
     create_engine,
     Column,

@@ -34,4 +34,9 @@ async def init_test_database():
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    Path(_db_file.name).unlink(missing_ok=True)
+    await engine.dispose()
+    try:
+        Path(_db_file.name).unlink(missing_ok=True)
+    except PermissionError:
+        pass
+
