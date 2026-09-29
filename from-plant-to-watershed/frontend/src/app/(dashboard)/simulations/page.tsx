@@ -462,7 +462,7 @@ export default function SimulationsPage() {
   });
 
   return (
-    <div className="flex flex-col border-x border-slate-300 dark:border-slate-800 w-full max-w-full min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex flex-col border border-slate-300 dark:border-slate-800 w-full max-w-full bg-slate-50 dark:bg-slate-950 shadow-sm min-h-[calc(100vh-6rem)]">
       {/* 1. Barra de Navegación de Vistas y Acciones Principales */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div>
@@ -596,7 +596,7 @@ export default function SimulationsPage() {
           )}
 
           {/* 3. Área de Trabajo Principal: Catálogo (Izquierda) + Consola de Análisis (Derecha) */}
-          <div className="flex flex-col lg:flex-row items-stretch border-t border-slate-300 dark:border-slate-800">
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-stretch border-t border-slate-300 dark:border-slate-800">
             {/* Panel Izquierdo: Catálogo de Corridas Registradas (Colapsable) */}
             {!isCatalogCollapsed ? (
               <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -682,8 +682,8 @@ export default function SimulationsPage() {
                 </button>
               </div>
 
-              {/* Lista de Experimentos con Scroll Dinámico */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-1.5">
+              {/* Lista de Experimentos */}
+              <div className="p-2.5 space-y-1.5">
                 {filteredSimulations.length === 0 ? (
                   <div className="p-6 text-center rounded-none border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400">
                     No se encontraron simulaciones que coincidan con la búsqueda.
@@ -766,15 +766,15 @@ export default function SimulationsPage() {
             )}
 
             {/* Panel Derecho: Consola de Trabajo del Experimento */}
-            <div className="flex-1 min-w-0 flex flex-col bg-slate-50 dark:bg-slate-950 min-h-[700px]">
+            <div className="flex-1 min-w-0 flex flex-col bg-slate-50 dark:bg-slate-950">
               {selectedSim ? (
                 <>
                   {/* Encabezado del Experimento Activo */}
-                  <div className="p-4 rounded-none border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-3">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                          <h2 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100">
                             {selectedSim.name}
                           </h2>
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
@@ -795,12 +795,12 @@ export default function SimulationsPage() {
                       </div>
 
                       {/* Controles de Acción: 3D y WebSocket Scrubber */}
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         <Link
                           href={`/twin-3d?simId=${selectedSim.id}`}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-none border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-none border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                         >
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                           <span>Abrir en gemelo 3D</span>
                         </Link>
 
@@ -841,7 +841,7 @@ export default function SimulationsPage() {
 
                     {/* Barra de Reproducción en Vivo Sincronizada */}
                     {isWsConnected && liveTick && (
-                      <div className="p-3 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                      <div className="p-2.5 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
                         <div>
                           <span className="text-[10px] text-slate-400 block">Día y clima</span>
                           <span className="font-semibold text-slate-800 dark:text-slate-200">
@@ -882,168 +882,79 @@ export default function SimulationsPage() {
                     )}
 
                     {/* Strip de Balance Hídrico (6 Variables Consolidadas) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[11px] text-slate-500 block">Precipitación</span>
-                        <span className="text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
+                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[10px] text-slate-500 block">Precipitación</span>
+                        <span className="text-xs sm:text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
                           {selectedSim.summary_metrics?.total_precip_mm != null ? `${Number(selectedSim.summary_metrics.total_precip_mm).toFixed(0)} mm` : "—"}
                         </span>
                       </div>
 
-                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[11px] text-slate-500 block">Evapotranspiración</span>
-                        <span className="text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
+                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[10px] text-slate-500 block">Evapotranspiración</span>
+                        <span className="text-xs sm:text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
                           {selectedSim.summary_metrics?.total_actual_et_mm != null ? `${Number(selectedSim.summary_metrics.total_actual_et_mm).toFixed(1)} mm` : "—"}
                         </span>
                       </div>
 
-                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[11px] text-slate-500 block">Volumen en río</span>
-                        <span className="text-sm font-semibold font-mono text-blue-700 dark:text-blue-400 mt-0.5 block">
+                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[10px] text-slate-500 block">Volumen en río</span>
+                        <span className="text-xs sm:text-sm font-semibold font-mono text-blue-700 dark:text-blue-400 mt-0.5 block">
                           {selectedSim.summary_metrics?.total_discharge_hm3 != null ? `${Number(selectedSim.summary_metrics.total_discharge_hm3).toFixed(1)} hm³` : "—"}
                         </span>
                       </div>
 
-                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[11px] text-slate-500 block">Caudal pico</span>
-                        <span className="text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
+                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[10px] text-slate-500 block">Caudal pico</span>
+                        <span className="text-xs sm:text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
                           {selectedSim.summary_metrics?.peak_streamflow_m3s != null ? `${Number(selectedSim.summary_metrics.peak_streamflow_m3s).toFixed(2)} m³/s` : "—"}
                         </span>
                       </div>
 
-                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[11px] text-slate-500 block">Estrés CWSI</span>
-                        <span className="text-sm font-semibold font-mono text-amber-700 dark:text-amber-400 mt-0.5 block">
+                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[10px] text-slate-500 block">Estrés CWSI</span>
+                        <span className="text-xs sm:text-sm font-semibold font-mono text-amber-700 dark:text-amber-400 mt-0.5 block">
                           {selectedSim.summary_metrics?.mean_cwsi != null ? Number(selectedSim.summary_metrics.mean_cwsi).toFixed(3) : "—"}
                         </span>
                       </div>
 
-                      <div className="p-2.5 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[11px] text-slate-500 block">Rendimiento</span>
-                        <span className="text-sm font-semibold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5 block">
+                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                        <span className="text-[10px] text-slate-500 block">Rendimiento</span>
+                        <span className="text-xs sm:text-sm font-semibold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5 block">
                           {selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "—"}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Sub-Pestañas de la Consola de Trabajo (Acceso Directo a Modales) */}
-                  <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 text-xs px-2 bg-slate-50/70 dark:bg-slate-950/40">
+                  {/* Pestañas de la Consola de Trabajo (3 Botones que abren los Modales) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 shadow-xs">
                     <button
                       type="button"
                       onClick={() => setActiveModalTab("CHARTS")}
-                      className="px-3.5 py-2.5 font-medium border-b-2 border-transparent hover:border-slate-400 dark:hover:border-slate-500 text-slate-700 dark:text-slate-200 transition cursor-pointer flex items-center gap-1.5"
-                      title="Abrir modal de series temporales e hidrograma"
+                      className="py-3 px-4 font-medium text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <Waves className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <Waves className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       <span>Series temporales e hidrograma</span>
-                      <Maximize2 className="w-3 h-3 text-slate-400 ml-0.5" />
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setActiveModalTab("AI")}
-                      className="px-3.5 py-2.5 font-medium border-b-2 border-transparent hover:border-slate-400 dark:hover:border-slate-500 text-slate-700 dark:text-slate-200 transition cursor-pointer flex items-center gap-1.5"
-                      title="Abrir modal de diagnóstico LangChain"
+                      className="py-3 px-4 font-medium text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>Diagnóstico científico y políticas</span>
-                      <Maximize2 className="w-3 h-3 text-slate-400 ml-0.5" />
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setActiveModalTab("SPECIFICATIONS")}
-                      className="px-3.5 py-2.5 font-medium border-b-2 border-transparent hover:border-slate-400 dark:hover:border-slate-500 text-slate-700 dark:text-slate-200 transition cursor-pointer flex items-center gap-1.5"
-                      title="Abrir modal de acoplamiento y procedencia"
+                      className="py-3 px-4 font-medium text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-purple-600 dark:hover:text-purple-400 transition flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <Layers className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                      <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                       <span>Acoplamiento multiescala y procedencia</span>
-                      <Maximize2 className="w-3 h-3 text-slate-400 ml-0.5" />
                     </button>
-                  </div>
-
-                  {/* Panel Principal Cockpit: 3 Módulos de Comando */}
-                  <div className="p-4 sm:p-5 flex flex-col gap-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                      {/* Tarjeta 1: Series Temporales */}
-                      <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between hover:border-slate-400 dark:hover:border-slate-600 transition">
-                        <div>
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <span className="font-mono text-[9px] px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 uppercase font-semibold">
-                              Telemetría 4 Escalas
-                            </span>
-                            <Waves className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            Series temporales e hidrograma
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-                            Contraste continuo con estación USGS 05451210, hidrograma macro de cuenca, transpiración foliar micro y estrés CWSI edáfico.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setActiveModalTab("CHARTS")}
-                          className="mt-4 w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
-                        >
-                          <Maximize2 className="w-3.5 h-3.5" />
-                          <span>Abrir series temporales (Modal)</span>
-                        </button>
-                      </div>
-
-                      {/* Tarjeta 2: Diagnóstico LangChain */}
-                      <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between hover:border-slate-400 dark:hover:border-slate-600 transition">
-                        <div>
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <span className="font-mono text-[9px] px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 uppercase font-semibold">
-                              LangChain Agent
-                            </span>
-                            <FileText className="w-4 h-4 text-emerald-600" />
-                          </div>
-                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            Diagnóstico científico y políticas
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-                            Evaluación biofísica multiescala del balance de masa, métricas de resiliencia climática y recomendaciones agronómicas de manejo.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setActiveModalTab("AI")}
-                          className="mt-4 w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
-                        >
-                          <Maximize2 className="w-3.5 h-3.5" />
-                          <span>Abrir diagnóstico IA (Modal)</span>
-                        </button>
-                      </div>
-
-                      {/* Tarjeta 3: Acoplamiento y Procedencia */}
-                      <div className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between hover:border-slate-400 dark:hover:border-slate-600 transition">
-                        <div>
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <span className="font-mono text-[9px] px-1.5 py-0.5 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 uppercase font-semibold">
-                              Procedencia {selectedSim.hydrology_backend}
-                            </span>
-                            <Layers className="w-4 h-4 text-purple-600" />
-                          </div>
-                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            Acoplamiento multiescala
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-                            Transferencia de tensores FSPM Planta → Parcela → HRU, semillas aleatorias Monte Carlo y auditoría criptográfica JSON.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setActiveModalTab("SPECIFICATIONS")}
-                          className="mt-4 w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition cursor-pointer"
-                        >
-                          <Maximize2 className="w-3.5 h-3.5" />
-                          <span>Inspeccionar procedencia (Modal)</span>
-                        </button>
-                      </div>
-                    </div>
                   </div>
 
                   {/* MODAL 1: SERIES TEMPORALES E HIDROGRAMA */}
