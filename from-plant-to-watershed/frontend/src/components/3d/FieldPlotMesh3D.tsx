@@ -330,7 +330,17 @@ export default function FieldPlotMesh3D({
                     <div className="grid grid-cols-2 gap-x-2 text-[10px] font-mono text-zinc-300">
                       <span>Alt: <b>{sample.variables.height_m?.value !== null ? `${Number(sample.variables.height_m?.value).toFixed(2)}m` : "Sin dato"}</b></span>
                       <span>LAI: <b>{sample.variables.lai?.value !== null ? Number(sample.variables.lai?.value).toFixed(2) : "Sin dato"}</b></span>
+                      <span>Hojas: <b>{sample.variables.leaf_count?.value !== null ? Math.round(Number(sample.variables.leaf_count.value)) : "Sin dato"}</b></span>
+                      <span>Biomasa: <b>{sample.variables.biomass_g_plant?.value !== null ? `${Number(sample.variables.biomass_g_plant.value).toFixed(0)}g` : "Sin dato"}</b></span>
                     </div>
+                    {sample.calendar_id && (
+                      <div className="text-[9px] font-mono text-zinc-400 text-center">
+                        <div>Cal: <span className="text-zinc-200">{sample.calendar_id}</span></div>
+                        {sample.hru_ids && sample.hru_ids.length > 0 && (
+                          <div>HRUs: <span className="text-teal-300">{sample.hru_ids.join(", ")}</span></div>
+                        )}
+                      </div>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -396,25 +406,55 @@ export default function FieldPlotMesh3D({
 
             <div className="mt-2 space-y-0.5 text-[11px] font-mono text-zinc-300">
               <div>
-                <span className="text-zinc-400">LAI:</span>{" "}
+                <span className="text-zinc-400">LAI medio:</span>{" "}
                 <b className="text-emerald-300">
                   {reference || showReferenceCanopy ? "Referencia visual" : lai === null ? "No disponible" : lai.toFixed(2)}
                 </b>
               </div>
               <div>
-                <span className="text-zinc-400">Altura:</span>{" "}
+                <span className="text-zinc-400">Altura media:</span>{" "}
                 <b className="text-emerald-300">
                   {reference || showReferenceCanopy ? "Referencia visual" : height === null ? "No disponible" : `${height.toFixed(2)} m`}
                 </b>
               </div>
+              {!reference && !showReferenceCanopy && scene && (
+                <>
+                  <div>
+                    <span className="text-zinc-400">Biomasa media:</span>{" "}
+                    <b className="text-emerald-300">
+                      {scene.record.field.biomass_g_plant?.value !== null && scene.record.field.biomass_g_plant?.value !== undefined
+                        ? `${Number(scene.record.field.biomass_g_plant.value).toFixed(1)} g/planta`
+                        : "No disponible"}
+                    </b>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400">Estrés hídrico:</span>{" "}
+                    <b className={scene.stress !== null && scene.stress > 0.4 ? "text-amber-400" : "text-emerald-300"}>
+                      {scene.stress === null ? "No disponible" : scene.stress.toFixed(2)}
+                    </b>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400">Transpiración:</span>{" "}
+                    <b className="text-cyan-300">
+                      {scene.transpirationMmDay === null ? "No disponible" : `${scene.transpirationMmDay.toFixed(2)} mm/d`}
+                    </b>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400">Humedad de suelo:</span>{" "}
+                    <b className="text-teal-300">
+                      {scene.soilMoisturePercent === null ? "No disponible" : `${scene.soilMoisturePercent.toFixed(2)} %`}
+                    </b>
+                  </div>
+                </>
+              )}
               <div>
                 <span className="text-zinc-400">Población gráfica:</span>{" "}
-                <span className="text-teal-200">1,014 plantas instanciadas</span>
+                <span className="text-teal-200">1,014 plantas decorativas</span>
               </div>
             </div>
 
             <p className="mt-2 text-[10px] text-zinc-400">
-              Las instancias son vegetación decorativa; {sampleMarkers.length} muestras FSPM persistidas con ID propio.
+              Las 1,014 instancias son vegetación decorativa; {sampleMarkers.length} muestras FSPM persistidas con ID y calendario propio.
             </p>
 
             {scene?.record.crop?.window_status === "APPROXIMATE_PLANTING_WINDOW" && (
