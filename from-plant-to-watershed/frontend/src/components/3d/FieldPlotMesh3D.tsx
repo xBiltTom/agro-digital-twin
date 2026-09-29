@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html, Line } from "@react-three/drei";
-import * as THREE from "three";
-import type { SceneState } from "../../lib/playback-scene";
+import { numeric, type SceneState } from "../../lib/playback-scene";
 import { fieldCanopyAvailable, maizeReproductive } from "../../lib/visual-state";
 import {
   createCurvedMaizeLeafGeometry,
@@ -21,19 +21,43 @@ interface Props {
   showHydrologyFlow?: boolean;
 }
 
-/** 26 × 39 decorative maize meshes (1,014 plants), driven by the field mean with traveling organic wind waves. */
+/** Ordenación determinista de las 1.014 plantas en 7 franjas de cosecha progresiva */
+function computeDeterministicRanks(rows: number, columns: number): number[] {
+  const count = rows * columns;
+  const items: { index: number; score: number }[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < columns; c++) {
+      const idx = r * columns + c;
+      const hash = ((idx * 9301 + 49297) % 233280) / 233280;
+      // 7 franjas de cosecha en pasadas de campo
+      const swath = Math.floor((c / columns) * 7);
+      const score = swath + (r / rows) * 0.14 + hash * 0.08;
+      items.push({ index: idx, score });
+    }
+  }
+  items.sort((a, b) => a.score - b.score);
+  const ranks = new Array<number>(count);
+  for (let rank = 0; rank < count; rank++) {
+    ranks[items[rank].index] = rank;
+  }
+  return ranks;
+}
+
+/** 26 × 39 decorative maize meshes (1,014 plants), driven by the field mean with traveling organic wind waves and progressive harvesting. */
 function RichCanopy({
   heightM,
   lai,
   cover,
   stress,
   stage,
+  activeFraction = 1.0,
 }: {
   heightM: number;
   lai: number;
   cover: number | null;
   stress: number | null;
   stage: string | null;
+  activeFraction?: number;
 }) {
   const stems = useRef<THREE.InstancedMesh>(null);
   const lower = useRef<THREE.InstancedMesh>(null);
@@ -44,6 +68,9 @@ function RichCanopy({
   const rows = 26;
   const columns = 39;
   const count = rows * columns;
+
+  const ranks = useMemo(() => computeDeterministicRanks(rows, columns), [rows, columns]);
+  const visibleCount = Math.round(Math.max(0, Math.min(1, activeFraction)) * count);
 
   const leafGeoA = useMemo(() => createCurvedMaizeLeafGeometry(0.88, 0.17, 0.35), []);
   const leafGeoB = useMemo(() => createCurvedMaizeLeafGeometry(0.82, 0.15, 0.28), []);
@@ -82,6 +109,21 @@ function RichCanopy({
     baseData.current.scales = [];
 
     for (let i = 0; i < count; i++) {
+      const isPlantActive = ranks[i] < visibleCount;
+      if (!isPlantActive) {
+        // Planta cosechada: matriz escala cero
+        matrix.makeScale(0, 0, 0);
+        stems.current?.setMatrixAt(i, matrix);
+        lower.current?.setMatrixAt(i, matrix);
+        middle.current?.setMatrixAt(i, matrix);
+        upper.current?.setMatrixAt(i, matrix);
+        tassels.current?.setMatrixAt(i, matrix);
+        baseData.current.positions.push(new THREE.Vector3(0, 0, 0));
+        baseData.current.rotations.push(new THREE.Euler(0, 0, 0));
+        baseData.current.scales.push(new THREE.Vector3(0, 0, 0));
+        continue;
+      }
+
       const col = i % columns;
       const row = Math.floor(i / columns);
       const x = (col - (columns - 1) / 2) * 0.54;
@@ -127,7 +169,7 @@ function RichCanopy({
         if (ref.current.instanceColor) ref.current.instanceColor.needsUpdate = true;
       }
     });
-  }, [heightM, lai, cover, stress, stage, count, columns, rows]);
+  }, [heightM, lai, cover, stress, stage, count, columns, rows, activeFraction, visibleCount, ranks]);
 
   // Animación continua de ola de viento travelling sobre el dosel vegetal
   useFrame(({ clock }) => {
@@ -216,14 +258,23 @@ export default function FieldPlotMesh3D({
 }: Props) {
   const reference = scene === null;
   const [showReferenceCanopy, setShowReferenceCanopy] = useState(false);
+  const [prevSimId, setPrevSimId] = useState(scene?.record.simulation_id);
+  if (scene?.record.simulation_id !== prevSimId) {
+    setPrevSimId(scene?.record.simulation_id);
+    setShowReferenceCanopy(false);
+  }
 
   // La vegetación científica se dibuja cuando fieldCanopyAvailable es verdadero;
   // En HYDROLOGY_ONLY o DATA_UNAVAILABLE el usuario puede activar explícitamente vegetación ilustrativa.
   const scientificCropAvailable = fieldCanopyAvailable(scene);
+  const useReferenceValues = reference || (showReferenceCanopy && !scientificCropAvailable);
   const showCrop = scientificCropAvailable || (showReferenceCanopy && !reference);
 
-  const height = reference || showReferenceCanopy ? 2.1 : scene?.fieldHeightM ?? null;
-  const lai = reference || showReferenceCanopy ? 3.5 : scene?.fieldLai ?? null;
+  const height = useReferenceValues ? 2.1 : scene?.fieldHeightM ?? null;
+  const lai = useReferenceValues ? 3.5 : scene?.fieldLai ?? null;
+  const activeFraction = useReferenceValues
+    ? 1.0
+    : Math.max(0, Math.min(1, scene?.activeCropAreaFraction ?? 1.0));
 
   const soilColor = scene?.soilMoisturePercent === null || !scene
     ? "#422b18"
@@ -258,13 +309,14 @@ export default function FieldPlotMesh3D({
       ))}
 
       {/* 3. Población de maíz instanciada (1,014 plantas) con PBR y física de viento */}
-      {showCrop && height !== null && lai !== null && (
+      {showCrop && height !== null && lai !== null && activeFraction > 0 && (
         <RichCanopy
           heightM={height}
           lai={lai}
-          cover={reference || showReferenceCanopy ? null : scene!.canopyCover}
-          stress={reference || showReferenceCanopy ? null : scene!.stress}
-          stage={reference || showReferenceCanopy ? "REPRODUCTIVE" : scene!.record.crop?.phenological_stage ?? null}
+          cover={useReferenceValues ? null : scene!.canopyCover}
+          stress={useReferenceValues ? null : scene!.stress}
+          stage={useReferenceValues ? "REPRODUCTIVE" : scene!.record.crop?.phenological_stage ?? null}
+          activeFraction={activeFraction}
         />
       )}
 
@@ -327,12 +379,20 @@ export default function FieldPlotMesh3D({
                       <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
                       <span>Muestra FSPM {sample.plant_id}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-x-2 text-[10px] font-mono text-zinc-300">
-                      <span>Alt: <b>{sample.variables.height_m?.value !== null ? `${Number(sample.variables.height_m?.value).toFixed(2)}m` : "Sin dato"}</b></span>
-                      <span>LAI: <b>{sample.variables.lai?.value !== null ? Number(sample.variables.lai?.value).toFixed(2) : "Sin dato"}</b></span>
-                      <span>Hojas: <b>{sample.variables.leaf_count?.value !== null ? Math.round(Number(sample.variables.leaf_count.value)) : "Sin dato"}</b></span>
-                      <span>Biomasa: <b>{sample.variables.biomass_g_plant?.value !== null ? `${Number(sample.variables.biomass_g_plant.value).toFixed(0)}g` : "Sin dato"}</b></span>
-                    </div>
+                    {(() => {
+                      const sampleHeight = numeric(sample.variables.height_m);
+                      const sampleLai = numeric(sample.variables.lai);
+                      const sampleLeaves = numeric(sample.variables.leaf_count);
+                      const sampleBiomass = numeric(sample.variables.biomass_g_plant);
+                      return (
+                        <div className="grid grid-cols-2 gap-x-2 text-[10px] font-mono text-zinc-300">
+                          <span>Alt: <b>{sampleHeight !== null ? `${sampleHeight.toFixed(2)}m` : "No disponible"}</b></span>
+                          <span>LAI: <b>{sampleLai !== null ? sampleLai.toFixed(2) : "No disponible"}</b></span>
+                          <span>Hojas: <b>{sampleLeaves !== null ? Math.round(sampleLeaves) : "No disponible"}</b></span>
+                          <span>Biomasa: <b>{sampleBiomass !== null ? `${sampleBiomass.toFixed(0)}g` : "No disponible"}</b></span>
+                        </div>
+                      );
+                    })()}
                     {sample.calendar_id && (
                       <div className="text-[9px] font-mono text-zinc-400 text-center">
                         <div>Cal: <span className="text-zinc-200">{sample.calendar_id}</span></div>
@@ -422,8 +482,8 @@ export default function FieldPlotMesh3D({
                   <div>
                     <span className="text-zinc-400">Biomasa media:</span>{" "}
                     <b className="text-emerald-300">
-                      {scene.record.field.biomass_g_plant?.value !== null && scene.record.field.biomass_g_plant?.value !== undefined
-                        ? `${Number(scene.record.field.biomass_g_plant.value).toFixed(1)} g/planta`
+                      {numeric(scene.record.field.biomass_g_plant) !== null
+                        ? `${numeric(scene.record.field.biomass_g_plant)!.toFixed(1)} g/planta`
                         : "No disponible"}
                     </b>
                   </div>
@@ -449,9 +509,21 @@ export default function FieldPlotMesh3D({
               )}
               <div>
                 <span className="text-zinc-400">Población gráfica:</span>{" "}
-                <span className="text-teal-200">1,014 plantas decorativas</span>
+                <span className="text-teal-200">
+                  {activeFraction < 1 && activeFraction > 0
+                    ? `${Math.round(activeFraction * 1014)} / 1,014 plantas (${Math.round(activeFraction * 100)}% superficie activa)`
+                    : activeFraction === 0
+                    ? "Suelo sin cultivo activo"
+                    : "1,014 plantas decorativas"}
+                </span>
               </div>
             </div>
+
+            {activeFraction < 1 && activeFraction > 0 && (
+              <p className="mt-1.5 text-[9px] font-mono text-amber-300/90 border-t border-zinc-800/80 pt-1">
+                Cosecha escalonada ilustrativa gobernada por active_crop_area_fraction ({Math.round(activeFraction * 100)}%). Reducción visual esquemática sin correspondencia geográfica 1:1 con las HRUs.
+              </p>
+            )}
 
             <p className="mt-2 text-[10px] text-zinc-400">
               Las 1,014 instancias son vegetación decorativa; {sampleMarkers.length} muestras FSPM persistidas con ID y calendario propio.

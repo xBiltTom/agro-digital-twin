@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { PlaybackRecord, VariableState } from "../../types/playback";
 import { periodLabel, variableText } from "../../lib/playback-scene";
+import { adaptPlaybackVisual } from "../../lib/playback-visual-adapter";
+import type { VisualMode } from "../../types/playback-availability";
 import type { ScaleMode } from "./MultiScaleViewer3D";
 import {
   Mountain,
@@ -86,6 +88,8 @@ interface Props {
   onToggleFullscreen: () => void;
   onOpenExplorer?: () => void;
   selectedPlantId?: string | null;
+  onSelectPlant?: (plantId: string) => void;
+  visualMode?: VisualMode;
 }
 
 export default function TwinHUDOverlay({
@@ -110,6 +114,8 @@ export default function TwinHUDOverlay({
   onToggleFullscreen,
   onOpenExplorer,
   selectedPlantId,
+  onSelectPlant,
+  visualMode,
 }: Props) {
   const [showAllVariables, setShowAllVariables] = useState(false);
 
@@ -121,17 +127,20 @@ export default function TwinHUDOverlay({
 
   const period = periodLabel(record);
 
-  // Muestra seleccionada para la escala Micro
+  // Muestra seleccionada para la escala Micro: si fue cosechada, es null
   const plantSample = selectedPlantId
-    ? record.plant_samples.find((s) => s.plant_id === selectedPlantId)
-    : record.plant_samples[0];
+    ? (record.plant_samples.find((s) => s.plant_id === selectedPlantId) ?? null)
+    : (record.plant_samples[0] ?? null);
 
-  // Visual Mode
-  const mode = !record.crop?.active
-    ? "SCIENTIFIC_FALLOW"
-    : record.crop.active && (record.field.height_m?.value !== null || record.plant_samples.length > 0)
-    ? "SCIENTIFIC_ACTIVE"
-    : "HYDROLOGY_ONLY";
+  const isSelectedPlantHarvested = Boolean(
+    selectedPlantId && !plantSample && record.plant_samples.length > 0
+  );
+
+  // Modo visual unificado con playback-visual-adapter
+  const mode: VisualMode = visualMode ?? adaptPlaybackVisual(record, {
+    simulationId: record.simulation_id,
+    selectedPlantId,
+  }).mode;
 
   const modeBadge =
     mode === "SCIENTIFIC_ACTIVE" ? (
@@ -142,9 +151,17 @@ export default function TwinHUDOverlay({
       <span className="rounded bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 text-[10px] font-mono text-amber-300">
         SCIENTIFIC_FALLOW · Barbecho
       </span>
-    ) : (
-      <span className="rounded bg-cyan-500/20 border border-cyan-500/30 px-2 py-0.5 text-[10px] font-mono text-cyan-300">
+    ) : mode === "HYDROLOGY_ONLY" ? (
+      <span className="rounded bg-teal-500/20 border border-teal-500/30 px-2 py-0.5 text-[10px] font-mono text-teal-300">
         HYDROLOGY_ONLY · Hidrología SWAT+
+      </span>
+    ) : mode === "HISTORICAL_REFERENCE" ? (
+      <span className="rounded bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 text-[10px] font-mono text-purple-300">
+        HISTORICAL_REFERENCE · Referencia histórica
+      </span>
+    ) : (
+      <span className="rounded bg-rose-500/20 border border-rose-500/30 px-2 py-0.5 text-[10px] font-mono text-rose-300">
+        DATA_UNAVAILABLE · Sin datos científicos
       </span>
     );
 
@@ -267,35 +284,51 @@ export default function TwinHUDOverlay({
               )}
 
               {scaleMode === "MICRO" && (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-7">
-                  <Metric
-                    title="Altura muestra"
-                    value={plantSample?.variables.height_m ?? record.field.height_m}
-                  />
-                  <Metric
-                    title="LAI muestra"
-                    value={plantSample?.variables.lai ?? record.field.lai}
-                  />
-                  <Metric
-                    title="Hojas simuladas"
-                    value={plantSample?.variables.leaf_count}
-                  />
-                  <Metric
-                    title="Área foliar"
-                    value={plantSample?.variables.leaf_area_m2}
-                  />
-                  <Metric
-                    title="Profundidad raíz"
-                    value={plantSample?.variables.root_depth_m ?? record.field.root_depth_m}
-                  />
-                  <Metric
-                    title="Estrés CWSI"
-                    value={plantSample?.variables.water_stress ?? record.field.water_stress}
-                  />
-                  <Metric
-                    title="Transpiración"
-                    value={plantSample?.variables.actual_transpiration_mm_day ?? record.field.actual_transpiration_mm_day}
-                  />
+                <div>
+                  {isSelectedPlantHarvested && (
+                    <div className="mb-2 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-950/40 px-3 py-1.5 text-xs text-amber-200 font-mono">
+                      <span>Muestra <b>{selectedPlantId}</b> ya no está activa en esta fecha (calendario cosechado).</span>
+                      {onSelectPlant && record.plant_samples[0] && (
+                        <button
+                          type="button"
+                          onClick={() => onSelectPlant(record.plant_samples[0].plant_id)}
+                          className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] text-amber-300 hover:bg-amber-500/30 border border-amber-500/40"
+                        >
+                          Seleccionar muestra activa ({record.plant_samples.length} disp.) →
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-7">
+                    <Metric
+                      title="Altura muestra"
+                      value={plantSample?.variables.height_m}
+                    />
+                    <Metric
+                      title="LAI muestra"
+                      value={plantSample?.variables.lai}
+                    />
+                    <Metric
+                      title="Hojas simuladas"
+                      value={plantSample?.variables.leaf_count}
+                    />
+                    <Metric
+                      title="Área foliar"
+                      value={plantSample?.variables.leaf_area_m2}
+                    />
+                    <Metric
+                      title="Profundidad raíz"
+                      value={plantSample?.variables.root_depth_m}
+                    />
+                    <Metric
+                      title="Estrés CWSI"
+                      value={plantSample?.variables.water_stress}
+                    />
+                    <Metric
+                      title="Transpiración"
+                      value={plantSample?.variables.actual_transpiration_mm_day}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -332,8 +365,12 @@ export default function TwinHUDOverlay({
                   Fenología: <b className="text-emerald-300">{record.crop.phenological_stage ?? "Etapa no declarada"}</b>
                   {record.crop.season_id && ` · ${record.crop.season_id}`}
                 </span>
+              ) : mode === "HYDROLOGY_ONLY" ? (
+                <span className="text-teal-300">Simulación hidrológica SWAT+ sin modelo de cultivo FSPM acoplado.</span>
+              ) : mode === "DATA_UNAVAILABLE" ? (
+                <span className="text-rose-400">Datos científicos no disponibles para este registro.</span>
               ) : (
-                <span className="text-amber-300/90">Sin cultivo FSPM activo en esta fecha.</span>
+                <span className="text-amber-300/90">Suelo en descanso / barbecho agrícola fuera de la temporada de cultivo.</span>
               )}
               {record.crop?.window_status === "APPROXIMATE_PLANTING_WINDOW" && (
                 <span> · Ventana agrícola aproximada</span>

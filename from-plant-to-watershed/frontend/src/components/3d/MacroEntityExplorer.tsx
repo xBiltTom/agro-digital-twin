@@ -8,12 +8,11 @@ import {
   X,
   Search,
   Filter,
-  Info,
   Sprout,
   ShieldAlert,
 } from "lucide-react";
 import type { PlaybackRecord, VariableState } from "../../types/playback";
-import { variableText } from "../../lib/playback-scene";
+import { numeric, variableText } from "../../lib/playback-scene";
 
 interface Props {
   record: PlaybackRecord;
@@ -123,15 +122,26 @@ export default function MacroEntityExplorer({
     });
   }, [record.channel_results, searchChannel]);
 
+  const outletChannel = useMemo(() => {
+    if (!record.channel_results.length) return null;
+    if (record.outlet_unit) {
+      const match = record.channel_results.find(
+        (c) => c.gis_id === record.outlet_unit || c.channel_id === record.outlet_unit
+      );
+      if (match) return match;
+    }
+    return record.channel_results.find((c) => c.gis_id === "153") ?? record.channel_results[0] ?? null;
+  }, [record.channel_results, record.outlet_unit]);
+
   const selectedHru = useMemo(() => {
     if (!selectedHruId) return record.hru_results[0] ?? null;
     return record.hru_results.find((h) => h.hru_id === selectedHruId) ?? record.hru_results[0] ?? null;
   }, [record.hru_results, selectedHruId]);
 
   const selectedChannel = useMemo(() => {
-    if (!selectedChannelId) return record.channel_results.find((c) => c.gis_id === "153") ?? record.channel_results[0] ?? null;
-    return record.channel_results.find((c) => c.channel_id === selectedChannelId) ?? record.channel_results[0] ?? null;
-  }, [record.channel_results, selectedChannelId]);
+    if (!selectedChannelId) return outletChannel ?? record.channel_results[0] ?? null;
+    return record.channel_results.find((c) => c.channel_id === selectedChannelId) ?? outletChannel ?? record.channel_results[0] ?? null;
+  }, [record.channel_results, selectedChannelId, outletChannel]);
 
   // Grupos de calendarios de maíz
   const calendarGroups = useMemo(() => {
@@ -167,6 +177,11 @@ export default function MacroEntityExplorer({
     return Array.from(groupsMap.values());
   }, [record.hru_results, record.plant_samples]);
 
+  const totalCornHrus = useMemo(
+    () => new Set(calendarGroups.flatMap((g) => g.hruIds)).size,
+    [calendarGroups]
+  );
+
   if (!isOpen) return null;
 
   return (
@@ -180,7 +195,7 @@ export default function MacroEntityExplorer({
             </div>
             <div>
               <h2 className="text-sm font-bold text-zinc-100 sm:text-base">
-                Explorador Científico Multiescala · South Fork 2019
+                Explorador Científico Multiescala · {record.watershed_code ? `South Fork (${record.watershed_code})` : (record.watershed_id ?? "Cuenca")}
               </h2>
               <p className="text-[11px] text-zinc-400">
                 Estados diarios SWAT+ y acoplamiento FSPM · Fecha: <b className="text-cyan-300">{record.date}</b> ({record.resolution})
@@ -214,7 +229,7 @@ export default function MacroEntityExplorer({
             }`}
           >
             <Layers className="h-3.5 w-3.5" />
-            36 Unidades Hidrológicas (HRUs)
+            {record.hru_results.length} Unidades Hidrológicas (HRUs)
           </button>
           <button
             onClick={() => setActiveTab("channels")}
@@ -225,7 +240,7 @@ export default function MacroEntityExplorer({
             }`}
           >
             <Waves className="h-3.5 w-3.5" />
-            37 Canales SWAT+
+            {record.channel_results.length} Canales SWAT+
           </button>
           <button
             onClick={() => setActiveTab("calendars")}
@@ -236,7 +251,7 @@ export default function MacroEntityExplorer({
             }`}
           >
             <Calendar className="h-3.5 w-3.5" />
-            7 Calendarios de Manejo (32 HRU de maíz)
+            {calendarGroups.length} Calendarios de Manejo ({totalCornHrus} HRU de maíz)
           </button>
         </div>
 
@@ -447,9 +462,10 @@ export default function MacroEntityExplorer({
                   <div className="divide-y divide-zinc-800/60">
                     {filteredChannels.map((ch) => {
                       const isSelected = selectedChannel?.channel_id === ch.channel_id;
-                      const isOutlet = ch.gis_id === "153" || ch.channel_id === "25";
-                      const qOut = ch.variables.streamflow_m3s?.value;
-                      const storage = ch.variables.channel_water_storage_m3?.value;
+                      const isOutlet = outletChannel ? ch.channel_id === outletChannel.channel_id : (ch.gis_id === "153" || ch.channel_id === "25");
+                      const qOut = numeric(ch.variables.streamflow_m3s);
+                      const storage = numeric(ch.variables.channel_water_storage_m3);
+                      const inflow = numeric(ch.variables.channel_inflow_m3s);
 
                       return (
                         <div
@@ -472,18 +488,16 @@ export default function MacroEntityExplorer({
                               )}
                             </div>
                             <span className="text-[10px] text-zinc-500">
-                              Almacenamiento: {storage !== null && storage !== undefined ? `${Number(storage).toFixed(1)} m³` : "0 m³"}
+                              Almacenamiento: {storage !== null ? `${storage.toFixed(1)} m³` : "No disponible"}
                             </span>
                           </div>
 
                           <div className="flex flex-col items-end gap-0.5 font-mono text-[11px]">
                             <span className="font-bold text-teal-300">
-                              Q: {qOut !== null && qOut !== undefined ? `${Number(qOut).toFixed(3)} m³/s` : "N/D"}
+                              Q: {qOut !== null ? `${qOut.toFixed(3)} m³/s` : "No disponible"}
                             </span>
                             <span className="text-[10px] text-zinc-400">
-                              Entrada: {ch.variables.channel_inflow_m3s?.value !== null && ch.variables.channel_inflow_m3s?.value !== undefined
-                                ? `${Number(ch.variables.channel_inflow_m3s.value).toFixed(3)} m³/s`
-                                : "N/D"}
+                              Entrada: {inflow !== null ? `${inflow.toFixed(3)} m³/s` : "No disponible"}
                             </span>
                           </div>
                         </div>
@@ -503,7 +517,7 @@ export default function MacroEntityExplorer({
                           <h3 className="text-base font-bold text-cyan-300">
                             Canal #{selectedChannel.channel_id}
                           </h3>
-                          {selectedChannel.gis_id === "153" && (
+                          {(outletChannel ? selectedChannel.channel_id === outletChannel.channel_id : (selectedChannel.gis_id === "153" || selectedChannel.channel_id === "25")) && (
                             <span className="rounded bg-teal-500/20 px-2 py-0.5 text-[10px] font-mono font-bold text-teal-300 border border-teal-500/30">
                               OUTLET DE CUENCA
                             </span>
@@ -515,14 +529,14 @@ export default function MacroEntityExplorer({
                       </div>
                     </div>
 
-                    {selectedChannel.gis_id === "153" && (
+                    {(outletChannel ? selectedChannel.channel_id === outletChannel.channel_id : (selectedChannel.gis_id === "153" || selectedChannel.channel_id === "25")) && (
                       <div className="rounded-lg bg-teal-950/40 p-2.5 text-xs border border-teal-500/30 text-teal-200">
                         <div className="flex items-center gap-1.5 font-bold text-teal-300">
-                          <Info className="h-4 w-4" />
-                          <span>Punto de Aforo y Descarga Principal USGS #05451210</span>
+                          <Waves className="h-4 w-4" />
+                          <span>Punto de Aforo y Descarga Principal de la Cuenca</span>
                         </div>
                         <p className="mt-1 text-[11px] text-zinc-300">
-                          Este canal corresponde a la desembocadura de la cuenca South Fork Iowa River en New Providence, IA. Su caudal de salida es el streamflow total publicado a escala Macro.
+                          Este canal ({record.outlet_unit ? `Unidad outlet: ${record.outlet_unit}` : `Canal #${selectedChannel.channel_id}`}) corresponde a la desembocadura de la cuenca. Su caudal de salida es el streamflow total publicado a escala Macro.
                         </p>
                       </div>
                     )}
@@ -560,7 +574,7 @@ export default function MacroEntityExplorer({
             <div className="flex flex-col gap-4 overflow-y-auto max-h-[64vh]">
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
                 <h3 className="text-sm font-bold text-zinc-100">
-                  Estructura de Manejo Agrícola · 7 Grupos de Calendario en 32 HRUs de Maíz
+                  Estructura de Manejo Agrícola · {calendarGroups.length} Grupos de Calendario en {totalCornHrus} HRUs de Maíz
                 </h3>
                 <p className="mt-1 text-xs text-zinc-400">
                   El motor FSPM crece la vegetación de cada grupo de calendario de forma independiente basándose en los eventos ejecutados por SWAT+ (siembra entre 15 y 16 de mayo; cosechas escalonadas entre 27 de agosto y 3 de septiembre). El campo en Meso muestra el promedio ponderado, mientras que las muestras FSPM conservan su calendario específico.

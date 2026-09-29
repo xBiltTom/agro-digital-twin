@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rainIntensity, sceneFromRecord, periodLabel, variableText, chartPointFromRecord, hasSouthForkContext, activePlantSample } from "../src/lib/playback-scene.ts";
+import { rainIntensity, sceneFromRecord, periodLabel, variableText, chartPointFromRecord, hasSouthForkContext, activePlantSample, numeric } from "../src/lib/playback-scene.ts";
 import { PlaybackClient } from "../src/lib/playback-client.ts";
 import { historicalFallbackEligible, simplifiedHistoricalPoints, swatHistoricalPoints } from "../src/lib/historical-charts.ts";
 import { accessibleSimulations, collectSimulationPages } from "../src/lib/simulation-access.ts";
@@ -360,7 +360,16 @@ function loadPhase234Frames(): Map<string, PlaybackRecord> {
   writeFileSync(tmp, gunzipSync(gz));
   const db = new DatabaseSync(tmp);
   const map = new Map<string, PlaybackRecord>();
-  const targetDates = ["2019-01-15", "2019-05-15", "2019-07-15", "2019-08-30", "2019-09-15", "2019-12-15"];
+  const targetDates = [
+    "2019-01-15",
+    "2019-05-15",
+    "2019-07-15",
+    "2019-08-27",
+    "2019-08-30",
+    "2019-09-03",
+    "2019-09-15",
+    "2019-12-15",
+  ];
   for (const date of targetDates) {
     const row = db.prepare("SELECT payload FROM frames WHERE date = ?").get(date) as { payload: string } | undefined;
     if (row) {
@@ -372,9 +381,9 @@ function loadPhase234Frames(): Map<string, PlaybackRecord> {
   return map;
 }
 
-test("phase234-sf-2019-v2: full verification across 6 landmark dates (Jan 15, May 15, Jul 15, Aug 30, Sep 15, Dec 15)", () => {
+test("phase234-sf-2019-v2: full verification across 8 landmark dates (Jan 15, May 15, Jul 15, Aug 27, Aug 30, Sep 3, Sep 15, Dec 15)", () => {
   const frames = loadPhase234Frames();
-  assert.equal(frames.size, 6);
+  assert.equal(frames.size, 8);
 
   // 1. 15 de enero: Sin cultivo FSPM activo; hidrología disponible
   const jan15 = frames.get("2019-01-15")!;
@@ -546,4 +555,168 @@ test("Macro scale: 36 HRUs and 37 Channels integrity, outlet channel GIS 153 mat
   assert.equal(outletChannel.variables.streamflow_m3s.value, jul15.hydrology.streamflow_m3s.value);
   assert.equal(outletChannel.variables.streamflow_m3s.value, 0.3202);
 });
+
+// --- Fase 5.1: Verificación de correcciones y pulido dinámico ---
+
+test("Fase 5.1 - Unified visual classification: distinguishes hydrology-only vs fallow vs active vs data unavailable without false fallow", () => {
+  const frames = loadPhase234Frames();
+  const jan15 = frames.get("2019-01-15")!;
+  const jul15 = frames.get("2019-07-15")!;
+
+  // 1. Simulación acoplada en invierno: SCIENTIFIC_FALLOW (barbecho agronómico real)
+  const visualJan = adaptPlaybackVisual(jan15, { simulationId: jan15.simulation_id });
+  const sceneJan = sceneFromRecord(jan15, null);
+  assert.equal(visualJan.mode, "SCIENTIFIC_FALLOW");
+  assert.equal(sceneJan.visual.mode, "SCIENTIFIC_FALLOW");
+
+  // 2. Simulación acoplada en verano: SCIENTIFIC_ACTIVE (cultivo de maíz activo)
+  const visualJul = adaptPlaybackVisual(jul15, { simulationId: jul15.simulation_id });
+  const sceneJul = sceneFromRecord(jul15, null);
+  assert.equal(visualJul.mode, "SCIENTIFIC_ACTIVE");
+  assert.equal(sceneJul.visual.mode, "SCIENTIFIC_ACTIVE");
+
+  // 3. Simulación exclusivamente hidrológica (SWAT baseline sin FSPM, crop === null)
+  const pureSwatRecord: PlaybackRecord = {
+    ...jan15,
+    crop: null,
+    field: {} as unknown as PlaybackRecord["field"],
+    plant_samples: [],
+  };
+  const visualSwat = adaptPlaybackVisual(pureSwatRecord, { simulationId: "swat-baseline" });
+  const sceneSwat = sceneFromRecord(pureSwatRecord, null);
+  // Debe ser HYDROLOGY_ONLY, NUNCA SCIENTIFIC_FALLOW
+  assert.equal(visualSwat.mode, "HYDROLOGY_ONLY");
+  assert.equal(sceneSwat.visual.mode, "HYDROLOGY_ONLY");
+
+  // 4. Registro nulo / sin datos: DATA_UNAVAILABLE
+  const visualNull = adaptPlaybackVisual(null, { simulationId: "empty" });
+  assert.equal(visualNull.mode, "DATA_UNAVAILABLE");
+});
+
+test("Fase 5.1 - Meso scale: progressive harvest via active_crop_area_fraction across Aug 27, Aug 30, Sep 3, Sep 15", () => {
+  const frames = loadPhase234Frames();
+  const jul15 = frames.get("2019-07-15")!;
+  const aug27 = frames.get("2019-08-27")!;
+  const aug30 = frames.get("2019-08-30")!;
+  const sep03 = frames.get("2019-09-03")!;
+  const sep15 = frames.get("2019-09-15")!;
+
+  const sceneJul = sceneFromRecord(jul15, null);
+  const sceneAug27 = sceneFromRecord(aug27, null);
+  const sceneAug30 = sceneFromRecord(aug30, null);
+  const sceneSep03 = sceneFromRecord(sep03, null);
+  const sceneSep15 = sceneFromRecord(sep15, null);
+
+  // 1. Plena temporada (15 Jul): 100% superficie activa
+  assert.equal(sceneJul.activeCropAreaFraction, 1.0);
+  assert.equal(jul15.plant_samples.length, 70);
+
+  // 2. Inicio de cosecha (27 Ago): 100% de superficie activa durante el día
+  assert.equal(sceneAug27.activeCropAreaFraction, 1.0);
+  assert.equal(aug27.plant_samples.length, 70);
+
+  // 3. Cosecha intermedia (30 Ago): ~43.3% superficie activa (calendarios 1-3 cosechados)
+  assert.ok(sceneAug30.activeCropAreaFraction !== null);
+  assert.ok(sceneAug30.activeCropAreaFraction > 0.40 && sceneAug30.activeCropAreaFraction < 0.45);
+  assert.equal(aug30.plant_samples.length, 40);
+
+  // 4. Último día de cosecha (3 Sep): ~3.65% superficie activa (solo calendario 7)
+  assert.ok(sceneSep03.activeCropAreaFraction !== null);
+  assert.ok(sceneSep03.activeCropAreaFraction > 0.03 && sceneSep03.activeCropAreaFraction < 0.05);
+  assert.equal(sep03.plant_samples.length, 10);
+
+  // 5. Post-cosecha completa (15 Sep): 0% superficie activa, fallow
+  assert.equal(sceneSep15.activeCropAreaFraction, 0);
+  assert.equal(sep15.plant_samples.length, 0);
+  assert.equal(sceneSep15.cropActive, false);
+
+  // Verificación de monotonía decreciente en periodo de cosecha
+  assert.ok(sceneAug27.activeCropAreaFraction! >= sceneAug30.activeCropAreaFraction!);
+  assert.ok(sceneAug30.activeCropAreaFraction! >= sceneSep03.activeCropAreaFraction!);
+  assert.ok(sceneSep03.activeCropAreaFraction! >= sceneSep15.activeCropAreaFraction!);
+});
+
+test("Fase 5.1 - Sample identity: sample disappearance after harvest, no silent substitution with field averages", () => {
+  const frames = loadPhase234Frames();
+  const jul15 = frames.get("2019-07-15")!;
+  const aug30 = frames.get("2019-08-30")!;
+
+  const cal1PlantId = "corn-2019-05-15-to-2019-08-27-01:maize-00001";
+
+  // En julio, la muestra está activa
+  const sampleJul = activePlantSample(jul15, cal1PlantId);
+  assert.ok(sampleJul !== null);
+  assert.equal(sampleJul.plant_id, cal1PlantId);
+  assert.equal(sampleJul.calendar_id, "corn-2019-05-15-to-2019-08-27-01");
+
+  // En agosto 30, la muestra ya fue cosechada
+  const sampleAug = activePlantSample(aug30, cal1PlantId);
+  assert.equal(sampleAug, null);
+
+  // sceneFromRecord con cal1PlantId debe retornar sample: null sin sustituirlo silenciosamente
+  const sceneAug = sceneFromRecord(aug30, cal1PlantId);
+  assert.equal(sceneAug.sample, null);
+
+  // maizeFromScene no debe mostrar la planta como activa ni inventar datos
+  const maizeAug = maizeFromScene(sceneAug);
+  assert.equal(maizeAug.heightM, null);
+  assert.equal(maizeAug.sampleId, null);
+  assert.equal(maizeAug.reference, false);
+
+  // El campo meso aún conserva 40 muestras de calendarios 4-7
+  assert.equal(aug30.plant_samples.length, 40);
+  // Al seleccionar null, activePlantSample devuelve una de las muestras activas
+  const fallbackSample = activePlantSample(aug30, null);
+  assert.ok(fallbackSample !== null);
+  assert.notEqual(fallbackSample.calendar_id, "corn-2019-05-15-to-2019-08-27-01");
+});
+
+test("Fase 5.1 - Optional variables safety & Macro Entity Explorer dynamic counts", () => {
+  const frames = loadPhase234Frames();
+  const jul15 = frames.get("2019-07-15")!;
+
+  // 1. Manejo seguro de variable ausente: variableText devuelve 'No disponible'
+  const absentVariable: VariableState = {
+    value: null,
+    unit: "m3",
+    availability: "NOT_AVAILABLE",
+    evidence: "NOT_AVAILABLE",
+    source: "test",
+    limitation: null,
+  };
+  assert.equal(variableText(absentVariable), "No disponible");
+  assert.equal(numeric(absentVariable), null);
+
+  // 2. Variable con valor 0 real se muestra como '0 m3', no 'No disponible'
+  const zeroVariable: VariableState = {
+    value: 0,
+    unit: "m3",
+    availability: "AVAILABLE",
+    evidence: "MODELLED_SWAT_PLUS",
+    source: "test",
+    limitation: null,
+  };
+  assert.equal(variableText(zeroVariable), "0 m3");
+  assert.equal(numeric(zeroVariable), 0);
+
+  // 3. Identificación dinámica del outlet a partir de record.outlet_unit
+  assert.equal(jul15.outlet_unit, "153");
+  const outlet = jul15.channel_results.find(
+    (c) => c.gis_id === jul15.outlet_unit || c.channel_id === jul15.outlet_unit
+  );
+  assert.ok(outlet);
+  assert.equal(outlet.channel_id, "25");
+  assert.equal(outlet.gis_id, "153");
+
+  // 4. Recuentos dinámicos del registro
+  assert.equal(jul15.hru_results.length, 36);
+  assert.equal(jul15.channel_results.length, 37);
+
+  // 5. Agrupación dinámica de calendarios de maíz
+  const calendarSet = new Set(
+    jul15.hru_results.map((h) => h.calendar_id).filter((c): c is string => Boolean(c))
+  );
+  assert.equal(calendarSet.size, 7);
+});
+
 

@@ -229,7 +229,8 @@ export default function Twin3DPage() {
           onSelectPlant={(id) => { if (id) setPlantId(id); }}
           showHydrologyFlow={showHydrologyFlow} showSoilHorizons={showSoilHorizons}
           showSensors={showSensors} showScientificLabels={showScientificLabels}
-          onOpenExplorer={() => setIsExplorerOpen(true)} />
+          onOpenExplorer={() => setIsExplorerOpen(true)}
+          selectedPlantId={plantId} />
         <TwinHUDOverlay record={record!} simulationName={simulation?.name ?? record!.simulation_id}
           scaleMode={scaleMode} onChangeScale={setScaleMode} isPlaying={playback.playing}
           onTogglePlay={() => playback.setPlaying((old) => !old)} index={playback.index}
@@ -243,7 +244,9 @@ export default function Twin3DPage() {
             else void viewerRef.current?.requestFullscreen();
           }}
           onOpenExplorer={() => setIsExplorerOpen(true)}
-          selectedPlantId={plantId} />
+          selectedPlantId={plantId}
+          onSelectPlant={(id) => { if (id) setPlantId(id); }}
+          visualMode={scene.visual.mode} />
       </> : simulation && historicalFallbackEligible(simulation.status, playback.page?.artifact_status ?? null) ? <HistoricalContext3D simulation={simulation}
         scaleMode={scaleMode} onChangeScale={setScaleMode}
         onToggleFullscreen={() => {

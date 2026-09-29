@@ -19,6 +19,8 @@ interface Props {
   showSoilHorizons?: boolean;
   showScientificLabels?: boolean;
   showHydrologyFlow?: boolean;
+  selectedPlantId?: string | null;
+  onSelectPlant?: (plantId: string) => void;
 }
 
 /** The sample's measured/modelled height maps directly to scene metres; leaf anatomy is illustrative. */
@@ -27,9 +29,18 @@ export default function PlantModel3D({
   showSoilHorizons = true,
   showScientificLabels = true,
   showHydrologyFlow = true,
+  selectedPlantId,
+  onSelectPlant,
 }: Props) {
   const [showReferencePlant, setShowReferencePlant] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+
+  const [prevSimId, setPrevSimId] = useState(scene?.record.simulation_id);
+  if (scene?.record.simulation_id !== prevSimId) {
+    setPrevSimId(scene?.record.simulation_id);
+    setShowReferencePlant(false);
+  }
+
   const plant = maizeFromScene(scene);
 
   // If no sample is available in the scientific record, allow explicit exploration of reference maize
@@ -258,9 +269,39 @@ export default function PlantModel3D({
             {scene && !scene.sample && (
               <div className="mt-1.5 rounded bg-amber-950/40 border border-amber-500/30 p-2 text-[10px] text-amber-300">
                 {scene.record.plant_samples.length > 0 ? (
-                  <p>La muestra seleccionada no está activa en esta fecha (su grupo de calendario fue cosechado o no ha iniciado). Hay {scene.record.plant_samples.length} muestras de otros calendarios en la escena.</p>
+                  <>
+                    <p>La muestra seleccionada {selectedPlantId ? `(${selectedPlantId})` : ""} ya no está activa en esta fecha (su grupo de calendario fue cosechado o no ha iniciado). Hay {scene.record.plant_samples.length} muestras de otros calendarios activas hoy.</p>
+                    {onSelectPlant && scene.record.plant_samples[0] && (
+                      <button
+                        type="button"
+                        onClick={() => onSelectPlant(scene.record.plant_samples[0].plant_id)}
+                        className="mt-1.5 w-full cursor-pointer rounded bg-emerald-600/90 hover:bg-emerald-500 py-1 text-center text-[10px] font-bold text-white transition"
+                      >
+                        Ver muestra activa ({scene.record.plant_samples[0].plant_id.split(":").pop() ?? scene.record.plant_samples[0].plant_id}) →
+                      </button>
+                    )}
+                  </>
                 ) : (
-                  <p>Fuera de la temporada de cultivo FSPM: no hay plantas activas en esta fecha.</p>
+                  <>
+                    <p>Fuera de la temporada de cultivo FSPM: no hay plantas científicas activas en esta fecha.</p>
+                    {!isDisplayingReference ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowReferencePlant(true)}
+                        className="mt-1.5 w-full cursor-pointer rounded bg-cyan-700/60 hover:bg-cyan-600 py-1 text-center text-[10px] font-bold text-white transition"
+                      >
+                        Explorar planta de referencia (ilustrativa) →
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setShowReferencePlant(false)}
+                        className="mt-1.5 w-full cursor-pointer rounded bg-zinc-800 hover:bg-zinc-700 py-1 text-center text-[10px] font-bold text-zinc-300 transition"
+                      >
+                        Ocultar planta de referencia
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}
