@@ -622,20 +622,20 @@ export default function SimulationsPage() {
                 </div>
 
               {/* Buscador */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <div className="relative p-2.5 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                <Search className="w-3.5 h-3.5 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={simSearchTerm}
                   onChange={(e) => setSimSearchTerm(e.target.value)}
                   placeholder="Filtrar por nombre o escenario..."
-                  className="w-full pl-8 pr-7 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+                  className="w-full pl-8 pr-7 py-1.5 text-xs rounded-none bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
                 />
                 {simSearchTerm && (
                   <button
                     type="button"
                     onClick={() => setSimSearchTerm("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -643,13 +643,13 @@ export default function SimulationsPage() {
               </div>
 
               {/* Filtro por Modelo */}
-              <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800/70 rounded-none text-xs">
+              <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-xs shrink-0">
                 <button
                   type="button"
                   onClick={() => setSimFilterModel("ALL")}
-                  className={`flex-1 py-1 rounded-none text-center transition cursor-pointer ${
+                  className={`flex-1 py-1 text-[11px] font-mono rounded-none text-center transition cursor-pointer ${
                     simFilterModel === "ALL"
-                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium shadow-none"
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
@@ -658,9 +658,9 @@ export default function SimulationsPage() {
                 <button
                   type="button"
                   onClick={() => setSimFilterModel("TWIN")}
-                  className={`flex-1 py-1 rounded-none text-center transition cursor-pointer ${
+                  className={`flex-1 py-1 text-[11px] font-mono rounded-none text-center transition cursor-pointer ${
                     simFilterModel === "TWIN"
-                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium shadow-none"
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
@@ -669,9 +669,9 @@ export default function SimulationsPage() {
                 <button
                   type="button"
                   onClick={() => setSimFilterModel("SWAT")}
-                  className={`flex-1 py-1 rounded-none text-center transition cursor-pointer ${
+                  className={`flex-1 py-1 text-[11px] font-mono rounded-none text-center transition cursor-pointer ${
                     simFilterModel === "SWAT"
-                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium shadow-none"
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
@@ -679,8 +679,8 @@ export default function SimulationsPage() {
                 </button>
               </div>
 
-              {/* Lista de Experimentos */}
-              <div className="flex flex-col gap-1.5 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
+              {/* Lista de Experimentos con Scroll Dinámico */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-1.5">
                 {filteredSimulations.length === 0 ? (
                   <div className="p-6 text-center rounded-none border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400">
                     No se encontraron simulaciones que coincidan con la búsqueda.
