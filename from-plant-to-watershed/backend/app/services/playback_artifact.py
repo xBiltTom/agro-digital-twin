@@ -208,10 +208,14 @@ class PlaybackArtifactStore:
         if not path.is_file():
             raise FileNotFoundError(path)
         signature = self._verify_manifest_hash(path, manifest)
-        with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as connection:
+        connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        try:
             for payload, digest in connection.execute("SELECT payload, sha256 FROM frames ORDER BY date"):
                 if hashlib.sha256(payload.encode("utf-8")).hexdigest() != digest:
                     raise ValueError("Playback frame checksum mismatch")
                 yield PlaybackRecord.model_validate_json(payload)
-        if self._signature(path) != signature:
-            raise ValueError("Playback artifact changed during diagnostic")
+            if self._signature(path) != signature:
+                raise ValueError("Playback artifact changed during diagnostic")
+        finally:
+            connection.close()
+
