@@ -7,19 +7,58 @@ import os
 import streamlit as st
 from src.locales.i18n import t
 from src.core.hardware import detect_compute_device
-from src.core.datasets.synthetic_generator import DATASET_SOURCE_LABEL
 from src.core.statistics_core import load_training_history
+from src.core.datasets.catalog import configured_real_artifact_dir, load_lab_dataset, source_labels
 
 
 def render_synthetic_data_badge():
-    """Renders prominent disclaimer badge for synthetic data."""
-    # st.markdown(f"""
-    # <div class="synthetic-badge">
-    #     <span>⚠️</span>
-    #     <span><b>MODO: {DATASET_SOURCE_LABEL}</b> — Datos generados para desarrollo de arquitectura y pruebas de gemelo digital. No representan observaciones reales USGS/USDA/CMIP6.</span>
-    # </div>
-    # """, unsafe_allow_html=True)
-    pass
+    """Renders a source badge without calling simulated results observations."""
+    metadata = st.session_state.get("active_dataset_metadata", {})
+    source_kind = metadata.get("source_kind", "synthetic_demo")
+    if source_kind == "synthetic_demo":
+        st.warning("**Modo demo sintético:** datos generados para pruebas de arquitectura; no son observaciones de campo.")
+    elif source_kind == "simulation_results":
+        st.info("**Resultados de simulación:** South Fork 2019 combina salidas SWAT+ y FSPM; no representa observaciones de campo.")
+    else:
+        st.info(f"**Origen del dataset:** {metadata.get('origin', 'no especificado')}")
+
+
+@st.cache_data(show_spinner=False)
+def load_selected_dataset(source: str, artifact_dir: str):
+    """Cache validated source loading while keeping core modules Streamlit-free."""
+    return load_lab_dataset(source, artifact_dir or None)
+
+
+def get_active_dataset():
+    """Load the source selected in the sidebar."""
+    source = st.session_state.get("active_dataset_source", "synthetic_demo")
+    artifact_dir = st.session_state.get("active_dataset_artifact_dir", str(configured_real_artifact_dir()))
+    frame, metadata, variable_catalog = load_selected_dataset(source, artifact_dir)
+    st.session_state["active_dataset_metadata"] = metadata
+    st.session_state["dataset_loaded"] = True
+    return frame, metadata, variable_catalog
+
+
+def render_dataset_selector():
+    """Select synthetic demo or one validated artifact run for all tabs."""
+    labels = source_labels()
+    source_keys = list(labels)
+    source_options = [labels[key] for key in source_keys]
+    current = st.session_state.get("active_dataset_source", source_keys[0])
+    if current not in source_keys:
+        current = source_keys[0]
+    selected_label = st.sidebar.selectbox(
+        "Fuente de datos del laboratorio:",
+        options=source_options,
+        index=source_keys.index(current),
+        key="dataset_source_selector",
+    )
+    selected = source_keys[source_options.index(selected_label)]
+    st.session_state["active_dataset_source"] = selected
+    artifact_dir = str(configured_real_artifact_dir())
+    st.session_state["active_dataset_artifact_dir"] = artifact_dir
+    if selected != "synthetic_demo":
+        st.sidebar.caption(f"Artefactos: `{artifact_dir}`")
 
 
 def render_auth_widget():
@@ -68,6 +107,7 @@ def render_auth_widget():
 
 def render_sidebar():
     """Renders sidebar system status, active target, auth widget, and champion model."""
+    render_dataset_selector()
     render_auth_widget()
 
     st.sidebar.markdown("---")
@@ -90,7 +130,8 @@ def render_sidebar():
     st.sidebar.caption(f"**Versión**: {t('sidebar_version')}")
     st.sidebar.caption(f"**Entorno**: {t('sidebar_env')}")
     st.sidebar.caption("**Dominio**: Maíz (Zea mays) • Corn Belt • SWAT+")
-    st.sidebar.caption("**Dataset**: DEMO / SYNTHETIC DATA")
+    metadata = st.session_state.get("active_dataset_metadata", {})
+    st.sidebar.caption(f"**Dataset**: {metadata.get('artifact_classification', 'SYNTHETIC_DEVELOPMENT_ARTIFACT')}")
 
 
 def render_hardware_analyzer():

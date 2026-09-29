@@ -67,8 +67,9 @@ class ModelBundle:
         validation_strategy: str,
         train_split_desc: str,
         random_seed: int = 42,
-        dataset_version: str = "v1.0-synthetic-cornbelt",
-        is_champion: bool = False
+        dataset_version: Optional[str] = None,
+        is_champion: bool = False,
+        dataset_metadata: Optional[Dict[str, Any]] = None,
     ) -> "ModelBundle":
         """
         Creates and writes the complete artifact bundle to disk.
@@ -113,13 +114,29 @@ class ModelBundle:
         timesteps = getattr(model, "timesteps", None)
         is_sequence_model = timesteps is not None and timesteps > 1
 
+        dataset_metadata = dict(dataset_metadata or {})
+        is_synthetic = bool(dataset_metadata.get("is_synthetic_training_data", True))
+        if dataset_version is None:
+            dataset_version = str(dataset_metadata.get("dataset_version", "v1.0-synthetic-cornbelt"))
+        artifact_classification = dataset_metadata.get(
+            "artifact_classification",
+            "SYNTHETIC_DEVELOPMENT_ARTIFACT" if is_synthetic else "UNCLASSIFIED_SIMULATION_ARTIFACT",
+        )
+        deployment_status = dataset_metadata.get(
+            "deployment_status",
+            "demo_only" if is_synthetic else "simulation_validation_only",
+        )
+        feature_units = {feature.name: feature.unit for feature in schema.features}
         metadata = {
             "model_name": model.name,
             "model_type": model.model_type,
             "target_name": target_name,
+            "target_unit": get_target_schema(target_name).unit,
+            "target_description": get_target_schema(target_name).description,
             "learning_mode": learning_mode,  # direct or residual
             "features": schema.feature_names,
             "feature_order": schema.feature_names,
+            "feature_units": feature_units,
             "is_sequence_model": is_sequence_model,
             "timesteps": timesteps if is_sequence_model else None,
             "training_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -129,10 +146,18 @@ class ModelBundle:
             "validation_strategy": validation_strategy,
             "metrics": metrics,
             "is_champion": is_champion,
-            "is_synthetic_training_data": True,
-            "artifact_classification": "SYNTHETIC_DEVELOPMENT_ARTIFACT",
-            "deployment_status": "demo_only",
-            "data_provenance": "Plant-to-Watershed Multi-Scale Simulator (Zea mays / SWAT+)",
+            "is_synthetic_training_data": is_synthetic,
+            "artifact_classification": artifact_classification,
+            "deployment_status": deployment_status,
+            "data_provenance": dataset_metadata.get(
+                "origin",
+                "Plant-to-Watershed Multi-Scale Simulator (Zea mays / SWAT+)",
+            ),
+            "dataset_period": dataset_metadata.get("period"),
+            "dataset_source_kind": dataset_metadata.get("source_kind", "synthetic_demo" if is_synthetic else "unknown"),
+            "dataset_id": dataset_metadata.get("dataset_id"),
+            "dataset_limitations": dataset_metadata.get("limitations", []),
+            "aggregation_rules": dataset_metadata.get("aggregation_rules", {}),
             "library_versions": library_versions
         }
 

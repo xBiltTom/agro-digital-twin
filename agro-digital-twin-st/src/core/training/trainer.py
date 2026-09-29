@@ -48,7 +48,9 @@ class MultiScaleTrainer:
         fast_dev_mode: bool = False,
         tune_hyperparameters: bool = False,
         sequence_length: int = 6,
-        artifact_base_dir: str = "artifacts"
+        artifact_base_dir: str = "artifacts",
+        schema: Optional[ModelFeatureSchema] = None,
+        dataset_metadata: Optional[Dict[str, Any]] = None,
     ):
         self.target_name = target_name
         self.learning_mode = learning_mode
@@ -61,13 +63,16 @@ class MultiScaleTrainer:
         self.tune_hyperparameters = tune_hyperparameters
         self.sequence_length = 3 if fast_dev_mode else sequence_length
         self.artifact_base_dir = artifact_base_dir
+        self.dataset_metadata = dict(dataset_metadata or {})
 
         self.target_schema: TargetSchema = get_target_schema(target_name)
-        self.schema: ModelFeatureSchema = get_default_feature_schema(
+        self.schema: ModelFeatureSchema = schema or get_default_feature_schema(
             mode=learning_mode,
             include_baseline=(learning_mode == "residual"),
             target_name=target_name
         )
+        if self.target_name in self.schema.feature_names:
+            raise ValueError(f"Target '{self.target_name}' cannot also be used as a feature.")
 
     def _tune_traditional_model(
         self,
@@ -143,6 +148,16 @@ class MultiScaleTrainer:
 
         # 0. Check seasonal crop yield aggregation (P0.5)
         working_df = df.copy()
+        if not self.dataset_metadata:
+            is_synthetic = bool(working_df["is_synthetic"].all()) if "is_synthetic" in working_df.columns else True
+            self.dataset_metadata = {
+                "dataset_id": "synthetic-development-dataset" if is_synthetic else "unclassified-dataset",
+                "dataset_version": "v1.0-synthetic-cornbelt" if is_synthetic else "unclassified",
+                "source_kind": "synthetic_demo" if is_synthetic else "unknown",
+                "is_synthetic_training_data": is_synthetic,
+                "artifact_classification": "SYNTHETIC_DEVELOPMENT_ARTIFACT" if is_synthetic else "UNCLASSIFIED_SIMULATION_ARTIFACT",
+                "origin": "Plant-to-Watershed synthetic development generator" if is_synthetic else "Unclassified dataset",
+            }
         if self.target_name == "maize_yield_t_ha" and "seasonal_precip_mm" not in working_df.columns:
             from src.core.datasets.yield_dataset import build_seasonal_yield_dataset
             working_df = build_seasonal_yield_dataset(working_df)
@@ -393,7 +408,8 @@ class MultiScaleTrainer:
                 metrics=bundle_metrics,
                 validation_strategy=self.validation_strategy,
                 train_split_desc=split_desc,
-                random_seed=self.random_seed
+                random_seed=self.random_seed,
+                dataset_metadata=self.dataset_metadata,
             )
 
             bundles[display_name] = bundle
@@ -438,7 +454,10 @@ class MultiScaleTrainer:
             "champion_artifact_dir": champ_dir,
             "ranking_records": ranking_records,
             "duration_seconds": total_elapsed,
-            "is_synthetic_dataset": True,
+            "is_synthetic_dataset": bool(self.dataset_metadata.get("is_synthetic_training_data", False)),
+            "dataset_id": self.dataset_metadata.get("dataset_id"),
+            "dataset_source_kind": self.dataset_metadata.get("source_kind"),
+            "artifact_classification": self.dataset_metadata.get("artifact_classification"),
             "models": {k: v["metrics"] for k, v in results.items()},
             "train_samples": len(train_idx),
             "val_samples": len(val_idx),
@@ -468,7 +487,9 @@ def train_models_pipeline(
     validation_strategy: str = "temporal",
     fast_dev_mode: bool = False,
     tune_hyperparameters: bool = False,
-    progress_callback: Optional[Callable[[float, str], None]] = None
+    progress_callback: Optional[Callable[[float, str], None]] = None,
+    schema: Optional[ModelFeatureSchema] = None,
+    dataset_metadata: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Convenience function to run training pipeline.
@@ -483,6 +504,8 @@ def train_models_pipeline(
         learning_mode=learning_mode,
         validation_strategy=validation_strategy,
         fast_dev_mode=fast_dev_mode,
-        tune_hyperparameters=tune_hyperparameters
+        tune_hyperparameters=tune_hyperparameters,
+        schema=schema,
+        dataset_metadata=dataset_metadata,
     )
     return trainer.train(df, progress_callback=progress_callback)
