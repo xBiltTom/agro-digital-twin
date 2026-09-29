@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { CheckCircle2, FileCheck2, FlaskConical, TriangleAlert, Info, Cpu, Layers } from "lucide-react";
+import { CheckCircle2, FileCheck2, FlaskConical, TriangleAlert, Cpu } from "lucide-react";
 import {
   PairedComparison,
   PairedMetric,
@@ -27,7 +27,7 @@ interface Props {
 }
 
 const number = (value: number | null | undefined, digits = 2) =>
-  value === null || value === undefined ? "—" : value.toFixed(digits);
+  value === null || value === undefined ? "No disponible" : value.toFixed(digits);
 
 function MetricRow({ label, metric, unit }: { label: string; metric?: PairedMetric | null; unit: string }) {
   if (!metric) return null;
@@ -35,7 +35,7 @@ function MetricRow({ label, metric, unit }: { label: string; metric?: PairedMetr
     ? "—"
     : `${metric.delta_percentage >= 0 ? "+" : ""}${metric.delta_percentage.toFixed(2)}%`;
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/40 p-3 text-xs font-mono">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 border border-slate-200 bg-slate-50 p-3 text-xs font-mono dark:border-slate-800 dark:bg-slate-950/40">
       <span className="font-bold text-zinc-800 dark:text-zinc-200">{label}</span>
       <span className="text-zinc-600 dark:text-zinc-400">Control (Base): <b>{number(metric.baseline)} {unit}</b></span>
       <span className="text-emerald-700 dark:text-emerald-400 font-bold">Acoplado: <b>{number(metric.coupled)} {unit}</b></span>
@@ -46,7 +46,7 @@ function MetricRow({ label, metric, unit }: { label: string; metric?: PairedMetr
 
 function ParameterUpdateRow({ update }: { update: SwatParameterUpdate }) {
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/60 p-3.5 text-xs">
+    <div className="border border-slate-200 bg-slate-50 p-3.5 text-xs dark:border-slate-800 dark:bg-slate-950/60">
       <div className="flex flex-wrap items-center justify-between gap-2 font-mono">
         <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800">
           {update.swat_parameter}
@@ -65,7 +65,8 @@ function ParameterUpdateRow({ update }: { update: SwatParameterUpdate }) {
 
 export default function SwatRunEvidencePanel({ simulation, result }: Props) {
   const provenance = result.provenance;
-  const isCoupled = provenance.evidence_type === "REAL_SWAT_PLUS_COUPLED";
+  const isCoupled = result.provenance_class === "COUPLED_EXECUTED";
+  const isHistoricalImport = result.origin === "HISTORICAL_IMPORT";
   const updates = provenance.parameter_updates ?? provenance.workspace_modifications?.parameter_updates ?? [];
   const notCoupled = provenance.workspace_modifications?.not_coupled ?? [];
   const rawComparison = simulation.summary_metrics?.paired_comparison ?? provenance.experiment;
@@ -94,30 +95,47 @@ export default function SwatRunEvidencePanel({ simulation, result }: Props) {
   }));
   const generatedOutputs = Object.values(provenance.output_generation ?? {});
   const changedOutputs = generatedOutputs.length > 0 && generatedOutputs.every((item) => item.generated_after_start);
+  const generationLabel = isHistoricalImport
+    ? "No aplica a una importación histórica"
+    : generatedOutputs.length === 0
+    ? "Sin metadatos para verificar la generación"
+    : changedOutputs
+      ? "Verificado en esta ejecución"
+      : "No se pudo confirmar en esta ejecución";
 
   return (
-    <section className="space-y-5 rounded-2xl border border-teal-300/80 bg-white p-6 shadow-sm dark:border-teal-900/60 dark:bg-zinc-900/60">
+    <section className="space-y-5 border border-slate-300 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">
         <div>
           <div className="flex items-center gap-2">
-            <FlaskConical className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+            <FlaskConical className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
             <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-              {isCoupled ? "Evidencia Experimental SWAT+ Acoplado (Motor Físico)" : "Línea Base Estándar SWAT+ (Sin Gemelo)"}
+              {isHistoricalImport
+                ? "Resultados históricos importados de SWAT+"
+                : isCoupled
+                  ? "Resultados de SWAT+ acoplado"
+                  : "Resultados de línea base SWAT+"}
             </h3>
           </div>
           <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-            Resultados generados por el ejecutable de SWAT+ v2024. La población vegetal individual transfiere parámetros dinámicos hacia una copia aislada de <code>plants.plt</code>.
+            {isHistoricalImport
+              ? "Se muestran registros guardados previamente. Esta corrida no se presenta como una ejecución realizada por el backend actual."
+              : isCoupled
+                ? "El backend ejecutó SWAT+ y registró el acoplamiento de parámetros vegetales en una copia aislada del proyecto."
+                : "El backend ejecutó SWAT+ con la configuración estándar de línea base."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-[10px] font-mono shrink-0">
-          <span className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-2.5 py-1 text-emerald-700 dark:text-emerald-300 font-bold">
-            {provenance.evidence_type}
+          <span className="border border-emerald-300 bg-emerald-50 px-2 py-1 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold">
+            {result.provenance_class}
           </span>
-          <span className="rounded-full border border-zinc-300 dark:border-zinc-700 px-2.5 py-1 text-zinc-600 dark:text-zinc-300">
-            exit {provenance.exit_code ?? 0}
-          </span>
-          <span className="rounded-full border border-zinc-300 dark:border-zinc-700 px-2.5 py-1 text-zinc-600 dark:text-zinc-300 font-semibold">
+          {provenance.exit_code != null && !isHistoricalImport && (
+            <span className="border border-slate-300 px-2 py-1 text-slate-600 dark:border-slate-700 dark:text-slate-300">
+              Código de salida {provenance.exit_code}
+            </span>
+          )}
+          <span className="border border-slate-300 px-2 py-1 text-slate-600 dark:border-slate-700 dark:text-slate-300 font-semibold">
             {result.records.length} periodos de cuenca
           </span>
         </div>
@@ -131,8 +149,8 @@ export default function SwatRunEvidencePanel({ simulation, result }: Props) {
           ["Percolación Profunda", totals.percolation_mm, "mm", "Recarga de acuíferos"],
           ["Caudal Medio Fluvial", result.water_balance?.mean_streamflow_m3s, "m³/s", "Descarga media en exutorio"],
         ].map(([label, value, unit, subtitle]) => (
-          <div key={String(label)} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/60 p-3.5 flex flex-col justify-between">
-            <span className="text-[10px] uppercase font-mono text-zinc-500 dark:text-zinc-400 font-semibold">{label}</span>
+          <div key={String(label)} className="border border-slate-200 bg-slate-50 p-3.5 flex flex-col justify-between dark:border-slate-800 dark:bg-slate-950/60">
+            <span className="text-[11px] text-slate-600 dark:text-slate-400">{label}</span>
             <div className="mt-1 font-mono text-base font-bold text-zinc-900 dark:text-zinc-100">
               {number(value as number | null | undefined)} <span className="text-[11px] font-normal text-zinc-500">{unit}</span>
             </div>
@@ -142,9 +160,9 @@ export default function SwatRunEvidencePanel({ simulation, result }: Props) {
       </div>
 
       {/* Hydrograph Chart */}
-      <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/40">
+      <div className="border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/40">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wide">
+          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
             Hidrograma y Componentes del Balance Hídrico SWAT+
           </span>
           <span className="text-[10px] font-mono text-zinc-400">Escala de periodos simulados</span>
@@ -241,17 +259,17 @@ export default function SwatRunEvidencePanel({ simulation, result }: Props) {
       )}
 
       {/* Provenance and Parameters Drawer */}
-      <details className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50/50 dark:bg-zinc-950/40" open={isCoupled}>
+      <details className="border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-950/40" open={isCoupled}>
         <summary className="cursor-pointer text-xs font-bold text-zinc-900 dark:text-zinc-100">
           Auditoría de Procedencia, Checksums y Parámetros Inyectados a SWAT+
         </summary>
         <div className="mt-3.5 grid grid-cols-1 gap-4 text-xs md:grid-cols-2 pt-2 border-t border-zinc-200/80 dark:border-zinc-800/80">
           <div className="space-y-2 text-zinc-600 dark:text-zinc-300">
-            <div>Motor ejecutable: <b>{provenance.engine ?? "SWAT+"} {provenance.executable_version ?? "v2024"}</b></div>
-            <div>Archivos generados: <b>{(provenance.output_files ?? []).join(", ") || "channel_sd_day.txt, hru_wb_day.txt"}</b></div>
+            <div>Motor ejecutable: <b>{isHistoricalImport ? "No ejecutado en esta aplicación" : `${provenance.engine ?? "SWAT+"}${provenance.executable_version ? ` ${provenance.executable_version}` : " · versión no registrada"}`}</b></div>
+            <div>Archivos registrados: <b>{(provenance.output_files ?? []).join(", ") || "No declarados"}</b></div>
             <div className="flex items-center gap-1.5">
               {changedOutputs ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <TriangleAlert className="h-4 w-4 text-amber-600" />}
-              <span>Generados en el ciclo de ejecución actual: <b>{changedOutputs ? "Verificado (OK)" : "Confirmado"}</b></span>
+              <span>Generación de archivos: <b>{generationLabel}</b></span>
             </div>
             {isCoupled && (
               <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 font-mono text-[11px]">

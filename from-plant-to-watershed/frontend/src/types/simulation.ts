@@ -149,9 +149,11 @@ export interface HruAggregates {
 
 export interface SwatComparisonMonth {
   month?: string;
+  period?: string;
   observed_streamflow_m3s?: number | null;
   baseline_streamflow_m3s?: number | null;
   twin_streamflow_m3s?: number | null;
+  streamflow_m3s?: number | null;
   ml_assisted_streamflow_m3s?: number | null;
   [key: string]: unknown;
 }
@@ -199,6 +201,45 @@ export interface SwatPlusConfiguration {
   timeout_seconds?: number;
   run_type: SwatRunType;
   target_plant_name?: string;
+}
+
+export interface SimulationCreatePayload {
+  name: string;
+  watershed_id: string;
+  scenario_id: string;
+  duration_days: number;
+  seed: number;
+  parameters?: Record<string, number>;
+  mode?: "RESEARCH_MULTISCALE" | "DEVELOPMENT_LEGACY_DEMO" | "ML_ASSISTED" | "SWAT_PLUS";
+  plant_count?: number;
+  hydrology_backend?: "SIMPLIFIED" | "SWAT_PLUS";
+  external_model_id?: string;
+  management_scenario?: "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM";
+  climate_source?: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "OBSERVED_HYBRID" | "SWAT_PROJECT";
+  dataset_ids?: string[];
+  dataset_roles?: Record<string, "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY">;
+  station_id?: string;
+  start_date: string;
+  end_date: string;
+  swat_plus?: SwatPlusConfiguration;
+}
+
+export interface SimulationPreflightBlocker {
+  code?: string;
+  message?: string;
+}
+
+export interface SimulationPreflightResponse {
+  status: "READY" | "BLOCKED";
+  backend?: string;
+  run_type?: SwatRunType;
+  blockers?: Array<string | SimulationPreflightBlocker>;
+  checks?: Record<string, boolean | number | string | null>;
+  estimated_executions?: number;
+  will_consume?: string[];
+  provenance_only?: string[];
+  watershed?: { id: string; code: string; area_km2: number; hru_representation?: string };
+  scenario?: { id: string; code: string; application: string };
 }
 
 export interface SwatRecord {

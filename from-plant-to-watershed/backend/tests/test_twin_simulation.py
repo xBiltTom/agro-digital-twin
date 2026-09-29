@@ -144,6 +144,12 @@ async def test_api_simulation_workflow():
         assert results[0]["plant_transpiration_mm"] >= 0.0
         assert abs(results[0]["water_balance_residual_mm"]) < 1e-9
 
+        five_year_limit_res = await ac.get(
+            f"/api/v1/simulations/{sim_id}/results?limit=2192", headers=headers
+        )
+        assert five_year_limit_res.status_code == 200
+        assert len(five_year_limit_res.json()) == 90
+
         rejected = await ac.post("/api/v1/simulations", headers=headers, json={
             "name": "Parámetro inerte", "watershed_id": watershed_id,
             "scenario_id": scenario_id, "duration_days": 5, "seed": 1,

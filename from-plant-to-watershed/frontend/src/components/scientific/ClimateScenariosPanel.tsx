@@ -1,24 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   SunMedium,
-  Droplets,
   Sprout,
   Shield,
   Layers,
   Thermometer,
   CloudRain,
-  TrendingDown,
-  TrendingUp,
   BarChart3,
-  Activity,
-  ArrowRight,
-  Info,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  Wind,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -122,7 +112,7 @@ const SCENARIO_META: Record<string, {
 export default function ClimateScenariosPanel({ report: envelope }: Props) {
   if (!envelope) {
     return (
-      <div className="p-12 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 text-center text-xs text-zinc-500 shadow-sm">
+      <div className="border border-slate-300 bg-white p-8 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
         Cargando escenarios de adaptación climática...
       </div>
     );
@@ -130,7 +120,7 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
 
   if (envelope.current_contract.current_execution_status === "NOT_EXECUTED") {
     return (
-      <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      <div className="border border-amber-300 bg-amber-50/70 p-6 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
         Escenarios v2 pendientes de ejecución. Los escenarios v1 no se presentan como resultados actuales.
       </div>
     );
@@ -139,7 +129,7 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
   const report = envelope.current_result;
   if (!report) {
     return (
-      <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      <div className="border border-amber-300 bg-amber-50/70 p-6 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
         El contrato South Fork v2 figura como ejecutado, pero sus escenarios no están disponibles.
       </div>
     );
@@ -147,7 +137,7 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
 
   if (report.scenarios.length === 0) {
     return (
-      <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      <div className="border border-amber-300 bg-amber-50/70 p-6 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
         Escenarios v2 pendientes de ejecución o no incluidos en el resultado actual.
       </div>
     );
@@ -177,7 +167,7 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* 1. Header Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-50/80 via-white to-cyan-50/80 dark:from-amber-950/30 dark:via-zinc-900 dark:to-cyan-950/30 border border-amber-300 dark:border-amber-800/60 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 border border-slate-300 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
             <SunMedium className="w-5 h-5 text-amber-600 dark:text-amber-400" />
@@ -190,14 +180,14 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-zinc-600 dark:text-zinc-400 bg-white/90 dark:bg-zinc-950/90 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 shrink-0 shadow-xs">
+        <div className="flex shrink-0 items-center gap-2 border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-mono text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400">
           <Layers className="w-3.5 h-3.5 text-amber-600" />
           <span>{report.scenarios.length} escenarios evaluados</span>
         </div>
       </div>
 
       {/* 2. Comparative Delta Bar Chart */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-4">
+      <div className="flex flex-col gap-4 border border-slate-300 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-100 dark:border-zinc-800">
           <div>
             <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide flex items-center gap-2">
@@ -270,7 +260,7 @@ export default function ClimateScenariosPanel({ report: envelope }: Props) {
           return (
             <div
               key={idx}
-              className={`p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border ${meta.borderColor} shadow-sm flex flex-col justify-between hover:shadow-md transition`}
+              className={`flex flex-col justify-between border ${meta.borderColor} bg-white p-4 transition-colors dark:bg-slate-900`}
             >
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">

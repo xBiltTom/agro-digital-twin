@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "../../../context/AuthContext";
 import { api } from "../../../lib/api";
@@ -12,37 +12,35 @@ import {
   TwinWebSocketTick,
   SwatResultsResponse,
   SwatRunType,
-  ExternalModelInfo,
   DatasetInfo,
   CurrentFinalScientificReportResponse,
+  AIInsightsResponse,
+  SimulationCreatePayload,
+  SimulationPreflightResponse,
+  SwatComparisonMonth,
 } from "../../../types/simulation";
 import SwatRunEvidencePanel from "../../../components/scientific/SwatRunEvidencePanel";
 import HypothesisValidationPanel from "../../../components/scientific/HypothesisValidationPanel";
 import ClimateScenariosPanel from "../../../components/scientific/ClimateScenariosPanel";
 import StatisticalBatteryPanel from "../../../components/scientific/StatisticalBatteryPanel";
 import { AIInsightsCard } from "../../../components/simulations/AIInsightsCard";
+import { classifySimulationEvidence, simulationEvidenceLabel } from "../../../lib/simulation-evidence";
+import { datedMonthlyComparisonRows } from "../../../lib/simulation-chart-data";
 import {
   Plus,
-  Play,
-  Pause,
   RefreshCw,
   Search,
   X,
   ExternalLink,
   Layers,
-  Database,
   Sprout,
   Droplets,
-  Mountain,
   Waves,
-  Calendar,
   AlertCircle,
   CheckCircle2,
   Loader2,
-  Clock,
   Radio,
   FileText,
-  SlidersHorizontal,
   LayoutGrid,
   Square,
   Rows3,
@@ -65,24 +63,6 @@ import {
   ReferenceLine,
 } from "recharts";
 
-const CAPABILITY_INFO: Record<string, { label: string; desc: string; category: string }> = {
-  postgresql: { label: "Base de Datos Relacional", desc: "Almacenamiento persistente de series temporales de clima, cuencas y corridas", category: "Infraestructura" },
-  fastapi: { label: "Motor API Asíncrono", desc: "Orquestación de ejecuciones concurrentes y streaming de gemelo digital", category: "Infraestructura" },
-  nextjs: { label: "Panel React Dashboard", desc: "Sincronización reactiva de estado y visualización multiescala", category: "Infraestructura" },
-  usgs: { label: "Estación USGS 05451210", desc: "Aforo hidrográfico observado del río South Fork Iowa para contraste y calibración", category: "Datos & Sensores" },
-  dataset_registry: { label: "Catálogo Espacial y Satelital", desc: "GridMET, CDL, SSURGO y CHIRPS con verificación criptográfica de procedencia", category: "Datos & Sensores" },
-  cmip6: { label: "Proyecciones CMIP6 (NEX-GDDP)", desc: "Escenarios de cambio climático SSP2-4.5 y SSP5-8.5 desagregados espacialmente", category: "Datos & Sensores" },
-  plant_population: { label: "Fisiología Individual de Maíz", desc: "Modelado micro: transpiración foliar, balance hídrico, LAI y dinámica de biomasa", category: "Física & Dinámica" },
-  plant_to_field: { label: "Agregación Planta → Parcela", desc: "Escalamiento espacial y promediado de biomasa y estrés de la población", category: "Física & Dinámica" },
-  field_to_hru: { label: "Mapeo Parcela → HRU Cuenca", desc: "Transferencia de parámetros a Unidades de Respuesta Hidrológica de suelo", category: "Física & Dinámica" },
-  simplified_hydrology: { label: "Balance Hídrico Feddes/CN", desc: "Infiltración SCS-CN, absorción radicular de Feddes y percolación en el perfil", category: "Física & Dinámica" },
-  swat_plus: { label: "Simulador SWAT+ v2024", desc: "Modelo físico semidistribuido de cuenca acoplado con el gemelo de cultivo", category: "Física & Dinámica" },
-  ml_joblib: { label: "Módulo Híbrido Scikit-Learn", desc: "Modelos supervisados de aceleración y corrección de sesgo hidrológico", category: "Inteligencia Artificial" },
-  ml_keras: { label: "Redes Profundas TensorFlow/Keras", desc: "Modelos neuronales recurrentes (LSTM) para predicción de caudales", category: "Inteligencia Artificial" },
-  ml_hybrid: { label: "Acoplamiento Físico-ML", desc: "Hibridación que combina leyes de conservación física con residuales ML", category: "Inteligencia Artificial" },
-  external_ml: { label: "Modelos ML Externos", desc: "Repositorio de artefactos serializados ONNX / PyTorch para ensamble", category: "Inteligencia Artificial" },
-};
-
 const DEFAULT_SIMPLIFIED_PARAMETERS = {
   base_kc: 1.05,
   max_root_depth_cm: 120,
@@ -95,11 +75,9 @@ interface PeriodPreset {
   label: string;
   durationBadge: string;
   days: number;
-  monthsApprox: number;
   startDate: string;
   endDate: string;
   shortDesc: string;
-  scientificPurpose: string;
 }
 
 const SIMULATION_PERIOD_PRESETS: PeriodPreset[] = [
@@ -108,57 +86,100 @@ const SIMULATION_PERIOD_PRESETS: PeriodPreset[] = [
     label: "3 Meses",
     durationBadge: "92 días",
     days: 92,
-    monthsApprox: 3,
     startDate: "2018-06-01",
     endDate: "2018-08-31",
     shortDesc: "Ventana crítica de floración y llenado de grano (Jun–Ago)",
-    scientificPurpose: "Evalúa la máxima demanda transpiratoria y la sensibilidad de Sobol sobre el índice de estrés hídrico CWSI.",
   },
   {
     id: "4M",
     label: "4 Meses (Ciclo Maíz)",
     durationBadge: "123 días",
     days: 123,
-    monthsApprox: 4,
     startDate: "2018-05-01",
     endDate: "2018-08-31",
     shortDesc: "Ciclo fenológico completo del cultivo de maíz (May–Ago)",
-    scientificPurpose: "Modela las 1,000 plantas FSPM desde emergencia hasta madurez para contrastar biomasa con rendimientos USDA NASS.",
   },
   {
     id: "6M",
     label: "6 Meses",
     durationBadge: "183 días",
     days: 183,
-    monthsApprox: 6,
     startDate: "2018-04-01",
     endDate: "2018-09-30",
     shortDesc: "Temporada agronómica estival completa (Abr–Sep)",
-    scientificPurpose: "Permite evaluar la respuesta hidrológica del suelo ante prácticas de manejo como Siembra Directa (No-Till).",
   },
   {
     id: "1Y",
     label: "1 Año Completo",
     durationBadge: "365 días",
     days: 365,
-    monthsApprox: 12,
     startDate: "2018-01-01",
     endDate: "2018-12-31",
     shortDesc: "Año hidrológico continuo (Ene–Dic)",
-    scientificPurpose: "Cierra el balance hídrico completo de la cuenca: precipitación, evapotranspiración, percolación y escorrentía.",
   },
   {
     id: "5Y",
-    label: "5 Años (Validación H1)",
-    durationBadge: "2,192 días",
-    days: 2192,
-    monthsApprox: 72,
-    startDate: "2015-01-01",
+    label: "2018–2020",
+    durationBadge: "1,096 días de evaluación",
+    days: 1096,
+    startDate: "2018-01-01",
     endDate: "2020-12-31",
-    shortDesc: "Horizonte multianual del protocolo (2015–2020)",
-    scientificPurpose: "Sustenta el contraste formal de la Hipótesis H1 de la Ficha Técnica: reducción de RMSE mensual ≥15% contra aforo USGS 05451210.",
+    shortDesc: "Ventana de evaluación del informe vigente; una corrida nueva no reproduce automáticamente ese informe.",
+  },
+  {
+    id: "CUSTOM",
+    label: "A medida",
+    durationBadge: "Fechas propias",
+    days: 0,
+    startDate: "",
+    endDate: "",
+    shortDesc: "El rango lo definen las fechas de inicio y término.",
   },
 ];
+
+function MonthlyComparisonChart({
+  rows,
+  stationId,
+}: {
+  rows: SwatComparisonMonth[];
+  stationId?: string | null;
+}) {
+  const chartRows = datedMonthlyComparisonRows(rows);
+  const hasObserved = chartRows.some((row) => typeof row.observed_streamflow_m3s === "number");
+  const hasBaseline = chartRows.some((row) => typeof row.baseline_streamflow_m3s === "number");
+  const hasCoupled = chartRows.some((row) => typeof row.twin_streamflow_m3s === "number");
+  const hasRunStreamflow = chartRows.some((row) => typeof row.streamflow_m3s === "number");
+  const hasMl = chartRows.some((row) => typeof row.ml_assisted_streamflow_m3s === "number");
+
+  if (!hasObserved && !hasBaseline && !hasCoupled && !hasRunStreamflow && !hasMl) {
+    return (
+      <div className="flex h-full items-center justify-center px-5 text-center text-xs text-slate-500 dark:text-slate-400">
+        Esta corrida no incluye una serie mensual para comparar.
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={chartRows}>
+        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
+        <XAxis dataKey="month" stroke="#9ca3af" fontSize={10} tickLine={false} />
+        <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} />
+        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
+        <Legend wrapperStyle={{ fontSize: "11px" }} />
+        {hasObserved && <Line type="monotone" dataKey="observed_streamflow_m3s" name={stationId ? `USGS ${stationId} observado` : "Caudal observado"} stroke="#176b78" strokeWidth={2} dot={false} connectNulls={false} />}
+        {hasBaseline && <Line type="monotone" dataKey="baseline_streamflow_m3s" name="Línea base SWAT+" stroke="#8a5d28" strokeWidth={1.5} dot={false} connectNulls={false} />}
+        {hasCoupled && <Line type="monotone" dataKey="twin_streamflow_m3s" name="SWAT+ acoplado" stroke="#5f7c3d" strokeWidth={2} dot={false} connectNulls={false} />}
+        {hasRunStreamflow && <Line type="monotone" dataKey="streamflow_m3s" name="Corrida seleccionada" stroke="#5f7c3d" strokeWidth={2} dot={false} connectNulls={false} />}
+        {hasMl && <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="Modelo ML" stroke="#68758a" strokeWidth={1.5} strokeDasharray="3 3" dot={false} connectNulls={false} />}
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+function isSwatBackend(simulation: SimulationRun) {
+  return simulation.hydrology_backend === "SWAT_PLUS";
+}
 
 export default function SimulationsPage() {
   const { hasAnyRole } = useAuth();
@@ -170,7 +191,6 @@ export default function SimulationsPage() {
   const [scenarios, setScenarios] = useState<ClimateScenario[]>([]);
   const [watersheds, setWatersheds] = useState<Watershed[]>([]);
   const [capabilities, setCapabilities] = useState<Record<string, { status: string; evidence_type?: string }>>({});
-  const [externalModels, setExternalModels] = useState<ExternalModelInfo[]>([]);
   const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
   const [finalReport, setFinalReport] = useState<CurrentFinalScientificReportResponse | null>(null);
 
@@ -199,14 +219,20 @@ export default function SimulationsPage() {
 
   // Búsqueda y filtrado
   const [simSearchTerm, setSimSearchTerm] = useState("");
-  const [simFilterModel, setSimFilterModel] = useState<"ALL" | "TWIN" | "SWAT">("ALL");
+  const [simFilterModel, setSimFilterModel] = useState<"ALL" | "SIMPLIFIED" | "SWAT">("ALL");
 
   // Estados de carga y modal
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
+  const [resultsError, setResultsError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreflighting, setIsPreflighting] = useState(false);
+  const [preflight, setPreflight] = useState<SimulationPreflightResponse | null>(null);
+  const [preflightSignature, setPreflightSignature] = useState("");
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isLoadingFinalReport, setIsLoadingFinalReport] = useState(true);
+  const [finalReportError, setFinalReportError] = useState<string | null>(null);
 
   // Formulario de nueva corrida
   const [formName, setFormName] = useState("Experimento multiescala de maíz");
@@ -218,13 +244,13 @@ export default function SimulationsPage() {
   const [formStationId, setFormStationId] = useState("");
   const [formSeed, setFormSeed] = useState(42);
   const [formPlantCount, setFormPlantCount] = useState(1000);
+  const [formWarmupYears, setFormWarmupYears] = useState(3);
   const [formClimateSource, setFormClimateSource] = useState<"SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "SWAT_PROJECT">("SYNTHETIC");
   const [formHydrologyBackend, setFormHydrologyBackend] = useState<"SIMPLIFIED" | "SWAT_PLUS">("SIMPLIFIED");
   const [formSwatRunType, setFormSwatRunType] = useState<SwatRunType>("SWAT_MULTISCALE_COUPLED");
-  const [formExternalModel, setFormExternalModel] = useState("");
   const [formManagement, setFormManagement] = useState<"BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM">("BASELINE");
-  const [formParameters, setFormParameters] = useState(DEFAULT_SIMPLIFIED_PARAMETERS);
   const [formDatasetIds, setFormDatasetIds] = useState<string[]>([]);
+  const [formForcingDatasetId, setFormForcingDatasetId] = useState("");
   const [formDatasetRoles, setFormDatasetRoles] = useState<Record<string, "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY">>({});
 
   // Transmisión WebSocket
@@ -235,42 +261,89 @@ export default function SimulationsPage() {
 
   const canRunSimulations = hasAnyRole(["SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO"]);
   const usesSimplifiedModel = formHydrologyBackend === "SIMPLIFIED";
-  const isRealSwat = (sim: SimulationRun) => {
-    const evidence = (sim.provenance as { evidence_type?: string } | undefined)?.evidence_type;
-    return sim.hydrology_backend === "SWAT_PLUS" && ["REAL_SWAT_PLUS", "REAL_SWAT_PLUS_COUPLED"].includes(evidence ?? "");
-  };
 
   const changeHydrologyBackend = (backend: "SIMPLIFIED" | "SWAT_PLUS") => {
     setFormHydrologyBackend(backend);
     if (backend === "SWAT_PLUS") {
       setFormManagement("BASELINE");
       setFormClimateSource("SWAT_PROJECT");
-      setFormExternalModel("");
+      setFormForcingDatasetId("");
       setFormDatasetRoles((current) => Object.fromEntries(Object.keys(current).map((id) => [id, "CONTEXT_ONLY"])) as typeof current);
     } else if (formClimateSource === "SWAT_PROJECT") {
       setFormClimateSource("SYNTHETIC");
     }
   };
 
-  const loadInitialData = async () => {
-    setIsLoading(true);
+  const changeClimateSource = (source: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "SWAT_PROJECT") => {
+    setFormClimateSource(source);
+    setFormForcingDatasetId("");
+    setFormDatasetIds([]);
+    setFormDatasetRoles({});
+  };
+
+  const selectForcingDataset = (datasetId: string) => {
+    setFormForcingDatasetId(datasetId);
+    setFormDatasetIds(datasetId ? [datasetId] : []);
+    setFormDatasetRoles(datasetId ? { [datasetId]: "FORCING" } : {});
+  };
+
+  const selectSimulation = useCallback(async (sim: SimulationRun) => {
+    setSelectedSim(sim);
+    setIsLoadingResults(true);
+    setResultsError(null);
+    setSwatResults(null);
+    setResults([]);
+    if (wsRef.current) {
+      wsRef.current.close();
+      setIsWsConnected(false);
+      setLiveTick(null);
+    }
+
     try {
-      const [simsData, scenData, watersData, capabilityData, modelsData, datasetsData, finalReportData] = await Promise.all([
+      if (sim.status !== "COMPLETED") {
+        setResultsError(sim.error?.message ?? `La corrida está ${sim.status.toLowerCase()}; aún no hay resultados para mostrar.`);
+      } else if (isSwatBackend(sim)) {
+        const normalizedSwat = await api.getSwatResults(sim.id);
+        setSwatResults(normalizedSwat);
+      } else {
+        const dailyResults = await api.getSimulationResults(sim.id, sim.duration_days);
+        setResults(dailyResults);
+      }
+    } catch (err: unknown) {
+      setResultsError(err instanceof Error ? err.message : "No se pudieron cargar los resultados de esta corrida.");
+    } finally {
+      setIsLoadingResults(false);
+    }
+  }, []);
+
+  const loadInitialData = useCallback(async () => {
+    setIsLoading(true);
+    setIsLoadingFinalReport(true);
+    setFinalReport(null);
+    setFinalReportError(null);
+    try {
+      const reportRequest = api.getFinalScientificReport()
+        .then((report) => ({ report, error: null as string | null }))
+        .catch((error: unknown) => ({
+          report: null,
+          error: error instanceof Error ? error.message : "No se pudo cargar el informe científico vigente.",
+        }));
+      const [simsData, scenData, watersData, capabilityData, datasetsData, reportResult] = await Promise.all([
         api.getSimulations(),
         api.getClimateScenarios(),
         api.getWatersheds(),
         api.getCapabilities(),
-        api.getExternalModels(),
         api.getDatasets(),
-        api.getFinalScientificReport().catch(() => null),
+        reportRequest,
       ]);
       setSimulations(simsData);
       setScenarios(scenData);
       setWatersheds(watersData);
       setCapabilities(capabilityData);
-      setExternalModels(modelsData);
       setDatasets(datasetsData);
-      setFinalReport(finalReportData);
+      setFinalReport(reportResult.report);
+      setFinalReportError(reportResult.error);
+      setIsLoadingFinalReport(false);
 
       if (watersData.length > 0) {
         setFormWatershedId(watersData[0].id);
@@ -282,45 +355,23 @@ export default function SimulationsPage() {
       if (simsData.length > 0) {
         selectSimulation(simsData[0]);
       }
-    } catch (err: any) {
-      setFeedbackMsg({ type: "error", text: err.message || "Error al cargar datos de simulación" });
+    } catch (err: unknown) {
+      setFeedbackMsg({ type: "error", text: err instanceof Error ? err.message : "Error al cargar datos de simulación" });
+      setFinalReportError("No se pudo cargar el informe científico vigente.");
+      setIsLoadingFinalReport(false);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectSimulation]);
 
   useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  const selectSimulation = async (sim: SimulationRun) => {
-    setSelectedSim(sim);
-    setIsLoadingResults(true);
-    setSwatResults(null);
-    if (wsRef.current) {
-      wsRef.current.close();
-      setIsWsConnected(false);
-      setLiveTick(null);
-    }
-
-    try {
-      if (isRealSwat(sim)) {
-        const normalizedSwat = await api.getSwatResults(sim.id);
-        setSwatResults(normalizedSwat);
-        setResults([]);
-      } else {
-        const dailyResults = await api.getSimulationResults(sim.id, sim.duration_days);
-        setResults(dailyResults);
-      }
-    } catch (err: any) {
-      console.error("Error al cargar resultados diarios:", err);
-    } finally {
-      setIsLoadingResults(false);
-    }
-  };
+    const timer = window.setTimeout(() => void loadInitialData(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadInitialData]);
 
   const handleSelectPeriodPreset = (preset: PeriodPreset) => {
     setSelectedPeriodPreset(preset.id);
+    if (preset.id === "CUSTOM") return;
     setFormStartDate(preset.startDate);
     setFormEndDate(preset.endDate);
   };
@@ -328,7 +379,7 @@ export default function SimulationsPage() {
   const handleStartDateChange = (newStart: string) => {
     setFormStartDate(newStart);
     const preset = SIMULATION_PERIOD_PRESETS.find((p) => p.id === selectedPeriodPreset);
-    if (preset && newStart) {
+    if (preset && preset.id !== "CUSTOM" && newStart) {
       const startDateObj = new Date(`${newStart}T00:00:00Z`);
       if (!isNaN(startDateObj.getTime())) {
         const endDateObj = new Date(startDateObj.getTime() + (preset.days - 1) * 86_400_000);
@@ -338,13 +389,56 @@ export default function SimulationsPage() {
     }
   };
 
-  const handleCreateSimulation = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEndDateChange = (newEnd: string) => {
+    setSelectedPeriodPreset("CUSTOM");
+    setFormEndDate(newEnd);
+  };
+
+  const buildSimulationPayload = (): SimulationCreatePayload | null => {
     const durationDays = formStartDate && formEndDate
       ? Math.floor((Date.parse(`${formEndDate}T00:00:00Z`) - Date.parse(`${formStartDate}T00:00:00Z`)) / 86_400_000) + 1
       : 0;
-    if (durationDays < 1) {
-      setFeedbackMsg({ type: "error", text: "Selecciona un rango de fechas válido." });
+    if (durationDays < 1 || !formWatershedId || !formScenarioId) return null;
+
+    return {
+      name: formName,
+      watershed_id: formWatershedId,
+      scenario_id: formScenarioId,
+      duration_days: durationDays,
+      seed: formSeed,
+      parameters: usesSimplifiedModel ? DEFAULT_SIMPLIFIED_PARAMETERS : {},
+      mode: formHydrologyBackend === "SWAT_PLUS" ? "SWAT_PLUS" : "RESEARCH_MULTISCALE",
+      plant_count: formPlantCount,
+      hydrology_backend: formHydrologyBackend,
+      management_scenario: formManagement,
+      climate_source: formClimateSource,
+      dataset_ids: formForcingDatasetId ? [formForcingDatasetId] : formDatasetIds,
+      dataset_roles: formForcingDatasetId ? { [formForcingDatasetId]: "FORCING" } : formDatasetRoles,
+      station_id: formStationId || undefined,
+      start_date: formStartDate,
+      end_date: formEndDate,
+      swat_plus: formHydrologyBackend === "SWAT_PLUS" ? {
+        run_type: formSwatRunType,
+        output_frequency: "DAILY",
+        warmup_period: formWarmupYears,
+        target_plant_name: "corn",
+        outlet_unit: watersheds.find((watershed) => watershed.id === formWatershedId)?.code.includes("05451210") ? "153" : undefined,
+      } : undefined,
+    };
+  };
+
+  const currentFormPayload = buildSimulationPayload();
+  const currentPeriodPreset = SIMULATION_PERIOD_PRESETS.find((preset) => preset.id === selectedPeriodPreset);
+  const currentPayloadSignature = currentFormPayload ? JSON.stringify(currentFormPayload) : "";
+  const preflightMatchesCurrentForm = Boolean(
+    preflight && currentPayloadSignature && preflightSignature === currentPayloadSignature,
+  );
+  const preflightReady = preflightMatchesCurrentForm && preflight?.status === "READY";
+
+  const runPreflight = async () => {
+    const payload = buildSimulationPayload();
+    if (!payload) {
+      setFeedbackMsg({ type: "error", text: "Selecciona una cuenca, un escenario y un rango de fechas válido." });
       return;
     }
     const selectedScenario = scenarios.find((s) => s.id === formScenarioId);
@@ -353,42 +447,49 @@ export default function SimulationsPage() {
       setFeedbackMsg({ type: "error", text: "El forzamiento externo ya incluye su anomalía. Elige un escenario neutro." });
       return;
     }
+
+    setIsPreflighting(true);
+    setFeedbackMsg(null);
+    try {
+      const result = await api.preflightSimulation(payload);
+      setPreflight(result);
+      setPreflightSignature(JSON.stringify(payload));
+      if (result.status === "BLOCKED") {
+        setFeedbackMsg({ type: "error", text: "La configuración tiene requisitos pendientes. Revisa el detalle antes de ejecutar." });
+      }
+    } catch (err: unknown) {
+      setPreflight(null);
+      setPreflightSignature("");
+      setFeedbackMsg({ type: "error", text: err instanceof Error ? err.message : "No se pudo validar la configuración." });
+    } finally {
+      setIsPreflighting(false);
+    }
+  };
+
+  const handleCreateSimulation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = buildSimulationPayload();
+    if (!payload) {
+      setFeedbackMsg({ type: "error", text: "Selecciona una cuenca, un escenario y un rango de fechas válido." });
+      return;
+    }
+    if (!preflightReady || preflightSignature !== JSON.stringify(payload)) {
+      await runPreflight();
+      return;
+    }
+
     setIsSubmitting(true);
     setFeedbackMsg(null);
-
     try {
-      const newSim = await api.createSimulation({
-        name: formName,
-        watershed_id: formWatershedId,
-        scenario_id: formScenarioId,
-        duration_days: durationDays,
-        seed: formSeed,
-        parameters: usesSimplifiedModel ? formParameters : {},
-        mode: formHydrologyBackend === "SWAT_PLUS" ? "SWAT_PLUS" : "RESEARCH_MULTISCALE",
-        plant_count: formPlantCount,
-        hydrology_backend: formHydrologyBackend,
-        external_model_id: formExternalModel || undefined,
-        management_scenario: formManagement,
-        climate_source: formClimateSource,
-        dataset_ids: formDatasetIds,
-        dataset_roles: formDatasetRoles,
-        station_id: formStationId || undefined,
-        start_date: formStartDate,
-        end_date: formEndDate,
-        swat_plus: formHydrologyBackend === "SWAT_PLUS" ? {
-          run_type: formSwatRunType,
-          output_frequency: "DAILY",
-          warmup_period: 0,
-          target_plant_name: "corn",
-          outlet_unit: "153",
-        } : undefined,
-      });
+      const newSim = await api.createSimulation(payload);
       setSimulations([newSim, ...simulations]);
       setIsModalOpen(false);
+      setPreflight(null);
+      setPreflightSignature("");
       setFeedbackMsg({ type: "success", text: `Experimento "${newSim.name}" guardado.` });
       selectSimulation(newSim);
-    } catch (err: any) {
-      setFeedbackMsg({ type: "error", text: err.message || "Error al ejecutar experimento" });
+    } catch (err: unknown) {
+      setFeedbackMsg({ type: "error", text: err instanceof Error ? err.message : "No se pudo ejecutar la corrida." });
     } finally {
       setIsSubmitting(false);
     }
@@ -440,9 +541,39 @@ export default function SimulationsPage() {
 
   const chartData = results.filter((_, idx) => idx % Math.max(1, Math.floor(results.length / 90)) === 0);
   const monthlyComparisonData = selectedSim?.monthly_outputs ?? [];
-  const isSelectedRealSwat = selectedSim ? isRealSwat(selectedSim) : false;
-  const hasObservedForcing = datasets.some((d) => ["CHIRPS", "OBSERVED_CLIMATE"].includes(d.provider) && d.normalized_artifact_count > 0);
-  const hasCmip6Forcing = datasets.some((d) => d.provider === "NEX-GDDP-CMIP6" && d.normalized_artifact_count > 0);
+  const isSelectedSwatBackend = selectedSim ? isSwatBackend(selectedSim) : false;
+  const selectedWatershed = selectedSim
+    ? watersheds.find((watershed) => watershed.id === selectedSim.watershed_id)
+    : undefined;
+  const selectedGauge = selectedSim?.station_id ?? (
+    typeof selectedWatershed?.dem_metadata?.gauge === "string"
+      ? selectedWatershed.dem_metadata.gauge
+      : null
+  );
+  const selectedPeriodLabel = selectedSim
+    ? selectedSim.start_date && selectedSim.end_date
+      ? `${selectedSim.start_date} a ${selectedSim.end_date}`
+      : `Fechas no registradas · ${selectedSim.duration_days} días`
+    : "";
+  const selectedEvidence = selectedSim ? classifySimulationEvidence(selectedSim) : null;
+  const requestedParameters = (selectedSim?.requested_config?.parameters as Record<string, unknown> | undefined) ?? {};
+  const curveNumber = typeof requestedParameters.curve_number === "number" ? requestedParameters.curve_number : null;
+  const criterionMet = selectedSim?.validation?.criterion_met;
+  const meanLai = selectedSim?.field_aggregates?.mean_lai ?? selectedSim?.field_aggregates?.mean_LAI ?? null;
+  const meanRootDepth = selectedSim?.field_aggregates?.mean_root_depth_cm != null
+    ? `${Number(selectedSim.field_aggregates.mean_root_depth_cm).toFixed(1)} cm`
+    : selectedSim?.field_aggregates?.mean_root_depth_m != null
+      ? `${Number(selectedSim.field_aggregates.mean_root_depth_m).toFixed(2)} m`
+      : "No disponible";
+  const observedForcingDatasets = datasets.filter((dataset) =>
+    ["CHIRPS", "OBSERVED_CLIMATE"].includes(dataset.provider) && dataset.normalized_artifact_count === 1,
+  );
+  const cmip6ForcingDatasets = datasets.filter((dataset) =>
+    dataset.provider === "NEX-GDDP-CMIP6" && dataset.normalized_artifact_count === 1,
+  );
+  const hasObservedForcing = observedForcingDatasets.length > 0;
+  const hasCmip6Forcing = cmip6ForcingDatasets.length > 0;
+  const availableForcingDatasets = formClimateSource === "CMIP6_FILE" ? cmip6ForcingDatasets : observedForcingDatasets;
 
   const filteredSimulations = simulations.filter((sim) => {
     const term = simSearchTerm.trim().toLowerCase();
@@ -456,13 +587,13 @@ export default function SimulationsPage() {
       simFilterModel === "ALL"
         ? true
         : simFilterModel === "SWAT"
-        ? isRealSwat(sim)
-        : !isRealSwat(sim);
+        ? isSwatBackend(sim)
+        : !isSwatBackend(sim);
     return matchesSearch && matchesModel;
   });
 
   return (
-    <div className="flex flex-col border border-slate-300 dark:border-slate-800 w-full max-w-full bg-slate-50 dark:bg-slate-950 shadow-sm min-h-[calc(100vh-6rem)]">
+    <div className="flex min-h-[calc(100vh-6rem)] w-full max-w-full flex-col">
       {/* 1. Barra de Navegación de Vistas y Acciones Principales */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div>
@@ -470,7 +601,7 @@ export default function SimulationsPage() {
             Consola de simulaciones ecohidrológicas
           </h1>
           <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1">
-            Acoplamiento multiescala desde fisiología celular hasta el balance de cuenca.
+            Configura el motor, consulta sus resultados y revisa la procedencia de cada corrida.
           </p>
         </div>
 
@@ -478,7 +609,12 @@ export default function SimulationsPage() {
           {canRunSimulations && (
             <button
               type="button"
-              onClick={() => setIsModalOpen(true)}
+                  onClick={() => {
+                    setPreflight(null);
+                    setPreflightSignature("");
+                    setFeedbackMsg(null);
+                    setIsModalOpen(true);
+                  }}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-none bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-medium transition cursor-pointer shadow-none"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -506,7 +642,7 @@ export default function SimulationsPage() {
         <button
           type="button"
           onClick={() => setActiveTab("RUNS")}
-          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer ${
+          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600 ${
             activeTab === "RUNS"
               ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
               : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
@@ -517,7 +653,7 @@ export default function SimulationsPage() {
         <button
           type="button"
           onClick={() => setActiveTab("VALIDATION")}
-          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer ${
+          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600 ${
             activeTab === "VALIDATION"
               ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
               : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
@@ -528,7 +664,7 @@ export default function SimulationsPage() {
         <button
           type="button"
           onClick={() => setActiveTab("SCENARIOS")}
-          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer ${
+          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600 ${
             activeTab === "SCENARIOS"
               ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
               : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
@@ -539,7 +675,7 @@ export default function SimulationsPage() {
         <button
           type="button"
           onClick={() => setActiveTab("STATISTICS")}
-          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer ${
+          className={`px-3.5 py-2 font-medium border-b-2 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600 ${
             activeTab === "STATISTICS"
               ? "border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 dark:border-slate-100"
               : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
@@ -567,7 +703,7 @@ export default function SimulationsPage() {
                   Esquema de acoplamiento multiescala (5 fases)
                 </span>
                 <span className="text-[11px] text-slate-400 font-mono">
-                  14 componentes activos en el stack
+                   {isLoading ? "Consultando capacidades…" : `${Object.values(capabilities).filter((capability) => capability.status === "ACTIVE").length} capacidades activas reportadas por el backend`}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5 text-slate-600 dark:text-slate-400 text-xs">
@@ -588,7 +724,7 @@ export default function SimulationsPage() {
                   Infiltración SCS-CN, retención edáfica y balance en Unidades de Respuesta Hidrológica (HRUs).
                 </div>
                 <div className="p-2.5 rounded-none border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900">
-                  <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">5. Aforo USGS 05451210</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100 block mb-0.5">5. {formStationId ? `Aforo USGS ${formStationId}` : "Aforo de la cuenca"}</span>
                   Caudal descargado en exutorio y contraste contra aforos observados.
                 </div>
               </div>
@@ -660,14 +796,14 @@ export default function SimulationsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSimFilterModel("TWIN")}
+                  onClick={() => setSimFilterModel("SIMPLIFIED")}
                   className={`flex-1 py-1 text-[11px] font-mono rounded-none text-center transition cursor-pointer ${
-                    simFilterModel === "TWIN"
+                    simFilterModel === "SIMPLIFIED"
                       ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
-                  Gemelo ({simulations.filter((s) => !isRealSwat(s)).length})
+                  Simplificado ({simulations.filter((s) => !isSwatBackend(s)).length})
                 </button>
                 <button
                   type="button"
@@ -678,7 +814,7 @@ export default function SimulationsPage() {
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
-                  SWAT+ ({simulations.filter((s) => isRealSwat(s)).length})
+                  SWAT+ ({simulations.filter((s) => isSwatBackend(s)).length})
                 </button>
               </div>
 
@@ -691,27 +827,28 @@ export default function SimulationsPage() {
                 ) : (
                   filteredSimulations.map((sim) => {
                     const isSelected = selectedSim?.id === sim.id;
-                    const simIsSwat = isRealSwat(sim);
+                    const evidence = classifySimulationEvidence(sim);
+                    const statusLabel = sim.status === "COMPLETED" ? "Completada" : sim.status === "FAILED" ? "Fallida" : sim.status === "RUNNING" ? "En ejecución" : "Pendiente";
+                    const statusTone = sim.status === "COMPLETED"
+                      ? "text-emerald-700 dark:text-emerald-300"
+                      : sim.status === "FAILED"
+                        ? "text-rose-700 dark:text-rose-300"
+                        : "text-slate-500 dark:text-slate-400";
 
                     const precipVal = sim.summary_metrics?.total_precip_mm ?? sim.summary_metrics?.total_precipitation_mm;
-                    const runoffVal = sim.summary_metrics?.total_runoff_mm ?? sim.summary_metrics?.total_surface_runoff_mm;
-                    const precipStr = precipVal != null ? `${Number(precipVal).toFixed(0)} mm` : (runoffVal != null ? `${Number(runoffVal).toFixed(0)} mm` : "—");
-
-                    const dischargeHm3 = sim.summary_metrics?.total_discharge_hm3 != null
-                      ? Number(sim.summary_metrics.total_discharge_hm3)
-                      : (sim.summary_metrics?.water_balance?.mean_streamflow_m3s != null && sim.duration_days
-                        ? (Number(sim.summary_metrics.water_balance.mean_streamflow_m3s) * sim.duration_days * 86400) / 1_000_000
-                        : (runoffVal != null ? (Number(runoffVal) * 580.15) / 1000 : null));
-                    const dischargeStr = dischargeHm3 != null ? `${dischargeHm3.toFixed(1)} hm³` : "—";
-
-                    const cwsiVal = sim.summary_metrics?.mean_cwsi ?? sim.field_aggregates?.mean_water_stress;
-                    const cwsiStr = cwsiVal != null ? Number(cwsiVal).toFixed(3) : "—";
+                    const precipStr = precipVal != null ? `${Number(precipVal).toFixed(0)} mm` : "No disponible";
+                    const dischargeVal = sim.summary_metrics?.total_discharge_hm3;
+                    const dischargeStr = dischargeVal != null ? `${Number(dischargeVal).toFixed(1)} hm³` : "No disponible";
+                    const cwsiVal = sim.summary_metrics?.mean_cwsi;
+                    const cwsiStr = cwsiVal != null ? Number(cwsiVal).toFixed(3) : "No disponible";
 
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={sim.id}
                         onClick={() => selectSimulation(sim)}
-                        className={`p-3 rounded-none border text-left cursor-pointer transition flex flex-col gap-1.5 ${
+                        aria-pressed={isSelected}
+                        className={`w-full p-3 rounded-none border text-left cursor-pointer transition flex flex-col gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600 ${
                           isSelected
                             ? "bg-slate-50 dark:bg-slate-800/60 border-slate-400 dark:border-slate-600 shadow-none"
                             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
@@ -721,29 +858,27 @@ export default function SimulationsPage() {
                           <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {sim.name}
                           </span>
-                          <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-none border shrink-0 ${
-                            simIsSwat
-                              ? "bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
-                              : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                          }`}>
-                            {simIsSwat ? "SWAT+" : "Gemelo"}
+                          <span className={`shrink-0 text-[10px] font-medium ${statusTone}`} title={sim.error?.message}>
+                            {statusLabel}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="w-fit border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          {simulationEvidenceLabel(evidence)}
+                        </span>
+
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                           <span>{sim.duration_days} días</span>
-                          <span>·</span>
-                          <span>{sim.plant_count?.toLocaleString()} plantas</span>
-                          <span>·</span>
-                          <span className="font-mono text-[10px]">{sim.climate_source || "SINTÉTICO"}</span>
+                          <span className="border-l border-slate-300 pl-2 dark:border-slate-700">{sim.plant_count?.toLocaleString() ?? "No disponible"} plantas</span>
+                          <span className="border-l border-slate-300 pl-2 font-mono text-[10px] dark:border-slate-700">{sim.climate_source || "Fuente no registrada"}</span>
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-slate-100 dark:border-slate-800/80 text-slate-600 dark:text-slate-400">
-                          <span>Lluvia: <strong className="text-slate-800 dark:text-slate-200 font-normal">{precipStr}</strong></span>
-                          <span>Descarga: <strong className="text-slate-800 dark:text-slate-200 font-normal">{dischargeStr}</strong></span>
-                          <span>CWSI: <strong className="text-slate-800 dark:text-slate-200 font-normal">{cwsiStr}</strong></span>
+                        <div className="grid grid-cols-3 gap-2 text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                          <span className="text-slate-500 dark:text-slate-400">Lluvia<strong className="mt-0.5 block font-mono font-medium text-slate-800 dark:text-slate-200">{precipStr}</strong></span>
+                          <span className="text-slate-500 dark:text-slate-400">Descarga<strong className="mt-0.5 block font-mono font-medium text-slate-800 dark:text-slate-200">{dischargeStr}</strong></span>
+                          <span className="text-slate-500 dark:text-slate-400">CWSI<strong className="mt-0.5 block font-mono font-medium text-slate-800 dark:text-slate-200">{cwsiStr}</strong></span>
                         </div>
-                      </div>
+                      </button>
                     );
                   })
                 )}
@@ -778,19 +913,18 @@ export default function SimulationsPage() {
                             {selectedSim.name}
                           </h2>
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                            {selectedSim.status}
+                            {selectedSim.status === "COMPLETED" ? "Completada" : selectedSim.status === "FAILED" ? "Fallida" : selectedSim.status === "RUNNING" ? "En ejecución" : "Pendiente"}
                           </span>
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                            {isSelectedRealSwat ? "SWAT+ Físico" : "Gemelo Multiescala"}
+                            {selectedEvidence ? simulationEvidenceLabel(selectedEvidence) : "Procedencia no confirmada"}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1 flex-wrap">
-                          <span>Cuenca: South Fork Iowa (USGS {selectedSim.station_id || "05451210"})</span>
-                          <span>·</span>
-                          <span>Escenario: {selectedSim.scenario?.name || "Línea Base"}</span>
-                          <span>·</span>
-                          <span>Periodo: {selectedSim.start_date || "2018-06-01"} a {selectedSim.end_date || "2018-08-31"}</span>
+                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                          <span>{selectedWatershed?.name ?? "Cuenca no especificada"}</span>
+                          {selectedGauge && <span className="border-l border-slate-300 pl-3 dark:border-slate-700">USGS {selectedGauge}</span>}
+                          <span className="border-l border-slate-300 pl-3 dark:border-slate-700">{selectedSim.scenario?.name ?? "Escenario no registrado"}</span>
+                          <span className="border-l border-slate-300 pl-3 dark:border-slate-700">{selectedPeriodLabel}</span>
                         </div>
                       </div>
 
@@ -839,6 +973,12 @@ export default function SimulationsPage() {
                       </div>
                     </div>
 
+                    {resultsError && (
+                      <div role="alert" className="border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                        {resultsError}
+                      </div>
+                    )}
+
                     {/* Barra de Reproducción en Vivo Sincronizada */}
                     {isWsConnected && liveTick && (
                       <div className="p-2.5 rounded-none border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
@@ -882,49 +1022,49 @@ export default function SimulationsPage() {
                     )}
 
                     {/* Strip de Balance Hídrico (6 Variables Consolidadas) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
-                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[10px] text-slate-500 block">Precipitación</span>
-                        <span className="text-xs sm:text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
-                          {selectedSim.summary_metrics?.total_precip_mm != null ? `${Number(selectedSim.summary_metrics.total_precip_mm).toFixed(0)} mm` : "—"}
-                        </span>
+                    <dl className="grid grid-cols-2 border-y border-slate-200 bg-white text-xs divide-x divide-y divide-slate-200 sm:grid-cols-3 lg:grid-cols-6 lg:divide-y-0 dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+                      <div className="px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">Precipitación</dt>
+                        <dd className="text-xs sm:text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5">
+                          {(selectedSim.summary_metrics?.total_precip_mm ?? selectedSim.summary_metrics?.total_precipitation_mm) != null ? `${Number(selectedSim.summary_metrics?.total_precip_mm ?? selectedSim.summary_metrics?.total_precipitation_mm).toFixed(0)} mm` : "No disponible"}
+                        </dd>
                       </div>
 
-                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[10px] text-slate-500 block">Evapotranspiración</span>
-                        <span className="text-xs sm:text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
-                          {selectedSim.summary_metrics?.total_actual_et_mm != null ? `${Number(selectedSim.summary_metrics.total_actual_et_mm).toFixed(1)} mm` : "—"}
-                        </span>
+                      <div className="px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">Evapotranspiración</dt>
+                        <dd className="text-xs sm:text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5">
+                          {selectedSim.summary_metrics?.total_actual_et_mm != null ? `${Number(selectedSim.summary_metrics.total_actual_et_mm).toFixed(1)} mm` : "No disponible"}
+                        </dd>
                       </div>
 
-                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[10px] text-slate-500 block">Volumen en río</span>
-                        <span className="text-xs sm:text-sm font-semibold font-mono text-blue-700 dark:text-blue-400 mt-0.5 block">
-                          {selectedSim.summary_metrics?.total_discharge_hm3 != null ? `${Number(selectedSim.summary_metrics.total_discharge_hm3).toFixed(1)} hm³` : "—"}
-                        </span>
+                      <div className="px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">Volumen en río</dt>
+                        <dd className="text-xs sm:text-sm font-semibold font-mono text-blue-700 dark:text-blue-400 mt-0.5">
+                          {selectedSim.summary_metrics?.total_discharge_hm3 != null ? `${Number(selectedSim.summary_metrics.total_discharge_hm3).toFixed(1)} hm³` : "No disponible"}
+                        </dd>
                       </div>
 
-                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[10px] text-slate-500 block">Caudal pico</span>
-                        <span className="text-xs sm:text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5 block">
-                          {selectedSim.summary_metrics?.peak_streamflow_m3s != null ? `${Number(selectedSim.summary_metrics.peak_streamflow_m3s).toFixed(2)} m³/s` : "—"}
-                        </span>
+                      <div className="px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">Caudal pico</dt>
+                        <dd className="text-xs sm:text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 mt-0.5">
+                          {selectedSim.summary_metrics?.peak_streamflow_m3s != null ? `${Number(selectedSim.summary_metrics.peak_streamflow_m3s).toFixed(2)} m³/s` : "No disponible"}
+                        </dd>
                       </div>
 
-                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[10px] text-slate-500 block">Estrés CWSI</span>
-                        <span className="text-xs sm:text-sm font-semibold font-mono text-amber-700 dark:text-amber-400 mt-0.5 block">
-                          {selectedSim.summary_metrics?.mean_cwsi != null ? Number(selectedSim.summary_metrics.mean_cwsi).toFixed(3) : "—"}
-                        </span>
+                      <div className="px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">Estrés CWSI</dt>
+                        <dd className="text-xs sm:text-sm font-semibold font-mono text-amber-700 dark:text-amber-400 mt-0.5">
+                          {selectedSim.summary_metrics?.mean_cwsi != null ? Number(selectedSim.summary_metrics.mean_cwsi).toFixed(3) : "No disponible"}
+                        </dd>
                       </div>
 
-                      <div className="p-2 rounded-none border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                        <span className="text-[10px] text-slate-500 block">Rendimiento</span>
-                        <span className="text-xs sm:text-sm font-semibold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5 block">
-                          {selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "—"}
-                        </span>
+                      <div className="px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">Rendimiento estimado</dt>
+                        <dd className="text-xs sm:text-sm font-semibold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5">
+                          {selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha · proxy` : "No disponible"}
+                        </dd>
                       </div>
-                    </div>
+                    </dl>
                   </div>
 
                   {/* Pestañas de la Consola de Trabajo (3 Botones que abren los Modales) */}
@@ -972,7 +1112,7 @@ export default function SimulationsPage() {
                                 Series temporales e hidrograma multiescala
                               </h3>
                               <p className="text-[11px] text-slate-500 font-mono">
-                                Experimento: {selectedSim.name} · Periodo: {selectedSim.start_date || "2018-06-01"} a {selectedSim.end_date || "2018-08-31"}
+                                {selectedSim.name} · {selectedPeriodLabel}
                               </p>
                             </div>
                           </div>
@@ -992,8 +1132,20 @@ export default function SimulationsPage() {
 
                         {/* Cuerpo del Modal de Series Temporales */}
                         <div className="p-5 flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto">
-                          {isSelectedRealSwat && swatResults ? (
-                            <SwatRunEvidencePanel simulation={selectedSim} result={swatResults} />
+                          {isLoadingResults ? (
+                            <div role="status" className="flex min-h-48 items-center justify-center border border-slate-200 bg-white text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Consultando resultados de esta corrida…
+                            </div>
+                          ) : resultsError ? (
+                            <div role="alert" className="border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                              {resultsError}
+                            </div>
+                          ) : isSelectedSwatBackend ? (
+                            swatResults
+                              ? <SwatRunEvidencePanel simulation={selectedSim} result={swatResults} />
+                              : <div className="border border-slate-200 bg-white p-4 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">El backend no devolvió resultados SWAT+ para esta corrida.</div>
+                          ) : chartData.length === 0 ? (
+                            <div className="border border-slate-200 bg-white p-4 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">La corrida no tiene registros diarios disponibles.</div>
                           ) : (
                             <div className="flex flex-col gap-3">
                               {/* Barra de Control de Disposición */}
@@ -1067,7 +1219,7 @@ export default function SimulationsPage() {
                                       onClick={() => setChartViewMode("MONTHLY")}
                                       className={`px-2 py-0.5 text-[11px] transition cursor-pointer ${chartViewMode === "MONTHLY" ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"}`}
                                     >
-                                      Validación USGS
+                                      Series mensuales
                                     </button>
                                   </div>
                                 )}
@@ -1081,10 +1233,12 @@ export default function SimulationsPage() {
                                     <div className="p-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/60 dark:bg-slate-950/40">
                                       <div className="min-w-0">
                                         <div className="flex items-center gap-1.5">
-                                          <span className="font-mono text-[9px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">USGS</span>
-                                          <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">Validación mensual: Aforo vs Gemelo</h3>
+                                          <span className="font-mono text-[9px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">Caudal</span>
+                                          <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">Series mensuales disponibles</h3>
                                         </div>
-                                        <p className="text-[10px] text-slate-500 truncate mt-0.5">Estación USGS 05451210 South Fork Iowa</p>
+                                          <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                            {selectedGauge ? `Aforo USGS ${selectedGauge}` : "La corrida no declara una estación de aforo"}
+                                          </p>
                                       </div>
                                       <button
                                         type="button"
@@ -1096,19 +1250,7 @@ export default function SimulationsPage() {
                                       </button>
                                     </div>
                                     <div className="h-48 sm:h-52 w-full p-2">
-                                      <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={monthlyComparisonData}>
-                                          <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
-                                          <XAxis dataKey="month" stroke="#9ca3af" fontSize={9} tickLine={false} />
-                                          <YAxis stroke="#9ca3af" fontSize={9} tickLine={false} />
-                                          <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "10px", color: "var(--foreground)" }} />
-                                          <Legend wrapperStyle={{ fontSize: "10px" }} />
-                                          <Line type="monotone" dataKey="observed_streamflow_m3s" name="USGS Observado" stroke="#09090b" className="dark:stroke-slate-100" strokeWidth={1.8} dot={false} />
-                                          <Line type="monotone" dataKey="baseline_streamflow_m3s" name="Línea base" stroke="#ea580c" strokeWidth={1.2} dot={false} />
-                                          <Line type="monotone" dataKey="twin_streamflow_m3s" name="Gemelo multiescala" stroke="#059669" strokeWidth={1.8} dot={false} />
-                                          <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="Híbrido ML" stroke="#7c3aed" strokeWidth={1.2} strokeDasharray="3 3" dot={false} />
-                                        </LineChart>
-                                      </ResponsiveContainer>
+                                      <MonthlyComparisonChart rows={monthlyComparisonData} stationId={selectedGauge} />
                                     </div>
                                   </div>
 
@@ -1161,7 +1303,7 @@ export default function SimulationsPage() {
                                           <span className="font-mono text-[9px] px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">Micro</span>
                                           <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">Fisiología: Transpiración vs ET0</h3>
                                         </div>
-                                        <p className="text-[10px] text-slate-500 truncate mt-0.5">Dinámica estomática celular y flujo de savia</p>
+                                        <p className="text-[10px] text-slate-500 truncate mt-0.5">Variables vegetales registradas por el modelo</p>
                                       </div>
                                       <button
                                         type="button"
@@ -1246,18 +1388,18 @@ export default function SimulationsPage() {
                                   <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/60 dark:bg-slate-950/40">
                                     <div className="flex items-center gap-2">
                                       <span className="font-mono text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">
-                                        {chartViewMode === "STREAMFLOW" ? "Escala Macro" : chartViewMode === "PLANT" ? "Escala Micro" : chartViewMode === "SOIL" ? "Escala Meso" : "Validación USGS"}
+                                        {chartViewMode === "STREAMFLOW" ? "Escala Macro" : chartViewMode === "PLANT" ? "Escala Micro" : chartViewMode === "SOIL" ? "Escala Meso" : "Series mensuales"}
                                       </span>
                                       <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">
                                         {chartViewMode === "STREAMFLOW" && "Hidrograma de cuenca: Caudal en exutorio y precipitación diaria"}
-                                        {chartViewMode === "PLANT" && "Fisiología vegetal: Transpiración foliar real vs demanda evaporativa (ET0)"}
+                                        {chartViewMode === "PLANT" && "Variables vegetales modeladas y demanda evaporativa (ET0)"}
                                         {chartViewMode === "SOIL" && "Dinámica de suelo: Humedad volumétrica θ (%) e índice de estrés CWSI"}
-                                        {chartViewMode === "MONTHLY" && "Validación mensual: Aforo observado USGS vs Gemelo digital"}
+                                        {chartViewMode === "MONTHLY" && "Series mensuales de caudal disponibles"}
                                       </h3>
                                     </div>
                                     <button
                                       type="button"
-                                      onClick={() => setExpandedChartModal(chartViewMode as any)}
+                                       onClick={() => setExpandedChartModal(chartViewMode === "ALL" ? "STREAMFLOW" : chartViewMode)}
                                       className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition cursor-pointer flex items-center gap-1 text-xs font-mono"
                                     >
                                       <Maximize2 className="w-3.5 h-3.5" />
@@ -1270,21 +1412,15 @@ export default function SimulationsPage() {
                                       <div className="h-full flex items-center justify-center text-slate-400 text-xs font-mono">
                                         <Loader2 className="w-4 h-4 animate-spin mr-2" /> Cargando serie temporal...
                                       </div>
+                                    ) : chartViewMode === "MONTHLY" ? (
+                                      <MonthlyComparisonChart rows={monthlyComparisonData} stationId={selectedGauge} />
+                                    ) : chartData.length === 0 ? (
+                                      <div className="flex h-full items-center justify-center px-5 text-center text-xs text-slate-500">
+                                        No hay registros diarios disponibles para esta corrida.
+                                      </div>
                                     ) : (
                                       <ResponsiveContainer width="100%" height="100%">
-                                        {chartViewMode === "MONTHLY" ? (
-                                          <LineChart data={monthlyComparisonData}>
-                                            <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
-                                            <XAxis dataKey="month" stroke="#9ca3af" fontSize={10} tickLine={false} />
-                                            <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} />
-                                            <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
-                                            <Legend wrapperStyle={{ fontSize: "11px" }} />
-                                            <Line type="monotone" dataKey="observed_streamflow_m3s" name="Observado real (USGS)" stroke="#09090b" className="dark:stroke-slate-100" strokeWidth={2} dot={false} />
-                                            <Line type="monotone" dataKey="baseline_streamflow_m3s" name="Línea base sin acoplar" stroke="#ea580c" strokeWidth={1.5} dot={false} />
-                                            <Line type="monotone" dataKey="twin_streamflow_m3s" name="Gemelo multiescala" stroke="#059669" strokeWidth={2} dot={false} />
-                                            <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="Predicción híbrida ML" stroke="#7c3aed" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
-                                          </LineChart>
-                                        ) : chartViewMode === "STREAMFLOW" ? (
+                                        {chartViewMode === "STREAMFLOW" ? (
                                           <ComposedChart data={chartData}>
                                             <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
                                             <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={10} tickLine={false} />
@@ -1304,7 +1440,7 @@ export default function SimulationsPage() {
                                             <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
                                             <Legend wrapperStyle={{ fontSize: "11px" }} />
                                             <Line yAxisId="left" type="monotone" dataKey="potential_et_mm" name="Demanda atmosférica ET0 (mm/d)" stroke="#ea580c" strokeWidth={1.5} dot={false} strokeDasharray="3 3" />
-                                            <Line yAxisId="left" type="monotone" dataKey="plant_transpiration_mm" name="Transpiración real (mm/d)" stroke="#059669" strokeWidth={2} dot={false} />
+                                            <Line yAxisId="left" type="monotone" dataKey="plant_transpiration_mm" name="Transpiración modelada (mm/d)" stroke="#059669" strokeWidth={2} dot={false} />
                                             <Line yAxisId="right" type="monotone" dataKey="sap_flow_velocity_cmh" name="Velocidad savia (cm/h)" stroke="#0284c7" strokeWidth={1.5} dot={false} />
                                           </ComposedChart>
                                         ) : (
@@ -1334,10 +1470,10 @@ export default function SimulationsPage() {
                                     <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                                       <div>
                                         <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                                          Validación mensual: Aforo observado USGS vs Gemelo digital multiescala
+                                          Series mensuales de caudal
                                         </h3>
                                         <p className="text-[11px] text-slate-500 mt-0.5">
-                                          Contraste directo contra la estación USGS 05451210 en el exutorio del río South Fork Iowa.
+                                          {selectedGauge ? `Aforo USGS ${selectedGauge} y salidas del modelo disponibles.` : "La corrida no declara una estación de aforo."}
                                         </p>
                                       </div>
                                       <button
@@ -1349,19 +1485,7 @@ export default function SimulationsPage() {
                                       </button>
                                     </div>
                                     <div className="h-60 w-full">
-                                      <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={monthlyComparisonData}>
-                                          <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
-                                          <XAxis dataKey="month" stroke="#9ca3af" fontSize={10} tickLine={false} />
-                                          <YAxis stroke="#9ca3af" fontSize={10} tickLine={false} label={{ value: "Caudal (m³/s)", angle: -90, position: "insideLeft", fill: "#6b7280", fontSize: 10 }} />
-                                          <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "11px", color: "var(--foreground)" }} />
-                                          <Legend wrapperStyle={{ fontSize: "11px" }} />
-                                          <Line type="monotone" dataKey="observed_streamflow_m3s" name="Observado real (USGS)" stroke="#09090b" className="dark:stroke-slate-100" strokeWidth={2} dot={false} />
-                                          <Line type="monotone" dataKey="baseline_streamflow_m3s" name="Línea base sin acoplar" stroke="#ea580c" strokeWidth={1.5} dot={false} />
-                                          <Line type="monotone" dataKey="twin_streamflow_m3s" name="Gemelo multiescala" stroke="#059669" strokeWidth={2} dot={false} />
-                                          <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="Predicción híbrida ML" stroke="#7c3aed" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
-                                        </LineChart>
-                                      </ResponsiveContainer>
+                                      <MonthlyComparisonChart rows={monthlyComparisonData} stationId={selectedGauge} />
                                     </div>
                                   </div>
 
@@ -1451,7 +1575,7 @@ export default function SimulationsPage() {
                           <AIInsightsCard
                             key={selectedSim.id}
                             simulationId={selectedSim.id}
-                            initialInsights={(selectedSim.provenance as Record<string, any>)?.ai_insights}
+                            initialInsights={(selectedSim.provenance as Record<string, unknown> | undefined)?.ai_insights as AIInsightsResponse | undefined}
                           />
                         </div>
                       </div>
@@ -1502,8 +1626,8 @@ export default function SimulationsPage() {
                               </span>
                               <div className="mt-2 space-y-1 text-slate-600 dark:text-slate-400">
                                 <div>Población: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.plant_count?.toLocaleString()} plantas FSPM</strong></div>
-                                <div>Índice foliar: <strong className="text-slate-800 dark:text-slate-200">{Number(selectedSim.field_aggregates?.mean_lai ?? 0).toFixed(3)} m²/m²</strong></div>
-                                <div>Profundidad raíz: <strong className="text-slate-800 dark:text-slate-200">{Number(selectedSim.field_aggregates?.mean_root_depth_cm ?? 0).toFixed(1)} cm</strong></div>
+                                <div>Índice foliar: <strong className="text-slate-800 dark:text-slate-200">{meanLai != null ? `${Number(meanLai).toFixed(3)} m²/m²` : "No disponible"}</strong></div>
+                                <div>Profundidad raíz: <strong className="text-slate-800 dark:text-slate-200">{meanRootDepth}</strong></div>
                               </div>
                             </div>
 
@@ -1513,9 +1637,9 @@ export default function SimulationsPage() {
                                 Meso a macro: Parcela a HRU
                               </span>
                               <div className="mt-2 space-y-1 text-slate-600 dark:text-slate-400">
-                                <div>Unidades HRU: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.hru_aggregates?.count ?? 0} HRUs</strong></div>
-                                <div>Fracción área: <strong className="text-slate-800 dark:text-slate-200">{Number(selectedSim.hru_aggregates?.area_fraction_sum ?? 0).toFixed(2)}</strong></div>
-                                <div>Curva SCS: <strong className="text-slate-800 dark:text-slate-200">CN = {(selectedSim as any).parameters?.curve_number ?? 74}</strong></div>
+                                <div>Unidades HRU: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.hru_aggregates?.count != null ? `${selectedSim.hru_aggregates.count} HRUs` : "No disponible"}</strong></div>
+                                <div>Fracción área: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.hru_aggregates?.area_fraction_sum != null ? Number(selectedSim.hru_aggregates.area_fraction_sum).toFixed(2) : "No disponible"}</strong></div>
+                                <div>Curva SCS: <strong className="text-slate-800 dark:text-slate-200">{curveNumber != null ? `CN = ${curveNumber}` : "No disponible"}</strong></div>
                               </div>
                             </div>
 
@@ -1525,9 +1649,9 @@ export default function SimulationsPage() {
                                 Macro a aforo: Contraste USGS
                               </span>
                               <div className="mt-2 space-y-1 text-slate-600 dark:text-slate-400">
-                                <div>Estación: <strong className="text-slate-800 dark:text-slate-200">USGS {selectedSim.station_id || "05451210"}</strong></div>
-                                <div>Meses aforo: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.aligned_months ?? 0} meses</strong></div>
-                                <div>Reducción RMSE: <strong className="text-emerald-700 dark:text-emerald-400">{selectedSim.validation?.improvement_percent?.value?.toFixed?.(2) ?? "0.00"}%</strong></div>
+                                <div>Estación: <strong className="text-slate-800 dark:text-slate-200">{selectedGauge ? `USGS ${selectedGauge}` : "No registrada"}</strong></div>
+                                <div>Meses aforo: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.aligned_months != null ? `${selectedSim.validation.aligned_months} meses` : "No disponible"}</strong></div>
+                                <div>Reducción RMSE: <strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.improvement_percent?.value != null ? `${selectedSim.validation.improvement_percent.value.toFixed(2)}%` : "No disponible"}</strong></div>
                               </div>
                             </div>
                           </div>
@@ -1587,17 +1711,42 @@ export default function SimulationsPage() {
         </>
       )}
 
-      {activeTab === "VALIDATION" && (
-        <HypothesisValidationPanel report={finalReport} />
+      {activeTab !== "RUNS" && (
+        <section className="mb-4 flex flex-col gap-2 border-l-2 border-l-emerald-700 bg-white px-4 py-3 dark:border-l-emerald-400 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Informe científico vigente del estudio</h2>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+              Estas vistas resumen el contrato publicado por el backend; no cambian al seleccionar otra corrida en el catálogo.
+            </p>
+          </div>
+          <div className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
+            {finalReport ? (
+              <span>{finalReport.current_contract.contract_version} · {finalReport.current_contract.current_execution_status === "EXECUTED" ? "Ejecutado" : "Sin ejecución vigente"}</span>
+            ) : (
+              <span>{isLoadingFinalReport ? "Consultando informe…" : "Informe no disponible"}</span>
+            )}
+          </div>
+        </section>
       )}
 
-      {activeTab === "SCENARIOS" && (
-        <ClimateScenariosPanel report={finalReport} />
+      {activeTab !== "RUNS" && !finalReport && (
+        <div role={finalReportError ? "alert" : "status"} className="flex flex-col gap-3 border border-slate-300 bg-white p-5 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            {isLoadingFinalReport
+              ? "Consultando el informe científico vigente…"
+              : finalReportError ?? "El backend no tiene un informe científico vigente disponible."}
+          </p>
+          {!isLoadingFinalReport && (
+            <button type="button" onClick={loadInitialData} className="w-fit border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:border-slate-700 dark:hover:bg-slate-800">
+              Volver a consultar
+            </button>
+          )}
+        </div>
       )}
 
-      {activeTab === "STATISTICS" && (
-        <StatisticalBatteryPanel report={finalReport} />
-      )}
+      {activeTab === "VALIDATION" && finalReport && <HypothesisValidationPanel report={finalReport} />}
+      {activeTab === "SCENARIOS" && finalReport && <ClimateScenariosPanel report={finalReport} />}
+      {activeTab === "STATISTICS" && finalReport && <StatisticalBatteryPanel report={finalReport} />}
 
       {/* Modal Interactivo de Telemetría e Inspección Detallada */}
       {expandedChartModal && selectedSim && (
@@ -1607,17 +1756,17 @@ export default function SimulationsPage() {
             <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
               <div className="flex items-center gap-2.5">
                 <span className="font-mono text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase">
-                  {expandedChartModal === "MONTHLY" ? "Validación USGS" : expandedChartModal === "STREAMFLOW" ? "Escala Macro" : expandedChartModal === "PLANT" ? "Escala Micro" : "Escala Meso"}
+                  {expandedChartModal === "MONTHLY" ? "Series mensuales" : expandedChartModal === "STREAMFLOW" ? "Escala Macro" : expandedChartModal === "PLANT" ? "Escala Micro" : "Escala Meso"}
                 </span>
                 <div>
                   <h3 className="font-serif font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100">
-                    {expandedChartModal === "MONTHLY" && "Validación mensual: Aforo observado USGS vs Gemelo digital multiescala"}
+                    {expandedChartModal === "MONTHLY" && "Series mensuales de caudal"}
                     {expandedChartModal === "STREAMFLOW" && "Hidrograma de cuenca: Caudal en exutorio y precipitación diaria"}
-                    {expandedChartModal === "PLANT" && "Fisiología vegetal: Transpiración foliar real vs demanda evaporativa (ET0) y flujo de savia"}
+                    {expandedChartModal === "PLANT" && "Variables de planta: transpiración modelada, ET0 y flujo de savia"}
                     {expandedChartModal === "SOIL" && "Dinámica de suelo: Humedad volumétrica θ (%) e índice de estrés hídrico CWSI"}
                   </h3>
                   <p className="text-[11px] text-slate-500 font-mono">
-                    Experimento: {selectedSim.name} · Periodo: {selectedSim.start_date || "2018-06-01"} a {selectedSim.end_date || "2018-08-31"}
+                    {selectedSim.name} · {selectedPeriodLabel}
                   </p>
                 </div>
               </div>
@@ -1638,25 +1787,23 @@ export default function SimulationsPage() {
             {/* Cuerpo del Modal con Gráfico en Alta Resolución */}
             <div className="p-5 flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto">
               <div className="h-80 sm:h-[400px] w-full bg-slate-50/40 dark:bg-slate-950/40 p-3 border border-slate-200 dark:border-slate-800">
-                {isLoadingResults && expandedChartModal !== "MONTHLY" ? (
+                {isLoadingResults ? (
                   <div className="h-full flex items-center justify-center text-slate-400 text-xs font-mono">
                     <Loader2 className="w-5 h-5 animate-spin mr-2" /> Cargando telemetría en alta resolución...
                   </div>
+                ) : resultsError ? (
+                  <div role="alert" className="flex h-full items-center justify-center px-6 text-center text-xs text-amber-800 dark:text-amber-200">
+                    {resultsError}
+                  </div>
+                ) : expandedChartModal === "MONTHLY" ? (
+                  <MonthlyComparisonChart rows={monthlyComparisonData} stationId={selectedGauge} />
+                ) : chartData.length === 0 ? (
+                  <div className="flex h-full items-center justify-center px-6 text-center text-xs text-slate-500">
+                    No hay registros diarios disponibles para esta corrida.
+                  </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    {expandedChartModal === "MONTHLY" ? (
-                      <LineChart data={monthlyComparisonData}>
-                        <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
-                        <XAxis dataKey="month" stroke="#9ca3af" fontSize={11} tickLine={false} />
-                        <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} label={{ value: "Caudal mensual (m³/s)", angle: -90, position: "insideLeft", fill: "#6b7280", fontSize: 11 }} />
-                        <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "12px", color: "var(--foreground)" }} />
-                        <Legend wrapperStyle={{ fontSize: "12px" }} />
-                        <Line type="monotone" dataKey="observed_streamflow_m3s" name="Observado real (USGS 05451210)" stroke="#09090b" className="dark:stroke-slate-100" strokeWidth={2.5} dot={{ r: 4 }} />
-                        <Line type="monotone" dataKey="baseline_streamflow_m3s" name="Línea base sin acoplar" stroke="#ea580c" strokeWidth={2} dot={{ r: 3 }} />
-                        <Line type="monotone" dataKey="twin_streamflow_m3s" name="Gemelo digital multiescala" stroke="#059669" strokeWidth={2.5} dot={{ r: 4 }} />
-                        <Line type="monotone" dataKey="ml_assisted_streamflow_m3s" name="Predicción híbrida ML" stroke="#7c3aed" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} />
-                      </LineChart>
-                    ) : expandedChartModal === "STREAMFLOW" ? (
+                    {expandedChartModal === "STREAMFLOW" ? (
                       <ComposedChart data={chartData}>
                         <CartesianGrid strokeDasharray="2 2" stroke="#e5e7eb" className="dark:stroke-slate-800" vertical={false} />
                         <XAxis dataKey="date_str" stroke="#9ca3af" fontSize={11} tickLine={false} />
@@ -1676,7 +1823,7 @@ export default function SimulationsPage() {
                         <Tooltip contentStyle={{ backgroundColor: "var(--background)", borderColor: "#e5e7eb", borderRadius: "0px", fontSize: "12px", color: "var(--foreground)" }} />
                         <Legend wrapperStyle={{ fontSize: "12px" }} />
                         <Line yAxisId="left" type="monotone" dataKey="potential_et_mm" name="Demanda atmosférica ET0 (mm/d)" stroke="#ea580c" strokeWidth={2} dot={false} strokeDasharray="4 4" />
-                        <Line yAxisId="left" type="monotone" dataKey="plant_transpiration_mm" name="Transpiración real maíz (mm/d)" stroke="#059669" strokeWidth={2.5} dot={false} />
+                        <Line yAxisId="left" type="monotone" dataKey="plant_transpiration_mm" name="Transpiración modelada (mm/d)" stroke="#059669" strokeWidth={2.5} dot={false} />
                         <Line yAxisId="right" type="monotone" dataKey="sap_flow_velocity_cmh" name="Velocidad de flujo xilemático (cm/h)" stroke="#0284c7" strokeWidth={2} dot={false} />
                       </ComposedChart>
                     ) : (
@@ -1701,31 +1848,31 @@ export default function SimulationsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 text-xs font-mono">
                 {expandedChartModal === "MONTHLY" ? (
                   <>
-                    <div><span className="text-slate-400 block text-[10px]">Meses evaluados:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.aligned_months ?? 0} meses</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Reducción RMSE:</span><strong className="text-emerald-700 dark:text-emerald-400">{selectedSim.validation?.improvement_percent?.value?.toFixed?.(2) ?? "0.00"}%</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Criterio H1:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.criterion_met ? "CUMPLE (≥15%)" : "NO CUMPLE"}</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Estación:</span><strong className="text-slate-800 dark:text-slate-200">USGS 05451210</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Meses evaluados:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.aligned_months != null ? `${selectedSim.validation.aligned_months} meses` : "No disponible"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Reducción RMSE:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.improvement_percent?.value != null ? `${selectedSim.validation.improvement_percent.value.toFixed(2)}%` : "No disponible"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Criterio H1:</span><strong className="text-slate-800 dark:text-slate-200">{typeof criterionMet === "boolean" ? criterionMet ? "Cumple" : "No cumple" : "No evaluado"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Estación:</span><strong className="text-slate-800 dark:text-slate-200">{selectedGauge ? `USGS ${selectedGauge}` : "No registrada"}</strong></div>
                   </>
                 ) : expandedChartModal === "STREAMFLOW" ? (
                   <>
-                    <div><span className="text-slate-400 block text-[10px]">Caudal pico:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.peak_streamflow_m3s != null ? `${Number(selectedSim.summary_metrics.peak_streamflow_m3s).toFixed(2)} m³/s` : "—"}</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Volumen descargado:</span><strong className="text-blue-700 dark:text-blue-400">{selectedSim.summary_metrics?.total_discharge_hm3 != null ? `${Number(selectedSim.summary_metrics.total_discharge_hm3).toFixed(1)} hm³` : "—"}</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Precipitación total:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.total_precip_mm != null ? `${Number(selectedSim.summary_metrics.total_precip_mm).toFixed(0)} mm` : "—"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Caudal pico:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.peak_streamflow_m3s != null ? `${Number(selectedSim.summary_metrics.peak_streamflow_m3s).toFixed(2)} m³/s` : "No disponible"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Volumen descargado:</span><strong className="text-blue-700 dark:text-blue-400">{selectedSim.summary_metrics?.total_discharge_hm3 != null ? `${Number(selectedSim.summary_metrics.total_discharge_hm3).toFixed(1)} hm³` : "No disponible"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Precipitación total:</span><strong className="text-slate-800 dark:text-slate-200">{(selectedSim.summary_metrics?.total_precip_mm ?? selectedSim.summary_metrics?.total_precipitation_mm) != null ? `${Number(selectedSim.summary_metrics?.total_precip_mm ?? selectedSim.summary_metrics?.total_precipitation_mm).toFixed(0)} mm` : "No disponible"}</strong></div>
                     <div><span className="text-slate-400 block text-[10px]">Duración:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.duration_days} días</strong></div>
                   </>
                 ) : expandedChartModal === "PLANT" ? (
                   <>
                     <div><span className="text-slate-400 block text-[10px]">Población modelada:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.plant_count?.toLocaleString()} plantas</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Evapotranspiración:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.total_actual_et_mm != null ? `${Number(selectedSim.summary_metrics.total_actual_et_mm).toFixed(1)} mm` : "—"}</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Índice foliar LAI:</span><strong className="text-emerald-700 dark:text-emerald-400">{Number(selectedSim.field_aggregates?.mean_lai ?? 0).toFixed(2)} m²/m²</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Rendimiento prox:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "—"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Evapotranspiración:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.total_actual_et_mm != null ? `${Number(selectedSim.summary_metrics.total_actual_et_mm).toFixed(1)} mm` : "No disponible"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Índice foliar LAI:</span><strong className="text-emerald-700 dark:text-emerald-400">{meanLai != null ? `${Number(meanLai).toFixed(2)} m²/m²` : "No disponible"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Rendimiento estimado (proxy):</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.summary_metrics?.seasonal_crop_yield_proxy_t_ha != null ? `${Number(selectedSim.summary_metrics.seasonal_crop_yield_proxy_t_ha).toFixed(2)} t/ha` : "No disponible"}</strong></div>
                   </>
                 ) : (
                   <>
-                    <div><span className="text-slate-400 block text-[10px]">Estrés medio CWSI:</span><strong className="text-amber-700 dark:text-amber-400">{selectedSim.summary_metrics?.mean_cwsi != null ? Number(selectedSim.summary_metrics.mean_cwsi).toFixed(3) : "—"}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Estrés medio CWSI:</span><strong className="text-amber-700 dark:text-amber-400">{selectedSim.summary_metrics?.mean_cwsi != null ? Number(selectedSim.summary_metrics.mean_cwsi).toFixed(3) : "No disponible"}</strong></div>
                     <div><span className="text-slate-400 block text-[10px]">Umbral estrés crítico:</span><strong className="text-rose-700 dark:text-rose-400">CWSI &gt; 0.50</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Profundidad raíz:</span><strong className="text-slate-800 dark:text-slate-200">{Number(selectedSim.field_aggregates?.mean_root_depth_cm ?? 0).toFixed(1)} cm</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Número de curva SCS:</span><strong className="text-slate-800 dark:text-slate-200">CN = {(selectedSim as any).parameters?.curve_number ?? 74}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Profundidad raíz:</span><strong className="text-slate-800 dark:text-slate-200">{meanRootDepth}</strong></div>
+                    <div><span className="text-slate-400 block text-[10px]">Número de curva SCS:</span><strong className="text-slate-800 dark:text-slate-200">{curveNumber != null ? `CN = ${curveNumber}` : "No disponible"}</strong></div>
                   </>
                 )}
               </div>
@@ -1745,7 +1892,7 @@ export default function SimulationsPage() {
                   Configurar corrida de simulación
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Define la cuenca, periodo temporal, población de cultivo y motor hidrológico.
+                  Revisa qué datos y motor usará el backend antes de crear la corrida.
                 </p>
               </div>
               <button
@@ -1821,7 +1968,7 @@ export default function SimulationsPage() {
                   <label className="block text-slate-600 dark:text-slate-400 font-medium text-[11px]">
                     Horizonte temporal estandarizado
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                   <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 xl:grid-cols-6">
                     {SIMULATION_PERIOD_PRESETS.map((p) => {
                       const isSel = selectedPeriodPreset === p.id;
                       return (
@@ -1841,6 +1988,7 @@ export default function SimulationsPage() {
                       );
                     })}
                   </div>
+                  {currentPeriodPreset && <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">{currentPeriodPreset.shortDesc}</p>}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -1864,7 +2012,7 @@ export default function SimulationsPage() {
                       type="date"
                       required
                       value={formEndDate}
-                      onChange={(e) => setFormEndDate(e.target.value)}
+                      onChange={(e) => handleEndDateChange(e.target.value)}
                       className="w-full px-2.5 py-1.5 text-xs font-mono rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     />
                   </div>
@@ -1887,7 +2035,7 @@ export default function SimulationsPage() {
                       onChange={(e) => changeHydrologyBackend(e.target.value as "SIMPLIFIED" | "SWAT_PLUS")}
                       className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-medium"
                     >
-                      <option value="SIMPLIFIED">Gemelo Digital Multiescala Acoplado</option>
+                       <option value="SIMPLIFIED">Modelo multiescala simplificado (proxy)</option>
                       <option value="SWAT_PLUS" disabled={capabilities.swat_plus?.status !== "ACTIVE"}>
                         Simulador Físico SWAT+ ({capabilities.swat_plus?.status ?? "No disponible"})
                       </option>
@@ -1915,14 +2063,30 @@ export default function SimulationsPage() {
                 {formHydrologyBackend === "SWAT_PLUS" ? (
                   <div className="p-3 rounded-none border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/20 text-xs text-purple-900 dark:text-purple-200">
                     <span className="font-semibold block mb-1">Modalidad SWAT+</span>
-                    <select
-                      value={formSwatRunType}
-                      onChange={(e) => setFormSwatRunType(e.target.value as SwatRunType)}
-                      className="w-full rounded-none border border-purple-300 dark:border-purple-800 bg-white dark:bg-slate-950 px-2 py-1 text-xs text-slate-900 dark:text-slate-100"
-                    >
-                      <option value="SWAT_MULTISCALE_COUPLED">Acoplamiento bidireccional (Doble corrida con plants.plt)</option>
-                      <option value="SWAT_STANDARD_BASELINE">Control SWAT+ físico sin sobreescritura</option>
-                    </select>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <select
+                        aria-label="Modalidad SWAT+"
+                        value={formSwatRunType}
+                        onChange={(e) => setFormSwatRunType(e.target.value as SwatRunType)}
+                        className="w-full rounded-none border border-purple-300 bg-white px-2 py-1 text-xs text-slate-900 dark:border-purple-800 dark:bg-slate-950 dark:text-slate-100"
+                      >
+                        <option value="SWAT_MULTISCALE_COUPLED">Corrida acoplada</option>
+                        <option value="SWAT_STANDARD_BASELINE">Línea base SWAT+</option>
+                      </select>
+                      <label className="flex items-center justify-between gap-2 text-[11px]">
+                        <span>Años de warm-up</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={formWarmupYears}
+                          onChange={(event) => setFormWarmupYears(Number(event.target.value))}
+                          className="w-24 border border-purple-300 bg-white px-2 py-1 font-mono text-xs text-slate-900 dark:border-purple-800 dark:bg-slate-950 dark:text-slate-100"
+                        />
+                      </label>
+                    </div>
+                    <p className="mt-2 text-[11px] leading-relaxed text-purple-800 dark:text-purple-200">
+                      SWAT+ comienza este número de años antes de la fecha inicial; el periodo de warm-up no forma parte de los resultados evaluados.
+                    </p>
                   </div>
                 ) : (
                   <div>
@@ -1931,17 +2095,44 @@ export default function SimulationsPage() {
                     </label>
                     <select
                       value={formClimateSource}
-                      onChange={(e) => setFormClimateSource(e.target.value as any)}
+                      onChange={(e) => changeClimateSource(e.target.value as "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "SWAT_PROJECT")}
                       className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     >
                       <option value="SYNTHETIC">SYNTHETIC — Generador estocástico reproducible con estacionalidad de Iowa</option>
-                      <option value="OBSERVED" disabled={!hasObservedForcing}>
-                        OBSERVED — {hasObservedForcing ? "CHIRPS / GridMET observado disponible" : "Requiere dataset CHIRPS"}
+                       <option value="OBSERVED" disabled={!hasObservedForcing}>
+                         OBSERVED — {hasObservedForcing ? "Forzamiento observado listo" : "Requiere exactamente un artefacto normalizado CHIRPS u OBSERVED_CLIMATE"}
                       </option>
                       <option value="CMIP6_FILE" disabled={!hasCmip6Forcing}>
-                        CMIP6_FILE — {hasCmip6Forcing ? "Proyecciones NEX-GDDP-CMIP6" : "Requiere dataset CMIP6"}
+                        CMIP6_FILE — {hasCmip6Forcing ? "Proyecciones NEX-GDDP-CMIP6" : "Requiere exactamente un artefacto normalizado CMIP6"}
                       </option>
                     </select>
+                  </div>
+                )}
+
+                {formHydrologyBackend === "SIMPLIFIED" && ["OBSERVED", "CMIP6_FILE"].includes(formClimateSource) && (
+                  <div>
+                    <label htmlFor="forcing-dataset" className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                      Dataset de forzamiento
+                    </label>
+                    <select
+                      id="forcing-dataset"
+                      required
+                      value={formForcingDatasetId}
+                      onChange={(event) => selectForcingDataset(event.target.value)}
+                      className="w-full border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                    >
+                      <option value="">Selecciona un dataset normalizado</option>
+                      {availableForcingDatasets.map((dataset) => (
+                        <option key={dataset.id} value={dataset.id}>
+                          {dataset.dataset_name} · {dataset.provider} · {dataset.normalized_artifact_count} archivos
+                        </option>
+                      ))}
+                    </select>
+                    {availableForcingDatasets.length === 0 && (
+                      <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
+                        No hay un dataset de esta fuente con exactamente un artefacto normalizado. Revisa el <Link href="/datasets" className="font-semibold underline">Catálogo de datos</Link>.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -1988,7 +2179,7 @@ export default function SimulationsPage() {
                     </label>
                     <select
                       value={formManagement}
-                      onChange={(e) => setFormManagement(e.target.value as any)}
+                      onChange={(e) => setFormManagement(e.target.value as "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM")}
                       className="w-full px-2.5 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
                     >
                       <option value="BASELINE">Maíz convencional (labranza tradicional)</option>
@@ -1998,17 +2189,56 @@ export default function SimulationsPage() {
                   </div>
                 )}
               </div>
+
+              {preflightMatchesCurrentForm && preflight && (
+                <section
+                  role={preflight.status === "READY" ? "status" : "alert"}
+                  className={`border-l-2 p-3.5 text-xs ${preflight.status === "READY"
+                    ? "border-emerald-700 bg-emerald-50 text-emerald-950 dark:border-emerald-400 dark:bg-emerald-950/30 dark:text-emerald-100"
+                    : "border-amber-600 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-950/30 dark:text-amber-100"
+                  }`}
+                >
+                  <h4 className="font-semibold">
+                    {preflight.status === "READY" ? "Configuración lista" : "Hay requisitos pendientes"}
+                  </h4>
+                  {preflight.blockers && preflight.blockers.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 pl-4">
+                      {preflight.blockers.map((blocker, index) => {
+                        const message = typeof blocker === "string" ? blocker : blocker.message ?? blocker.code ?? "Requisito no disponible";
+                        return <li key={`${index}-${message}`}>{message}</li>;
+                      })}
+                    </ul>
+                  )}
+                  {preflight.status === "READY" && (
+                    <div className="mt-2 space-y-1">
+                      {preflight.estimated_executions != null && preflight.estimated_executions > 1 && (
+                        <p>El acoplamiento requiere {preflight.estimated_executions} ejecuciones SWAT+.</p>
+                      )}
+                      {preflight.will_consume && preflight.will_consume.length > 0 && (
+                        <p><span className="font-semibold">Entradas utilizadas:</span> {preflight.will_consume.join(", ")}.</p>
+                      )}
+                      {preflight.provenance_only && preflight.provenance_only.length > 0 && (
+                        <p><span className="font-semibold">Solo como referencia:</span> {preflight.provenance_only.join(", ")}.</p>
+                      )}
+                    </div>
+                  )}
+                </section>
+              )}
             </form>
 
             {/* Pie Fijo del Modal */}
             <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between gap-3">
               <span className="text-[11px] text-slate-500 font-mono">
-                {formHydrologyBackend === "SWAT_PLUS" ? "SWAT+ FÍSICO" : "GEMELO MULTIESCALA"}
+                {formHydrologyBackend === "SWAT_PLUS" ? "SWAT+" : `Modelo simplificado · ${formClimateSource}`}
               </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setPreflight(null);
+                    setPreflightSignature("");
+                  }}
                   className="px-3.5 py-1.5 rounded-none border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium transition cursor-pointer"
                 >
                   Cancelar
@@ -2016,10 +2246,10 @@ export default function SimulationsPage() {
                 <button
                   type="submit"
                   form="simulation-form"
-                  disabled={isSubmitting}
-                  className="px-4 py-1.5 rounded-none bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-medium transition cursor-pointer disabled:opacity-50"
+                  disabled={isSubmitting || isPreflighting}
+                  className="px-4 py-1.5 rounded-none bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-xs font-medium transition cursor-pointer disabled:cursor-wait disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
                 >
-                  {isSubmitting ? "Ejecutando..." : "Ejecutar experimento"}
+                  {isPreflighting ? "Validando…" : isSubmitting ? "Ejecutando corrida…" : preflightReady ? "Ejecutar corrida" : "Validar configuración"}
                 </button>
               </div>
             </div>

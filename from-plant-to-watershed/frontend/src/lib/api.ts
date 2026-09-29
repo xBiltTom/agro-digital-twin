@@ -13,7 +13,7 @@ import {
   ClimateScenario,
   Watershed,
   SimulationRun,
-  SimulationResult, SwatPlusConfiguration, SwatResultsResponse
+  SimulationResult, SimulationCreatePayload, SimulationPreflightResponse, SwatResultsResponse
   , ExternalModelInfo, DatasetInfo, CurrentFinalScientificReportResponse,
   AIInsightsResponse
 } from "../types/simulation";
@@ -177,26 +177,14 @@ class ApiService {
     return this.request<SimulationAvailability>(`/simulations/${encodeURIComponent(id)}/availability${suffix}`, { signal });
   }
 
-  async createSimulation(data: {
-    name: string;
-    watershed_id: string;
-    scenario_id: string;
-    duration_days: number;
-    seed: number;
-    parameters?: Record<string, number>;
-    mode?: "RESEARCH_MULTISCALE" | "DEVELOPMENT_LEGACY_DEMO" | "ML_ASSISTED" | "SWAT_PLUS";
-    plant_count?: number;
-    hydrology_backend?: string;
-    external_model_id?: string;
-    management_scenario?: "BASELINE" | "NO_TILL" | "MAIZE_TO_SORGHUM";
-    climate_source?: "SYNTHETIC" | "CMIP6_FILE" | "OBSERVED" | "OBSERVED_HYBRID" | "SWAT_PROJECT";
-    dataset_ids?: string[];
-    dataset_roles?: Record<string, "FORCING" | "OBSERVATION" | "SOIL_INPUT" | "LAND_COVER" | "YIELD_OBSERVATION" | "VALIDATION" | "CONTEXT_ONLY">;
-    station_id?: string;
-    start_date: string;
-    end_date: string;
-    swat_plus?: SwatPlusConfiguration;
-  }): Promise<SimulationRun> {
+  async preflightSimulation(data: SimulationCreatePayload): Promise<SimulationPreflightResponse> {
+    return this.request<SimulationPreflightResponse>("/simulations/preflight", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createSimulation(data: SimulationCreatePayload): Promise<SimulationRun> {
     return this.request<SimulationRun>("/simulations", {
       method: "POST",
       body: JSON.stringify(data),

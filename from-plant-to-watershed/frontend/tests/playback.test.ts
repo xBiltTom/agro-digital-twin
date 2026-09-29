@@ -18,6 +18,8 @@ import { gunzipSync } from "node:zlib";
 import { DatabaseSync } from "node:sqlite";
 import { firstCropNavigation } from "../src/lib/playback-navigation.ts";
 import type { SimulationAvailability } from "../src/types/playback-availability.ts";
+import { classifySimulationEvidence } from "../src/lib/simulation-evidence.ts";
+import { datedMonthlyComparisonRows } from "../src/lib/simulation-chart-data.ts";
 
 function variable(value: number | string | null, unit: string, evidence: VariableState["evidence"] = "SIMPLIFIED_FSPM"): VariableState {
   return { value, unit, evidence: value === null ? "NOT_AVAILABLE" : evidence, source: "fixture",
@@ -246,6 +248,43 @@ test("simulation selector follows server pagination past the former 50-run windo
   });
   assert.equal(result.length, 101);
   assert.deepEqual(offsets, [0, 100]);
+});
+
+test("simulation evidence keeps historical imports distinct from real executions and simplified runs", () => {
+  const imported = {
+    hydrology_backend: "SWAT_PLUS",
+    provenance: { source_kind: "HISTORICAL_IMPORT", evidence_type: "REAL_SWAT_PLUS_COUPLED" },
+  } as unknown as SimulationRun;
+  const executed = {
+    hydrology_backend: "SWAT_PLUS",
+    provenance: { evidence_type: "REAL_SWAT_PLUS_COUPLED" },
+  } as unknown as SimulationRun;
+  const simplified = {
+    hydrology_backend: "SIMPLIFIED",
+    provenance: { hydrology: { model: "SimplifiedHydrologyModel" } },
+  } as unknown as SimulationRun;
+  const legacyImport = {
+    hydrology_backend: "SWAT_PLUS",
+    requested_config: { swat_plus: { experiment_id: "south-fork-final-coupled-2015-2020" } },
+    provenance: { evidence_type: "REAL_SWAT_PLUS_COUPLED" },
+  } as unknown as SimulationRun;
+
+  assert.equal(classifySimulationEvidence(imported), "HISTORICAL_IMPORT");
+  assert.equal(classifySimulationEvidence(executed), "COUPLED_EXECUTED");
+  assert.equal(classifySimulationEvidence(simplified), "SIMPLIFIED");
+  assert.equal(classifySimulationEvidence(legacyImport), "HISTORICAL_IMPORT");
+});
+
+test("monthly comparison charts read dates and modeled flow from historical SWAT import records", () => {
+  const rows = datedMonthlyComparisonRows([
+    { period: "2018-01-01", streamflow_m3s: 4.2, observed_streamflow_m3s: 3.8 },
+    { streamflow_m3s: 2.1 },
+  ]);
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].month, "2018-01-01");
+  assert.equal(rows[0].streamflow_m3s, 4.2);
+  assert.equal(rows[0].observed_streamflow_m3s, 3.8);
 });
 
 test("historical charts appear only for completed runs without a playback artifact", () => {
@@ -718,5 +757,3 @@ test("Fase 5.1 - Optional variables safety & Macro Entity Explorer dynamic count
   );
   assert.equal(calendarSet.size, 7);
 });
-
-

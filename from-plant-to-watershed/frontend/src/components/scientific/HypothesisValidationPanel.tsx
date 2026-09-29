@@ -5,17 +5,10 @@ import {
   Shield,
   CheckCircle2,
   AlertTriangle,
-  FileCheck2,
-  TrendingDown,
-  TrendingUp,
-  Layers,
   Scale,
   Activity,
   Calendar,
   MapPin,
-  HelpCircle,
-  Info,
-  ArrowRight,
   BookOpen,
   ChevronDown,
   ChevronUp,
@@ -31,7 +24,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
 
   if (!envelope) {
     return (
-      <div className="p-12 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 text-center text-xs text-zinc-500 shadow-sm">
+      <div className="border border-slate-300 bg-white p-8 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
         Cargando reporte autoritativo de validación científica...
       </div>
     );
@@ -39,7 +32,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
 
   if (envelope.current_contract.current_execution_status === "NOT_EXECUTED") {
     return (
-      <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800/80 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      <div className="border border-amber-300 bg-amber-50/70 p-6 text-xs text-amber-800 dark:border-amber-800/80 dark:bg-amber-950/20 dark:text-amber-200">
         Contrato South Fork v2: <b className="font-mono">NOT_EXECUTED</b>. Las métricas v1 permanecen archivadas y no representan el contrato actual.
       </div>
     );
@@ -48,7 +41,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
   const report = envelope.current_result;
   if (!report) {
     return (
-      <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800/80 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      <div className="border border-amber-300 bg-amber-50/70 p-6 text-xs text-amber-800 dark:border-amber-800/80 dark:bg-amber-950/20 dark:text-amber-200">
         El contrato South Fork v2 figura como ejecutado, pero su reporte actual no está disponible.
       </div>
     );
@@ -58,6 +51,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
   const daily = report.validation.daily;
   const scope = report.scope;
   const exp = report.experiment;
+  const h1Supported = report.hypothesis.conclusion === "H1_SUPPORTED";
 
   const renderMetricDiff = (baselineVal: number | null | undefined, coupledVal: number | null | undefined, lowerIsBetter = true, unit = "") => {
     if (baselineVal == null || coupledVal == null) return { diffText: "N/D", isImprovement: false };
@@ -73,7 +67,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* 1. Verdict & Scope Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-50/80 via-white to-amber-50/80 dark:from-zinc-900 dark:via-zinc-900/90 dark:to-amber-950/20 border border-emerald-300 dark:border-emerald-800/60 shadow-sm flex flex-col md:flex-row md:items-start justify-between gap-6">
+      <div className="flex flex-col justify-between gap-5 border border-slate-300 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-start">
         <div className="flex flex-col gap-2.5 max-w-3xl">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1 font-semibold">
@@ -94,7 +88,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
           </p>
 
           {/* Formulación Formal de Hipótesis */}
-          <div className="mt-2 p-4 rounded-xl bg-white/95 dark:bg-zinc-950/90 border border-zinc-200/90 dark:border-zinc-800 flex flex-col gap-2.5 text-xs shadow-xs">
+          <div className="mt-2 flex flex-col gap-2.5 border border-slate-200 bg-slate-50 p-4 text-xs dark:border-slate-800 dark:bg-slate-950/70">
             <div className="flex items-start gap-2.5">
               <span className="font-mono font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-[10px] shrink-0">
                 H0 (Hipótesis Nula)
@@ -115,12 +109,12 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
         </div>
 
         {/* Verdict Badge Card */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-amber-300/80 dark:border-amber-800/80 shrink-0 flex flex-col gap-2.5 min-w-[260px] shadow-sm">
+        <div className="flex min-w-[260px] shrink-0 flex-col gap-2.5 border border-amber-300 bg-white p-4 dark:border-amber-800/80 dark:bg-slate-950">
           <span className="text-[10px] uppercase font-mono text-zinc-500 dark:text-zinc-400 font-semibold tracking-wider">
             Dictamen del Experimento
           </span>
-          <div className="text-lg font-bold font-mono text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-            <CheckCircle2 className="w-5 h-5 text-amber-600" />
+          <div className={`text-lg font-bold font-mono flex items-center gap-1.5 ${h1Supported ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+            {h1Supported ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertTriangle className="w-5 h-5 text-amber-600" />}
             {report.hypothesis.conclusion}
           </div>
           <div className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
@@ -129,7 +123,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
           </div>
           <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-[11px] font-mono text-zinc-500 flex items-center justify-between">
             <span>Mejora lograda:</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+              <span className={`font-bold text-xs ${monthly.improvement_percent != null && monthly.improvement_percent >= 15 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
               {monthly.improvement_percent != null ? `${monthly.improvement_percent.toFixed(1)}%` : "N/D"}
             </span>
           </div>
@@ -140,7 +134,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
       </div>
 
       {/* 2. Pedagogical Metric Guide Accordion */}
-      <div className="p-4 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
+      <div className="border border-slate-300 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
         <button
           onClick={() => setShowMetricsGuide(!showMetricsGuide)}
           className="w-full flex items-center justify-between text-xs font-semibold text-zinc-800 dark:text-zinc-200 cursor-pointer"
@@ -154,7 +148,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
 
         {showMetricsGuide && (
           <div className="mt-3 pt-3 border-t border-zinc-200/80 dark:border-zinc-800/80 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs animate-fadeIn">
-            <div className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+            <div className="border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
               <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 block text-[11px]">
                 NSE (Nash-Sutcliffe)
               </span>
@@ -162,7 +156,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
                 Mide qué tan mejor es el modelo que predecir la media histórica constante. <b>1.0</b> es ajuste perfecto, <b>&gt;0.65</b> es excelente y <b>&gt;0.50</b> satisfactorio.
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+            <div className="border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
               <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400 block text-[11px]">
                 KGE (Kling-Gupta)
               </span>
@@ -170,7 +164,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
                 Equilibrio entre correlación de Pearson, sesgo en volumen de agua y variabilidad de caudales pico. Muy valorado en modelado hidrológico moderno.
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+            <div className="border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
               <span className="font-mono font-bold text-amber-600 dark:text-amber-400 block text-[11px]">
                 RMSE (m³/s)
               </span>
@@ -178,7 +172,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
                 Raíz del error cuadrático medio: penaliza fuertemente las discrepancias grandes durante crecidas de ríos. Menor valor representa mayor exactitud.
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+            <div className="border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
               <span className="font-mono font-bold text-rose-600 dark:text-rose-400 block text-[11px]">
                 PBIAS (Sesgo %)
               </span>
@@ -191,7 +185,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
       </div>
 
       {/* 3. Hydrometric Metrics Comparison Table: Baseline vs Coupled */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col gap-5">
+      <div className="flex flex-col gap-5 border border-slate-300 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-100 dark:border-zinc-800">
           <div>
             <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide flex items-center gap-2">
@@ -211,7 +205,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
         {/* Comparison Tables Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Monthly Primary Card */}
-          <div className="p-5 rounded-xl border border-emerald-200/80 dark:border-emerald-900/50 bg-emerald-50/20 dark:bg-emerald-950/10 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 border border-emerald-200/80 bg-emerald-50/20 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/10">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5" />
@@ -283,7 +277,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
           </div>
 
           {/* Daily Evaluation Card */}
-          <div className="p-5 rounded-xl border border-cyan-200/80 dark:border-cyan-900/50 bg-cyan-50/20 dark:bg-cyan-950/10 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 border border-cyan-200/80 bg-cyan-50/20 p-4 dark:border-cyan-900/50 dark:bg-cyan-950/10">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs font-bold text-cyan-700 dark:text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
@@ -359,17 +353,17 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
       {/* 4. Protocol Timeline & Limitations */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Timeline breakdown */}
-        <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between text-xs">
+        <div className="flex flex-col justify-between border border-slate-300 bg-slate-50 p-4 text-xs dark:border-slate-800 dark:bg-slate-950/60">
           <div>
             <span className="font-mono font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 block mb-2">
               Cronología del Protocolo
             </span>
             <div className="space-y-2 text-[11px] text-zinc-600 dark:text-zinc-400">
-              <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+              <div className="border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900">
                 <span className="font-semibold text-zinc-800 dark:text-zinc-200 block">Calentamiento (Warm-up):</span>
                 <span>{exp?.warm_up?.join(" → ") || "2015-01-01 → 2017-12-31"} (3 años para estabilizar humedad inicial del suelo y acuíferos).</span>
               </div>
-              <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+              <div className="border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900">
                 <span className="font-semibold text-zinc-800 dark:text-zinc-200 block">Periodo de Evaluación:</span>
                 <span>{exp?.evaluation?.join(" → ") || "2018-01-01 → 2020-12-31"} (Evaluación ciega contra datos observados de la estación USGS).</span>
               </div>
@@ -381,13 +375,13 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
         </div>
 
         {/* Protocol Limitations */}
-        <div className="md:col-span-2 p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-3 text-xs">
+        <div className="flex flex-col gap-3 border border-slate-300 bg-slate-50 p-4 text-xs dark:border-slate-800 dark:bg-slate-950/60 md:col-span-2">
           <span className="font-mono font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
             Limitaciones Científicas y Supuestos del Modelo
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-zinc-600 dark:text-zinc-400">
             {report.limitations.map((lim, index) => (
-              <div key={index} className="flex items-start gap-2 p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80">
+              <div key={index} className="flex items-start gap-2 border border-slate-200 bg-white p-2.5 dark:border-slate-800/80 dark:bg-slate-900">
                 <span className="text-amber-600 shrink-0 font-bold">•</span>
                 <span className="leading-snug">{lim}</span>
               </div>

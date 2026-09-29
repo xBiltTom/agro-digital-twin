@@ -343,7 +343,7 @@ async def get_simulation_detail(
 @router.get("/{sim_id}/results", response_model=List[SimulationResultResponse])
 async def get_simulation_results(
     sim_id: str,
-    limit: int = Query(365, ge=1, le=1000),
+    limit: int = Query(365, ge=1, le=3650),
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):

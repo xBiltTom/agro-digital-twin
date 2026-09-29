@@ -3,21 +3,10 @@
 import React, { useState } from "react";
 import {
   Activity,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  BarChart2,
-  Cpu,
-  Layers,
-  Sparkles,
-  ShieldAlert,
   Scale,
   BookOpen,
   ChevronDown,
   ChevronUp,
-  Info,
-  Sliders,
-  Check,
 } from "lucide-react";
 import { CurrentFinalScientificReportResponse } from "../../types/simulation";
 
@@ -30,7 +19,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
 
   if (!envelope) {
     return (
-      <div className="p-12 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 text-center text-xs text-zinc-500 shadow-sm">
+      <div className="border border-slate-300 bg-white p-8 text-center text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
         Cargando batería de pruebas estadísticas...
       </div>
     );
@@ -38,7 +27,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
 
   if (envelope.current_contract.current_execution_status === "NOT_EXECUTED") {
     return (
-      <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      <div className="border border-amber-300 bg-amber-50/70 p-6 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
         Batería estadística del contrato v2 pendiente de ejecución; los resultados v1 sólo son evidencia histórica archivada.
       </div>
     );
@@ -47,7 +36,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
   const report = envelope.current_result;
   if (!report) {
     return (
-      <div className="p-8 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 text-center text-xs text-amber-800 dark:text-amber-200">
+      <div className="border border-amber-300 bg-amber-50/70 p-6 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
         El contrato South Fork v2 figura como ejecutado, pero su batería estadística no está disponible.
       </div>
     );
@@ -61,11 +50,14 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
     : wilcoxon.reason ?? "Sin justificación disponible";
   const sobol = stats.sobol || {};
   const bootstrap = stats.bootstrap_ssp585_yield_ic95 || {};
+  const ksSummary = ks.status === "COMPUTED"
+    ? `D = ${typeof ks.statistic === "number" ? ks.statistic.toFixed(4) : "N/D"}; n observado = ${ks.n_observed ?? "N/D"}; n modelado = ${ks.n_simulated ?? "N/D"}; p = ${typeof ks.p_value_asymptotic === "number" ? ks.p_value_asymptotic.toExponential(2) : "N/D"}.`
+    : ks.reason ?? "El informe no incluye un resultado para esta prueba.";
 
   return (
     <div className="flex flex-col gap-6">
       {/* 1. Header Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-indigo-50/80 via-white to-teal-50/80 dark:from-indigo-950/30 dark:via-zinc-900 dark:to-teal-950/30 border border-indigo-300 dark:border-indigo-800/60 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 border border-slate-300 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -78,14 +70,14 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-indigo-700 dark:text-indigo-400 bg-white/90 dark:bg-zinc-950/90 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-900/60 shrink-0 shadow-xs font-semibold">
+        <div className="flex shrink-0 items-center gap-2 border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-mono text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
           <Scale className="w-3.5 h-3.5" />
-          <span>4 Pruebas de Rigor</span>
+          <span>4 análisis del protocolo</span>
         </div>
       </div>
 
       {/* 2. Educational Accordion */}
-      <div className="p-4 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800">
+      <div className="border border-slate-300 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
         <button
           onClick={() => setShowRigorGuide(!showRigorGuide)}
           className="w-full flex items-center justify-between text-xs font-semibold text-zinc-800 dark:text-zinc-200 cursor-pointer"
@@ -136,9 +128,9 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
       </div>
 
       {/* 3. Grid of 4 Statistical Test Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Test 1: Kolmogorov-Smirnov (KS) Test */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4 border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
@@ -176,14 +168,12 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
 
           <div className="text-[11px] text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/80 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/80 leading-relaxed">
             <span className="font-semibold text-zinc-800 dark:text-zinc-200">Interpretación Hidrológica: </span>
-            {ks.status === "COMPUTED"
-              ? "Prueba computada con éxito sobre la serie temporal continua. Refleja que la física del modelo reproduce la variabilidad del régimen hídrico en la cuenca South Fork Iowa."
-              : "La prueba KS de la corrida actual no se encuentra disponible."}
+              {ksSummary}
           </div>
         </div>
 
         {/* Test 2: Wilcoxon Signed-Rank Test */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4 border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-amber-50 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
@@ -220,7 +210,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
         </div>
 
         {/* Test 3: Sobol Global Sensitivity Analysis */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4 border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-cyan-50 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800">
@@ -239,7 +229,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
             </p>
 
             <div className="mt-4 flex flex-col gap-1.5 font-mono text-xs">
-              <span className="text-[11px] text-zinc-500">Parámetros analizados en el espacio de muestreo:</span>
+              <span className="text-[11px] text-zinc-500">Parámetros declarados para un posible análisis:</span>
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {(sobol.parameters || []).length > 0 ? (
                   sobol.parameters?.map((param) => (
@@ -251,7 +241,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
                     </span>
                   ))
                 ) : (
-                  <span className="text-zinc-500">base_kc, max_root_depth_cm, curve_number, initial_soil_moisture_vol</span>
+                  <span className="text-zinc-500">El informe no declara parámetros.</span>
                 )}
               </div>
             </div>
@@ -264,7 +254,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
         </div>
 
         {/* Test 4: Bootstrap Non-Parametric Confidence Intervals */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4 border border-slate-300 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800">
@@ -289,14 +279,14 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-500 text-[11px]">Metodología Aplicada:</span>
-                <span className="font-bold text-indigo-700 dark:text-indigo-400 text-[11px] truncate max-w-[200px]">{bootstrap.reason ?? "Remuestreo Bootstrap B=10,000"}</span>
+                <span className="font-bold text-indigo-700 dark:text-indigo-400 text-[11px] truncate max-w-[200px]">{bootstrap.reason ?? "Sin metodología registrada"}</span>
               </div>
             </div>
           </div>
 
           <div className="text-[11px] text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/80 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/80 leading-relaxed">
             <span className="font-semibold text-zinc-800 dark:text-zinc-200">Criterio de Rigor: </span>
-            {bootstrap.reason ?? "Calculado mediante remuestreo con reemplazo para garantizar robustez ante asimetría."}
+            {bootstrap.reason ?? "El informe no incluye una justificación para este análisis."}
           </div>
         </div>
       </div>
