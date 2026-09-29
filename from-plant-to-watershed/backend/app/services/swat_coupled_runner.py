@@ -127,7 +127,7 @@ def run_coupled_swat_with_executed_calendar(
     fspm_crop: str = "maize",
     plant_count: int = 100,
     seed: int = 42,
-    max_iterations: int = 3,
+    max_iterations: int = 5,
 ) -> CoupledSwatRun:
     """Converge FSPM and real SWAT+ management calendars with copied workspaces.
 
@@ -160,6 +160,7 @@ def run_coupled_swat_with_executed_calendar(
     final_summary: CouplingPlantParameterSummary | None = None
     final_calendar: SwatExecutedCropCalendar | None = None
     previous_signature = _signature(calendar)
+    water_source = baseline
 
     for iteration in range(1, max_iterations + 1):
         from app.services.twin_coupling_engine import _build_coupling_field_summary
@@ -173,6 +174,7 @@ def run_coupled_swat_with_executed_calendar(
             seed=seed,
             crop_fraction_by_hru=cdl_fractions,
             crop=fspm_crop,
+            hru_water_results=water_source.hru_results if config.output_frequency == "DAILY" else None,
         )
         summary = _build_coupling_field_summary(
             fspm.dated_fields,
@@ -191,6 +193,15 @@ def run_coupled_swat_with_executed_calendar(
         )
         executed_signature = _signature(executed_calendar)
         matches = executed_signature == previous_signature
+        old_water = {(str(row["period"]), str(row["hru_unit"])): row.get("soil_water_average_mm")
+                     for row in water_source.hru_results}
+        new_water = {(str(row["period"]), str(row["hru_unit"])): row.get("soil_water_average_mm")
+                     for row in result.hru_results}
+        if old_water.keys() != new_water.keys():
+            raise ValueError("Coupled SWAT+ changed the dated HRU water coverage")
+        water_delta_mm = max((abs(float(old_water[key]) - float(new_water[key]))
+                              for key in old_water if old_water[key] is not None and new_water[key] is not None),
+                             default=0.0)
         effective_weather = _verify_effective_weather(
             fspm,
             workspace=Path(result.workspace),
@@ -208,6 +219,8 @@ def run_coupled_swat_with_executed_calendar(
             "input_calendar": calendar.as_dict(),
             "executed_calendar": executed_calendar.as_dict(),
             "per_hru_calendar_match": matches,
+            "max_hru_daily_average_soil_water_delta_mm": water_delta_mm,
+            "soil_water_convergence_tolerance_mm": 0.1,
             "input_hru_dates": {str(key): list(value) for key, value in sorted(previous_signature.items())},
             "executed_hru_dates": {str(key): list(value) for key, value in sorted(executed_signature.items())},
             "parameter_update_count": len(parameter_updates),
@@ -216,10 +229,11 @@ def run_coupled_swat_with_executed_calendar(
             "workspace": result.workspace,
         })
         final_result, final_fspm, final_summary, final_calendar = result, fspm, summary, executed_calendar
-        if matches:
+        if matches and (config.output_frequency != "DAILY" or water_delta_mm <= 0.1):
             break
         calendar = executed_calendar
         previous_signature = executed_signature
+        water_source = result
 
     if final_result is None or final_fspm is None or final_summary is None or final_calendar is None:
         raise RuntimeError("Coupled SWAT+ run produced no completed iteration")
@@ -227,6 +241,8 @@ def run_coupled_swat_with_executed_calendar(
         raise RuntimeError(
             f"SWAT+ management calendar did not converge with FSPM after {max_iterations} coupled iterations"
         )
+    if config.output_frequency == "DAILY" and iterations[-1]["max_hru_daily_average_soil_water_delta_mm"] > 0.1:
+        raise RuntimeError("SWAT+ daily HRU soil water did not converge with FSPM crop parameters")
     final_result.provenance["executed_calendar_coupling"] = {
         "status": "CONVERGED",
         "calendar_baseline_run_id": baseline.run_id,

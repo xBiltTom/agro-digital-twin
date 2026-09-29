@@ -25,6 +25,8 @@ export interface PlantSample {
   plant_id: string;
   x_m: number;
   y_m: number;
+  calendar_id?: string | null;
+  hru_ids?: string[];
   variables: Record<string, VariableState>;
 }
 
@@ -40,6 +42,17 @@ export interface HruState {
   hru_id: string;
   spatial_support: string;
   polygon_id: string | null;
+  gis_id?: string | null;
+  calendar_id?: string | null;
+  crop?: CropState | null;
+  variables: Record<string, VariableState>;
+}
+
+export interface ChannelState {
+  channel_id: string;
+  gis_id: string | null;
+  geometry_id: string | null;
+  spatial_support: string;
   variables: Record<string, VariableState>;
 }
 
@@ -60,6 +73,7 @@ export interface PlaybackRecord {
   plant_sample_context?: PlantSampleContext | null;
   hydrology: Record<string, VariableState>;
   hru_results: HruState[];
+  channel_results: ChannelState[];
   availability: Record<string, Availability>;
   limitations: string[];
 }

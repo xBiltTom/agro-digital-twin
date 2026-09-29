@@ -25,6 +25,7 @@ from app.services.swat_plus_adapter import (
 from app.services.swat_plant_parameter_mapper import SwatClimateForcingReader, SwatPlantParameterMapper, SwatPlantMappingError
 from app.services.playback_artifact import PlaybackArtifactStore
 from app.services.playback_builder import simplified_frames, swat_frames
+from app.services.swat_soil_water import read_hru_gis_ids, read_hru_soils
 from app.services.swat_crop_chain_diagnostic import SwatCropChainDiagnostic
 from app.core.config import settings
 from app.schemas.coupling import CouplingPlantParameterSummary
@@ -202,6 +203,7 @@ class TwinCouplingEngine:
             simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
             outlet_unit=config.outlet_unit, run_type=config.run_type,
             resolution=config.output_frequency, records=result.records, hru_results=result.hru_results,
+            channel_results=result.channel_results,
             forcing=climate, forcing_source="SWAT+ direct station basin mean",
             start_date=sim_run.start_date, end_date=sim_run.end_date,
             observations=observations, observation_source=observation_source),
@@ -259,6 +261,10 @@ class TwinCouplingEngine:
             seed=sim_run.seed,
         )
         result, fspm, parameter_summary = coupled.result, coupled.fspm, coupled.parameter_summary
+        calendar_by_hru = {hru: {"calendar_id": group.calendar_id,
+                                 "planting_date": group.planting_date, "harvest_date": group.harvest_date}
+                           for group in coupled.calendar.groups for hru in group.hru_ids}
+        soil_profiles = read_hru_soils(config.project_path)
         manifest = result.provenance["workspace_modifications"]
         if manifest.get("status") != "APPLIED" or not manifest.get("parameter_updates"):
             raise ValueError("FSPM parameter mapping did not modify the isolated SWAT+ plant record")
@@ -303,7 +309,10 @@ class TwinCouplingEngine:
             simulation_id=sim_run.id, watershed_id=watershed.id, watershed_code=watershed.code,
             outlet_unit=config.outlet_unit, run_type=config.run_type,
             resolution=config.output_frequency, records=result.records, hru_results=result.hru_results,
-            plant_results=result.plant_results, forcing=fspm.field_climate,
+            plant_results=result.plant_results, channel_results=result.channel_results,
+            soil_profiles=soil_profiles, hru_gis_ids=read_hru_gis_ids(config.project_path),
+            hru_calendar=calendar_by_hru,
+            forcing=fspm.field_climate,
             forcing_source="SWAT+ station forcing, hru.con.wst, HRU area x 2019 CDL corn fraction",
             fspm_days=fspm.fspm_days, start_date=sim_run.start_date, end_date=sim_run.end_date,
             observations=observations, observation_source=observation_source),
@@ -319,7 +328,7 @@ class TwinCouplingEngine:
                 "requested_interval": [sim_run.start_date.isoformat(), sim_run.end_date.isoformat()],
             },
             limitations=[
-                "FSPM soil moisture remains an assumed constant 24 volumetric percent; SWAT+ soil-water mm is exposed separately and is not converted to volumetric moisture",
+                "FSPM moisture is derived from SWAT+ whole-profile storage and soils.sol under a uniform-profile assumption; daily layer and root-zone water are not printed",
                 "SWAT+ 61.0.2.61 hru_pw output has LAI, biomass and stress factors but no direct plant-height or root-depth columns; those traits come from FSPM representative plant states",
                 "Each distinct SWAT+ HRU planting/harvest calendar is simulated separately and field states are weighted by HRU area and 2019 CDL corn fraction",
             ])
@@ -337,7 +346,7 @@ class TwinCouplingEngine:
                             "fspm_model": PlantPopulation.VERSION, "plant_count": sim_run.plant_count,
                             "calendar": coupled.calendar.as_dict(), "parent_swat_playback_sha256": playback["sha256"]},
                 limitations=["Daily FSPM and forcing only; SWAT+ hydrology has a coarser effective frequency",
-                             "FSPM soil moisture is an assumed constant 24 volumetric percent"])
+                             "FSPM moisture is assumed for runs without daily SWAT+ HRU soil-water output"])
             sim_run.provenance = {**sim_run.provenance, "playback_daily_fspm": daily_manifest}
         sim_run.monthly_outputs = result.records
         sim_run.hru_aggregates = {

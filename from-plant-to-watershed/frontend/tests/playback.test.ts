@@ -39,7 +39,7 @@ function record(date: string, options: { rain?: number | null; crop?: boolean; h
     hydrology: { soil_water_mm: variable(170, "mm", "MODELLED_SWAT_PLUS"),
       evapotranspiration_mm: variable(5.8, "mm/day", "MODELLED_SWAT_PLUS"),
       streamflow_m3s: variable(8, "m3/s", "MODELLED_SWAT_PLUS") },
-    hru_results: [], availability: {}, limitations: [],
+    hru_results: [], channel_results: [], availability: {}, limitations: [],
   };
 }
 
@@ -66,6 +66,19 @@ test("FSPM growth follows recorded samples and resets at season boundary", () =>
   assert.equal(newSeason.fieldHeightM, 0.15);
   assert.equal(newSeason.record.crop?.season_id, "two");
   assert.equal(sceneFromRecord(record("2021-05-02", { season: "two" }), "missing-id").sample, null);
+});
+
+test("South Fork 2019 playback example reaches the visual adapter with all three scales", () => {
+  const path = new URL("../../backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v1/playback_example_2019-07-15.json", import.meta.url);
+  const actual = JSON.parse(readFileSync(path, "utf8")) as PlaybackRecord;
+  const visual = adaptPlaybackVisual(actual, { simulationId: actual.simulation_id });
+  assert.equal(actual.date, "2019-07-15");
+  assert.equal(visual.mode, "SCIENTIFIC_ACTIVE");
+  assert.equal(visual.plantSamples.length, 70);
+  assert.equal(visual.hruStates.length, 36);
+  assert.equal(visual.channelStates.length, 37);
+  assert.equal(visual.fspmMoisturePercent?.evidence, "DERIVED");
+  assert.equal(visual.channelStates.find((channel) => channel.gis_id === "153")?.variables.streamflow_m3s.unit, "m3/s");
 });
 
 test("rich plant geometry receives exactly the selected sample dimensions and phenology", () => {

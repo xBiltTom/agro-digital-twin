@@ -14,6 +14,7 @@ from scientific_core.units import ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT
 
 from app.services.swat_executed_calendar import CropCalendarGroup, SwatExecutedCropCalendar
 from app.services.swat_plant_parameter_mapper import SwatClimateForcingReader
+from app.services.swat_soil_water import hru_water_state, read_hru_soils
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,8 @@ def _combine_daily_fields(
         "mean_transpiration_mm", "mean_stress", "actual_ET_mm_day", "potential_ET_mm_day",
         "transpiration_mm_day", "soil_water_uptake_mm_day", "yield_estimate_g_plant",
         "soil_moisture_vol",
+        "estimated_plant_available_fraction", "estimated_root_zone_depth_mm",
+        "wilting_point_vol_percent", "field_capacity_vol_percent",
     }
     sample = next(iter(active_rows.values()))["field"]
     result: dict[str, Any] = {
@@ -78,7 +81,7 @@ def _combine_daily_fields(
     result["active_crop_area_fraction"] = active_weight / total_weight
     result["active_calendar_group_count"] = len(active_groups)
     result["calendar_group_count"] = len(groups)
-    result["soil_moisture_source"] = "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
+    result["soil_moisture_source"] = sample.get("soil_moisture_source", "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT")
     result["calendar_aggregation"] = "SWAT_HRU_AREA_X_2019_CDL_CORN_FRACTION_WEIGHTED; inactive calendar groups contribute zero living-crop structure"
     result["summary_semantics"] = "DATED_FSPM_MAIZE_AREA_STATE_ACROSS_EXECUTED_SWAT_CALENDARS"
     return result
@@ -94,6 +97,7 @@ def run_fspm_on_executed_calendar(
     seed: int,
     crop_fraction_by_hru: dict[int, float] | None = None,
     crop: str = "maize",
+    hru_water_results: list[dict[str, Any]] | None = None,
 ) -> ExecutedCalendarFspmRun:
     """Create dated group and field FSPM states using the assigned SWAT weather."""
     root = Path(project)
@@ -113,6 +117,22 @@ def run_fspm_on_executed_calendar(
     if plant_record is None or "tmp_base" not in headers:
         raise ValueError("plants.plt does not expose corn.tmp_base for the FSPM growth clock")
     growth_base_c = float(plant_record[headers.index("tmp_base")])
+    soil_profiles = read_hru_soils(root) if hru_water_results is not None else {}
+    water_by_hru_day: dict[tuple[int, str], float] = {}
+    if hru_water_results is not None:
+        for row in hru_water_results:
+            key = int(row["hru_unit"]), str(row["period"])
+            if key in water_by_hru_day:
+                raise ValueError(f"Duplicate SWAT+ HRU soil-water row {key}")
+            water_by_hru_day[key] = float(row["soil_water_average_mm"])
+        missing = [(hru, (start_date + timedelta(days=index)).isoformat())
+                   for hru in target_hrus for index in range((end_date - start_date).days + 1)
+                   if (hru, (start_date + timedelta(days=index)).isoformat()) not in water_by_hru_day]
+        if missing:
+            raise ValueError(f"Missing daily SWAT+ HRU soil-water storage: {missing[:3]}")
+        hru_weights = SwatExecutedCropCalendar.hru_spatial_weights(root, crop_fraction_by_hru)
+    else:
+        hru_weights = {}
 
     group_rows: dict[str, dict[str, dict[str, Any]]] = {}
     group_climate_provenance: dict[str, Any] = {}
@@ -135,6 +155,7 @@ def run_fspm_on_executed_calendar(
             raise ValueError(f"calendar group {group.calendar_id} falls outside the requested FSPM interval")
         cursor = plant_date
         gdd = absorbed_par = 0.0
+        root_depth_m = .08
         rows_by_date: dict[str, dict[str, Any]] = {}
         while cursor <= harvest_date:
             day = cursor.isoformat()
@@ -145,10 +166,32 @@ def run_fspm_on_executed_calendar(
                 "rh_percent": weather["rh_percent"], "co2_ppm": weather["co2_ppm"],
                 "gdd_c_day": gdd, "cumulative_absorbed_par_mj_m2": absorbed_par,
             }
+            hru_water = {}
+            if hru_water_results is not None:
+                for hru in group.hru_ids:
+                    hru_water[hru] = hru_water_state(
+                        soil_profiles[hru], water_by_hru_day[hru, day], root_depth_m)
+                denominator = sum(hru_weights[hru] for hru in group.hru_ids)
+                def weighted(name: str) -> float:
+                    return sum(hru_weights[hru] * float(hru_water[hru][name])
+                               for hru in group.hru_ids) / denominator
+                moisture = weighted("estimated_soil_moisture_vol_percent")
+                thresholds = tuple(weighted(name) for name in (
+                    "wilting_point_vol_percent", "field_capacity_vol_percent", "saturation_vol_percent"))
+                source = "DERIVED_SWAT_PROFILE_UNIFORM_ROOT_ZONE_APPROXIMATION"
+            else:
+                moisture, thresholds = ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT, None
+                source = "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
             plants = population.step((cursor - start_date).days + 1, daily_forcing,
-                                     soil_moisture_vol=ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
-            field = PlantToFieldAggregator.aggregate(plants, ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT)
-            field["soil_moisture_source"] = "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
+                                     soil_moisture_vol=moisture, soil_thresholds=thresholds)
+            field = PlantToFieldAggregator.aggregate(plants, moisture)
+            field["soil_moisture_source"] = source
+            if hru_water:
+                field["estimated_plant_available_fraction"] = weighted("estimated_plant_available_fraction")
+                field["estimated_root_zone_depth_mm"] = weighted("estimated_root_zone_depth_mm")
+                field["wilting_point_vol_percent"] = thresholds[0]
+                field["field_capacity_vol_percent"] = thresholds[1]
+            root_depth_m = float(field["root_depth_mean_m"])
             field["calendar_id"] = group.calendar_id
             field["calendar_hru_ids"] = list(group.hru_ids)
             field["calendar_spatial_weight"] = group.spatial_weight
@@ -170,6 +213,7 @@ def run_fspm_on_executed_calendar(
                     "identity_semantics": f"Modeled representative plants for management-calendar group {group.calendar_id}; not observed plant individuals",
                 },
                 "forcing": weather,
+                "hru_water": hru_water,
             }
             rows_by_date[day] = row
             group_daily.append(row)
@@ -234,6 +278,8 @@ def run_fspm_on_executed_calendar(
                 "plants": plant_samples,
                 "plant_sample_context": sample_context,
                 "calendar_groups": group_summaries,
+                "hru_water": {str(hru): water for row in active_rows.values()
+                              for hru, water in row["hru_water"].items()},
             }
             dated_fields.append((day, deepcopy(field)))
         else:
@@ -262,10 +308,11 @@ def run_fspm_on_executed_calendar(
             "field_climate": field_climate_provenance,
             "calendar_group_climate": group_climate_provenance,
             "soil_moisture": {
-                "value": ASSUMED_FSPM_SOIL_MOISTURE_VOL_PERCENT,
+                "source": "SWAT+ hru_wb_day.sw_ave + hru-data.hru.soil + soils.sol" if hru_water_results is not None else "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT",
+                "classification": "DERIVED" if hru_water_results is not None else "ASSUMED",
                 "unit": "volumetric percent",
-                "source": "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT",
-                "limitation": "SWAT+ soil_water_mm remains in millimeters; no storage-to-volumetric conversion is available from the required layer/profile mapping.",
+                "method": "Profile mean theta = daily average storage mm / profile depth mm; projected uniformly to the current FSPM root depth. SWAT+ soil-specific wilting, field capacity and porosity thresholds are area weighted within each calendar group." if hru_water_results is not None else "constant 24 vol%",
+                "limitation": "SWAT+ daily output lacks layer water states; root-zone moisture and availability assume a uniform profile and are estimates, not layer measurements. FSPM groups average distinct HRU soils and storage." if hru_water_results is not None else "SWAT+ storage is not connected.",
             },
             "thermal_maturity_gdd": {
                 "value": PlantPopulation(seed=seed, count=1).thermal_maturity_gdd,

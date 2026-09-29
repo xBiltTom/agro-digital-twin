@@ -275,12 +275,12 @@ export default function FieldPlotMesh3D({
           <SoilMoistureProbeStation
             position={[8.2, 0, 7.5]}
             label="Sonda contextual Hondonada"
-            valuePercent={scene?.soilMoisturePercent !== null && scene?.soilMoisturePercent !== undefined ? scene.soilMoisturePercent + 2.5 : null}
+            valuePercent={null}
           />
           <SoilMoistureProbeStation
             position={[-7.5, 0, 8.2]}
             label="Sonda contextual Loma"
-            valuePercent={scene?.soilMoisturePercent !== null && scene?.soilMoisturePercent !== undefined ? Math.max(0, scene.soilMoisturePercent - 2.8) : null}
+            valuePercent={null}
           />
         </>
       )}

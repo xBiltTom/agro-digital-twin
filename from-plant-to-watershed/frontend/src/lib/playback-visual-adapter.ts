@@ -1,4 +1,4 @@
-import type { PlaybackRecord, PlaybackResolution, PlantSample, PlantSampleContext, VariableState } from "../types/playback";
+import type { ChannelState, HruState, PlaybackRecord, PlaybackResolution, PlantSample, PlantSampleContext, VariableState } from "../types/playback";
 import type { AvailabilityCode, SimulationAvailability, VisualMode } from "../types/playback-availability";
 
 /** Official scientific input for Gemini. Scene reference dimensions live in visual-state.ts. */
@@ -36,6 +36,8 @@ export interface TwinVisualState {
   plantSampleContext: PlantSampleContext | null;
   selectedPlant: PlantSample | null;
   hruIds: string[];
+  hruStates: HruState[];
+  channelStates: ChannelState[];
   codes: AvailabilityCode[];
   missingVariables: string[];
   limitations: string[];
@@ -133,6 +135,7 @@ export function adaptPlaybackVisual(
     plantSamples: record?.plant_samples ?? [], plantSampleContext: record?.plant_sample_context ?? null,
     selectedPlant: sample,
     hruIds: record?.hru_results.map((hru) => hru.hru_id) ?? [],
+    hruStates: record?.hru_results ?? [], channelStates: record?.channel_results ?? [],
     codes: [...new Set(codes)], missingVariables: selected?.missing_variables ?? missing,
     limitations: [...(record?.limitations ?? []), ...(diagnostic?.limitations ?? [])],
     fieldRepresentable: selected?.field_representable ?? fieldReady,

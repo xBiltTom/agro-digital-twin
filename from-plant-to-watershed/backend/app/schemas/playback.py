@@ -58,6 +58,8 @@ class PlantSample(BaseModel):
     plant_id: str
     x_m: float
     y_m: float
+    calendar_id: str | None = None
+    hru_ids: list[str] = Field(default_factory=list)
     variables: dict[str, VariableState]
 
 
@@ -82,6 +84,17 @@ class HruState(BaseModel):
     spatial_support: str
     variables: dict[str, VariableState]
     polygon_id: str | None = None
+    gis_id: str | None = None
+    calendar_id: str | None = None
+    crop: CropState | None = None
+
+
+class ChannelState(BaseModel):
+    channel_id: str
+    gis_id: str | None = None
+    spatial_support: str = "SWAT_CHANNEL_OUTPUT_UNIT_NO_VERIFIED_GEOMETRY"
+    variables: dict[str, VariableState]
+    geometry_id: str | None = None
 
 
 class PlaybackRecord(BaseModel):
@@ -101,6 +114,7 @@ class PlaybackRecord(BaseModel):
     plant_sample_context: PlantSampleContext | None = None
     hydrology: dict[str, VariableState] = Field(default_factory=dict)
     hru_results: list[HruState] = Field(default_factory=list)
+    channel_results: list[ChannelState] = Field(default_factory=list)
     availability: dict[str, Availability] = Field(default_factory=dict)
     limitations: list[str] = Field(default_factory=list)
     model_config = ConfigDict(extra="forbid")

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 from dataclasses import asdict, is_dataclass
 from datetime import date, timedelta
 import hashlib
@@ -29,6 +30,9 @@ if str(BACKEND) not in sys.path:
 from app.services.swat_coupled_runner import CoupledSwatRun, run_coupled_swat_with_executed_calendar
 from app.services.swat_plus_adapter import SwatPlusAdapter, SwatPlusRunConfig
 from app.services.swat_input_compatibility import SWAT_SOURCE_VERSION
+from app.services.playback_artifact import PlaybackArtifactStore
+from app.services.playback_builder import swat_frames
+from app.services.swat_soil_water import read_hru_gis_ids, read_hru_soils
 
 
 DEFAULT_EXECUTABLE = Path.home() / ".swatplus_builder/engines/61.0.2.61/swatplus-61.0.2.61-gnu-lin_x86_64-Rel"
@@ -45,6 +49,7 @@ ENGINE_SOURCE_FILES = (
     "backend/scripts/run_phase1_south_fork_2019.py",
     "backend/app/services/executed_calendar_fspm.py",
     "backend/app/services/playback_builder.py",
+    "backend/app/services/swat_soil_water.py",
     "backend/app/services/swat_coupled_runner.py",
     "backend/app/services/swat_executed_calendar.py",
     "backend/app/services/swat_input_compatibility.py",
@@ -278,6 +283,17 @@ def _variable_catalog() -> dict[str, dict[str, Any]]:
             "SWAT+ hru_pw_day" if spatial == "HRU crop state" else "SWAT+ basin_wb_day and hru_wb_day"
         )
         add(name, unit, spatial, source, "SIMULATED", description)
+    for name, unit in {
+        "estimated_soil_moisture_vol_percent": "volumetric percent",
+        "estimated_plant_available_fraction": "fraction [0, 1]",
+        "estimated_root_zone_water_mm": "mm",
+        "estimated_root_zone_depth_mm": "mm",
+        "wilting_point_vol_percent": "volumetric percent",
+        "field_capacity_vol_percent": "volumetric percent",
+    }.items():
+        add(name, unit, "HRU soil profile or FSPM calendar group",
+            "SWAT+ hru_wb_day.sw_ave; hru-data.hru soil; soils.sol", "DERIVED",
+            "Whole-profile storage projected uniformly to the root zone; no daily layer water state is available")
 
     plant_units = {
         "plant_id": ("identifier", "modeled representative plant slot"),
@@ -287,6 +303,9 @@ def _variable_catalog() -> dict[str, dict[str, Any]]:
         "root_depth_cm": ("cm", "individual modeled maximum root-depth parameter"),
         "soil_moisture_offset": ("volumetric percentage points", "sampled individual moisture heterogeneity"),
         "root_depth_m": ("m", "individual modeled root depth"), "root_distribution": ("fraction by layer", "modeled root distribution"),
+        "root_fraction_upper": ("fraction", "upper model-layer root share in playback"),
+        "root_fraction_middle": ("fraction", "middle model-layer root share in playback"),
+        "root_fraction_lower": ("fraction", "lower model-layer root share in playback"),
         "biomass_g_plant": ("g/plant", "individual modeled plant biomass"),
         "estimated_yield_g_plant": ("g/plant", "individual modeled yield estimate"),
         "transpiration_mm": ("mm/day", "individual modeled transpiration"),
@@ -335,18 +354,18 @@ def _variable_catalog() -> dict[str, dict[str, Any]]:
         "active_calendar_group_count": "count", "calendar_group_count": "count", "n_plants": "count",
     }
     assumed_field_parameters = {
-        "soil_moisture_vol", "mean_thermal_maturity_gdd", "canopy_extinction_coefficient",
+        "mean_thermal_maturity_gdd", "canopy_extinction_coefficient",
         "biomass_energy_ratio_kg_ha_per_mj_m2", "n_plants",
     }
     for name, unit in field_units.items():
         classification = "ASSUMED" if name in assumed_field_parameters else "DERIVED"
-        note = "Fixed 24 vol% FSPM input; not linked to SWAT+ soil_water_mm." if name == "soil_moisture_vol" else (
+        note = "Derived from daily SWAT+ HRU profile storage divided by soils.sol profile depth, assuming uniform depth distribution." if name == "soil_moisture_vol" else (
             "Area weighted across executed management-calendar groups; inactive groups contribute zero to crop structure."
         )
         if name in assumed_field_parameters - {"soil_moisture_vol"}:
             note = "FSPM model parameter or representative model-slot count; assumed and not calibrated or an observed field count."
         if name in {"mean_stress", "water_stress"}:
-            note = "Area weighted mean of individual FSPM stress states; depends on the assumed constant 24 vol% soil moisture."
+            note = "Area weighted mean of individual FSPM stress states, driven by SWAT+ HRU daily water estimates."
         add(name, unit, "mapped maize field aggregate",
             "Existing FSPM plant states aggregated by PlantToFieldAggregator and HRU/CDL weights",
             classification, note)
@@ -469,7 +488,7 @@ def run(args: argparse.Namespace) -> Path:
 
         coupled = run_coupled_swat_with_executed_calendar(
             adapter, config, target_crop="corn", fspm_crop="maize", plant_count=args.plant_count,
-            seed=args.seed, max_iterations=3,
+            seed=args.seed, max_iterations=5,
         )
         checks = _validate_run(coupled, start, end)
         source_after = _tree_fingerprint(project)
@@ -484,6 +503,53 @@ def run(args: argparse.Namespace) -> Path:
                                       if column in metadata["columns"]]
             metadata["date_columns"] = available_date_columns
             artifact_metadata[name] = metadata
+
+        calendar_by_hru = {hru: {"calendar_id": group.calendar_id,
+                                 "planting_date": group.planting_date, "harvest_date": group.harvest_date}
+                           for group in coupled.calendar.groups for hru in group.hru_ids}
+        frames = swat_frames(
+            simulation_id=args.run_id, watershed_id="05451210", watershed_code="05451210",
+            outlet_unit="153", run_type="SWAT_MULTISCALE_COUPLED", resolution="DAILY",
+            records=coupled.result.records, hru_results=coupled.result.hru_results,
+            plant_results=coupled.result.plant_results, channel_results=coupled.result.channel_results,
+            soil_profiles=read_hru_soils(project), hru_gis_ids=read_hru_gis_ids(project),
+            hru_calendar=calendar_by_hru,
+            forcing=coupled.fspm.field_climate,
+            forcing_source="SWAT+ station forcing weighted by mapped maize HRU area",
+            fspm_days=coupled.fspm.fspm_days, start_date=start, end_date=end,
+        )
+        playback_store = PlaybackArtifactStore(BACKEND / "data/playback/v1")
+        playback = playback_store.write(args.run_id, frames, provenance={
+            "source_run_id": args.run_id, "swat_output_checksums": coupled.result.provenance.get("output_checksums"),
+            "fspm_soil_water": coupled.fspm.provenance["soil_moisture"],
+            "calendar": coupled.calendar.as_dict(),
+        }, limitations=[
+            "Root-zone water is estimated from whole-profile SWAT+ storage under a uniform-depth assumption",
+            "Representative FSPM plant slots are simulated, not observed individuals",
+            "Channel flow is m3/s and storage is m3; river depth is unavailable",
+        ])
+        sidecar = playback_store.root / playback["artifact_file"]
+        archive = result_dir / "playback.sqlite.gz"
+        with sidecar.open("rb") as source, archive.open("wb") as target:
+            with gzip.GzipFile(fileobj=target, mode="wb", filename="", mtime=0, compresslevel=9) as compressed:
+                for block in iter(lambda: source.read(1024 * 1024), b""):
+                    compressed.write(block)
+        playback["archive_file"] = archive.name
+        playback["archive_sha256"] = _sha256(archive)
+        artifact_metadata[archive.name] = {
+            "path": archive.name, "row_count": playback["record_count"], "columns": [],
+            "date_columns": ["date"], "sha256": playback["archive_sha256"],
+            "size_bytes": archive.stat().st_size,
+            "spatial_scale": "multiscale daily playback", "data_origin": "gzip of versioned PlaybackArtifactStore sidecar",
+        }
+        example = playback_store.page(args.run_id, playback, on=date(2019, 7, 15), limit=1)[1][0]
+        _write_json(result_dir / "playback_example_2019-07-15.json", example.model_dump(mode="json"))
+        artifact_metadata["playback_example_2019-07-15.json"] = {
+            "path": "playback_example_2019-07-15.json", "row_count": 1, "columns": list(type(example).model_fields),
+            "date_columns": ["date"], "sha256": _sha256(result_dir / "playback_example_2019-07-15.json"),
+            "size_bytes": (result_dir / "playback_example_2019-07-15.json").stat().st_size,
+            "spatial_scale": "multiscale daily playback", "data_origin": "versioned PlaybackArtifactStore",
+        }
 
         json_artifacts = (
             ("calendar.json", coupled.calendar.as_dict(), "HRU calendars", "SWAT+ executed management events"),
@@ -572,10 +638,11 @@ def run(args: argparse.Namespace) -> Path:
             "variable_catalog": _variable_catalog(),
             "variable_availability": coupled.result.water_balance.get("variable_availability"),
             "artifacts": artifact_metadata,
+            "playback": playback,
             "limitations": [
                 "The phase34 South Fork project is an experimental 2019 CDL-derived management scenario.",
                 "The source project does not declare the origin of its weather station data; the forcing is consumed unchanged and marked SOURCE_UNVERIFIED.",
-                "FSPM soil moisture remains an assumed constant 24 vol%; SWAT+ soil water remains in mm and is not converted to volumetric moisture.",
+                "FSPM moisture is derived from SWAT+ whole-profile storage and soils.sol under a uniform-profile approximation; no daily layer water states are available.",
                 "SWAT+ streamflow remains a rate in m3/s; no channel depth conversion is made.",
                 "FSPM plant states are representative deterministic model slots and field aggregates, not observed individuals.",
                 "SWAT+ management event dates are modeled execution events; daily event timing is applied to the complete FSPM day.",

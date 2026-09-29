@@ -8,7 +8,8 @@ from datetime import date, timedelta
 from statistics import fmean
 from typing import Any, Iterable
 
-from app.schemas.playback import CropState, Evidence, HruState, PlaybackRecord, PlantSample, VariableState
+from app.schemas.playback import ChannelState, CropState, Evidence, HruState, PlaybackRecord, PlantSample, VariableState
+from app.services.swat_soil_water import SoilProfile, hru_water_state
 
 
 def value(number: float | str | None, unit: str, evidence: Evidence, source: str,
@@ -69,21 +70,33 @@ def _field(row: dict | None) -> dict[str, VariableState]:
         "actual_transpiration_mm_day": value(row.get("actual_ET_mm_day"), "mm/day", Evidence.SIMPLIFIED_FSPM, source),
         "potential_transpiration_mm_day": value(row.get("potential_ET_mm_day"), "mm/day", Evidence.SIMPLIFIED_FSPM, source),
         "root_water_uptake_mm_day": value(row.get("soil_water_uptake_mm_day"), "mm/day", Evidence.SIMPLIFIED_FSPM, source),
-        "soil_moisture_vol_percent": value(row.get("soil_moisture_vol"), "volumetric percent", Evidence.ASSUMED if moisture_assumed else Evidence.SIMPLIFIED_HYDROLOGY, moisture_source,
+        "soil_moisture_vol_percent": value(row.get("soil_moisture_vol"), "volumetric percent", Evidence.ASSUMED if moisture_assumed else Evidence.DERIVED if moisture_source.startswith("DERIVED_SWAT") else Evidence.SIMPLIFIED_HYDROLOGY, moisture_source,
                                             "Not derived from SWAT+ soil-water storage" if moisture_source == "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT"
+                                            else "Uniform whole-profile storage projected to root zone; no daily layer water states" if moisture_source.startswith("DERIVED_SWAT")
                                             else "Initial configured moisture, before simplified hydrology evolves it" if moisture_source == "ASSUMED_INITIAL_CONDITION" else None),
+        "estimated_plant_available_fraction": value(row.get("estimated_plant_available_fraction"), "fraction [0, 1]", Evidence.DERIVED, moisture_source),
+        "estimated_root_zone_depth_mm": value(row.get("estimated_root_zone_depth_mm"), "mm", Evidence.DERIVED, moisture_source),
     }
 
 
-def _plant_samples(states: Iterable[Any]) -> list[PlantSample]:
+def _plant_samples(states: Iterable[Any], calendar_groups: list[dict] | None = None) -> list[PlantSample]:
     samples = []
+    group_hrus = {group["calendar_id"]: [str(hru) for hru in group["hru_ids"]]
+                  for group in calendar_groups or []}
     for state in states:
         source = f"PlantPopulation:{state.plant_id}"
+        calendar_id = state.plant_id.split(":", 1)[0] if ":" in state.plant_id else None
         samples.append(PlantSample(plant_id=state.plant_id, x_m=state.x_m, y_m=state.y_m,
+                                   calendar_id=calendar_id, hru_ids=group_hrus.get(calendar_id, []),
                                    variables={
                                        "lai": value(state.lai, "m2_leaf/m2_ground", Evidence.SIMPLIFIED_FSPM, source),
                                        "height_m": value(state.plant_height_m, "m", Evidence.SIMPLIFIED_FSPM, source),
                                        "root_depth_m": value(state.root_depth_m, "m", Evidence.SIMPLIFIED_FSPM, source),
+                                       "leaf_count": value(state.leaf_count, "leaves/plant", Evidence.SIMPLIFIED_FSPM, source),
+                                       "leaf_area_m2": value(state.leaf_area_m2, "m2/plant", Evidence.SIMPLIFIED_FSPM, source),
+                                       "root_fraction_upper": value(state.root_distribution[0], "fraction", Evidence.SIMPLIFIED_FSPM, source),
+                                       "root_fraction_middle": value(state.root_distribution[1], "fraction", Evidence.SIMPLIFIED_FSPM, source),
+                                       "root_fraction_lower": value(state.root_distribution[2], "fraction", Evidence.SIMPLIFIED_FSPM, source),
                                        "biomass_g_plant": value(state.biomass_g_plant, "g/plant", Evidence.SIMPLIFIED_FSPM, source),
                                        "phenological_stage": value(state.phenological_stage, "category", Evidence.SIMPLIFIED_FSPM, source),
                                        "water_stress": value(state.stress, "fraction [0, 1]", Evidence.SIMPLIFIED_FSPM, source),
@@ -119,13 +132,15 @@ def _hydrology(row: dict, evidence: Evidence, source: str, resolution: str,
     return result
 
 
-def _availability(weather: dict, field: dict, samples: list, hydrology: dict, hrus: list) -> dict[str, str]:
+def _availability(weather: dict, field: dict, samples: list, hydrology: dict, hrus: list,
+                  channels: list | None = None) -> dict[str, str]:
     return {
         "weather": "AVAILABLE" if any(v.availability == "AVAILABLE" for v in weather.values()) else "NOT_AVAILABLE",
         "field": "AVAILABLE" if any(v.availability == "AVAILABLE" for v in field.values()) else "NOT_AVAILABLE",
         "plant_samples": "AVAILABLE" if samples else "NOT_AVAILABLE",
         "hydrology": "AVAILABLE" if any(v.availability == "AVAILABLE" for v in hydrology.values()) else "NOT_AVAILABLE",
         "hru_results": "AVAILABLE" if hrus else "NOT_AVAILABLE",
+        "channel_results": "AVAILABLE" if channels else "NOT_AVAILABLE",
     }
 
 
@@ -161,6 +176,10 @@ def _weather_by_period(forcing: list[dict], resolution: str) -> dict[str, dict]:
 def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
                 resolution: str, records: list[dict], hru_results: list[dict],
                 plant_results: list[dict] | None = None,
+                channel_results: list[dict] | None = None,
+                soil_profiles: dict[int, SoilProfile] | None = None,
+                hru_gis_ids: dict[int, str] | None = None,
+                hru_calendar: dict[int, dict] | None = None,
                 forcing: list[dict] | None, forcing_source: str,
                 watershed_code: str | None = None, outlet_unit: str | None = None,
                 fspm_days: dict[str, dict] | None = None,
@@ -177,6 +196,14 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
     hrus_by_date: dict[str, list[dict]] = defaultdict(list)
     for row in hru_results:
         hrus_by_date[row["period"]].append(row)
+    channels_by_date: dict[str, list[dict]] = defaultdict(list)
+    channel_keys = set()
+    for row in channel_results or []:
+        key = (row["period"], str(row["channel_unit"]))
+        if key in channel_keys:
+            raise ValueError(f"Duplicate SWAT+ channel output {key}")
+        channel_keys.add(key)
+        channels_by_date[row["period"]].append(row)
     plants_by_date_hru: dict[tuple[str, str], dict] = {}
     for row in plant_results or []:
         identifier = row.get("hru_unit", row.get("hru_gis_id"))
@@ -210,7 +237,7 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
         row = by_period.get(day, {})
         field_day = (fspm_days or {}).get(day) if resolution == "DAILY" else None
         field_values = _field(field_day["field"]) if field_day and field_day.get("field") else {}
-        samples = _plant_samples(field_day.get("plants", [])) if field_day else []
+        samples = _plant_samples(field_day.get("plants", []), field_day.get("calendar_groups")) if field_day else []
         sample_context = field_day.get("plant_sample_context") if field_day else None
         crop = CropState(**field_day["crop"]) if field_day and field_day.get("crop") else None
         hru_states = []
@@ -219,6 +246,18 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
             if identifier is None:
                 continue
             variables = _hydrology(hru, Evidence.MODELLED_SWAT_PLUS, "SWAT+ HRU output", resolution)
+            profile = (soil_profiles or {}).get(int(identifier))
+            if profile is not None and hru.get("soil_water_average_mm") is not None:
+                root_depth = (field_day or {}).get("hru_water", {}).get(str(identifier), {}).get("estimated_root_zone_depth_mm")
+                estimate = hru_water_state(profile, float(hru["soil_water_average_mm"]),
+                                           float(root_depth) / 1000.0 if root_depth is not None else profile.depth_mm / 1000.0)
+                for name, unit in (("estimated_soil_moisture_vol_percent", "volumetric percent"),
+                                   ("estimated_plant_available_fraction", "fraction [0, 1]"),
+                                   ("estimated_root_zone_water_mm", "mm"),
+                                   ("estimated_root_zone_depth_mm", "mm")):
+                    variables[name] = value(estimate[name], unit, Evidence.DERIVED,
+                                            "SWAT+ hru_wb_day.sw_ave + hru-data.hru + soils.sol",
+                                            "Uniform profile projection; root-zone layer water is not printed")
             plant = plants_by_date_hru.get((day, str(identifier)))
             if plant is not None:
                 plant_units = {
@@ -234,8 +273,33 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
                                           "SWAT+ hru_pw output")
                     for name, unit in plant_units.items()
                 })
+            calendar = (hru_calendar or {}).get(int(identifier))
+            hru_crop = None
+            if calendar is not None:
+                active = calendar["planting_date"] <= day <= calendar["harvest_date"]
+                hru_crop = CropState(active=active, crop="maize" if active else None,
+                                     season_id=calendar["calendar_id"],
+                                     window_status="EXECUTED_SWAT_MANAGEMENT_EVENTS" if active else "NO_ACTIVE_EXECUTED_CROP_CALENDAR",
+                                     source="SWAT+ mgt_out.txt PLANT and HARV/KILL")
             hru_states.append(HruState(hru_id=str(identifier), spatial_support="SWAT_HRU_OUTPUT_UNIT_NO_VERIFIED_POLYGON",
-                                       variables=variables))
+                                       gis_id=(hru_gis_ids or {}).get(int(identifier),
+                                              str(hru["hru_gis_id"]) if hru.get("hru_gis_id") is not None else None),
+                                       calendar_id=calendar["calendar_id"] if calendar else None,
+                                       crop=hru_crop, variables=variables))
+        channel_states = []
+        channel_units = {
+            "streamflow_m3s": "m3/s", "channel_inflow_m3s": "m3/s",
+            "channel_water_storage_m3": "m3", "channel_precip_volume_m3": "m3/day",
+            "channel_evap_volume_m3": "m3/day", "channel_seep_volume_m3": "m3/day",
+            "channel_water_temp_c": "degC", "channel_area_ha": "ha",
+        }
+        for channel in channels_by_date.get(day, []):
+            channel_states.append(ChannelState(
+                channel_id=str(channel["channel_unit"]),
+                gis_id=str(channel["channel_gis_id"]) if channel.get("channel_gis_id") is not None else None,
+                variables={name: value(channel.get(name), unit, Evidence.MODELLED_SWAT_PLUS,
+                                       "SWAT+ channel_sd_day") for name, unit in channel_units.items()},
+            ))
         weather = _weather(weather_by_date.get(day), resolution=resolution, source=forcing_source, evidence=Evidence.DERIVED)
         observed_values = observations_by_period.get(day, [])
         hydro = _hydrology(row, Evidence.MODELLED_SWAT_PLUS, "SWAT+ normalized output", resolution,
@@ -269,8 +333,8 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
                              outlet_unit=outlet_unit, spatial_support="WATERSHED_OUTLET_AND_BASIN",
                              weather=weather, crop=crop, field=field_values, plant_samples=samples,
                              plant_sample_context=sample_context,
-                             hydrology=hydro, hru_results=hru_states,
-                             availability=_availability(weather, field_values, samples, hydro, hru_states),
+                             hydrology=hydro, hru_results=hru_states, channel_results=channel_states,
+                             availability=_availability(weather, field_values, samples, hydro, hru_states, channel_states),
                              limitations=limitations)
 
 

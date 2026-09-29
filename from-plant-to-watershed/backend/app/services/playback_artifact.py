@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from datetime import date
+import gzip
 import hashlib
 import os
 from pathlib import Path
 import re
+import shutil
 import sqlite3
 import threading
 from typing import Iterable
@@ -36,7 +38,32 @@ class PlaybackArtifactStore:
         name = manifest.get("artifact_file", "")
         if not isinstance(name, str) or not re.fullmatch(rf"{re.escape(simulation_id)}(?:\.[0-9a-f]{{32}})?\.sqlite", name):
             raise ValueError("Playback manifest does not match this simulation")
-        return self.root / name
+        path = self.root / name
+        if not path.is_file() and manifest.get("archive_file"):
+            self._restore_archive(simulation_id, manifest, path)
+        return path
+
+    def _restore_archive(self, simulation_id: str, manifest: dict, destination: Path) -> None:
+        """Recover the indexed sidecar from a checked-in compressed run artifact."""
+        archive_name = manifest.get("archive_file")
+        if archive_name != "playback.sqlite.gz":
+            raise ValueError("Unsupported playback archive name")
+        archive = self.root.parent.parent / "phase1-south-fork-2019" / "results" / simulation_id / archive_name
+        expected = manifest.get("archive_sha256")
+        if not re.fullmatch(r"[0-9a-f]{64}", str(expected)) or not archive.is_file():
+            raise FileNotFoundError("Playback archive is missing or has no checksum")
+        if self._sha256(archive) != expected:
+            raise ValueError("Playback archive SHA-256 mismatch")
+        self.root.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_suffix(".restore.tmp")
+        try:
+            with gzip.open(archive, "rb") as compressed, temporary.open("wb") as restored:
+                shutil.copyfileobj(compressed, restored)
+            if self._sha256(temporary) != manifest.get("sha256"):
+                raise ValueError("Restored playback SHA-256 mismatch")
+            os.replace(temporary, destination)
+        finally:
+            temporary.unlink(missing_ok=True)
 
     @staticmethod
     def _signature(path: Path) -> tuple[int, int, int, int, int]:
@@ -95,6 +122,7 @@ class PlaybackArtifactStore:
                     groups = [(name, getattr(record, name)) for name in ("weather", "field", "hydrology")]
                     groups.extend(("plant_samples", sample.variables) for sample in record.plant_samples)
                     groups.extend(("hru_results", hru.variables) for hru in record.hru_results)
+                    groups.extend(("channel_results", channel.variables) for channel in record.channel_results)
                     for group_name, group in groups:
                         for name, state in group.items():
                             entry = variables.setdefault(f"{group_name}.{name}", {"unit": state.unit, "evidence": [], "available": False})

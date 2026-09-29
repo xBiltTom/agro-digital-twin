@@ -46,6 +46,8 @@ backend/data/phase1-south-fork-2019/workspaces/
 backend/data/phase1-south-fork-2019/results/*
 !backend/data/phase1-south-fork-2019/results/phase1-sf-2019-v3/
 !backend/data/phase1-south-fork-2019/results/phase1-sf-2019-v3/**
+!backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v1/
+!backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v1/**
 data/playback/
 
 # Python & Testing Cache
