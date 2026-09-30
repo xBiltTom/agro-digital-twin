@@ -50,6 +50,7 @@ export default function PlantModel3D({
   const height = activePlant.heightM === null ? null : Math.max(0.05, Math.min(3.4, activePlant.heightM));
   const lai = activePlant.lai;
   const stress = activePlant.stress;
+  const soilMoistureState = scene?.record.field.soil_moisture_vol_percent;
 
   // Utilizar el número de hojas simulado por FSPM cuando esté disponible; de lo contrario, estimar según LAI
   const simulatedLeafCount = activePlant.leafCount;
@@ -76,7 +77,7 @@ export default function PlantModel3D({
   const reproductive = maizeReproductive(activePlant.stage);
   const showRain = Boolean(scene && showHydrologyFlow && scene.rainIntensity !== null && scene.rainMm !== null && scene.rainMm > 0);
   const rootDepthM = activePlant.rootDepthM ?? (isDisplayingReference ? 1.0 : null);
-  const transpirationVal = activePlant.transpirationMmDay ?? (isDisplayingReference ? 1.4 : null);
+  const transpirationVal = activePlant.transpirationMmDay;
 
   return (
     <group position={[0, -0.18, 0]}>
@@ -251,7 +252,11 @@ export default function PlantModel3D({
                   <b className="text-teal-300">
                     {activePlant.soilMoisturePercent !== null ? `${activePlant.soilMoisturePercent.toFixed(2)} %` : "No disponible"}
                   </b>
-                  <p className="text-[9px] text-amber-300/90 mt-0.5">Estimación derivada del perfil SWAT+, no medición por capa.</p>
+                  <p className="mt-0.5 text-[9px] text-amber-300/90">
+                    {soilMoistureState?.limitation ?? (soilMoistureState
+                      ? `Evidencia: ${soilMoistureState.evidence}.`
+                      : "El playback no incluye una humedad volumétrica para esta fecha.")}
+                  </p>
                 </div>
                 {scene?.sample && (
                   <div className="text-[9px] text-zinc-400">

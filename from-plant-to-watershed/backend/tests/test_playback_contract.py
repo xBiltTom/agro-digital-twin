@@ -377,3 +377,58 @@ async def test_backfill_uses_persisted_baseline_without_fspm_or_swat_execution(t
         run = await db.scalar(select(SimulationRun).where(SimulationRun.id == run_id))
         await db.delete(run)
         await db.commit()
+
+
+@pytest.mark.asyncio
+async def test_backfill_repairs_verified_legacy_sidecar_when_postgres_frames_are_missing(tmp_path, monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "DATA_ARTIFACT_ROOT", str(tmp_path))
+    async with AsyncSessionLocal() as db:
+        owner = await db.scalar(select(User).where(User.email == "investigador@digitaltwin.org"))
+        watershed = await db.scalar(select(Watershed).limit(1))
+        scenario = await db.scalar(select(ClimateScenario).limit(1))
+        run = SimulationRun(
+            user_id=owner.id, watershed_id=watershed.id, scenario_id=scenario.id,
+            name="Legacy sidecar repair fixture", status="COMPLETED", duration_days=2,
+            start_date=date(2020, 1, 1), end_date=date(2020, 1, 2), seed=5,
+            provenance={"evidence_type": "REAL_SWAT_PLUS", "workspace": str(tmp_path / "absent")},
+            effective_config={"backend": "SWAT_PLUS", "run_type": "SWAT_STANDARD_BASELINE", "output_frequency": "DAILY"},
+            monthly_outputs=[{"period": "2020-01-01", "soil_water_mm": 100.},
+                             {"period": "2020-01-02", "soil_water_mm": 101.}],
+            hru_aggregates={"results": []},
+        )
+        db.add(run)
+        await db.flush()
+        sidecar_manifest = PlaybackArtifactStore().write(
+            run.id,
+            swat_frames(
+                simulation_id=run.id, watershed_id=watershed.code,
+                run_type="SWAT_STANDARD_BASELINE", resolution="DAILY",
+                records=run.monthly_outputs, hru_results=[], forcing=None,
+                forcing_source="unavailable", start_date=run.start_date, end_date=run.end_date,
+            ),
+            provenance={"fixture": "legacy-sqlite-sidecar"},
+        )
+        run.provenance = {**run.provenance, "playback": sidecar_manifest}
+        await db.commit()
+        run_id = run.id
+
+    with pytest.raises(ValueError, match="repair-legacy-sidecar"):
+        await backfill(run_id)
+
+    migrated = await backfill(run_id, repair_legacy_sidecar=True)
+    assert migrated["storage"] == "POSTGRESQL_JSONB"
+    assert migrated["record_count"] == 2
+    async with AsyncSessionLocal() as db:
+        _, records = await PlaybackDatabaseStore(db).page(run_id, "DAILY", limit=10)
+        run = await db.scalar(select(SimulationRun).where(SimulationRun.id == run_id))
+        assert run.provenance["legacy_playback_manifest"]["sha256"] == sidecar_manifest["sha256"]
+        assert run.provenance["playback_recovery"]["source"] == "VERIFIED_SQLITE_SIDECAR"
+    assert [record.date.isoformat() for record in records] == ["2020-01-01", "2020-01-02"]
+    assert all(record.crop is None and not record.plant_samples for record in records)
+
+    async with AsyncSessionLocal() as db:
+        run = await db.scalar(select(SimulationRun).where(SimulationRun.id == run_id))
+        await db.delete(run)
+        await db.commit()

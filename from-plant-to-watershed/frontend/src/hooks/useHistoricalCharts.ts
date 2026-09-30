@@ -32,9 +32,9 @@ export function useHistoricalCharts(simulation: SimulationRun | null, artifactSt
           if (!cancelled) setLoaded({ simulationId: simulationId!, kind: "SWAT_PLUS", origin: result.origin,
             frequency: result.temporal_resolution, points: swatHistoricalPoints(result.records), truncated: false, error: null });
         } else {
-          const result = await api.getSimulationResults(simulationId!, Math.min(Math.max(duration, 1), 1000));
+          const result = await api.getSimulationResults(simulationId!, Math.min(Math.max(duration, 1), 3650));
           if (!cancelled) setLoaded({ simulationId: simulationId!, kind: "SIMPLIFIED", origin: "SIMPLIFIED_STORED",
-            frequency: "DAILY", points: simplifiedHistoricalPoints(result), truncated: duration > 1000, error: null });
+            frequency: "DAILY", points: simplifiedHistoricalPoints(result), truncated: duration > 3650, error: null });
         }
       } catch (cause) {
         if (!cancelled) setLoaded({ simulationId: simulationId!, kind: backend === "SWAT_PLUS" ? "SWAT_PLUS" : "SIMPLIFIED",

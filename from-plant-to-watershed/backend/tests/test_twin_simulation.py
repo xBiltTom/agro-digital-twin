@@ -144,6 +144,16 @@ async def test_api_simulation_workflow():
         assert results[0]["plant_transpiration_mm"] >= 0.0
         assert abs(results[0]["water_balance_residual_mm"]) < 1e-9
 
+        playback_res = await ac.get(
+            f"/api/v1/simulations/{sim_id}/playback?resolution=DAILY&limit=1", headers=headers
+        )
+        assert playback_res.status_code == 200
+        playback_page = playback_res.json()
+        assert playback_page["artifact_status"] == "AVAILABLE"
+        assert playback_page["total"] == 90
+        assert playback_page["records"][0]["simulation_id"] == sim_id
+        assert playback_page["records"][0]["hydrology"]["streamflow_m3s"]["value"] == results[0]["streamflow_m3s"]
+
         five_year_limit_res = await ac.get(
             f"/api/v1/simulations/{sim_id}/results?limit=2192", headers=headers
         )

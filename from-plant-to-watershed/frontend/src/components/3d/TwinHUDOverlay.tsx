@@ -278,7 +278,6 @@ export default function TwinHUDOverlay({
                   <Metric
                     title="Humedad volumétrica"
                     value={record.field.soil_moisture_vol_percent}
-                    customNote="derivada"
                   />
                 </div>
               )}
@@ -352,7 +351,6 @@ export default function TwinHUDOverlay({
               <Metric
                 title="Humedad vol. FSPM"
                 value={record.field.soil_moisture_vol_percent}
-                customNote="derivada"
               />
             </div>
           )}
@@ -377,7 +375,7 @@ export default function TwinHUDOverlay({
               )}
             </div>
             <div className="text-zinc-500 font-mono">
-              36 HRUs · 37 Canales · {record.plant_samples.length} Muestras activas
+              {record.hru_results.length} HRUs · {record.channel_results.length} Canales · {record.plant_samples.length} Muestras activas
             </div>
           </div>
         </div>
@@ -424,4 +422,3 @@ export default function TwinHUDOverlay({
     </div>
   );
 }
-

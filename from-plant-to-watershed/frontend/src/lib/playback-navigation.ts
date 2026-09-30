@@ -6,6 +6,16 @@ export type FirstCropNavigation =
   | { status: "SELECT_DAILY" }
   | { status: "UNAVAILABLE" };
 
+/** Prefer daily playback when that's where dated crop states are actually stored. */
+export function preferredPlaybackResolution(availability: SimulationAvailability | null): PlaybackResolution | undefined {
+  if (!availability) return undefined;
+  const available = availability.resolutions.filter((item) => item.artifact_status === "AVAILABLE");
+  return available.find((item) => item.resolution === "DAILY" && (item.fspm_trajectory_available || item.plant_samples_available))?.resolution
+    ?? available.find((item) => item.resolution === "DAILY")?.resolution
+    ?? available.find((item) => item.fspm_trajectory_available || item.plant_samples_available)?.resolution
+    ?? available[0]?.resolution;
+}
+
 /** Returns only an indexed, representable date from an intact playback artifact. */
 export function firstCropNavigation(
   availability: SimulationAvailability | null,

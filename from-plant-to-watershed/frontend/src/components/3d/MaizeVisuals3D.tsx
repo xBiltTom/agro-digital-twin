@@ -394,15 +394,17 @@ export function SoilGridsStratigraphyCutout({
   soilMoistureVol: number | null;
   rootDepthCm: number | null;
 }) {
+  // A neutral cutaway keeps the soil visible when the playback has no root depth;
+  // it is a scene scale, not a reported soil profile or water-table measurement.
   const depthM = Math.min(2.0, Math.max(0.25, (rootDepthCm ?? 100) / 100));
-  const moistureFactor = Math.min(1, Math.max(0, (soilMoistureVol ?? 24) / 45));
+  const moistureFactor = soilMoistureVol === null ? null : Math.min(1, Math.max(0, soilMoistureVol / 45));
 
-  const apColor = moistureFactor > 0.5 ? "#22140a" : "#382314";
-  const btColor = moistureFactor > 0.5 ? "#3a2211" : "#4e301a";
-  const cColor = moistureFactor > 0.5 ? "#563820" : "#6c482c";
+  const apColor = moistureFactor === null ? "#382314" : moistureFactor > 0.5 ? "#22140a" : "#382314";
+  const btColor = moistureFactor === null ? "#4e301a" : moistureFactor > 0.5 ? "#3a2211" : "#4e301a";
+  const cColor = moistureFactor === null ? "#6c482c" : moistureFactor > 0.5 ? "#563820" : "#6c482c";
 
-  const soilRoughness = Math.max(0.42, 0.95 - moistureFactor * 0.5);
-  const soilMetalness = moistureFactor * 0.12;
+  const soilRoughness = moistureFactor === null ? 0.95 : Math.max(0.42, 0.95 - moistureFactor * 0.5);
+  const soilMetalness = moistureFactor === null ? 0 : moistureFactor * 0.12;
 
   return (
     <group position={[0, 0, 0]}>
@@ -451,12 +453,6 @@ export function SoilGridsStratigraphyCutout({
           side={THREE.DoubleSide}
           roughness={0.82}
         />
-      </mesh>
-
-      {/* Franja capilar / nivel freático base */}
-      <mesh position={[0, -depthM, 0]} rotation-x={-Math.PI / 2}>
-        <circleGeometry args={[2.84, 48]} />
-        <meshStandardMaterial color="#38bdf8" roughness={0.6} transparent opacity={0.65} />
       </mesh>
 
       {/* Anillos divisores de horizontes edáficos */}

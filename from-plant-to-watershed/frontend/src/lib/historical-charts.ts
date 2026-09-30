@@ -13,7 +13,7 @@ export interface HistoricalChartPoint {
 }
 
 export function historicalFallbackEligible(simulationStatus: string | undefined, artifactStatus: string | null): boolean {
-  return simulationStatus === "COMPLETED" && artifactStatus === "NOT_AVAILABLE";
+  return simulationStatus === "COMPLETED" && (artifactStatus === "NOT_AVAILABLE" || artifactStatus === "INVALID");
 }
 
 const finite = (value: number | null | undefined): number | null =>

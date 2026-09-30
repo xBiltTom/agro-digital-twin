@@ -8,30 +8,76 @@ import argparse
 import asyncio
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core.database import AsyncSessionLocal
-from app.models.simulation import SimulationRun
+from app.models.simulation import PlaybackFrame, SimulationRun
 from app.models.watershed import Watershed
+from app.services.playback_artifact import PlaybackArtifactStore
 from app.services.playback_database import PlaybackDatabaseStore
 from app.services.playback_builder import swat_frames
 from app.services.twin_coupling_engine import TwinCouplingEngine, _code_version
 
 
-async def backfill(run_id: str) -> dict:
+async def backfill(run_id: str, *, repair_legacy_sidecar: bool = False) -> dict:
     async with AsyncSessionLocal() as db:
         run = await db.scalar(select(SimulationRun).where(SimulationRun.id == run_id))
         if run is None:
             raise ValueError("Simulation not found")
         if run.status != "COMPLETED" or (run.provenance or {}).get("evidence_type") != "REAL_SWAT_PLUS":
             raise ValueError("Only a completed persisted SWAT+ baseline can be backfilled")
-        if (run.provenance or {}).get("playback"):
-            raise ValueError("A versioned playback artifact already exists")
         if not run.monthly_outputs or not run.start_date or not run.end_date:
             raise ValueError("Persisted dated SWAT+ output and requested interval are required")
         watershed = await db.scalar(select(Watershed).where(Watershed.id == run.watershed_id))
         if watershed is None:
             raise ValueError("Watershed not found")
+        provenance = dict(run.provenance or {})
+        legacy_manifest = provenance.get("playback")
+        if legacy_manifest:
+            if not repair_legacy_sidecar:
+                raise ValueError("A playback manifest already exists; use --repair-legacy-sidecar only for a verified SQLite manifest")
+            if legacy_manifest.get("storage") == "POSTGRESQL_JSONB":
+                raise ValueError("PostgreSQL playback is already published; this repair only migrates legacy SQLite sidecars")
+            if legacy_manifest.get("schema_version") != "twin-playback-v1":
+                raise ValueError("The existing playback manifest is not a supported twin-playback-v1 sidecar")
+            frame_count = await db.scalar(
+                select(func.count()).select_from(PlaybackFrame).where(PlaybackFrame.simulation_id == run.id)
+            ) or 0
+            if frame_count != 0:
+                raise ValueError("Playback rows already exist; refusing to overwrite or append to a partial series")
+
+            # Preserve the exact checksummed historical frames when available. This
+            # migrates a verified SQLite sidecar; it does not rerun SWAT+ or derive
+            # FSPM states that were never part of a baseline execution.
+            source_manifest = dict(legacy_manifest)
+            sidecar_records = PlaybackArtifactStore().iter_records(run.id, source_manifest)
+            database_manifest = await PlaybackDatabaseStore(db).write(
+                run.id,
+                sidecar_records,
+                provenance={
+                    **(source_manifest.get("provenance") or {}),
+                    "storage_migration": "VERIFIED_SQLITE_SIDECAR_TO_POSTGRESQL_JSONB",
+                    "source_manifest_sha256": source_manifest.get("sha256"),
+                },
+                limitations=[
+                    *(source_manifest.get("limitations") or []),
+                    "Migrated from the checksummed legacy SQLite sidecar; this SWAT+ baseline contains no FSPM trajectory",
+                ],
+            )
+            if any(database_manifest.get(key) != source_manifest.get(key)
+                   for key in ("record_count", "first_date", "last_date", "resolution")):
+                raise ValueError("Migrated playback range differs from the legacy manifest")
+            provenance["legacy_playback_manifest"] = source_manifest
+            provenance["playback_recovery"] = {
+                "source": "VERIFIED_SQLITE_SIDECAR",
+                "source_sha256": source_manifest.get("sha256"),
+                "frame_count": database_manifest["record_count"],
+            }
+            provenance["playback"] = database_manifest
+            run.provenance = provenance
+            await db.commit()
+            return database_manifest
+
         workspace = (run.provenance or {}).get("workspace")
         climate, climate_provenance = (
             TwinCouplingEngine._baseline_forcing(Path(workspace), run.start_date, run.end_date)
@@ -62,5 +108,9 @@ async def backfill(run_id: str) -> dict:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_id", help="Completed SWAT+ baseline simulation UUID")
+    parser.add_argument(
+        "--repair-legacy-sidecar", action="store_true",
+        help="Migrate the run's verified legacy SQLite playback manifest into PostgreSQL when no frame rows exist",
+    )
     args = parser.parse_args()
-    print(asyncio.run(backfill(args.run_id)))
+    print(asyncio.run(backfill(args.run_id, repair_legacy_sidecar=args.repair_legacy_sidecar)))

@@ -5,12 +5,14 @@ import MultiScaleViewer3D, { type ScaleMode } from "./MultiScaleViewer3D";
 import type { SimulationRun } from "../../types/simulation";
 
 /** Historical exploration has the original 3D navigation, but no fabricated time state. */
-export default function HistoricalContext3D({ simulation, scaleMode, onChangeScale, onToggleFullscreen }: {
+export default function HistoricalContext3D({ simulation, scaleMode, onChangeScale, onToggleFullscreen, playbackStatus }: {
   simulation: SimulationRun;
   scaleMode: ScaleMode;
   onChangeScale: (mode: ScaleMode) => void;
   onToggleFullscreen: () => void;
+  playbackStatus?: string | null;
 }) {
+  const playbackIsInvalid = playbackStatus === "INVALID";
   const configuredBasin = simulation.effective_config?.watershed_id;
   const stationId = simulation.station_id === "05451210" ||
     (typeof configuredBasin === "string" && /05451210|south.?fork/i.test(configuredBasin))
@@ -23,8 +25,10 @@ export default function HistoricalContext3D({ simulation, scaleMode, onChangeSca
       stationId={stationId} showHydrologyFlow={false} showScientificLabels={true} />
     <div className="pointer-events-none absolute left-4 right-4 top-4 z-20 flex flex-wrap justify-between gap-3">
       <div className="pointer-events-auto max-w-lg rounded-xl border border-amber-500/40 bg-zinc-950/90 p-3 text-xs text-zinc-200 shadow-xl">
-        <strong className="text-amber-300">Exploración 3D histórica · representación ilustrativa</strong>
-        <p className="mt-1">Esta corrida no tiene trayectoria twin-playback-v1. La cuenca, parcela y planta son referencias visuales; no muestran crecimiento, lluvia, estrés ni caudal de una fecha. Los gráficos históricos se conservan debajo.</p>
+        <strong className="text-amber-300">{playbackIsInvalid ? "Playback temporal inconsistente · contexto ilustrativo" : "Exploración 3D histórica · representación ilustrativa"}</strong>
+        <p className="mt-1">{playbackIsInvalid
+          ? "El playback registrado no coincide con los estados guardados. Esta vista es ilustrativa y no representa una fecha de la corrida. Se muestran debajo solo las series históricas que aún están disponibles."
+          : "Esta corrida no tiene una trayectoria temporal. La cuenca, el campo y la planta son referencias visuales; no representan crecimiento, lluvia, estrés ni caudal en una fecha. Las series históricas disponibles se muestran debajo."}</p>
       </div>
       <button onClick={onToggleFullscreen} className="pointer-events-auto h-fit rounded-lg border border-zinc-600 bg-zinc-950/90 px-3 py-2 text-xs text-zinc-100">
         <Maximize2 className="inline h-3.5 w-3.5" /> Pantalla completa

@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 // @ts-expect-error node:sqlite is built-in in Node 22+ but not yet declared in installed @types/node
 import { DatabaseSync } from "node:sqlite";
-import { firstCropNavigation } from "../src/lib/playback-navigation.ts";
+import { firstCropNavigation, preferredPlaybackResolution } from "../src/lib/playback-navigation.ts";
 import type { SimulationAvailability } from "../src/types/playback-availability.ts";
 import { classifySimulationEvidence } from "../src/lib/simulation-evidence.ts";
 import { datedMonthlyComparisonRows } from "../src/lib/simulation-chart-data.ts";
@@ -289,6 +289,7 @@ test("monthly comparison charts read dates and modeled flow from historical SWAT
 
 test("historical charts appear only for completed runs without a playback artifact", () => {
   assert.equal(historicalFallbackEligible("COMPLETED", "NOT_AVAILABLE"), true);
+  assert.equal(historicalFallbackEligible("COMPLETED", "INVALID"), true);
   assert.equal(historicalFallbackEligible("COMPLETED", "AVAILABLE"), false);
   assert.equal(historicalFallbackEligible("RUNNING", "NOT_AVAILABLE"), false);
   assert.equal(historicalFallbackEligible(undefined, null), false);
@@ -341,6 +342,28 @@ test("first-crop navigation uses only the selected resolution's representable st
     resolutions: [{ ...availability.resolutions[0], first_representable_field: null,
       fspm_trajectory_available: false, plant_samples_available: false }] };
   assert.deepEqual(firstCropNavigation(baseline, "MONTHLY"), { status: "UNAVAILABLE" });
+});
+
+test("initial playback prefers the frequency that contains the crop trajectory", () => {
+  const availability = {
+    simulation_id: "coupled", simulation_name: "coupled", simulation_status: "COMPLETED",
+    run_type: "SWAT_MULTISCALE_COUPLED", origin: "EXECUTED", provenance_class: "COUPLED_EXECUTED",
+    stored_hydrology_available: true, stored_fspm_summary_available: true,
+    stored_fspm_trajectory_available: true, stored_fspm_samples_available: true, fspm_results_available: true,
+    available_resolutions: ["MONTHLY", "DAILY"], codes: [], limitations: [],
+    resolutions: [
+      { resolution: "MONTHLY", artifact_status: "AVAILABLE", record_count: 12, first_record: "2019-01-01",
+        last_record: "2019-12-01", first_active_crop: null, first_representable_field: null, first_plant_samples: null,
+        crop_intervals: [], hydrology_available: true, fspm_trajectory_available: false,
+        plant_samples_available: false, hru_ids: [], selected_date: null, codes: [] },
+      { resolution: "DAILY", artifact_status: "AVAILABLE", record_count: 365, first_record: "2019-01-01",
+        last_record: "2019-12-31", first_active_crop: "2019-05-15", first_representable_field: "2019-05-15",
+        first_plant_samples: "2019-05-15", crop_intervals: [], hydrology_available: false,
+        fspm_trajectory_available: true, plant_samples_available: true, hru_ids: [], selected_date: null, codes: [] },
+    ],
+  } as unknown as SimulationAvailability;
+
+  assert.equal(preferredPlaybackResolution(availability), "DAILY");
 });
 
 test("Pydantic generated fixtures feed the official visual adapter and current 3D inputs", () => {

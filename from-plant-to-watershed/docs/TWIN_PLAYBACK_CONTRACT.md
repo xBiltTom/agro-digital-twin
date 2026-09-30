@@ -28,7 +28,9 @@ El lector PostgreSQL valida el checksum de cada frame consultado y devuelve 503 
 
 `code_version` añade `+dirty` si hay cambios locales sin confirmar; una ejecución científica publicable requiere conservar también el commit final y los insumos versionados.
 
-`backend/scripts/backfill_playback.py RUN_ID`, ejecutado desde `backend`, publica frames en PostgreSQL **solo** para una línea base SWAT+ terminada y ya persistida. No ejecuta SWAT+, no sintetiza FSPM, y deja el forcing en `null` si el workspace aislado original no existe. Rechaza corridas acopladas históricas porque su trayectoria diaria fue descartada. No modifica los informes o artefactos South Fork históricos.
+`backend/scripts/backfill_playback.py RUN_ID`, ejecutado desde `backend`, publica frames en PostgreSQL **solo** para una línea base SWAT+ terminada y ya persistida. No ejecuta SWAT+, no sintetiza FSPM, y deja el forcing en `null` si el workspace aislado original no existe. Rechaza corridas acopladas históricas porque su trayectoria diaria fue descartada.
+
+Para una fila de línea base con un manifiesto SQLite antiguo y cero frames PostgreSQL, existe el paso explícito `backfill_playback.py RUN_ID --repair-legacy-sidecar`. Verifica el SHA-256 del sidecar antes de migrar, conserva un resumen del manifiesto anterior y rechaza cualquier fila que ya tenga frames PostgreSQL, para no sobrescribir una serie parcial. Respaldar la base antes de usarlo. No ejecuta SWAT+ ni crea datos FSPM.
 
 ## Semántica de fechas, variables y evidencia
 
