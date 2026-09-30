@@ -102,8 +102,8 @@ def test_reports_keep_missing_metrics_distinct_from_measured_zero():
     assert _metric_text(sim_run.summary_metrics, "total_discharge_hm3", 2) == "No disponible"
 
     workbook = load_workbook(BytesIO(ReportGeneratorService.generate_xlsx(sim_run, results).getvalue()))
-    assert workbook["Resumen Ejecutivo"]["B13"].value == 0.0
-    assert workbook["Resumen Ejecutivo"]["B16"].value is None
+    assert workbook["Resumen Ejecutivo"]["B15"].value == 0.0
+    assert workbook["Resumen Ejecutivo"]["B18"].value is None
 
     document = Document(BytesIO(ReportGeneratorService.generate_docx(sim_run, results).getvalue()))
     document_text = "\n".join(
@@ -112,6 +112,32 @@ def test_reports_keep_missing_metrics_distinct_from_measured_zero():
     assert "No disponible" in document_text
     assert "0.0" in document_text
     assert ReportGeneratorService.generate_pdf(sim_run, results).getvalue().startswith(b"%PDF-")
+
+
+def test_export_metadata_uses_the_run_climate_source_and_evidence():
+    sim_run, results = create_mock_simulation_and_results()
+    sim_run.hydrology_backend = "SIMPLIFIED"
+    sim_run.climate_source = "OBSERVED"
+    sim_run.provenance = {
+        "source_kind": "SIMPLIFIED",
+        "hydrology": {"model": "SimplifiedHydrologyModel"},
+    }
+
+    document = Document(BytesIO(ReportGeneratorService.generate_docx(sim_run, results).getvalue()))
+    document_text = "\n".join(
+        [paragraph.text for paragraph in document.paragraphs]
+        + [cell.text for table in document.tables for row in table.rows for cell in row.cells]
+    )
+    assert "Motor simplificado" in document_text
+    assert "Clima observado" in document_text
+    assert "SyntheticClimateProvider" not in document_text
+    assert "Resultados DEMO" not in document_text
+
+    workbook = load_workbook(BytesIO(ReportGeneratorService.generate_xlsx(sim_run, results).getvalue()))
+    metadata_values = " ".join(str(cell.value) for row in workbook["Resumen Ejecutivo"].iter_rows() for cell in row)
+    assert "Motor simplificado" in metadata_values
+    assert "Clima observado" in metadata_values
+    assert "ALCANCE" in metadata_values
 
 @pytest.mark.asyncio
 async def test_api_download_reports():
@@ -124,9 +150,21 @@ async def test_api_download_reports():
             name="Owner-scoped report fixture", status="COMPLETED", duration_days=1,
             seed=17, parameters={}, summary_metrics={"total_precip_mm": 0.0},
         )
-        db.add(run)
+        swat_run = SimulationRun(
+            user_id=owner.id, watershed_id=watershed.id, scenario_id=scenario.id,
+            name="SWAT+ report fixture", status="COMPLETED", duration_days=1,
+            hydrology_backend="SWAT_PLUS", seed=18, parameters={}, summary_metrics={},
+        )
+        pending_run = SimulationRun(
+            user_id=owner.id, watershed_id=watershed.id, scenario_id=scenario.id,
+            name="Pending report fixture", status="PENDING", duration_days=1,
+            seed=19, parameters={}, summary_metrics={},
+        )
+        db.add_all([run, swat_run, pending_run])
         await db.commit()
         simulation_id = run.id
+        swat_simulation_id = swat_run.id
+        pending_simulation_id = pending_run.id
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # 1. Login
@@ -136,6 +174,14 @@ async def test_api_download_reports():
         })
         token = login_res.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
+
+        swat_download_res = await ac.get(f"/api/v1/reports/download/{swat_simulation_id}/pdf", headers=headers)
+        assert swat_download_res.status_code == 409
+        assert "solo representa corridas del motor simplificado" in swat_download_res.json()["detail"]
+
+        pending_download_res = await ac.get(f"/api/v1/reports/download/{pending_simulation_id}/pdf", headers=headers)
+        assert pending_download_res.status_code == 409
+        assert "corridas completadas" in pending_download_res.json()["detail"]
 
         # 2. Obtener lista de simulaciones existentes
         sims_res = await ac.get("/api/v1/simulations", headers=headers)

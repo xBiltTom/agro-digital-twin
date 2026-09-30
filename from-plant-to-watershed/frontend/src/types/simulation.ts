@@ -87,6 +87,17 @@ export interface CurrentFinalScientificReportResponse {
   };
 }
 
+export interface GeneratedReportHistoryEntry {
+  id: string;
+  filename: string;
+  format: "pdf" | "docx" | "xlsx";
+  report_format: "pdf" | "docx" | "xlsx";
+  file_size_bytes: number;
+  simulation_id: string;
+  simulation_name: string;
+  created_at: string;
+}
+
 export interface PlantSpecies {
   id: string;
   name: string;

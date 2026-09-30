@@ -17,6 +17,7 @@ import {
   , ExternalModelInfo, DatasetInfo, CurrentFinalScientificReportResponse,
   AIInsightsResponse
 } from "../types/simulation";
+import type { GeneratedReportHistoryEntry } from "../types/simulation";
 import { PlaybackPage, PlaybackQuery } from "../types/playback";
 import type { SimulationAvailability } from "../types/playback-availability";
 import { collectSimulationPages } from "./simulation-access";
@@ -216,7 +217,9 @@ class ApiService {
     });
 
     if (!res.ok) {
-      throw new Error(`Error descargando reporte ${format.toUpperCase()}: ${res.statusText}`);
+      const errorData = await res.json().catch(() => ({}));
+      const detail = errorData.detail || `Error HTTP ${res.status}: ${res.statusText}`;
+      throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
     }
 
     // Extraer nombre del archivo del Content-Disposition si está disponible
@@ -238,11 +241,8 @@ class ApiService {
     a.remove();
   }
 
-  // Legacy report consumers still use an untyped response.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async getReportsHistory(): Promise<any[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return this.request<any[]>("/reports/history");
+  async getReportsHistory(): Promise<GeneratedReportHistoryEntry[]> {
+    return this.request<GeneratedReportHistoryEntry[]>("/reports/history");
   }
 
   async getFinalScientificReport(): Promise<CurrentFinalScientificReportResponse> {

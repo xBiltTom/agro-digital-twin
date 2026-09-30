@@ -17,6 +17,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from app.models.simulation import SimulationRun, SimulationResult
+from app.services.simulation_provenance import SimulationProvenanceClass, classify_simulation_provenance
 
 
 def _provenance_text(sim_run: SimulationRun) -> str:
@@ -44,6 +45,61 @@ def _metric_cell(metrics: dict, key: str) -> float | int | None:
     if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
         return None
     return value
+
+
+def _climate_source_label(source: str | None) -> str:
+    return {
+        "SYNTHETIC": "Clima sintético",
+        "OBSERVED": "Clima observado",
+        "CMIP6_FILE": "Archivo climático CMIP6",
+        "OBSERVED_HYBRID": "Clima observado híbrido",
+        "SWAT_PROJECT": "Proyecto SWAT+",
+    }.get(source or "", "Origen climático no registrado")
+
+
+def _evidence_label(sim_run: SimulationRun) -> str:
+    return {
+        SimulationProvenanceClass.SWAT_EXECUTED: "SWAT+ real · línea base",
+        SimulationProvenanceClass.COUPLED_EXECUTED: "SWAT+ real · acoplado",
+        SimulationProvenanceClass.HISTORICAL_IMPORT: "Importación histórica",
+        SimulationProvenanceClass.SIMPLIFIED: "Motor simplificado",
+        SimulationProvenanceClass.UNKNOWN: "Procedencia no confirmada",
+    }[classify_simulation_provenance(sim_run)]
+
+
+def _period_label(sim_run: SimulationRun) -> str:
+    start = getattr(sim_run, "start_date", None)
+    end = getattr(sim_run, "end_date", None)
+    if start and end:
+        return f"{start} a {end} ({sim_run.duration_days} días)"
+    return f"Fechas no registradas ({sim_run.duration_days} días)"
+
+
+def _implementation_text(sim_run: SimulationRun) -> str:
+    provenance = sim_run.provenance or {}
+    plant = provenance.get("plant", {}) if isinstance(provenance, dict) else {}
+    hydrology = provenance.get("hydrology", {}) if isinstance(provenance, dict) else {}
+    parts = [f"Fuente climática: {_climate_source_label(sim_run.climate_source)}"]
+    if isinstance(plant, dict) and plant.get("model"):
+        parts.append(f"Planta: {plant['model']}")
+    if isinstance(hydrology, dict) and hydrology.get("model"):
+        parts.append(f"Hidrología: {hydrology['model']}")
+    if len(parts) == 1 and getattr(sim_run, "hydrology_backend", None) == "SIMPLIFIED":
+        parts.extend(["Planta: modelo simplificado", "Hidrología: modelo simplificado"])
+    return " · ".join(parts)
+
+
+def _scope_note(sim_run: SimulationRun, result_count: int) -> str:
+    records = (
+        f"Se incluyen {result_count} registros diarios guardados."
+        if result_count
+        else "Esta corrida no tiene registros diarios guardados; no se presenta una serie temporal."
+    )
+    return (
+        f"Esta exportación describe la corrida seleccionada ({_evidence_label(sim_run)}; "
+        f"{_climate_source_label(sim_run.climate_source)}). {records} "
+        "No sustituye el informe del contrato científico vigente ni constituye por sí sola una prueba de hipótesis."
+    )
 
 class ReportGeneratorService:
     """Servicio de generación de reportes técnicos multiformato (PDF, Word, Excel)."""
@@ -123,13 +179,12 @@ class ReportGeneratorService:
         story.append(Paragraph("1. Metadatos de la Simulación", h1_style))
         meta_data = [
             [Paragraph("Nombre de Simulación:", body_bold), Paragraph(_text(sim_run.name), body_style)],
-            [Paragraph("Escenario Climático:", body_bold), Paragraph(f"{sim_run.scenario.code} - {sim_run.scenario.name}", body_style)],
+            [Paragraph("Escenario de catálogo:", body_bold), Paragraph(f"{sim_run.scenario.code} - {sim_run.scenario.name}", body_style)],
             [Paragraph("Trayectoria de Emisiones:", body_bold), Paragraph(_text(sim_run.scenario.pathway), body_style)],
-            [Paragraph("Horizonte Temporal:", body_bold), Paragraph(f"{sim_run.duration_days} días (Paso diario)", body_style)],
-            [Paragraph("Clasificación:", body_bold), Paragraph("DEMO / SYNTHETIC / SIMPLIFIED", body_style)],
-            [Paragraph("Implementaciones:", body_bold), Paragraph("SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel", body_style)],
+            [Paragraph("Periodo solicitado:", body_bold), Paragraph(_period_label(sim_run), body_style)],
+            [Paragraph("Procedencia:", body_bold), Paragraph(_evidence_label(sim_run), body_style)],
+            [Paragraph("Componentes y forzamiento:", body_bold), Paragraph(_implementation_text(sim_run), body_style)],
             [Paragraph("Manejo:", body_bold), Paragraph(_text(sim_run.management_scenario), body_style)],
-            [Paragraph("Fuente climática:", body_bold), Paragraph(_text(sim_run.climate_source), body_style)],
             [Paragraph("Artefactos de datos:", body_bold), Paragraph(_provenance_text(sim_run), body_style)],
             [Paragraph("Semilla RNG:", body_bold), Paragraph("No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else str(sim_run.seed), body_style)],
             [Paragraph("Fecha de Emisión:", body_bold), Paragraph(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), body_style)],
@@ -175,7 +230,7 @@ class ReportGeneratorService:
         story.append(Spacer(1, 10))
 
         # 3. Muestra de Serie Temporal Diaria
-        story.append(Paragraph("3. Muestra de Dinámica Diaria Acoplada (Primeros 10 días)", h1_style))
+        story.append(Paragraph("3. Registros diarios guardados (muestra de hasta 10 días)", h1_style))
         sample_results = results[:10]
         sample_data = [["Día", "Fecha", "Lluvia (mm)", "Temp (°C)", "ET0 (mm)", "Tr (mm)", "Q (m³/s)", "CWSI"]]
         for r in sample_results:
@@ -189,6 +244,8 @@ class ReportGeneratorService:
                 f"{r.streamflow_m3s:.2f}",
                 f"{r.cwsi_stress_index:.2f}"
             ])
+        if not sample_results:
+            sample_data.append(["Sin registros diarios guardados"] + [""] * 7)
         t_sample = Table(sample_data, colWidths=[35, 75, 70, 65, 75, 75, 75, 70])
         t_sample.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e293b")),
@@ -208,11 +265,8 @@ class ReportGeneratorService:
         # 4. Alcance e interpretación
         story.append(Paragraph("4. Alcance e interpretación", h1_style))
         conclusions = (
-            "Estos resultados proceden de <b>SyntheticClimateProvider</b>, <b>SimplifiedPlantModel</b> y "
-            "<b>SimplifiedHydrologyModel</b>. No constituyen una corrida SWAT+, datos CMIP6, validación contra observaciones ni evidencia "
-            "sobre eficacia de riego, resiliencia climática o H1. Los artefactos registrados pueden ser contexto y no se usan como forcing "
-            "salvo que el manifiesto lo indique. "
-            f"Residual acumulado de balance numérico: <b>{metrics.get('cumulative_water_balance_residual_mm', 0):.3e} mm</b>."
+            f"{_scope_note(sim_run, len(results))} "
+            f"Residual acumulado de balance numérico: <b>{_metric_text(metrics, 'cumulative_water_balance_residual_mm', 3)} mm</b>."
         )
         story.append(Paragraph(conclusions, body_style))
 
@@ -228,14 +282,14 @@ class ReportGeneratorService:
 
         # Título y Subtítulo
         title_p = doc.add_paragraph()
-        title_run = title_p.add_run("INFORME MVP MAÍZ–CUENCA (AP-3)")
+        title_run = title_p.add_run("INFORME TÉCNICO DE CORRIDA")
         title_run.bold = True
         title_run.font.size = Pt(16)
         title_run.font.color.rgb = RGBColor(15, 23, 42)
         title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         sub_p = doc.add_paragraph()
-        sub_run = sub_p.add_run("Modelo simplificado · procedencia científica explícita")
+        sub_run = sub_p.add_run(f"{_evidence_label(sim_run)} · {_climate_source_label(sim_run.climate_source)}")
         sub_run.italic = True
         sub_run.font.size = Pt(11)
         sub_run.font.color.rgb = RGBColor(2, 132, 199)
@@ -249,12 +303,12 @@ class ReportGeneratorService:
 
         meta_data = [
             ("Nombre de la Simulación", _text(sim_run.name)),
-            ("Control climático sintético", f"{sim_run.scenario.code}: {sim_run.scenario.name}"),
-            ("Horizonte de Modelado", f"{sim_run.duration_days} días diarios"),
+            ("Escenario de catálogo", f"{sim_run.scenario.code}: {sim_run.scenario.name}"),
+            ("Periodo solicitado", _period_label(sim_run)),
+            ("Procedencia", _evidence_label(sim_run)),
             ("Semilla RNG", "No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else str(sim_run.seed)),
-            ("Implementaciones", "SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel"),
+            ("Componentes y forzamiento", _implementation_text(sim_run)),
             ("Manejo", _text(sim_run.management_scenario)),
-            ("Fuente climática", _text(sim_run.climate_source)),
             ("Artefactos de datos", _provenance_text(sim_run)),
             ("Fecha de Generación", datetime.now().strftime("%d/%m/%Y %H:%M")),
         ]
@@ -310,10 +364,8 @@ class ReportGeneratorService:
         h3 = doc.add_heading("3. Alcance e interpretación", level=1)
         h3.style.font.color.rgb = RGBColor(15, 118, 110)
         p_conc = doc.add_paragraph(
-            "Resultados DEMO obtenidos con SyntheticClimateProvider, SimplifiedPlantModel y SimplifiedHydrologyModel. No son una ejecución SWAT+, "
-            "un FSPM, una proyección CMIP6 ni una validación científica. H1 permanece sin demostrar. "
-            f"Artefactos registrados: {_provenance_text(sim_run)}. "
-            f"El residual acumulado del balance numérico fue {metrics.get('cumulative_water_balance_residual_mm', 0):.3e} mm."
+            f"{_scope_note(sim_run, len(results))} Artefactos registrados: {_provenance_text(sim_run)}. "
+            f"Residual acumulado de balance numérico: {_metric_text(metrics, 'cumulative_water_balance_residual_mm', 3)} mm."
         )
         p_conc.paragraph_format.space_after = Pt(10)
 
@@ -349,7 +401,7 @@ class ReportGeneratorService:
         ws_resumen.title = "Resumen Ejecutivo"
         ws_resumen.views.sheetView[0].showGridLines = True
 
-        ws_resumen["A1"] = "GEMELO DIGITAL AP-3: MVP MAÍZ–CUENCA"
+        ws_resumen["A1"] = "REPORTE DE CORRIDA · GEMELO DIGITAL"
         ws_resumen["A1"].font = Font(name="Calibri", size=14, bold=True, color="0F766E")
         ws_resumen["A2"] = f"Reporte de Simulación: {sim_run.name}"
         ws_resumen["A2"].font = Font(name="Calibri", size=11, italic=True, color="475569")
@@ -357,13 +409,13 @@ class ReportGeneratorService:
         # Metadatos
         meta_items = [
             ("ID Simulación", sim_run.id),
-            ("Control sintético", f"{sim_run.scenario.code} - {sim_run.scenario.name}"),
+            ("Escenario de catálogo", f"{sim_run.scenario.code} - {sim_run.scenario.name}"),
             ("Trayectoria", sim_run.scenario.pathway),
-            ("Duración", f"{sim_run.duration_days} días"),
+            ("Periodo solicitado", _period_label(sim_run)),
+            ("Procedencia", _evidence_label(sim_run)),
             ("Semilla RNG", "No capturada (legacy)" if (sim_run.provenance or {}).get("legacy") else sim_run.seed),
-            ("Implementaciones", "SyntheticClimateProvider / SimplifiedPlantModel / SimplifiedHydrologyModel"),
+            ("Componentes y forzamiento", _implementation_text(sim_run)),
             ("Manejo", sim_run.management_scenario),
-            ("Fuente climática", sim_run.climate_source),
             ("Artefactos de datos", _provenance_text(sim_run)),
             ("Fecha de Ejecución", (sim_run.created_at.strftime("%Y-%m-%d %H:%M") if sim_run.created_at else datetime.now().strftime("%Y-%m-%d %H:%M"))),
         ]
@@ -375,13 +427,13 @@ class ReportGeneratorService:
             ws_resumen[f"B{idx}"].font = regular_font
 
         # KPIs
-        ws_resumen["A12"] = "INDICADOR CLAVE (KPI)"
-        ws_resumen["B12"] = "VALOR"
-        ws_resumen["C12"] = "UNIDAD"
-        for col in ["A12", "B12", "C12"]:
-            ws_resumen[col].fill = header_fill
-            ws_resumen[col].font = header_font
-            ws_resumen[col].alignment = center_align
+        kpi_header_row = 4 + len(meta_items)
+        for column, value in zip("ABC", ("INDICADOR CLAVE", "VALOR", "UNIDAD")):
+            cell = ws_resumen[f"{column}{kpi_header_row}"]
+            cell.value = value
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center_align
 
         kpis = [
             ("Precipitación Total Acumulada", _metric_cell(metrics, "total_precip_mm"), "mm"),
@@ -392,7 +444,7 @@ class ReportGeneratorService:
             ("Estrés Hídrico Medio (CWSI)", _metric_cell(metrics, "mean_cwsi"), "0 a 1"),
             ("Rendimiento estacional proxy (DERIVED)", _metric_cell(metrics, "seasonal_crop_yield_proxy_t_ha"), "t/ha"),
         ]
-        for idx, (k, v, u) in enumerate(kpis, start=13):
+        for idx, (k, v, u) in enumerate(kpis, start=kpi_header_row + 1):
             ws_resumen[f"A{idx}"] = k
             ws_resumen[f"A{idx}"].font = regular_font
             ws_resumen[f"B{idx}"] = v
@@ -401,17 +453,18 @@ class ReportGeneratorService:
             ws_resumen[f"C{idx}"] = u
             ws_resumen[f"C{idx}"].font = regular_font
 
-        ws_resumen["A22"] = "ALCANCE"
-        ws_resumen["A22"].font = header_font
-        ws_resumen["A22"].fill = header_fill
-        ws_resumen.merge_cells("B22:C22")
-        ws_resumen["B22"] = "MVP simplificado: no SWAT+, FSPM, CMIP6 ejecutado ni validación formal. H1 permanece sin demostrar."
-        ws_resumen["B22"].font = regular_font
+        scope_row = kpi_header_row + len(kpis) + 2
+        ws_resumen[f"A{scope_row}"] = "ALCANCE"
+        ws_resumen[f"A{scope_row}"].font = header_font
+        ws_resumen[f"A{scope_row}"].fill = header_fill
+        ws_resumen.merge_cells(f"B{scope_row}:C{scope_row}")
+        ws_resumen[f"B{scope_row}"] = _scope_note(sim_run, len(results))
+        ws_resumen[f"B{scope_row}"].font = regular_font
 
         # -------------------------------------------------------------
         # Pestaña 2: balance diario del modelo simplificado
         # -------------------------------------------------------------
-        ws_swat = wb.create_sheet(title="Hidrología simplificada")
+        ws_swat = wb.create_sheet(title="Registros diarios")
         swat_headers = ["Día", "Fecha", "Precipitación (mm)", "Escorrentía Qsurf (mm)", "Evapotransp Real (mm)", "Percolación (mm)", "Caudal Río (m³/s)", "Humedad Suelo (%)"]
         ws_swat.append(swat_headers)
 
@@ -432,6 +485,8 @@ class ReportGeneratorService:
                 r.streamflow_m3s,
                 r.soil_moisture_vol,
             ])
+        if not results:
+            ws_swat.append(["Sin registros diarios guardados"])
 
         # -------------------------------------------------------------
         # Pestaña 3: Fisiología de la Planta (Micro)
@@ -456,6 +511,8 @@ class ReportGeneratorService:
                 r.cwsi_stress_index,
                 r.sap_flow_velocity_cmh,
             ])
+        if not results:
+            ws_plant.append(["Sin registros diarios guardados"])
 
         # Ajustar ancho de columnas automáticamente en todas las pestañas
         for sheet in wb.worksheets:

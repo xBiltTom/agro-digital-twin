@@ -135,10 +135,26 @@ async def download_report(
 
     # Cargar simulación
     stmt = select(SimulationRun).where(SimulationRun.id == simulation_id)
+    if "SUPERADMIN" not in {role.name for role in current_user.roles}:
+        stmt = stmt.where(SimulationRun.user_id == current_user.id)
     res = await db.execute(stmt)
     sim_run = res.scalar_one_or_none()
     if not sim_run:
         raise HTTPException(status_code=404, detail="Simulación no encontrada")
+
+    if sim_run.status != "COMPLETED":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Solo se pueden exportar corridas completadas.",
+        )
+    if sim_run.hydrology_backend != "SIMPLIFIED":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "La exportación multiformato actual solo representa corridas del motor simplificado. "
+                "Consulta los resultados SWAT+ en Simulaciones."
+            ),
+        )
 
     # Cargar resultados
     results_stmt = (
@@ -187,7 +203,10 @@ async def list_reports_history(
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):
-    stmt = select(GeneratedReport).order_by(desc(GeneratedReport.created_at)).limit(30)
+    stmt = select(GeneratedReport).order_by(desc(GeneratedReport.created_at))
+    if "SUPERADMIN" not in {role.name for role in _user.roles}:
+        stmt = stmt.where(GeneratedReport.user_id == _user.id)
+    stmt = stmt.limit(30)
     res = await db.execute(stmt)
     reports = res.scalars().all()
     return [
