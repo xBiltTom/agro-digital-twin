@@ -8,9 +8,10 @@ Physical channels use reported m3/s, with partial storage/loss accounting.
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 import hashlib
+import json
 import math
 from pathlib import Path
 
@@ -225,6 +226,46 @@ def diagnose_water_path(project: Path, *, outlet_gis_id: str, start: date, end: 
             flows[key] = value
     if set(channel_rows) != {(day, unit) for day in days for unit in channels}:
         raise ValueError("Incomplete daily channel output coverage")
+    storage_rows = {}
+    storage_manifest = None
+    storage_path = project / "channel_storage_day.txt"
+    if physical and storage_path.is_file():
+        from app.services.swat_research_engine import SOURCE_COMMIT
+        manifest_path = project / "swat_engine_manifest.json"
+        if not manifest_path.is_file():
+            raise ValueError("Instrumented storage output requires its engine manifest")
+        storage_manifest = json.loads(manifest_path.read_text())
+        if (storage_manifest.get("schema_version") != "swat-research-build/v1" or
+                storage_manifest.get("source", {}).get("commit") != SOURCE_COMMIT or
+                storage_manifest.get("storage_output", {}).get("marker") != "channel-storage/v1" or
+                storage_path.read_text().splitlines()[0] != "SWAT+ Rev 2026.61.0.2.61 channel-storage/v1"):
+            raise ValueError("Unsupported storage output instrumentation")
+        for row in table(storage_path):
+            if not lo <= period(row) <= hi:
+                continue
+            key = (period(row), row["unit"])
+            if (key in storage_rows or row["unit"] not in channels or
+                    row["gis_id"] != channels[row["unit"]]["gis_id"] or
+                    row["name"] != channels[row["unit"]]["name"]):
+                raise ValueError("Duplicate or mismatched native storage output")
+            for field in ("ch_stor", "fp_stor", "tot_stor", "wet_stor", "inflow", "outflow", "precip", "evap", "seep"):
+                if not math.isfinite(float(row[field])) or float(row[field]) < 0:
+                    raise ValueError("Invalid native channel flux/storage")
+            if float(row["wet_stor"]) != 0:
+                raise ValueError("Wetland channel storage is outside the audited accounting scope")
+            for native, printed, factor in (("ch_stor", "flo_stor", 1), ("inflow", "flo_in", 86400),
+                    ("outflow", "flo_out", 86400), ("precip", "precip", 1), ("evap", "evap", 1), ("seep", "seep", 1)):
+                value = float(row[native])
+                token = channel_rows[key][printed]
+                bound = printed_half_step(token) * factor + max(1e-6, value * 2e-7)
+                if abs(value - float(token) * factor) > bound:
+                    raise ValueError(f"Native/standard channel output disagreement: {key} {native}")
+            if abs(float(row["tot_stor"]) - float(row["ch_stor"]) - float(row["fp_stor"])) > max(.001, float(row["tot_stor"]) * 2e-7):
+                raise ValueError("Channel/floodplain partition disagrees with total storage")
+            storage_rows[key] = row
+        if set(storage_rows) != set(channel_rows):
+            raise ValueError("Incomplete daily native storage coverage")
+        names += ("channel_storage_day.txt", "swat_engine_manifest.json")
     if len(days) != (end - start).days + 1 or any((day, unit) not in flows for day in days for unit in channels):
         raise ValueError("Water trace has incomplete daily/channel coverage")
     hru_areas = {lead[0]: float(lead[3]) for lead, _ in routing_rows(project / "hru.con")}
@@ -299,26 +340,65 @@ def diagnose_water_path(project: Path, *, outlet_gis_id: str, start: date, end: 
     channel_precip = sum(float(row["precip"]) for row in channel_window) if physical else 0.0
     channel_delta = sum(float(channel_rows[(hi, unit)]["flo_stor"]) -
         float(channel_rows[(lo, unit)]["flo_stor"]) for unit in channels) if physical else 0.0
+    floodplain_delta = None
+    native_window = []
+    if storage_rows:
+        native_window = [row for (day, _), row in storage_rows.items() if day in window_days]
+        channel_evap = sum(float(row["evap"]) for row in native_window)
+        channel_seep = sum(float(row["seep"]) for row in native_window)
+        channel_precip = sum(float(row["precip"]) for row in native_window)
+        channel_delta = sum(float(storage_rows[(hi, unit)]["ch_stor"]) -
+            float(storage_rows[(lo, unit)]["ch_stor"]) for unit in channels)
+        floodplain_delta = sum(float(storage_rows[(hi, unit)]["fp_stor"]) -
+            float(storage_rows[(lo, unit)]["fp_stor"]) for unit in channels)
     scale = area_ha * 10
     aq_delta = sum((float(rows[-1]["stor"]) - float(rows[0]["stor"])) * aqu_areas[unit] * 10 for unit, rows in grouped_aqu.items())
     revap = sum(float(row["revap"]) * aqu_areas[unit] * 10 for unit, rows in grouped_aqu.items() for row in rows[1:])
     q_window = sum(flows[(period(row), outlets[0])] * 86400 for row in accounting)
+    if storage_rows:
+        q_window = sum(float(storage_rows[(day, outlets[0])]["outflow"]) for day in window_days)
     soil_delta = (float(last["sw_final"]) - float(first["sw_final"])) * scale
     snow_delta = (float(last["sno_final"]) - float(first["sno_final"])) * scale
     lag_delta = sum(float(last[k]) - float(first[k]) for k in ("lagsurf", "laglatq", "lagsatex")) * scale
     p_volume = sum(float(row["precip"]) for row in accounting) * scale
     et_volume = sum(float(row["et"]) for row in accounting) * scale
-    residual = p_volume + channel_precip - et_volume - revap - q_window - soil_delta - snow_delta - aq_delta - lag_delta - channel_evap - channel_seep - channel_delta
+    residual = p_volume + channel_precip - et_volume - revap - q_window - soil_delta - snow_delta - aq_delta - lag_delta - channel_evap - channel_seep - channel_delta - (floodplain_delta or 0)
     totals = {k: sum(float(row[k]) for row in basin) for k in ("precip", "et", "eplant", "esoil", "ecanopy", "pet", "perc", "qtile")}
     by_component = {kind: sum(float(row["flo"]) for row in channel_inputs if row["objtyp"] == "ru" and row["hyd_typ"] == kind)
                     for kind in ("sur", "lat", "til")}
     aqu_flow = sum(float(row["flo"]) for row in channel_inputs if row["objtyp"] == "aqu")
     direct_window = sum(float(row["flo"]) for row in channel_inputs if period(row) in window_days)
-    network_residual = direct_window + channel_precip - q_window - channel_evap - channel_seep - channel_delta if physical else direct-outlet
+    direct_native = None
+    if storage_rows:
+        # Cancel all internal full-fraction connections using native end-of-day
+        # hin/hd states, avoiding decimal rounding in hydin/hydout tables.
+        direct_native = sum(float(row["inflow"]) for row in native_window) - sum(
+            float(row["outflow"]) for row in native_window if not channels[row["unit"]]["terminal"])
+    local_balances = []
+    for row in native_window:
+        previous_day = (date.fromisoformat(period(row)) - timedelta(days=1)).isoformat()
+        previous = storage_rows[(previous_day, row["unit"])]
+        initial = float(previous["ch_stor"]) + float(previous["fp_stor"])
+        inflow = float(row["inflow"]) + float(row["precip"])
+        local_residual = inflow - float(row["outflow"]) - float(row["evap"]) - float(row["seep"]) - (
+            float(row["ch_stor"]) + float(row["fp_stor"]) - initial)
+        local_balances.append({"date": period(row), "unit": row["unit"], "residual_m3": local_residual,
+            "relative_residual": abs(local_residual) / max(initial + inflow, 1)})
+    network_residual = (direct_native if direct_native is not None else direct_window) + channel_precip - q_window - channel_evap - channel_seep - channel_delta - (floodplain_delta or 0) if physical else direct-outlet
+    if storage_rows:
+        network_status = "CLOSED" if abs(network_residual)/max(direct_native, 1) < 1e-5 else "RESIDUAL"
+    elif physical:
+        network_status = "PARTIAL_ACCOUNTING"
+    else:
+        network_status = "CLOSED" if abs(direct-outlet)/max(direct, 1) < 1e-5 else "RESIDUAL"
+    if storage_rows and max(row["relative_residual"] for row in local_balances) >= 1e-5:
+        network_status = "RESIDUAL"
     limitation = ("Floodplain storage is absent from channel_sd (flo_stor writes only ch_stor); canopy storage and independent unrounded states unavailable. "
                   "The physical network and catchment accounting remain partial." if physical else
                   "Canopy storage and independent unrounded state diagnostics unavailable; residual is not a full physical validation.")
-    return {"schema_version": "swat-water-path/v2" if physical else "swat-water-path/v1", "status": "DIAGNOSTIC_AVAILABLE",
+    if storage_rows:
+        limitation = "Independent native channel and floodplain states recovered. Catchment accounting remains partial: canopy storage and unrounded terrestrial states unavailable. Numerical network closure is not physical validation."
+    return {"schema_version": "swat-water-path/v3" if storage_rows else "swat-water-path/v2" if physical else "swat-water-path/v1", "status": "DIAGNOSTIC_AVAILABLE",
             "routing_mode": "PHYSICAL_CHANNEL_ROUTING" if physical else "ARTIFICIAL_BYPASS",
             "geometry": {"channel_count": len(channels), "bypass_channel_count": len(bypass),
                 "total_length_km": sum(info["length_km"] for info in channels.values()),
@@ -327,16 +407,22 @@ def diagnose_water_path(project: Path, *, outlet_gis_id: str, start: date, end: 
             "evaluation": [lo, hi], "outlet_gis_id": outlet_gis_id, "area_km2": area_ha / 100,
             "reference_area_km2": reference_area_km2,
             "area_difference_percent": 100 * (area_ha / 100 / reference_area_km2 - 1) if reference_area_km2 else None,
-            "network": {"status": "PARTIAL_ACCOUNTING" if physical else "CLOSED" if abs(direct-outlet)/max(direct,1) < 1e-5 else "RESIDUAL",
+            "network": {"status": network_status,
                 "direct_inputs_m3": direct, "hru_components_m3": by_component, "aquifer_to_channel_m3": aqu_flow,
                 "outlet_volume_m3": outlet, "reported_outlet_volume_m3": reported,
                 "reporting_difference_m3": outlet-reported, "residual_m3": network_residual,
-                "relative_residual": network_residual/max(direct_window if physical else direct,1),
+                "relative_residual": network_residual/max(direct_native if storage_rows else direct_window if physical else direct, 1),
                 "max_channel_edge_difference_m3": max(errors, default=0),
                 **({"evaluation": [period(accounting[0]), hi], "direct_inputs_window_m3": direct_window,
                     "outlet_window_m3": q_window, "channel_evaporation_m3": channel_evap,
                     "channel_seepage_m3": channel_seep, "channel_precipitation_m3": channel_precip,
-                    "channel_storage_change_m3": channel_delta, "floodplain_storage_change_m3": None,
+                    "channel_storage_change_m3": channel_delta, "floodplain_storage_change_m3": floodplain_delta,
+                    "direct_inputs_native_window_m3": direct_native,
+                    "accounting_source": "channel_storage_day.txt native single precision states/fluxes" if storage_rows else "standard rounded SWAT+ outputs",
+                    "numerical_closure_relative_threshold": 1e-5 if storage_rows else None,
+                    "daily_channel_balance_rows": len(local_balances) if storage_rows else None,
+                    "max_daily_channel_residual": max(local_balances, key=lambda row: abs(row["residual_m3"])) if storage_rows else None,
+                    "max_daily_channel_relative_residual": max(row["relative_residual"] for row in local_balances) if storage_rows else None,
                     "annual_input_outlet_difference_m3": direct-outlet,
                     "max_channel_inflow_report_difference_m3": max(input_errors, default=0),
                     "max_inflow_difference_beyond_print_rounding_m3": max(input_excess, default=0),
@@ -349,10 +435,13 @@ def diagnose_water_path(project: Path, *, outlet_gis_id: str, start: date, end: 
                 "aquifer_storage_change_m3": aq_delta, "routing_lag_storage_change_m3": lag_delta,
                 **({"channel_evaporation_m3": channel_evap, "channel_seepage_m3": channel_seep,
                     "channel_precipitation_m3": channel_precip, "channel_storage_change_m3": channel_delta,
-                    "floodplain_storage_change_m3": None} if physical else {}),
+                    "floodplain_storage_change_m3": floodplain_delta} if physical else {}),
                 "residual_m3": residual, "residual_mm": residual/scale,
                 "limitation": limitation},
             "annual_land_terms_mm": totals, "normalization": audit,
+            "storage_instrumentation": {"manifest_sha256": storage_manifest.get("manifest_sha256"),
+                "executable_sha256": storage_manifest["executable_sha256"], "rows": len(storage_rows),
+                "source_commit": storage_manifest["source"]["commit"], "precision": storage_manifest["storage_output"]["precision"]} if storage_manifest else None,
             "input_checksums": {name: hashlib.sha256((project/name).read_bytes()).hexdigest()
                 for name in (*CON_TYPES, "hyd-sed-lte.cha", "channel-lte.cha", "nutrients.cha", "codes.bsn", "parameters.bsn", "object.cnt") if (project/name).is_file()},
             "output_checksums": {name: hashlib.sha256((project/name).read_bytes()).hexdigest() for name in names},

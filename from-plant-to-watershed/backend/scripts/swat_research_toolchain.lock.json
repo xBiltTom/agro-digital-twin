@@ -1,0 +1,26 @@
+[
+  {
+    "filename": "gcc-fortran-16.2.1+r23+gd564253eb6c8-1-x86_64.pkg.tar.zst",
+    "url": "https://geo.mirror.pkgbuild.com/core/os/x86_64/gcc-fortran-16.2.1+r23+gd564253eb6c8-1-x86_64.pkg.tar.zst",
+    "sha256": "008443629461abc92ff3ea6d363a5d951e2b314998a4165b4d6f0f7dc5a97007",
+    "checksum_verified_against": "local pacman repository metadata"
+  },
+  {
+    "filename": "cppdap-1.58.0-3.1-x86_64_v3.pkg.tar.zst",
+    "url": "https://cdn77.cachyos.org/repo/x86_64_v3/cachyos-extra-v3/cppdap-1.58.0-3.1-x86_64_v3.pkg.tar.zst",
+    "sha256": "d6590b94912082bef080fbccda796c2ae9e122860b0c4de5bd2e0b13dcf97177",
+    "checksum_verified_against": "local pacman repository metadata"
+  },
+  {
+    "filename": "rhash-1.4.6-1.1-x86_64_v3.pkg.tar.zst",
+    "url": "https://cdn77.cachyos.org/repo/x86_64_v3/cachyos-extra-v3/rhash-1.4.6-1.1-x86_64_v3.pkg.tar.zst",
+    "sha256": "49b92a1d142d3ef8f07cc3d61b6771cb2dded35afdefa66bba4898a040d18aee",
+    "checksum_verified_against": "local pacman repository metadata"
+  },
+  {
+    "filename": "cmake-4.4.4-1-x86_64.pkg.tar.zst",
+    "url": "https://archlinux.cachyos.org/repo/extra/os/x86_64/cmake-4.4.4-1-x86_64.pkg.tar.zst",
+    "sha256": "d9deb07a41610c2ffc8ab543bdbf033d647015088638e846c0a843ede3631b31",
+    "checksum_verified_against": "local pacman repository metadata"
+  }
+]

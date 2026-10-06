@@ -171,6 +171,7 @@ _RECOGNIZED_OUTPUT_PATTERNS = (
     "area_calc.out", "erosion.out",
     "hydin_*", "hydout_*", "ru_day*", "ru_mon*", "ru_yr*", "ru_aa*",
     "aquifer_day*", "aquifer_mon*", "aquifer_yr*", "aquifer_aa*",
+    "channel_storage_day.txt", "swat_engine_manifest.json",
 )
 _TRACEABLE_INPUT_FILES = (
     "plants.plt", "plant.ini", "landuse.lum", "management.sch", "hru-data.hru",
@@ -559,6 +560,10 @@ class SwatPlusAdapter:
             "print_prt": _configure_print_prt(print_prt, config),
         }
         stale_outputs = self._clear_recognized_outputs(run_directory)
+        from app.services.swat_research_engine import engine_manifest, STORAGE_FILE
+        source_build = engine_manifest(config.executable_path.resolve())
+        if source_build:
+            (run_directory / "swat_engine_manifest.json").write_text(json.dumps(source_build, indent=2) + "\n")
         try:
             compatibility_log = SwatInputCompatibility.normalize_copy(run_directory)
         except SwatInputCompatibilityError as exc:
@@ -661,6 +666,12 @@ class SwatPlusAdapter:
         except ValueError as exc:
             self._write_failure_status(run_directory, "OUTPUT_PARSE_FAILED", {"message": str(exc)})
             raise SwatOutputParseError("SWAT+ output could not be parsed", details={"workspace": str(workspace)}) from exc
+        if source_build and config.output_frequency == "DAILY":
+            storage_path = run_directory / STORAGE_FILE
+            if not storage_path.is_file():
+                raise SwatOutputNotFoundError("Research engine did not produce its declared daily storage output")
+            parsed.source_files.append(storage_path)
+            parsed.output_files.append(STORAGE_FILE)
         output_generation = {
             str(path.relative_to(workspace)): {"sha256": _sha256(path), "mtime_ns": path.stat().st_mtime_ns,
                                                 "generated_after_start": path.stat().st_mtime_ns >= execution_started_ns}
@@ -691,6 +702,7 @@ class SwatPlusAdapter:
                 "evidence_type": "REAL_SWAT_PLUS", "engine": "SWAT+", "command": command,
                 "executable_path": str(config.executable_path.resolve()), "executable_sha256": _sha256(config.executable_path),
                 "executable_version": self._version_from_run(completed.stdout, run_directory), "source_project": str(source_root),
+                "source_build": source_build,
                 "source_file_cio_sha256": _sha256(input_directory / "file.cio"), "workspace": str(workspace),
                 "output_checksums": {str(path.relative_to(workspace)): _sha256(path) for path in parsed.source_files},
                 "stale_workspace_outputs_removed": stale_outputs, "configured_control_files": control_files,

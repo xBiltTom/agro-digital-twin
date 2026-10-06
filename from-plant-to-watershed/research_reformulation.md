@@ -110,8 +110,12 @@ La [recuperación de longitudes de cauces](docs/CHANNEL_GEOMETRY_DIAGNOSTIC_2019
 completó una comparación controlada de desarrollo: 212,637 km delineados,
 ruteo físico y menor volumen outlet, con NSE todavía negativo. Una copia
 diagnóstica del binario permitió underflow sin cambiar rutinas del modelo;
-se debe fijar un motor reproducible y completar la contabilidad fluvial antes
-del experimento A/B del paper.
+aquella tarea dejó pendiente fijar un motor reproducible y completar la
+contabilidad fluvial antes del experimento A/B del paper.
+La [etapa posterior desde fuente](docs/SWAT_SOURCE_BUILD_2019.md) completó esa
+receta y recuperó el almacenamiento de llanura: red cerrada numéricamente,
+cuenca todavía parcial y métricas USGS idénticas. Antes de calibrar A/B sigue
+pendiente contrastar ET/PET, meteorología y pérdidas con evidencia independiente.
 
 El primer estudio será una **evaluación retrospectiva multianual en South Fork
 Iowa River, USGS 05451210**. Una sola cuenca permite un estudio de caso temporal,

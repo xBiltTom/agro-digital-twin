@@ -2,6 +2,7 @@
 
 Fecha: **2026-10-06**. Continuación del
 [recorrido del agua](WATER_PATH_DIAGNOSTIC_2019.md).
+Etapa posterior: [motor desde fuente y almacenamiento](SWAT_SOURCE_BUILD_2019.md).
 Corridas y playback en PostgreSQL local `digitaltwin`; evidencia de desarrollo,
 **sin calibración ni evaluación de H1**.
 

@@ -257,8 +257,9 @@ class TwinCouplingEngine:
                 diagnostic["flags"].append({"code": "ARTIFICIAL_CHANNEL_NETWORK",
                     "message": "Los canales actúan como conexiones sin transformación; este balance no valida el ruteo físico de la cuenca."})
             elif path_diagnostic.get("routing_mode") == "PHYSICAL_CHANNEL_ROUTING":
-                diagnostic["flags"].append({"code": "PHYSICAL_CHANNEL_PARTIAL_ACCOUNTING",
-                    "message": "Los cauces incluyen tránsito, almacenamiento y pérdidas. El balance es parcial: falta el almacenamiento de llanura de inundación."})
+                recovered = path_diagnostic.get("storage_instrumentation")
+                diagnostic["flags"].append({"code": "PHYSICAL_CHANNEL_STORAGE_RECOVERED" if recovered else "PHYSICAL_CHANNEL_PARTIAL_ACCOUNTING",
+                    "message": "Se recuperaron los estados de cauce y llanura de inundación. El balance de cuenca sigue siendo parcial; el cierre numérico fluvial no valida el ajuste observado." if recovered else "Los cauces incluyen tránsito, almacenamiento y pérdidas. El balance es parcial: falta el almacenamiento de llanura de inundación."})
         if result.water_balance.get("channel_flow_normalization", {}).get("normalized_channel_rows", 0):
             diagnostic["flags"].append({"code": "BYPASS_CHANNEL_FLOW_NORMALIZED",
                 "message": "Caudal obtenido de hidrogramas SWAT+: se corrigió un error de reporte en canales artificiales; el valor original se conserva en la descarga."})
@@ -272,6 +273,9 @@ class TwinCouplingEngine:
         if (sim_run.requested_config or {}).get("development_diagnostic", {}).get("runtime_diagnostic"):
             diagnostic["flags"].append({"code": "UNDERFLOW_RUNTIME_DIAGNOSTIC",
                 "message": "Esta corrida usa una copia diagnóstica del motor que permite underflow. Conserva las paradas ante división por cero, overflow y operaciones inválidas; requiere fijar el motor de investigación."})
+        if result.provenance.get("source_build"):
+            diagnostic["flags"].append({"code": "RESEARCH_SOURCE_BUILD",
+                "message": "Motor de investigación compilado desde una revisión fija de SWAT+, con manifiesto y salida de almacenamiento. Conserva las paradas por operaciones inválidas, división por cero y overflow; permite underflow."})
         sim_run.validation = {"status": diagnostic["status"],
                               "interpretation": "DEVELOPMENT_DIAGNOSTIC_NOT_HYPOTHESIS_TEST",
                               "observation_station_id": sim_run.station_id,

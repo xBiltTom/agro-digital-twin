@@ -12,6 +12,7 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
   const diagnostic = simulation.validation?.baseline_diagnostic;
   const waterPath = diagnostic?.physical?.water_path;
   const physicalRouting = waterPath?.routing_mode === "PHYSICAL_CHANNEL_ROUTING";
+  const hasFloodplainStorage = waterPath?.network?.floodplain_storage_change_m3 != null;
   const [downloading, setDownloading] = useState<"csv" | "json" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const experiment = simulation.requested_config?.development_diagnostic as { classification?: string } | undefined;
@@ -103,7 +104,7 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
             {[
               ["Volumen outlet", number(waterPath.network.outlet_volume_m3 / 1e6, 2), "hm³"],
               ["Diferencia con reporte original", number(waterPath.network.reporting_difference_m3 / 1e6, 2), "hm³"],
-              [physicalRouting ? "Residuo parcial de la red" : "Residuo de conexiones", number(waterPath.network.residual_m3, 2), "m³"],
+              [physicalRouting ? (hasFloodplainStorage ? "Residuo de la red fluvial" : "Residuo parcial de la red") : "Residuo de conexiones", number(waterPath.network.residual_m3, 2), "m³"],
               ["Área modelada", number(waterPath.area_km2, 2), "km²"],
             ].map(([label, value, unit]) => (
               <div key={label} className="bg-slate-50 p-3 dark:bg-slate-950/40">
@@ -114,7 +115,7 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
           </dl>
           <p className="text-xs text-slate-600 dark:text-slate-400">
             {physicalRouting
-              ? `Los ${waterPath.geometry?.channel_count ?? "—"} cauces suman ${number(waterPath.geometry?.total_length_km, 2)} km e incluyen tránsito, almacenamiento y pérdidas fluviales. El almacenamiento de la llanura de inundación no está disponible en estas salidas.`
+              ? `Los ${waterPath.geometry?.channel_count ?? "—"} cauces suman ${number(waterPath.geometry?.total_length_km, 2)} km e incluyen tránsito, almacenamiento y pérdidas fluviales. ${hasFloodplainStorage ? "Se midió el almacenamiento de cauces y llanura de inundación; su cierre numérico requiere evaluación física adicional." : "El almacenamiento de la llanura de inundación no está disponible en estas salidas."}`
               : "El caudal conserva los aportes transportados por el motor. Los canales de esta corrida actúan como conexiones sin transformación."}
             {waterPath.catchment_accounting && ` El balance parcial de la cuenca tiene un residuo de ${number(waterPath.catchment_accounting.residual_mm, 3)} mm (${waterPath.catchment_accounting.evaluation.join(" a ")}).`}
             {" "}Este diagnóstico de conservación requiere evaluación física adicional antes de usar la referencia en el artículo.
@@ -124,6 +125,7 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
               Evaporación fluvial: {number((waterPath.network.channel_evaporation_m3 ?? 0) / 1e6, 3)} hm³ ·
               {" "}Infiltración fluvial: {number((waterPath.network.channel_seepage_m3 ?? 0) / 1e6, 3)} hm³ ·
               {" "}Cambio de almacenamiento en cauces: {number((waterPath.network.channel_storage_change_m3 ?? 0) / 1e6, 3)} hm³.
+              {waterPath.network.floodplain_storage_change_m3 != null && ` Cambio en llanura de inundación: ${number(waterPath.network.floodplain_storage_change_m3 / 1e6, 3)} hm³.`}
               {waterPath.network.evaluation && ` Ventana: ${waterPath.network.evaluation.join(" a ")}.`}
             </p>
           )}

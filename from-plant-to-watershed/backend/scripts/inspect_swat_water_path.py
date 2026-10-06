@@ -34,8 +34,11 @@ async def run(args):
               "database": "existing local PostgreSQL digitaltwin", "runs": {}, "failed_runs": {},
               "code_sha256": {str(path.relative_to(BACKEND)): hashlib.sha256(path.read_bytes()).hexdigest()
                               for path in [BACKEND / f"app/services/{name}.py" for name in
-                                ("swat_water_path", "swat_channel_geometry", "swat_runtime_diagnostic", "swat_plus_parser", "swat_plus_adapter", "twin_coupling_engine", "playback_builder")]
-                              + [Path(__file__).resolve(), BACKEND / "scripts/run_south_fork_baseline_diagnostic.py"]}}
+                                ("swat_water_path", "swat_channel_geometry", "swat_runtime_diagnostic", "swat_research_engine", "swat_plus_parser", "swat_plus_adapter", "twin_coupling_engine", "playback_builder")]
+                              + [Path(__file__).resolve(), BACKEND / "scripts/run_south_fork_baseline_diagnostic.py",
+                                 BACKEND / "scripts/build_swat_research_engine.py", BACKEND / "scripts/fetch_swat_research_sources.py",
+                                 BACKEND / "scripts/swat_research_source.lock.json", BACKEND / "scripts/swat_research_toolchain.lock.json"]}}
+    daily_records = {}
     async with AsyncSessionLocal() as db:
         for run_id in args.failed_run_id:
             sim = await db.get(SimulationRun, run_id)
@@ -63,8 +66,21 @@ async def run(args):
                 raise ValueError("Water-path accounting requires daily outputs")
             diagnostic = diagnose_water_path(workspace, outlet_gis_id=str(effective["outlet_unit"]),
                 start=sim.start_date, end=sim.end_date, reference_area_km2=watershed.area_km2)
+            lineage = {}
+            for kind, stored_key in (("input", "input_checksums_after_mutator"), ("output", "output_checksums")):
+                actual = diagnostic.get(f"{kind}_checksums", {})
+                stored = sim.provenance.get(stored_key) or {}
+                shared = sorted(set(actual) & set(stored))
+                if any(actual[name] != stored[name] for name in shared):
+                    raise ValueError(f"Water-path {kind} artifact differs from persisted execution: {run_id}")
+                lineage[kind] = {"verified": shared, "not_in_original_provenance": sorted(set(actual) - set(stored))}
+            if diagnostic.get("storage_instrumentation"):
+                saved_manifest = json.loads((workspace / "swat_engine_manifest.json").read_text())
+                if saved_manifest != sim.provenance.get("source_build"):
+                    raise ValueError("Storage manifest differs from persisted engine provenance")
             frames = await db.scalar(select(func.count()).select_from(PlaybackFrame).where(PlaybackFrame.simulation_id == run_id))
             baseline = (sim.validation or {}).get("baseline_diagnostic") or {}
+            daily_records[run_id] = {row["period"]: row["streamflow_m3s"] for row in sim.monthly_outputs}
             daily = baseline.get("daily_comparison", [])
             persisted_volume = (sim.summary_metrics or {}).get("total_discharge_hm3")
             result["runs"][run_id] = {"status": sim.status, "persisted_frames": frames,
@@ -76,6 +92,8 @@ async def run(args):
                 "input_checksums": sim.provenance.get("input_checksums_after_mutator"),
                 "intervention": (sim.requested_config or {}).get("development_diagnostic", {}).get("intervention"),
                 "runtime_diagnostic": (sim.requested_config or {}).get("development_diagnostic", {}).get("runtime_diagnostic"),
+                "source_build": sim.provenance.get("source_build"),
+                "artifact_lineage": lineage,
                 "monthly": baseline.get("monthly"), "coverage": baseline.get("coverage"),
                 "observed_volume_m3": sum(row["observed_streamflow_m3s"] for row in daily) * 86400
                     if len(daily) == (sim.end_date - sim.start_date).days + 1 else None,
@@ -113,6 +131,40 @@ async def run(args):
             "sha256": hashlib.sha256(args.forensic_log.read_bytes()).hexdigest(),
             "debugger_tail": "\n".join(log.splitlines()[-16:]),
             "interpretation": "Linux si_code=5 (FPE_FLTUND) identifies the sediment failure as floating-point underflow."}
+    result["engine_reproduction"] = []
+    for old_id, new_id in args.engine_reference:
+        old, new = result["runs"][old_id], result["runs"][new_id]
+        if old["input_checksums"] != new["input_checksums"] or old["source_project_sha256"] != new["source_project_sha256"]:
+            raise ValueError("Engine reproduction requires identical traceable inputs and source project")
+        if old["effective_config"] != new["effective_config"] or old["coverage"] != new["coverage"] or old["observed_dataset_ids"] != new["observed_dataset_ids"]:
+            raise ValueError("Engine reproduction requires matching effective configuration and observations")
+        old_daily, new_daily = daily_records[old_id], daily_records[new_id]
+        if set(old_daily) != set(new_daily):
+            raise ValueError("Engine reproduction requires identical daily coverage")
+        differences = [abs(new_daily[day] - old_daily[day]) for day in old_daily]
+        result["engine_reproduction"].append({"previous_run": old_id, "source_build_run": new_id,
+            "identical_traceable_inputs": True, "paired_days": len(differences),
+            "identical_daily_streamflow": not any(differences),
+            "max_daily_streamflow_difference_m3s": max(differences),
+            "outlet_volume_difference_m3": new["persisted_volume_m3"] - old["persisted_volume_m3"],
+            "monthly_rmse_difference_m3s": new["monthly"]["rmse"]["value"] - old["monthly"]["rmse"]["value"],
+            "identical_annual_land_terms": old["water_path"]["annual_land_terms_mm"] == new["water_path"]["annual_land_terms_mm"],
+            "interpretation": "Compiler/runtime reproduction on explored 2019 inputs; no calibration or H1 claim."})
+    if args.build_reproduction:
+        manifests = [json.loads(path.read_text()) for path in args.build_reproduction]
+        for manifest in manifests:
+            if hashlib.sha256(Path(manifest["executable"]).read_bytes()).hexdigest() != manifest["executable_sha256"]:
+                raise ValueError("Build reproduction executable differs from its manifest")
+        for key in ("builder_sha256", "compiler_launcher_sha256", "source_date_epoch", "compiler_sha256", "compiler_frontend_sha256", "cmake_sha256", "patches", "numerical_policy", "gcc_support", "dynamic_libraries_sha256", "toolchain_packages"):
+            if manifests[0][key] != manifests[1][key]:
+                raise ValueError(f"Build reproduction changed {key}")
+        if manifests[0]["source"]["archive_sha256"] != manifests[1]["source"]["archive_sha256"]:
+            raise ValueError("Build reproduction changed its source archive")
+        result["build_reproduction"] = {"manifest_sha256": [hashlib.sha256(path.read_bytes()).hexdigest() for path in args.build_reproduction],
+            "executable_sha256": [manifest["executable_sha256"] for manifest in manifests],
+            "identical_executables": manifests[0]["executable_sha256"] == manifests[1]["executable_sha256"],
+            "identical_recipe_and_toolchain": True, "manifests": manifests,
+            "scope": "Two clean build directories on the recorded local compiler/runtime; not cross-platform reproducibility."}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, ensure_ascii=False, allow_nan=False) + "\n")
 
@@ -123,6 +175,8 @@ async def main():
     parser.add_argument("--failed-run-id", action="append", default=[], help="Retain failures alongside the completed comparison")
     parser.add_argument("--compare", nargs=2, metavar=("CONTROL_ID", "TREATMENT_ID"), help="Audit a controlled channel-length comparison included in --simulation-id")
     parser.add_argument("--forensic-log", type=Path, help="Existing debugger transcript to retain by checksum")
+    parser.add_argument("--engine-reference", nargs=2, action="append", default=[], metavar=("PREVIOUS_RUN", "SOURCE_BUILD_RUN"))
+    parser.add_argument("--build-reproduction", nargs=2, type=Path, metavar=("MANIFEST_A", "MANIFEST_B"))
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:

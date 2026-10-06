@@ -201,7 +201,7 @@ export interface SwatBaselineDiagnostic {
       network?: { status: string; outlet_volume_m3: number; reported_outlet_volume_m3: number;
         reporting_difference_m3: number; residual_m3: number;
         evaluation?: string[]; channel_evaporation_m3?: number; channel_seepage_m3?: number;
-        channel_storage_change_m3?: number; limitation?: string };
+        channel_storage_change_m3?: number; floodplain_storage_change_m3?: number | null; limitation?: string };
       catchment_accounting?: { status: string; residual_mm: number; evaluation: string[] };
     };
   };

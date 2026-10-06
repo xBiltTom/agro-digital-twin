@@ -9,7 +9,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Componente | Estado y alcance |
 | --- | --- |
 | Plataforma | FastAPI, Next.js, autenticación/RBAC, catálogo y reportes multiformato. |
-| Motor hidrológico | SWAT+ real; South Fork usa la versión 61.0.2.61. |
+| Motor hidrológico | SWAT+ real 61.0.2.61; nueva receta de investigación desde fuente, con reproducción binaria local. |
 | Planta | `SIMPLIFIED_FSPM`: poblaciones deterministas con variabilidad paramétrica, no un FSPM botánico completo validado. |
 | Calendario | Siembra/cosecha por HRU desde `mgt_out.txt`; eventos modelados, no operaciones agrícolas observadas. |
 | Agua SWAT+ → FSPM | Estimación de humedad radicular desde `sw_ave` y `soils.sol`, bajo hipótesis de fracción de agua disponible uniforme en el perfil. |
@@ -17,7 +17,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Persistencia | Frames JSONB PostgreSQL con clave temporal y SHA-256. |
 | Visor | Tres escalas y estados fechados; mallas anatómicas y terreno ilustrativos/contextuales. |
 | Diagnóstico observacional | Tres variantes estándar 2019 con lectura de caudal corregida; la pareja acoplada requiere su propia comparación. |
-| Recorrido del agua | Referencias anteriores con canales artificiales y una nueva variante con 37 longitudes delineadas, ruteo físico y balances parciales. |
+| Recorrido del agua | 37 cauces delineados con almacenamiento independiente de llanura y cierre numérico de red; balance de cuenca todavía parcial. |
 | Descargas SWAT+ | CSV de registros y JSON con configuración, procedencia, métricas y cobertura desde Simulaciones e Informes. |
 | CMIP6 / rendimiento | Sin proyecciones CMIP6 normalizadas en el experimento publicado ni validación de rendimiento a escala HRU/cuenca. |
 
@@ -40,6 +40,9 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `sf19-geom-v2-geom-routed` | Intento de cinética con entradas cero | `FAILED`: underflow en sedimentos; varias entradas cero se sustituyen por valores predeterminados. |
 | `sf19-geom-ctrl-v1-tile-routed` | Control con copia diagnóstica que permite underflow | Reproduce volumen y métricas de la variante artificial conectada; 365 frames. |
 | `sf19-geom-v3-geom-routed` | Longitudes delineadas y misma copia diagnóstica | RMSE mensual 8,081 m³/s; NSE −0,409; volumen 94,460 hm³; 365 frames. |
+| `sf19-src-ctrl-v1-tile-routed` / `sf19-src-v1-geom-routed` | Primera pareja desde fuente | Reproduce caudales y recupera almacenamiento; build anterior con rutas absolutas. |
+| `sf19-src-ctrl-v2-tile-routed` | Control con receta reproducible desde fuente | Reproduce el control anterior; 365 frames. |
+| `sf19-src-v2-geom-routed` | Longitudes delineadas y receta reproducible | Reproduce caudales anteriores; residuo de red 0,315 m³, cuenca parcial −0,01215 mm; 365 frames. |
 
 Dashboard y reportes consultan el experimento final v2. El visor prioriza el
 gemelo diario corregido, salvo que se indique una corrida accesible mediante
@@ -59,10 +62,17 @@ anterior y no deben mezclarse con ellas al atribuir mejoras físicas.
 La [recuperación de longitudes](CHANNEL_GEOMETRY_DIAGNOSTIC_2019.md) añade
 212,637 km de cauces derivados del DEM. La pareja controlada cambia únicamente
 `len` entre inputs trazables; los términos terrestres siguen idénticos. El
-ruteo físico incluye almacenamiento y pérdidas, con balance parcial: falta el
-estado de llanura de inundación. El ejecutable diagnóstico cambia solamente
+ruteo físico de aquella etapa incluye almacenamiento y pérdidas, con balance
+parcial por ausencia del estado de llanura. El ejecutable diagnóstico cambia solamente
 la trampa de underflow de una copia del binario auditado; no es una versión
-oficial ni una selección definitiva del motor para el paper.
+oficial; aquella etapa dejó pendiente fijar el motor para el paper.
+
+La [compilación desde fuente](SWAT_SOURCE_BUILD_2019.md) fija después el commit,
+herramientas y política de underflow, y obtiene ejecutables idénticos desde dos
+directorios independientes. La pareja definitiva reproduce las series diarias
+anteriores. Su salida independiente recupera 0,819 hm³ de cambio de llanura,
+con cierre numérico de la red y contabilidad de cuenca todavía parcial.
+Las métricas USGS siguen mostrando una referencia insuficiente; no se evaluó H1.
 
 ## 3. Gemelo South Fork 2019 corregido
 
@@ -147,16 +157,14 @@ tiene su propio linaje y no se registra automáticamente como reporte de H1.
 
 ## 5. Siguiente etapa de investigación
 
-1. Fijar un motor reproducible desde fuente o una distribución oficial con la
-   política de underflow adecuada y repetir la pareja de longitudes delineadas.
-2. Recuperar estados de llanura de inundación, revisar pérdidas fluviales y
-   contrastar ET/PET y procedencia meteorológica con evidencia externa.
-3. Comparar baseline/acoplado con caudal consistente contra USGS, manteniendo
+1. Contrastar ET/PET y procedencia meteorológica con evidencia externa; revisar
+   pérdidas fluviales y alcance espacial del proyecto antes de calibrar.
+2. Comparar baseline/acoplado con caudal consistente contra USGS, manteniendo
    proyecto, forcing, warm-up, periodo, outlet, motor y controles comunes.
-4. Extender a varios años y separar desarrollo/calibración de evaluación para
+3. Extender a varios años y separar desarrollo/calibración de evaluación para
    el caudal medio mensual del outlet en m³/s, fijado en la reformulación;
    estimar incertidumbre teniendo en cuenta dependencia temporal.
-5. Publicar el nuevo experimento con su propio linaje y conectar comparación,
+4. Publicar el nuevo experimento con su propio linaje y conectar comparación,
    reportes y visor a la misma evidencia.
 
 El runner `run_final_south_fork.py` todavía calcula FSPM con humedad constante
@@ -174,3 +182,6 @@ Son comprobaciones de software de aquella revisión; no incluyeron un nuevo
 experimento SWAT+, evaluación USGS ni inspección visual en navegador. Las
 corridas científicas del 2026-10-06 se documentan en las secciones anteriores;
 en la tarea de longitudes no se ejecutaron suites de tests.
+En la tarea posterior desde fuente se compilaron dos ejecutables idénticos,
+se ejecutaron cuatro corridas científicas en pglocal y se compiló TypeScript
+sin errores. No se ejecutaron suites de tests ni inspección visual en navegador.
