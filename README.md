@@ -7,6 +7,8 @@ planta, campo e hidrología de cuenca.
 
 - **[Ficha técnica de investigación](from-plant-to-watershed/project_framework.md):**
   problema, objetivos, hipótesis y metodología que guían la investigación.
+- **[Reformulación experimental](from-plant-to-watershed/research_reformulation.md):**
+  alcance del primer artículo, hipótesis, comparadores y papel del modelo ML.
 - **[Plataforma FastAPI + Next.js](from-plant-to-watershed/README.md):** instalación
   y operación del sistema principal.
 - **[Estado actual](from-plant-to-watershed/docs/CURRENT_STATE.md):** capacidades

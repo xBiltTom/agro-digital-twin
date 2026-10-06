@@ -4,9 +4,11 @@ Plataforma de software científico multiescala: **FastAPI + PostgreSQL + Next.js
 un FSPM simplificado y ejecución real de SWAT+ sobre South Fork Iowa River
 (`USGS 05451210`).
 
-La [ficha técnica](project_framework.md) guía la investigación. El alcance
-implementado y sus pendientes se describen en [estado actual](docs/CURRENT_STATE.md);
-el [índice técnico](docs/README.md) reúne los contratos y la evidencia.
+La [ficha técnica](project_framework.md) guía la investigación y la
+[reformulación experimental](research_reformulation.md) delimita el primer
+artículo, sus comparadores y la corrección ML. El alcance implementado y sus
+pendientes se describen en [estado actual](docs/CURRENT_STATE.md); el
+[índice técnico](docs/README.md) reúne los contratos y la evidencia.
 
 ## Qué funciona
 

@@ -1,8 +1,9 @@
 # Documentación técnica y científica
 
 La [ficha técnica de investigación](../project_framework.md) establece el
-objetivo y la metodología. Los documentos de esta carpeta describen lo que
-está implementado y la evidencia disponible.
+tema original. La [reformulación experimental](../research_reformulation.md)
+delimita el primer estudio y las decisiones que deben fijarse antes de evaluar.
+Los documentos de esta carpeta describen lo implementado y la evidencia disponible.
 
 ## Documentación vigente
 
