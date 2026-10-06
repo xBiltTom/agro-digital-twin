@@ -38,7 +38,7 @@ async def run(args):
                               + [Path(__file__).resolve(), BACKEND / "scripts/run_south_fork_baseline_diagnostic.py",
                                  BACKEND / "scripts/build_swat_research_engine.py", BACKEND / "scripts/fetch_swat_research_sources.py",
                                  BACKEND / "scripts/swat_research_source.lock.json", BACKEND / "scripts/swat_research_toolchain.lock.json"]}}
-    daily_records = {}
+    daily_records, weather_checksums = {}, {}
     async with AsyncSessionLocal() as db:
         for run_id in args.failed_run_id:
             sim = await db.get(SimulationRun, run_id)
@@ -81,9 +81,14 @@ async def run(args):
             frames = await db.scalar(select(func.count()).select_from(PlaybackFrame).where(PlaybackFrame.simulation_id == run_id))
             baseline = (sim.validation or {}).get("baseline_diagnostic") or {}
             daily_records[run_id] = {row["period"]: row["streamflow_m3s"] for row in sim.monthly_outputs}
+            weather_checksums[run_id] = ((sim.provenance.get("playback") or {}).get("provenance") or {}).get("forcing", {}).get("file_checksums_sha256")
+            if args.forcing_comparison and run_id in args.forcing_comparison:
+                for name, expected in weather_checksums[run_id].items():
+                    if hashlib.sha256((workspace / name).read_bytes()).hexdigest() != expected:
+                        raise ValueError(f"Executed weather differs from persisted forcing: {run_id}/{name}")
             daily = baseline.get("daily_comparison", [])
             persisted_volume = (sim.summary_metrics or {}).get("total_discharge_hm3")
-            result["runs"][run_id] = {"status": sim.status, "persisted_frames": frames,
+            result["runs"][run_id] = {"status": sim.status, "persisted_frames": frames, "workspace": str(workspace),
                 "observed_dataset_ids": sim.dataset_ids, "station_id": sim.station_id,
                 "executable_version": sim.provenance["executable_version"],
                 "executable_sha256": sim.provenance["executable_sha256"],
@@ -102,6 +107,53 @@ async def run(args):
             print(json.dumps({"run_id": run_id, "frames": frames,
                 "network": diagnostic.get("network"),
                 "catchment_residual_mm": diagnostic.get("catchment_accounting", {}).get("residual_mm")}))
+    if args.forcing_comparison:
+        control_id, treatment_id = args.forcing_comparison
+        control, treatment = result["runs"][control_id], result["runs"][treatment_id]
+        intervention = treatment["intervention"] or {}
+        manifest = intervention["forcing_correction"]
+        if manifest["schema_version"] != "south-fork-forcing-correction/v1":
+            raise ValueError("Unsupported forcing correction")
+        if control["source_project_sha256"] != manifest["source_project_sha256"] or treatment["source_project_sha256"] != manifest["corrected_project_sha256"]:
+            raise ValueError("Control/treatment source does not match the correction manifest")
+        if control["executable_sha256"] != treatment["executable_sha256"] or control["input_checksums"] != treatment["input_checksums"]:
+            raise ValueError("Forcing comparison changed the engine or core physical inputs")
+        for key in ("simulation_start", "simulation_end", "warmup_period", "output_frequency", "outlet_unit", "run_type"):
+            if control["effective_config"].get(key) != treatment["effective_config"].get(key):
+                raise ValueError(f"Forcing comparison changed {key}")
+        if control["observed_dataset_ids"] != treatment["observed_dataset_ids"] or control["coverage"] != treatment["coverage"]:
+            raise ValueError("Forcing comparison changed observation coverage")
+        old_weather, new_weather = weather_checksums[control_id], weather_checksums[treatment_id]
+        differing = sorted(name for name in old_weather.keys() | new_weather.keys() if old_weather.get(name) != new_weather.get(name))
+        if differing != sorted(manifest["changed_files"]):
+            raise ValueError("Executed weather changes differ from the correction manifest")
+        for name in differing:
+            if manifest["changed_files"][name] != {"before": old_weather[name], "after": new_weather[name]}:
+                raise ValueError(f"Correction weather checksum mismatch: {name}")
+        from app.services.swat_meteorology_diagnostic import station_inputs
+        import numpy as np
+        workspaces = [Path(control["workspace"]), Path(treatment["workspace"])]
+        station_weather = [station_inputs(path)[1] for path in workspaces]
+        for name, old in station_weather[0].items():
+            new = station_weather[1][name]
+            if old["dates"] != new["dates"]:
+                raise ValueError("Forcing comparison changed calendar coverage")
+            indices = [i for i, day in enumerate(old["dates"]) if day.year >= 2019]
+            if not np.array_equal(old["values"][indices], new["values"][indices]):
+                raise ValueError("Executed forcing changed the evaluation or future weather")
+        paired = daily_records[control_id].keys()
+        if paired != daily_records[treatment_id].keys():
+            raise ValueError("Forcing comparison changed daily output coverage")
+        result["forcing_comparison"] = {"control_id": control_id, "treatment_id": treatment_id,
+            "identical_engine_and_core_physical_inputs": True, "identical_evaluation_weather": True,
+            "differing_weather_files": differing, "changed_warmup_records": len(manifest["changed_records"]),
+            "paired_days": len(paired),
+            "max_daily_streamflow_difference_m3s": max(abs(daily_records[treatment_id][day] - daily_records[control_id][day]) for day in paired),
+            "outlet_volume_change_m3": treatment["persisted_volume_m3"] - control["persisted_volume_m3"],
+            "monthly_rmse_change_m3s": treatment["monthly"]["rmse"]["value"] - control["monthly"]["rmse"]["value"],
+            "land_term_changes_mm": {key: value - control["water_path"]["annual_land_terms_mm"][key] for key, value in treatment["water_path"]["annual_land_terms_mm"].items()},
+            "correction_manifest": manifest,
+            "interpretation": "Controlled development comparison of warm-up forcing; no calibration or H1 claim."}
     if args.compare:
         control_id, treatment_id = args.compare
         control, treatment = result["runs"][control_id], result["runs"][treatment_id]
@@ -134,8 +186,11 @@ async def run(args):
     result["engine_reproduction"] = []
     for old_id, new_id in args.engine_reference:
         old, new = result["runs"][old_id], result["runs"][new_id]
-        if old["input_checksums"] != new["input_checksums"] or old["source_project_sha256"] != new["source_project_sha256"]:
-            raise ValueError("Engine reproduction requires identical traceable inputs and source project")
+        # A prepared source may already contain the previous run's intervention.
+        # Compare executed core inputs and full weather hashes, not the hash of
+        # the original project before that intervention (or its stale outputs).
+        if old["input_checksums"] != new["input_checksums"] or not weather_checksums[old_id] or weather_checksums[old_id] != weather_checksums[new_id]:
+            raise ValueError("Engine reproduction requires identical executed core and weather inputs")
         if old["effective_config"] != new["effective_config"] or old["coverage"] != new["coverage"] or old["observed_dataset_ids"] != new["observed_dataset_ids"]:
             raise ValueError("Engine reproduction requires matching effective configuration and observations")
         old_daily, new_daily = daily_records[old_id], daily_records[new_id]
@@ -144,6 +199,8 @@ async def run(args):
         differences = [abs(new_daily[day] - old_daily[day]) for day in old_daily]
         result["engine_reproduction"].append({"previous_run": old_id, "source_build_run": new_id,
             "identical_traceable_inputs": True, "paired_days": len(differences),
+            "identical_full_weather_checksums": True,
+            "source_project_sha256": [old["source_project_sha256"], new["source_project_sha256"]],
             "identical_daily_streamflow": not any(differences),
             "max_daily_streamflow_difference_m3s": max(differences),
             "outlet_volume_difference_m3": new["persisted_volume_m3"] - old["persisted_volume_m3"],
@@ -174,6 +231,7 @@ async def main():
     parser.add_argument("--simulation-id", action="append", required=True)
     parser.add_argument("--failed-run-id", action="append", default=[], help="Retain failures alongside the completed comparison")
     parser.add_argument("--compare", nargs=2, metavar=("CONTROL_ID", "TREATMENT_ID"), help="Audit a controlled channel-length comparison included in --simulation-id")
+    parser.add_argument("--forcing-comparison", nargs=2, metavar=("CONTROL_ID", "TREATMENT_ID"), help="Audit the recorded warm-up forcing correction included in --simulation-id")
     parser.add_argument("--forensic-log", type=Path, help="Existing debugger transcript to retain by checksum")
     parser.add_argument("--engine-reference", nargs=2, action="append", default=[], metavar=("PREVIOUS_RUN", "SOURCE_BUILD_RUN"))
     parser.add_argument("--build-reproduction", nargs=2, type=Path, metavar=("MANIFEST_A", "MANIFEST_B"))

@@ -62,6 +62,15 @@ async def run(args) -> dict:
         raise ValueError("Channel geometry and routing graph must be supplied together with --routing-probe")
     if args.zero_channel_kinetics and not args.routing_probe:
         raise ValueError("Zero channel kinetics requires an explicit copied routing probe")
+    forcing_manifest = None
+    if args.forcing_manifest:
+        if args.routing_probe or args.drainage_probe or args.underflow_diagnostic:
+            raise ValueError("Run the forcing correction with the already prepared reference and fixed engine")
+        forcing_manifest = json.loads(args.forcing_manifest.read_text())
+        if forcing_manifest["schema_version"] != "south-fork-forcing-correction/v1" or args.warmup_years != forcing_manifest["warmup_years"]:
+            raise ValueError("Unsupported forcing correction or warm-up")
+        if fingerprint(args.project) != forcing_manifest["corrected_project_sha256"]:
+            raise ValueError("Corrected project differs from its manifest")
     ids = [args.experiment_id + ("-geom-routed" if args.channel_geometry else "-tile-routed" if args.routing_probe else "-reference")]
     if args.drainage_probe and not args.routing_probe:
         ids.append(args.experiment_id + "-tile-probe")
@@ -138,6 +147,11 @@ async def run(args) -> dict:
             )
             if runtime_diagnostic:
                 sim.requested_config["development_diagnostic"]["runtime_diagnostic"] = runtime_diagnostic
+            if forcing_manifest:
+                sim.requested_config["development_diagnostic"].update({
+                    "classification": "CONTROLLED_WARMUP_FORCING_CORRECTION",
+                    "intervention": {"forcing_correction": forcing_manifest,
+                                     "manifest_sha256": hashlib.sha256(args.forcing_manifest.read_bytes()).hexdigest()}})
             db.add(sim)
             await db.commit()
             completed = await TwinCouplingEngine.execute_simulation_run(db, run_id)
@@ -179,6 +193,7 @@ async def main():
     parser.add_argument("--executable", type=Path, default=Path.home() / ".swatplus_builder/engines/61.0.2.61/swatplus-61.0.2.61-gnu-lin_x86_64-Rel")
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--warmup-years", type=int, default=19)
+    parser.add_argument("--forcing-manifest", type=Path, help="Verified warm-up correction attached to the run's provenance")
     parser.add_argument("--drainage-probe", action="store_true")
     parser.add_argument("--routing-probe", action="store_true", help="Run only the drainage probe with explicit til routing")
     parser.add_argument("--channel-geometry", type=Path, help="Existing delineation channels.gpkg; read-only GIS source")

@@ -18,7 +18,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Visor | Tres escalas y estados fechados; mallas anatómicas y terreno ilustrativos/contextuales. |
 | Diagnóstico observacional | Tres variantes estándar 2019 con lectura de caudal corregida; la pareja acoplada requiere su propia comparación. |
 | Recorrido del agua | 37 cauces delineados con almacenamiento independiente de llanura y cierre numérico de red; balance de cuenca todavía parcial. |
-| Meteorología / ET | Auditoría gridMET y comparación externa 2019; detecta rellenos de calendario y discrepancias de lluvia/viento en warm-up. |
+| Meteorología / ET | Auditoría gridMET y comparación externa 2019; anomalías del warm-up corregidas en una variante controlada, ET y acuíferos diagnosticados. |
 | Descargas SWAT+ | CSV de registros y JSON con configuración, procedencia, métricas y cobertura desde Simulaciones e Informes. |
 | CMIP6 / rendimiento | Sin proyecciones CMIP6 normalizadas en el experimento publicado ni validación de rendimiento a escala HRU/cuenca. |
 
@@ -44,6 +44,8 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `sf19-src-ctrl-v1-tile-routed` / `sf19-src-v1-geom-routed` | Primera pareja desde fuente | Reproduce caudales y recupera almacenamiento; build anterior con rutas absolutas. |
 | `sf19-src-ctrl-v2-tile-routed` | Control con receta reproducible desde fuente | Reproduce el control anterior; 365 frames. |
 | `sf19-src-v2-geom-routed` | Longitudes delineadas y receta reproducible | Reproduce caudales anteriores; residuo de red 0,315 m³, cuenca parcial −0,01215 mm; 365 frames. |
+| `sf19-phys-ctrl-v1-reference` | Control con código actual sobre inputs físicos preparados | Reproduce exactamente los 365 caudales de la referencia; 365 frames. |
+| `sf19-phys-fix-v1-reference` | Misma física y clima de warm-up corregido | RMSE mensual 8,079 m³/s; NSE −0,408; volumen 94,520 hm³; 365 frames. |
 
 Dashboard y reportes consultan el experimento final v2. El visor prioriza el
 gemelo diario corregido, salvo que se indique una corrida accesible mediante
@@ -85,6 +87,15 @@ de referencia; la comparación no justifica una reducción global de PET.
 Ambas corridas en pglocal tienen la auditoría completa, su revisión anterior
 conservada y sus 365 frames originales. El panel científico expone comparaciones
 y alertas; las futuras corridas agregan weather por área de HRU.
+
+La [entrega 1](PHYSICAL_REFERENCE_DELIVERY_1.md) corrige 1.062 registros de clima
+del warm-up en una copia y ejecuta control/corrección en pglocal. El clima 2019
+permanece idéntico; el volumen apenas aumenta 0,060 hm³. La referencia está
+diagnosticada para iniciar calibración multianual de desarrollo, bajo manejo y
+máscara de drenaje fijos; todavía no está calibrada ni validada. La mayor parte
+de `esoil` ocurre con LAI bajo; el aporte acuífero es pequeño. El motor fija
+`perco=0,1` en HRU drenadas y excluye esas HRU del ajuste de `perco` por calibración.
+La red corregida cierra con residuo 1,686 m³; el balance de cuenca sigue parcial.
 
 ## 3. Gemelo South Fork 2019 corregido
 
@@ -171,17 +182,20 @@ tiene su propio linaje y no se registra automáticamente como reporte de H1.
 
 ## 5. Siguiente etapa de investigación
 
-1. Corregir el forcing de warm-up en una variante trazable: cierres de año,
-   lluvia de 2011 y viento de 2015. Comparar contra la referencia preservada
-   bajo el mismo motor, geometría, parámetros y observaciones; después revisar
-   partición ET, pérdidas fluviales y alcance espacial antes de calibrar.
-2. Comparar baseline/acoplado con caudal consistente contra USGS, manteniendo
-   proyecto, forcing, warm-up, periodo, outlet, motor y controles comunes.
-3. Extender a varios años y separar desarrollo/calibración de evaluación para
-   el caudal medio mensual del outlet en m³/s, fijado en la reformulación;
-   estimar incertidumbre teniendo en cuenta dependencia temporal.
-4. Publicar el nuevo experimento con su propio linaje y conectar comparación,
-   reportes y visor a la misma evidencia.
+Las tareas restantes se organizan en cinco entregas; la primera está completada:
+
+1. **Referencia física — completada:** corrección controlada del warm-up,
+   reproducción, ET, suelos, drenaje, acuíferos, pérdidas fluviales y área.
+2. **Experimento multianual — siguiente:** fijar protocolo/particiones y escenario
+   agrícola; preparar calendarios, calibración acotada y exportaciones A/B
+   fechadas. Comprobar parámetros efectivos y corregir cierres de los años
+   adicionales que se utilicen. Mantener 2019 como desarrollo.
+3. **ML:** reparar residual y alineación temporal, features y selección C/D
+   exclusivamente en VALIDATION.
+4. **Evaluación de H1:** TEST reservado, referencias simples, incertidumbre
+   temporal y decisión según el protocolo congelado.
+5. **Gemelo funcional y paper:** creación/ejecución/consulta/descarga sobre
+   PostgreSQL, comparación/reportes/visor con el mismo linaje y paquete del artículo.
 
 El runner `run_final_south_fork.py` todavía calcula FSPM con humedad constante
 asumida. Ejecutarlo no evalúa por sí solo toda la ruta hídrica actual.
@@ -206,3 +220,6 @@ se contrastaron productos externos y se compiló Python/TypeScript sin errores.
 Los hashes de procedencia, métricas, caudales y frames permanecieron idénticos
 después de adjuntar el diagnóstico a pglocal. No se ejecutaron nuevas simulaciones,
 suites de tests ni inspección visual en navegador.
+En la entrega 1 se ejecutaron dos corridas científicas en pglocal, con 365 frames
+cada una, y se cotejaron reproducción diaria, corrección climática y balances.
+La revisión de procesos lee los outputs y el código fuente del motor fijado.

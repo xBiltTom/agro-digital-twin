@@ -114,14 +114,26 @@ aquella tarea dejó pendiente fijar un motor reproducible y completar la
 contabilidad fluvial antes del experimento A/B del paper.
 La [etapa posterior desde fuente](docs/SWAT_SOURCE_BUILD_2019.md) completó esa
 receta y recuperó el almacenamiento de llanura: red cerrada numéricamente,
-cuenca todavía parcial y métricas USGS idénticas. Antes de calibrar A/B sigue
-pendiente revisar la referencia física antes de calibrar A/B.
+cuenca todavía parcial y métricas USGS idénticas. Esa etapa dejó pendiente
+revisar la referencia física antes de calibrar A/B.
 La [auditoría meteorológica posterior](docs/METEOROLOGY_DIAGNOSTIC_2019.md)
 reconstruye gridMET y contrasta ET/PET con productos externos. Identifica cinco
 cierres de año interpolados y discrepancias de lluvia de 2011 y viento de 2015
-en el warm-up. Estos inputs requieren una variante corregida y una comparación
+en el warm-up. Esa auditoría requirió una variante corregida y una comparación
 controlada antes de estudiar sensibilidad o calibrar. TerraClimate aporta ET
 modelada; su comparación no acredita validación observacional de ET ni H1.
+
+La [entrega 1](docs/PHYSICAL_REFERENCE_DELIVERY_1.md) completa esa corrección y
+revisión: 1.062 registros de warm-up reparados, control que reproduce exactamente
+365 caudales anteriores y variante corregida con 94,520 hm³ frente a 289,423 hm³
+USGS. La corrección climática no resuelve la subestimación. ET con baja cobertura
+y escaso aporte acuífero son prioridades para calibración; las pérdidas netas
+fluviales y la diferencia de área tienen una magnitud menor que el déficit.
+El motor fija `perco=0,1` en HRU drenadas y no permite ajustar allí `perco` mediante
+su selector de calibración. La referencia queda preparada para **iniciar**
+calibración multianual de desarrollo bajo un escenario agrícola fijo y declarado;
+no está calibrada ni validada. Los años adicionales requieren revisar sus cierres
+climáticos. Se conservan la geometría física, el motor y los experimentos previos.
 
 El primer estudio será una **evaluación retrospectiva multianual en South Fork
 Iowa River, USGS 05451210**. Una sola cuenca permite un estudio de caso temporal,
@@ -417,9 +429,12 @@ reparación del pipeline residual y preparación multianual → calibración A y
 corridas/exportación A/B → entrenamiento/selección C/D y referencias simples →
 evaluación reservada → integración y redacción.
 
-La primera tarea es revisar activación del drenaje y balance hídrico, junto con
-reparar la evaluación residual. La decisión de escalar a varias temporadas se
-apoya en una referencia diagnosticada y contratos correctos de unidades y fechas.
+La entrega 1 de referencia física está completada. La siguiente entrega reúne
+protocolo y particiones, preparación multianual, calibración acotada y exportación
+fechada A/B. Después siguen ML con selección en VALIDATION, evaluación reservada
+de H1, y gemelo funcional/paquete del paper: **cuatro entregas pendientes**.
+La decisión de escalar a varias temporadas se apoya en una referencia
+diagnosticada y contratos correctos de unidades y fechas.
 El acceso a TEST para desarrollo queda excluido de esta secuencia.
 
 Antes de evaluar, fijar y versionar:

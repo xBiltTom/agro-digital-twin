@@ -15,6 +15,7 @@ Los documentos de esta carpeta describen lo implementado y la evidencia disponib
 | [Longitudes de cauces 2019](CHANNEL_GEOMETRY_DIAGNOSTIC_2019.md) | Delineación, fallos de underflow, pareja controlada y balance parcial con ruteo físico. |
 | [Motor desde fuente y almacenamiento 2019](SWAT_SOURCE_BUILD_2019.md) | Receta reproducible, estados de llanura, balances nativos y reproducción en pglocal. |
 | [Meteorología y ET/PET 2019](METEOROLOGY_DIAGNOSTIC_2019.md) | Conversiones gridMET, anomalías del warm-up, comparaciones externas y agregación por HRU. |
+| [Entrega 1: referencia física](PHYSICAL_REFERENCE_DELIVERY_1.md) | Warm-up corregido en pglocal, comparación controlada, ET/suelos/drenaje/acuíferos y decisión para calibración. |
 | [Reporte científico publicado](FINAL_REPORT.md) | Resultado v2, separación respecto al gemelo diario y reproducción del runner final. |
 | [Acoplamiento FSPM–SWAT+](FSPM_SWAT_PLUS_COUPLING.md) | Calendarios ejecutados, feedback hídrico aproximado y mapeo de parámetros. |
 | [Contrato de playback y representación](TWIN_PLAYBACK_CONTRACT.md) | API, PostgreSQL, evidencia, frecuencias y consumo del visor 3D. |

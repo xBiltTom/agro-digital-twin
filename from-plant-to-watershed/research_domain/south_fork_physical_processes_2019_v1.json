@@ -1,0 +1,2157 @@
+{
+  "schema_version": "south-fork-physical-process-review/v1",
+  "simulation_id": "sf19-phys-fix-v1-reference",
+  "comparison_sha256": "8d5b724bf0b6af2d6aef72b26013034b21f86d1fd148f744479168327723efd2",
+  "classification": "DEVELOPMENT_DIAGNOSTIC",
+  "hypothesis_status": "NOT_EVALUATED",
+  "area_ha": 56088.82651,
+  "monthly_native_terms_mm": [
+    {
+      "month": 1,
+      "precip": 25.978,
+      "et": 15.613,
+      "pet": 22.095,
+      "esoil": 15.613,
+      "eplant": 0.0,
+      "ecanopy": 0.0,
+      "perc": 5.212,
+      "qtile": 0.0,
+      "surq_cont": 0.677,
+      "latq": 0.124
+    },
+    {
+      "month": 2,
+      "precip": 55.045,
+      "et": 6.514,
+      "pet": 11.387,
+      "esoil": 6.514,
+      "eplant": 0.0,
+      "ecanopy": 0.0,
+      "perc": 4.254,
+      "qtile": 0.0,
+      "surq_cont": 14.379999999999999,
+      "latq": 0.094
+    },
+    {
+      "month": 3,
+      "precip": 35.091,
+      "et": 33.611,
+      "pet": 43.938,
+      "esoil": 33.611,
+      "eplant": 0.0,
+      "ecanopy": 0.0,
+      "perc": 5.664,
+      "qtile": 5.4239999999999995,
+      "surq_cont": 46.207,
+      "latq": 0.10400000000000001
+    },
+    {
+      "month": 4,
+      "precip": 98.956,
+      "et": 83.375,
+      "pet": 97.829,
+      "esoil": 83.375,
+      "eplant": 0.0,
+      "ecanopy": 0.0,
+      "perc": 6.325,
+      "qtile": 2.077,
+      "surq_cont": 0.247,
+      "latq": 0.12
+    },
+    {
+      "month": 5,
+      "precip": 179.61,
+      "et": 102.952,
+      "pet": 111.834,
+      "esoil": 99.724,
+      "eplant": 3.001,
+      "ecanopy": 0.228,
+      "perc": 7.066,
+      "qtile": 36.492,
+      "surq_cont": 3.532,
+      "latq": 0.14100000000000001
+    },
+    {
+      "month": 6,
+      "precip": 111.052,
+      "et": 141.894,
+      "pet": 147.544,
+      "esoil": 45.475,
+      "eplant": 90.18,
+      "ecanopy": 6.236,
+      "perc": 6.992,
+      "qtile": 4.997,
+      "surq_cont": 5.421,
+      "latq": 0.15
+    },
+    {
+      "month": 7,
+      "precip": 83.533,
+      "et": 152.787,
+      "pet": 155.311,
+      "esoil": 7.441,
+      "eplant": 135.27,
+      "ecanopy": 10.074,
+      "perc": 5.789,
+      "qtile": 0.001,
+      "surq_cont": 0.305,
+      "latq": 0.149
+    },
+    {
+      "month": 8,
+      "precip": 96.327,
+      "et": 109.395,
+      "pet": 127.452,
+      "esoil": 10.932,
+      "eplant": 93.086,
+      "ecanopy": 5.38,
+      "perc": 4.289,
+      "qtile": 0.0,
+      "surq_cont": 10.415,
+      "latq": 0.11800000000000001
+    },
+    {
+      "month": 9,
+      "precip": 154.606,
+      "et": 75.177,
+      "pet": 119.576,
+      "esoil": 74.84,
+      "eplant": 0.311,
+      "ecanopy": 0.025,
+      "perc": 3.758,
+      "qtile": 0.0,
+      "surq_cont": 4.455,
+      "latq": 0.09
+    },
+    {
+      "month": 10,
+      "precip": 157.193,
+      "et": 59.689,
+      "pet": 73.411,
+      "esoil": 59.689,
+      "eplant": 0.0,
+      "ecanopy": 0.0,
+      "perc": 7.816,
+      "qtile": 12.411,
+      "surq_cont": 2.651,
+      "latq": 0.11900000000000001
+    },
+    {
+      "month": 11,
+      "precip": 53.197,
+      "et": 28.03,
+      "pet": 35.39,
+      "esoil": 28.03,
+      "eplant": 0.0,
+      "ecanopy": 0.0,
+      "perc": 7.041,
+      "qtile": 1.279,
+      "surq_cont": 7.3340000000000005,
+      "latq": 0.15
+    },
+    {
+      "month": 12,
+      "precip": 30.229,
+      "et": 25.936,
+      "pet": 33.045,
+      "esoil": 25.936,
+      "eplant": 0.0,
+      "ecanopy": 0.0,
+      "perc": 6.596,
+      "qtile": 1.596,
+      "surq_cont": 14.641,
+      "latq": 0.155
+    }
+  ],
+  "soils": {
+    "profiles": [
+      {
+        "name": "gnatsgo_2765532",
+        "group": "B",
+        "depth_mm": 2000.0,
+        "layers": [
+          {
+            "bottom_mm": 230.0,
+            "thickness_mm": 230.0,
+            "bd_g_cm3": 1.3,
+            "awc_mm_mm": 0.141,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 21.0,
+            "silt_percent": 34.0,
+            "sand_percent": 45.0
+          },
+          {
+            "bottom_mm": 350.0,
+            "thickness_mm": 120.0,
+            "bd_g_cm3": 1.35,
+            "awc_mm_mm": 0.143,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 21.0,
+            "silt_percent": 34.0,
+            "sand_percent": 45.0
+          },
+          {
+            "bottom_mm": 840.0,
+            "thickness_mm": 490.0,
+            "bd_g_cm3": 1.4,
+            "awc_mm_mm": 0.148,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 21.0,
+            "silt_percent": 34.0,
+            "sand_percent": 45.0
+          },
+          {
+            "bottom_mm": 2000.0,
+            "thickness_mm": 1160.0,
+            "bd_g_cm3": 1.6,
+            "awc_mm_mm": 0.151,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 15.0,
+            "silt_percent": 36.0,
+            "sand_percent": 49.0
+          }
+        ],
+        "profile_awc_mm": 297.27,
+        "used_area_ha": 20711.28235
+      },
+      {
+        "name": "gnatsgo_2835155",
+        "group": "D",
+        "depth_mm": 2000.0,
+        "layers": [
+          {
+            "bottom_mm": 200.0,
+            "thickness_mm": 200.0,
+            "bd_g_cm3": 1.05,
+            "awc_mm_mm": 0.127,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 28.0,
+            "silt_percent": 42.0,
+            "sand_percent": 30.0
+          },
+          {
+            "bottom_mm": 510.0,
+            "thickness_mm": 310.0,
+            "bd_g_cm3": 1.25,
+            "awc_mm_mm": 0.128,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 26.0,
+            "silt_percent": 42.0,
+            "sand_percent": 32.0
+          },
+          {
+            "bottom_mm": 1110.0,
+            "thickness_mm": 600.0,
+            "bd_g_cm3": 1.35,
+            "awc_mm_mm": 0.145,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 22.0,
+            "silt_percent": 41.0,
+            "sand_percent": 37.0
+          },
+          {
+            "bottom_mm": 2000.0,
+            "thickness_mm": 890.0,
+            "bd_g_cm3": 1.6,
+            "awc_mm_mm": 0.151,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 15.0,
+            "silt_percent": 36.0,
+            "sand_percent": 49.0
+          }
+        ],
+        "profile_awc_mm": 286.46999999999997,
+        "used_area_ha": 2150.4891
+      },
+      {
+        "name": "gnatsgo_2835175",
+        "group": "D",
+        "depth_mm": 2000.0,
+        "layers": [
+          {
+            "bottom_mm": 200.0,
+            "thickness_mm": 200.0,
+            "bd_g_cm3": 1.05,
+            "awc_mm_mm": 0.121,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 32.0,
+            "silt_percent": 38.0,
+            "sand_percent": 30.0
+          },
+          {
+            "bottom_mm": 410.0,
+            "thickness_mm": 210.0,
+            "bd_g_cm3": 1.35,
+            "awc_mm_mm": 0.106,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 32.0,
+            "silt_percent": 36.0,
+            "sand_percent": 32.0
+          },
+          {
+            "bottom_mm": 1600.0,
+            "thickness_mm": 1190.0,
+            "bd_g_cm3": 1.4,
+            "awc_mm_mm": 0.139,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 25.0,
+            "silt_percent": 36.0,
+            "sand_percent": 39.0
+          },
+          {
+            "bottom_mm": 2000.0,
+            "thickness_mm": 400.0,
+            "bd_g_cm3": 1.6,
+            "awc_mm_mm": 0.144,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 21.0,
+            "silt_percent": 35.0,
+            "sand_percent": 44.0
+          }
+        ],
+        "profile_awc_mm": 269.47,
+        "used_area_ha": 1498.23942
+      },
+      {
+        "name": "gnatsgo_2884321",
+        "group": "D",
+        "depth_mm": 2000.0,
+        "layers": [
+          {
+            "bottom_mm": 200.0,
+            "thickness_mm": 200.0,
+            "bd_g_cm3": 1.05,
+            "awc_mm_mm": 0.121,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 32.0,
+            "silt_percent": 47.0,
+            "sand_percent": 21.0
+          },
+          {
+            "bottom_mm": 580.0,
+            "thickness_mm": 380.0,
+            "bd_g_cm3": 1.25,
+            "awc_mm_mm": 0.112,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 33.0,
+            "silt_percent": 42.0,
+            "sand_percent": 25.0
+          },
+          {
+            "bottom_mm": 970.0,
+            "thickness_mm": 390.0,
+            "bd_g_cm3": 1.35,
+            "awc_mm_mm": 0.138,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 26.0,
+            "silt_percent": 41.0,
+            "sand_percent": 33.0
+          },
+          {
+            "bottom_mm": 2000.0,
+            "thickness_mm": 1030.0,
+            "bd_g_cm3": 1.6,
+            "awc_mm_mm": 0.151,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 15.0,
+            "silt_percent": 36.0,
+            "sand_percent": 49.0
+          }
+        ],
+        "profile_awc_mm": 276.11,
+        "used_area_ha": 5551.44165
+      },
+      {
+        "name": "gnatsgo_406477",
+        "group": "D",
+        "depth_mm": 2000.0,
+        "layers": [
+          {
+            "bottom_mm": 180.0,
+            "thickness_mm": 180.0,
+            "bd_g_cm3": 1.3,
+            "awc_mm_mm": 0.103,
+            "ksat_mm_h": 3.312,
+            "clay_percent": 37.0,
+            "silt_percent": 42.0,
+            "sand_percent": 21.0
+          },
+          {
+            "bottom_mm": 430.0,
+            "thickness_mm": 250.0,
+            "bd_g_cm3": 1.3,
+            "awc_mm_mm": 0.076,
+            "ksat_mm_h": 3.312,
+            "clay_percent": 40.0,
+            "silt_percent": 40.0,
+            "sand_percent": 20.0
+          },
+          {
+            "bottom_mm": 940.0,
+            "thickness_mm": 510.0,
+            "bd_g_cm3": 1.4,
+            "awc_mm_mm": 0.129,
+            "ksat_mm_h": 3.312,
+            "clay_percent": 42.0,
+            "silt_percent": 35.0,
+            "sand_percent": 23.0
+          },
+          {
+            "bottom_mm": 2000.0,
+            "thickness_mm": 1060.0,
+            "bd_g_cm3": 1.6,
+            "awc_mm_mm": 0.127,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 28.0,
+            "silt_percent": 38.0,
+            "sand_percent": 34.0
+          }
+        ],
+        "profile_awc_mm": 237.95000000000002,
+        "used_area_ha": 1182.55261
+      },
+      {
+        "name": "gnatsgo_406491",
+        "group": "D",
+        "depth_mm": 2000.0,
+        "layers": [
+          {
+            "bottom_mm": 230.0,
+            "thickness_mm": 230.0,
+            "bd_g_cm3": 1.05,
+            "awc_mm_mm": 0.121,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 32.0,
+            "silt_percent": 38.0,
+            "sand_percent": 30.0
+          },
+          {
+            "bottom_mm": 410.0,
+            "thickness_mm": 180.0,
+            "bd_g_cm3": 1.35,
+            "awc_mm_mm": 0.106,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 32.0,
+            "silt_percent": 36.0,
+            "sand_percent": 32.0
+          },
+          {
+            "bottom_mm": 510.0,
+            "thickness_mm": 100.0,
+            "bd_g_cm3": 1.35,
+            "awc_mm_mm": 0.117,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 32.0,
+            "silt_percent": 36.0,
+            "sand_percent": 32.0
+          },
+          {
+            "bottom_mm": 910.0,
+            "thickness_mm": 400.0,
+            "bd_g_cm3": 1.4,
+            "awc_mm_mm": 0.133,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 27.0,
+            "silt_percent": 34.0,
+            "sand_percent": 39.0
+          },
+          {
+            "bottom_mm": 2000.0,
+            "thickness_mm": 1090.0,
+            "bd_g_cm3": 1.6,
+            "awc_mm_mm": 0.144,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 21.0,
+            "silt_percent": 35.0,
+            "sand_percent": 44.0
+          }
+        ],
+        "profile_awc_mm": 268.77,
+        "used_area_ha": 21985.040419999998
+      },
+      {
+        "name": "gnatsgo_406614",
+        "group": "D",
+        "depth_mm": 2000.0,
+        "layers": [
+          {
+            "bottom_mm": 230.0,
+            "thickness_mm": 230.0,
+            "bd_g_cm3": 1.15,
+            "awc_mm_mm": 0.118,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 31.0,
+            "silt_percent": 47.0,
+            "sand_percent": 22.0
+          },
+          {
+            "bottom_mm": 910.0,
+            "thickness_mm": 680.0,
+            "bd_g_cm3": 1.35,
+            "awc_mm_mm": 0.114,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 30.0,
+            "silt_percent": 41.0,
+            "sand_percent": 29.0
+          },
+          {
+            "bottom_mm": 1120.0,
+            "thickness_mm": 210.0,
+            "bd_g_cm3": 1.4,
+            "awc_mm_mm": 0.128,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 27.0,
+            "silt_percent": 37.0,
+            "sand_percent": 36.0
+          },
+          {
+            "bottom_mm": 2000.0,
+            "thickness_mm": 880.0,
+            "bd_g_cm3": 1.6,
+            "awc_mm_mm": 0.142,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 20.0,
+            "silt_percent": 32.0,
+            "sand_percent": 48.0
+          }
+        ],
+        "profile_awc_mm": 256.5,
+        "used_area_ha": 25.39497
+      },
+      {
+        "name": "gnatsgo_406656",
+        "group": "D",
+        "depth_mm": 2000.0,
+        "layers": [
+          {
+            "bottom_mm": 250.0,
+            "thickness_mm": 250.0,
+            "bd_g_cm3": 1.05,
+            "awc_mm_mm": 0.12,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 33.0,
+            "silt_percent": 42.0,
+            "sand_percent": 25.0
+          },
+          {
+            "bottom_mm": 510.0,
+            "thickness_mm": 260.0,
+            "bd_g_cm3": 1.35,
+            "awc_mm_mm": 0.104,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 33.0,
+            "silt_percent": 42.0,
+            "sand_percent": 25.0
+          },
+          {
+            "bottom_mm": 1070.0,
+            "thickness_mm": 560.0,
+            "bd_g_cm3": 1.4,
+            "awc_mm_mm": 0.131,
+            "ksat_mm_h": 10.152,
+            "clay_percent": 28.0,
+            "silt_percent": 37.0,
+            "sand_percent": 35.0
+          },
+          {
+            "bottom_mm": 2000.0,
+            "thickness_mm": 930.0,
+            "bd_g_cm3": 1.6,
+            "awc_mm_mm": 0.144,
+            "ksat_mm_h": 33.012,
+            "clay_percent": 21.0,
+            "silt_percent": 35.0,
+            "sand_percent": 44.0
+          }
+        ],
+        "profile_awc_mm": 264.32,
+        "used_area_ha": 2984.3859899999998
+      }
+    ],
+    "area_weighted_profile_awc_mm": 279.82555609835845,
+    "note": "Input gNATSGO profiles pass layer checks; field hydraulic properties are not validated."
+  },
+  "hydrology": [
+    {
+      "hru": "1",
+      "area_ha": 1267.83896,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "2",
+      "area_ha": 1498.23942,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "3",
+      "area_ha": 1182.55261,
+      "tile_active": false,
+      "input_perco": 0.05,
+      "initialized_perco": 0.05,
+      "initialized_perco_lim": 0.0011259808094449119,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "4",
+      "area_ha": 1353.69814,
+      "tile_active": false,
+      "input_perco": 0.05,
+      "initialized_perco": 0.05,
+      "initialized_perco_lim": 0.0011259808094449119,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "5",
+      "area_ha": 1201.13739,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "6",
+      "area_ha": 872.53034,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "7",
+      "area_ha": 2150.4891,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "8",
+      "area_ha": 2048.20912,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "9",
+      "area_ha": 1941.66482,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "10",
+      "area_ha": 1198.78247,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "11",
+      "area_ha": 1511.60519,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "12",
+      "area_ha": 1562.14054,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "13",
+      "area_ha": 1694.33439,
+      "tile_active": true,
+      "input_perco": 0.9,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "14",
+      "area_ha": 4054.92069,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "15",
+      "area_ha": 2231.38384,
+      "tile_active": true,
+      "input_perco": 0.9,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "16",
+      "area_ha": 1652.20038,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "17",
+      "area_ha": 1101.59421,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "18",
+      "area_ha": 2029.75162,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "19",
+      "area_ha": 1497.41201,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "20",
+      "area_ha": 5184.58303,
+      "tile_active": true,
+      "input_perco": 0.9,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "21",
+      "area_ha": 442.85258,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "22",
+      "area_ha": 621.25382,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "23",
+      "area_ha": 25.39497,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "24",
+      "area_ha": 721.56076,
+      "tile_active": true,
+      "input_perco": 0.9,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "25",
+      "area_ha": 1667.15732,
+      "tile_active": false,
+      "input_perco": 0.9,
+      "initialized_perco": 0.9,
+      "initialized_perco_lim": 0.03257724100240402,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "26",
+      "area_ha": 8002.85157,
+      "tile_active": true,
+      "input_perco": 0.9,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "27",
+      "area_ha": 1209.41144,
+      "tile_active": true,
+      "input_perco": 0.9,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "28",
+      "area_ha": 1275.28561,
+      "tile_active": false,
+      "input_perco": 0.05,
+      "initialized_perco": 0.05,
+      "initialized_perco_lim": 0.0011259808094449119,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "29",
+      "area_ha": 412.11131,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "30",
+      "area_ha": 250.25817,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "31",
+      "area_ha": 403.20079,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "32",
+      "area_ha": 824.28626,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "33",
+      "area_ha": 352.21992,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "34",
+      "area_ha": 1720.04759,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "35",
+      "area_ha": 676.11713,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    },
+    {
+      "hru": "36",
+      "area_ha": 249.749,
+      "tile_active": true,
+      "input_perco": 0.05,
+      "initialized_perco": 0.1,
+      "initialized_perco_lim": 0.0014669442555250132,
+      "esco": 0.95,
+      "epco": 0.5,
+      "pet_co": 1.0,
+      "latq_co": 0.01
+    }
+  ],
+  "drainage": {
+    "inspection": {
+      "status": "INSPECTED",
+      "hru_count": 36,
+      "tile_linked_hru_count": 32,
+      "landuse_tile_links": [
+        {
+          "hru_id": 1,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 2,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 3,
+          "landuse": "agrl_lum",
+          "tile": "null"
+        },
+        {
+          "hru_id": 4,
+          "landuse": "agrl_lum",
+          "tile": "null"
+        },
+        {
+          "hru_id": 5,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 6,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 7,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 8,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 9,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 10,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 11,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 12,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 13,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 14,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 15,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 16,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 17,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 18,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 19,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 20,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 21,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 22,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 23,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 24,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 25,
+          "landuse": "agrl_lum",
+          "tile": "null"
+        },
+        {
+          "hru_id": 26,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 27,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 28,
+          "landuse": "agrl_lum",
+          "tile": "null"
+        },
+        {
+          "hru_id": 29,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 30,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 31,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 32,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 33,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 34,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 35,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        },
+        {
+          "hru_id": 36,
+          "landuse": "corn_lum",
+          "tile": "mw24_1000"
+        }
+      ],
+      "tile_definitions": [
+        {
+          "name": "mw24_1000",
+          "dp": "1000.00000",
+          "t_fc": "24.00000",
+          "lag": "96.00000",
+          "rad": "100.00000",
+          "dist": "5.00000",
+          "drain": "10.00000",
+          "pump": "1.00000",
+          "lat_ksat": "2.00000"
+        }
+      ],
+      "input_checksums": {
+        "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+        "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+        "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+        "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+        "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+      },
+      "routing_unit_count": 36,
+      "routing_units_with_tile_connection": 36,
+      "interpretation": "Input linkage only; inspect qtile to establish simulated drainage."
+    },
+    "active_area_ha": 50610.13283000001,
+    "active_area_percent": 90.2321121319534,
+    "hru_annual_terms_mm": {
+      "1": {
+        "precip": 1095.9999999999998,
+        "et": 836.772,
+        "pet": 974.1900000000005,
+        "esoil": 467.35000000000036,
+        "eplant": 344.3600000000001,
+        "ecanopy": 25.057,
+        "perc": 65.98900000000002,
+        "qtile": 57.21599999999998,
+        "surq_cont": 136.16699999999997,
+        "latq": 1.049999999999999
+      },
+      "2": {
+        "precip": 1094.9,
+        "et": 858.6810000000004,
+        "pet": 967.6260000000001,
+        "esoil": 493.69800000000015,
+        "eplant": 340.21600000000007,
+        "ecanopy": 24.772,
+        "perc": 50.91299999999999,
+        "qtile": 0.0,
+        "surq_cont": 154.242,
+        "latq": 0.8150000000000006
+      },
+      "3": {
+        "precip": 1103.2999999999997,
+        "et": 932.3320000000003,
+        "pet": 973.4140000000006,
+        "esoil": 761.6400000000003,
+        "eplant": 156.45399999999998,
+        "ecanopy": 14.244000000000005,
+        "perc": 51.9259999999999,
+        "qtile": 0.0,
+        "surq_cont": 168.885,
+        "latq": 0.44200000000000034
+      },
+      "4": {
+        "precip": 1078.7999999999997,
+        "et": 901.6009999999998,
+        "pet": 971.4249999999993,
+        "esoil": 732.421,
+        "eplant": 154.44299999999996,
+        "ecanopy": 14.735000000000003,
+        "perc": 90.00500000000001,
+        "qtile": 0.0,
+        "surq_cont": 124.30400000000004,
+        "latq": 1.8139999999999885
+      },
+      "5": {
+        "precip": 1079.8999999999996,
+        "et": 819.4830000000006,
+        "pet": 969.7389999999999,
+        "esoil": 456.4180000000003,
+        "eplant": 337.59399999999994,
+        "ecanopy": 25.467999999999996,
+        "perc": 64.261,
+        "qtile": 58.346999999999994,
+        "surq_cont": 144.51400000000004,
+        "latq": 1.0349999999999995
+      },
+      "6": {
+        "precip": 1079.8999999999996,
+        "et": 819.501000000001,
+        "pet": 969.7609999999997,
+        "esoil": 456.4190000000002,
+        "eplant": 337.6209999999999,
+        "ecanopy": 25.467999999999996,
+        "perc": 64.264,
+        "qtile": 58.37,
+        "surq_cont": 144.51400000000004,
+        "latq": 1.025
+      },
+      "7": {
+        "precip": 1105.6999999999996,
+        "et": 824.9830000000001,
+        "pet": 975.907,
+        "esoil": 456.48,
+        "eplant": 345.4139999999999,
+        "ecanopy": 23.088,
+        "perc": 80.21699999999994,
+        "qtile": 59.09500000000001,
+        "surq_cont": 153.24699999999999,
+        "latq": 1.0899999999999974
+      },
+      "8": {
+        "precip": 1103.2999999999997,
+        "et": 833.7030000000004,
+        "pet": 973.407000000001,
+        "esoil": 457.3180000000003,
+        "eplant": 350.47700000000003,
+        "ecanopy": 25.903,
+        "perc": 66.69000000000004,
+        "qtile": 69.46200000000006,
+        "surq_cont": 133.83399999999997,
+        "latq": 1.0779999999999978
+      },
+      "9": {
+        "precip": 1103.5999999999997,
+        "et": 827.0670000000002,
+        "pet": 973.0300000000004,
+        "esoil": 462.1960000000001,
+        "eplant": 340.02099999999996,
+        "ecanopy": 24.84999999999999,
+        "perc": 65.10300000000001,
+        "qtile": 66.71600000000001,
+        "surq_cont": 151.89399999999998,
+        "latq": 0.9710000000000008
+      },
+      "10": {
+        "precip": 1103.5999999999997,
+        "et": 827.0720000000003,
+        "pet": 973.0420000000004,
+        "esoil": 462.194,
+        "eplant": 340.02299999999997,
+        "ecanopy": 24.84999999999999,
+        "perc": 65.108,
+        "qtile": 66.77200000000002,
+        "surq_cont": 151.89399999999998,
+        "latq": 0.8580000000000007
+      },
+      "11": {
+        "precip": 1122.8000000000002,
+        "et": 828.7220000000004,
+        "pet": 979.2739999999999,
+        "esoil": 460.33499999999987,
+        "eplant": 345.3430000000001,
+        "ecanopy": 23.051,
+        "perc": 79.64999999999993,
+        "qtile": 69.77199999999995,
+        "surq_cont": 162.86800000000002,
+        "latq": 1.1349999999999958
+      },
+      "12": {
+        "precip": 1106.2000000000005,
+        "et": 831.1370000000003,
+        "pet": 974.3860000000006,
+        "esoil": 461.70399999999944,
+        "eplant": 345.582,
+        "ecanopy": 23.854999999999993,
+        "perc": 65.07000000000002,
+        "qtile": 64.91500000000003,
+        "surq_cont": 154.38899999999995,
+        "latq": 1.0549999999999988
+      },
+      "13": {
+        "precip": 1088.8,
+        "et": 842.7850000000001,
+        "pet": 976.8549999999998,
+        "esoil": 477.10599999999954,
+        "eplant": 343.42100000000005,
+        "ecanopy": 22.253000000000004,
+        "perc": 71.60400000000003,
+        "qtile": 154.21200000000002,
+        "surq_cont": 48.233,
+        "latq": 0.9530000000000007
+      },
+      "14": {
+        "precip": 1106.2000000000005,
+        "et": 831.1390000000002,
+        "pet": 974.3970000000006,
+        "esoil": 461.70099999999934,
+        "eplant": 345.5850000000001,
+        "ecanopy": 23.854999999999993,
+        "perc": 65.06800000000003,
+        "qtile": 64.90400000000002,
+        "surq_cont": 154.38899999999995,
+        "latq": 1.0579999999999987
+      },
+      "15": {
+        "precip": 1055.0,
+        "et": 836.5470000000003,
+        "pet": 981.9740000000004,
+        "esoil": 482.13900000000046,
+        "eplant": 332.7970000000001,
+        "ecanopy": 21.612999999999996,
+        "perc": 70.802,
+        "qtile": 126.58400000000003,
+        "surq_cont": 49.363,
+        "latq": 0.8220000000000006
+      },
+      "16": {
+        "precip": 1093.2,
+        "et": 829.3129999999999,
+        "pet": 981.315,
+        "esoil": 458.43300000000005,
+        "eplant": 347.76399999999995,
+        "ecanopy": 23.116999999999997,
+        "perc": 59.09400000000009,
+        "qtile": 35.005,
+        "surq_cont": 144.658,
+        "latq": 0.7880000000000006
+      },
+      "17": {
+        "precip": 1050.8,
+        "et": 816.2399999999996,
+        "pet": 986.1799999999998,
+        "esoil": 448.39100000000013,
+        "eplant": 345.8279999999999,
+        "ecanopy": 22.019999999999996,
+        "perc": 51.21800000000005,
+        "qtile": 3.0539999999999985,
+        "surq_cont": 133.361,
+        "latq": 0.5770000000000004
+      },
+      "18": {
+        "precip": 1071.7,
+        "et": 828.3059999999999,
+        "pet": 979.4750000000005,
+        "esoil": 467.5999999999998,
+        "eplant": 338.649,
+        "ecanopy": 22.066999999999993,
+        "perc": 58.54000000000004,
+        "qtile": 21.29100000000002,
+        "surq_cont": 146.63299999999998,
+        "latq": 0.9940000000000008
+      },
+      "19": {
+        "precip": 1037.1000000000001,
+        "et": 797.5750000000006,
+        "pet": 985.4900000000004,
+        "esoil": 448.817,
+        "eplant": 327.711,
+        "ecanopy": 21.052000000000003,
+        "perc": 53.05000000000001,
+        "qtile": 0.0,
+        "surq_cont": 138.56199999999998,
+        "latq": 0.8810000000000007
+      },
+      "20": {
+        "precip": 1032.7999999999997,
+        "et": 827.5160000000001,
+        "pet": 986.7419999999996,
+        "esoil": 475.5149999999998,
+        "eplant": 332.0050000000001,
+        "ecanopy": 20.007000000000005,
+        "perc": 60.44200000000011,
+        "qtile": 64.423,
+        "surq_cont": 45.593,
+        "latq": 2.8569999999999816
+      },
+      "21": {
+        "precip": 1055.0,
+        "et": 813.051000000001,
+        "pet": 981.9620000000001,
+        "esoil": 456.48299999999966,
+        "eplant": 334.9600000000001,
+        "ecanopy": 21.612999999999996,
+        "perc": 61.01300000000004,
+        "qtile": 0.0,
+        "surq_cont": 144.03199999999998,
+        "latq": 1.0870000000000009
+      },
+      "22": {
+        "precip": 1071.7,
+        "et": 828.2909999999997,
+        "pet": 979.4650000000005,
+        "esoil": 467.5959999999999,
+        "eplant": 338.63700000000006,
+        "ecanopy": 22.066999999999993,
+        "perc": 58.52600000000004,
+        "qtile": 21.183000000000007,
+        "surq_cont": 146.63299999999998,
+        "latq": 1.227000000000001
+      },
+      "23": {
+        "precip": 1071.7,
+        "et": 826.5859999999999,
+        "pet": 979.4410000000007,
+        "esoil": 461.0189999999999,
+        "eplant": 343.50800000000004,
+        "ecanopy": 22.066999999999993,
+        "perc": 55.94900000000003,
+        "qtile": 0.0,
+        "surq_cont": 146.63299999999998,
+        "latq": 1.4559999999999935
+      },
+      "24": {
+        "precip": 1057.8000000000002,
+        "et": 837.007,
+        "pet": 986.5450000000006,
+        "esoil": 482.1119999999998,
+        "eplant": 333.929,
+        "ecanopy": 20.962999999999997,
+        "perc": 69.751,
+        "qtile": 132.153,
+        "surq_cont": 47.19200000000001,
+        "latq": 1.5909999999999926
+      },
+      "25": {
+        "precip": 1032.7999999999997,
+        "et": 793.7719999999996,
+        "pet": 986.698,
+        "esoil": 622.9709999999998,
+        "eplant": 158.45599999999988,
+        "ecanopy": 12.341,
+        "perc": 219.75800000000004,
+        "qtile": 0.0,
+        "surq_cont": 45.72999999999999,
+        "latq": 0.5020000000000003
+      },
+      "26": {
+        "precip": 1076.3999999999996,
+        "et": 840.4230000000003,
+        "pet": 988.0130000000004,
+        "esoil": 484.05199999999985,
+        "eplant": 334.86799999999994,
+        "ecanopy": 21.498,
+        "perc": 64.318,
+        "qtile": 108.13800000000005,
+        "surq_cont": 48.949,
+        "latq": 2.4789999999999934
+      },
+      "27": {
+        "precip": 1091.0999999999997,
+        "et": 837.2529999999995,
+        "pet": 970.8650000000005,
+        "esoil": 473.92299999999983,
+        "eplant": 340.12800000000004,
+        "ecanopy": 23.194,
+        "perc": 72.07900000000004,
+        "qtile": 161.65599999999995,
+        "surq_cont": 46.778000000000006,
+        "latq": 1.302999999999998
+      },
+      "28": {
+        "precip": 1122.8000000000002,
+        "et": 912.0890000000005,
+        "pet": 979.2610000000003,
+        "esoil": 745.7349999999999,
+        "eplant": 154.56699999999998,
+        "ecanopy": 11.783999999999994,
+        "perc": 110.11899999999999,
+        "qtile": 0.0,
+        "surq_cont": 140.786,
+        "latq": 4.6610000000000005
+      },
+      "29": {
+        "precip": 1102.3999999999999,
+        "et": 820.0349999999996,
+        "pet": 973.0479999999999,
+        "esoil": 449.3500000000002,
+        "eplant": 346.057,
+        "ecanopy": 24.622999999999994,
+        "perc": 64.91000000000005,
+        "qtile": 73.57400000000007,
+        "surq_cont": 154.49399999999997,
+        "latq": 1.2500000000000007
+      },
+      "30": {
+        "precip": 1096.3999999999996,
+        "et": 816.5439999999994,
+        "pet": 969.0790000000009,
+        "esoil": 446.3069999999999,
+        "eplant": 346.589,
+        "ecanopy": 23.643000000000008,
+        "perc": 65.06800000000001,
+        "qtile": 76.61200000000004,
+        "surq_cont": 148.15599999999998,
+        "latq": 3.10699999999998
+      },
+      "31": {
+        "precip": 1095.9999999999998,
+        "et": 836.7710000000001,
+        "pet": 974.1910000000004,
+        "esoil": 467.3490000000004,
+        "eplant": 344.3600000000001,
+        "ecanopy": 25.057,
+        "perc": 65.98200000000003,
+        "qtile": 57.151999999999965,
+        "surq_cont": 136.16699999999997,
+        "latq": 1.0839999999999976
+      },
+      "32": {
+        "precip": 1088.8,
+        "et": 822.7039999999995,
+        "pet": 976.8369999999995,
+        "esoil": 455.32699999999966,
+        "eplant": 345.11999999999995,
+        "ecanopy": 22.253000000000004,
+        "perc": 77.95899999999988,
+        "qtile": 51.31499999999999,
+        "surq_cont": 148.18099999999995,
+        "latq": 2.9799999999999853
+      },
+      "33": {
+        "precip": 1088.2000000000005,
+        "et": 816.0340000000002,
+        "pet": 969.5269999999999,
+        "esoil": 447.6919999999998,
+        "eplant": 343.2219999999999,
+        "ecanopy": 25.122000000000003,
+        "perc": 64.13400000000006,
+        "qtile": 67.35100000000003,
+        "surq_cont": 145.483,
+        "latq": 1.0279999999999998
+      },
+      "34": {
+        "precip": 1088.2000000000005,
+        "et": 816.0360000000001,
+        "pet": 969.531,
+        "esoil": 447.6849999999998,
+        "eplant": 343.23099999999994,
+        "ecanopy": 25.122000000000003,
+        "perc": 64.11000000000006,
+        "qtile": 67.126,
+        "surq_cont": 145.483,
+        "latq": 1.2659999999999993
+      },
+      "35": {
+        "precip": 1067.8,
+        "et": 821.8509999999997,
+        "pet": 969.1960000000003,
+        "esoil": 456.57799999999986,
+        "eplant": 340.288,
+        "ecanopy": 24.980999999999998,
+        "perc": 64.39699999999999,
+        "qtile": 59.506,
+        "surq_cont": 129.444,
+        "latq": 0.7850000000000006
+      },
+      "36": {
+        "precip": 1088.2000000000005,
+        "et": 816.0350000000002,
+        "pet": 969.526,
+        "esoil": 447.69299999999976,
+        "eplant": 343.2209999999999,
+        "ecanopy": 25.122000000000003,
+        "perc": 64.13900000000004,
+        "qtile": 67.417,
+        "surq_cont": 145.483,
+        "latq": 0.9770000000000008
+      }
+    },
+    "scope": "Fixed corn-landuse experiment, not reconstructed historical tile coverage."
+  },
+  "et_context": {
+    "esoil_on_lai_le_0_1_days_basin_mm": 407.1620965775915,
+    "esoil_on_snow_present_days_basin_mm": 28.23278086036123,
+    "low_lai_area_weighted_days": 270.2569608201298,
+    "mean_residue_on_low_lai_days_kg_ha": 3680.3456574629254,
+    "note": "esoil includes snow and ponded-water evaporation. Snow-present day totals do not isolate sublimation; categories overlap."
+  },
+  "management_events_2019": [
+    {
+      "hru": "2",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "7",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "9",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "10",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "11",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "12",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "13",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "14",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "15",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "16",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "17",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "18",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "19",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "20",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "21",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "22",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "23",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "24",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "25",
+      "date": "2019-05-15",
+      "crop": "agrl",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "26",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "27",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "29",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "30",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "32",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "33",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "34",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "36",
+      "date": "2019-05-15",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "1",
+      "date": "2019-05-16",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "3",
+      "date": "2019-05-16",
+      "crop": "agrl",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "4",
+      "date": "2019-05-16",
+      "crop": "agrl",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "5",
+      "date": "2019-05-16",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "6",
+      "date": "2019-05-16",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "8",
+      "date": "2019-05-16",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "31",
+      "date": "2019-05-16",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "35",
+      "date": "2019-05-16",
+      "crop": "corn",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "28",
+      "date": "2019-06-14",
+      "crop": "agrl",
+      "operation": "PLANT"
+    },
+    {
+      "hru": "25",
+      "date": "2019-08-19",
+      "crop": "agrl",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "4",
+      "date": "2019-08-24",
+      "crop": "agrl",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "3",
+      "date": "2019-08-26",
+      "crop": "agrl",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "19",
+      "date": "2019-08-27",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "26",
+      "date": "2019-08-27",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "15",
+      "date": "2019-08-28",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "18",
+      "date": "2019-08-28",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "20",
+      "date": "2019-08-28",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "21",
+      "date": "2019-08-28",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "22",
+      "date": "2019-08-28",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "23",
+      "date": "2019-08-28",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "24",
+      "date": "2019-08-28",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "7",
+      "date": "2019-08-29",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "11",
+      "date": "2019-08-29",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "13",
+      "date": "2019-08-29",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "17",
+      "date": "2019-08-29",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "27",
+      "date": "2019-08-29",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "32",
+      "date": "2019-08-29",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "2",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "9",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "10",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "12",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "14",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "16",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "29",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "30",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "33",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "34",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "36",
+      "date": "2019-08-30",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "5",
+      "date": "2019-08-31",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "6",
+      "date": "2019-08-31",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "1",
+      "date": "2019-09-01",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "31",
+      "date": "2019-09-01",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "35",
+      "date": "2019-09-01",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "8",
+      "date": "2019-09-03",
+      "crop": "corn",
+      "operation": "HARV/KILL"
+    },
+    {
+      "hru": "28",
+      "date": "2019-09-16",
+      "crop": "agrl",
+      "operation": "HARV/KILL"
+    }
+  ],
+  "aquifers": {
+    "shallow": {
+      "units": 36,
+      "area_ha": 56088.82651,
+      "annual_terms_basin_mm": {
+        "flo": 9.105593246401119,
+        "rchrg": 70.79917626713313,
+        "seep": 3.538597108122311,
+        "revap": 20.581068789381238
+      },
+      "jan2_dec31_storage_change_basin_mm": 37.42806769147665,
+      "zero_flow_unit_days": 12147
+    },
+    "deep": {
+      "units": 36,
+      "area_ha": 56088.82651,
+      "annual_terms_basin_mm": {
+        "flo": 0.0,
+        "rchrg": 3.538597108122311,
+        "seep": 0.0,
+        "revap": 0.0
+      },
+      "jan2_dec31_storage_change_basin_mm": 3.531139012560462,
+      "zero_flow_unit_days": 13140
+    }
+  },
+  "input_sha256": {
+    "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+    "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+    "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+    "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+    "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+    "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+    "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732",
+    "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+    "aquifer.aqu": "e2cf68fbacfec0b4c1bd0c2d6c4ccc9911f78a3e7331ae129a1207e371061818",
+    "hyd-sed-lte.cha": "7e6e3afccbe93a7b7b54a6cfd1b131541319874fc5f83e545f24d0ebc84eda36",
+    "codes.bsn": "c9f009b02e21c061514fb05449d4868b3d1d0d1f347b935137348185e4f2965c"
+  },
+  "output_sha256": {
+    "basin_wb_day.txt": "4f448f15d3b5078a510cd682400282e98168988238f218d51b39c33b7dcf82c4",
+    "hru_wb_day.txt": "69105824682923a105731002c7869d0d270826d5eaa2fbfd168f710b253df5f8",
+    "hru_pw_day.txt": "56bbbf851b8ed0e56c8c43e0a6aa69b90398cef73c99983a7354b4e222af951d",
+    "aquifer_day.txt": "6e65c25632bbb8a6407541f8b4b861fa5069fe13ae1191697dd756add9969315",
+    "mgt_out.txt": "498b2dd7780f245711cfc33273d90a1c2931b60e5235f4138ab49eb1a2eabdd0"
+  },
+  "source_commit": "77b722bac716c32f2fba6b4e3f9dd6ea4b008e3d",
+  "source_sha256": {
+    "topohyd_init.f90": "eb4c1c1d9236e230e8e8ac7ad413f4117cce908c933b89eccf935ec09a2dbe2f",
+    "swr_percmicro.f90": "5ae2ef077f9a9bc02bf1f54cc6242d5e43575c538bfdacc4f0276b3e8add0c26",
+    "swr_percmain.f90": "8e11c6f948d4a093c5771fa2bd72093425cb6e321cb667377f3c12ab0495ffdb",
+    "et_act.f90": "b79404e110d81877654a621ffe90f7fcf0ef7e5832b974070bd7c4043f1f7bfa",
+    "et_pot.f90": "2eefd64f311135e99093c6076d145ac83b0b3cdebe4f6cb9ed4368791cdf1ac1",
+    "hru_control.f90": "792cfaa0e15ecf1479c72ced64169f3d2c93e67b98ddd13263f026059fb45462",
+    "aqu_1d_control.f90": "6a3ebebc06ae6c9a608e38eb9f0386f195ce3d2f852efd048bfa2d57898a96b8",
+    "cal_parm_select.f90": "45c41c2845972ddc8b07afc358c3fcf2becb32bfcee3a07735bbed5827447139"
+  },
+  "script_sha256": "71933f819a559158875626af1e9407b12ec748350c96d63b3593c08f3f199882"
+}
