@@ -2,6 +2,7 @@
 
 import React from "react";
 import SwatBaselineDiagnosticPanel from "./SwatBaselineDiagnosticPanel";
+import SwatMeteorologyDiagnosticPanel from "./SwatMeteorologyDiagnosticPanel";
 import {
   Bar,
   CartesianGrid,
@@ -112,6 +113,7 @@ export default function SwatRunEvidencePanel({ simulation, result }: Props) {
   return (
     <section className="space-y-5 border border-slate-300 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
       {simulation.status === "COMPLETED" && <SwatBaselineDiagnosticPanel simulation={simulation} />}
+      {simulation.status === "COMPLETED" && <SwatMeteorologyDiagnosticPanel simulation={simulation} />}
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">
         <div>

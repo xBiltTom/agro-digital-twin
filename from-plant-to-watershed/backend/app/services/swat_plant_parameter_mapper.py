@@ -159,10 +159,11 @@ class SwatClimateForcingReader:
             "variables": ["pcp", "tmp"] + [kind for kind in ("slr", "hmd", "wnd", "pet") if any(row[kind] for row in station_data)],
             "days": len(daily), "start_date": start.isoformat(), "end_date": end.isoformat(),
             "missing_policy": "FAIL_CLOSED_PER_STATION_PRIMARY_AND_FSPM_REQUIRED; OPTIONAL_SECONDARY_NULL",
-            "limitations": "Equal-station basin forcing summary; station availability can differ by variable and day. No HRU-to-station weights or USGS weather observations are implied.",
+            "limitations": ("Area-weighted mix of assigned SWAT+ weather stations; gridded forcing is not a meteorological observation."
+                            if explicitly_weighted else "Equal-station weather summary; no HRU-to-station weights or USGS weather observations are implied."),
         }
 
-    def for_hrus(self, start: date, end: date, hru_ids: list[int], *,
+    def for_hrus(self, start: date, end: date, hru_ids: list[int] | None = None, *,
                  crop_fraction_by_hru: dict[int, float] | None = None,
                  require_fspm: bool = True) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         """Return climate for the exact station mix assigned to selected HRUs."""
@@ -177,7 +178,9 @@ class SwatClimateForcingReader:
             id_index, area_index, station_index = header.index("id"), header.index("area"), header.index("wst")
         except ValueError:
             raise SwatPlantMappingError("hru.con must expose id, area and wst fields") from None
-        selected = set(hru_ids)
+        selected = set(hru_ids) if hru_ids is not None else None
+        if selected == set():
+            raise SwatPlantMappingError("At least one HRU must be selected")
         station_weights: dict[str, float] = {}
         seen: set[int] = set()
         for line_number, raw in enumerate(lines[2:], 3):
@@ -189,24 +192,29 @@ class SwatClimateForcingReader:
                 area = float(values[area_index])
             except ValueError:
                 raise SwatPlantMappingError(f"Invalid HRU station assignment in hru.con:{line_number}") from None
-            if hru_id not in selected:
+            if selected is not None and hru_id not in selected:
                 continue
+            if hru_id in seen:
+                raise SwatPlantMappingError(f"Duplicate HRU station assignment: {hru_id}")
             station = values[station_index]
             crop_fraction = (crop_fraction_by_hru or {}).get(hru_id, 1.0)
             if not math.isfinite(area) or area <= 0 or not math.isfinite(crop_fraction) or not 0 < crop_fraction <= 1:
                 raise SwatPlantMappingError(f"Invalid area or crop fraction for HRU {hru_id}")
             station_weights[station] = station_weights.get(station, 0.0) + area * crop_fraction
             seen.add(hru_id)
-        if seen != selected:
+        if not seen:
+            raise SwatPlantMappingError("hru.con contains no selected HRU station assignments")
+        if selected is not None and seen != selected:
             raise SwatPlantMappingError(f"hru.con does not contain every requested HRU: {sorted(selected - seen)}")
         forcing, provenance = self.for_period(start, end, require_fspm=require_fspm,
                                              station_weights=station_weights)
-        provenance = {**provenance, "forcing_support": "selected_management_hrus",
-                      "hru_ids": sorted(selected), "hrus_area_weighted": True,
+        provenance = {**provenance, "forcing_support": "selected_management_hrus" if selected is not None else "all_basin_hrus",
+                      "hru_ids": sorted(seen), "hrus_area_weighted": True,
                       "crop_fraction_weighted": crop_fraction_by_hru is not None,
                       "hru_station_source": "hru.con.wst",
                       "hru_con_sha256": hashlib.sha256(hru_path.read_bytes()).hexdigest(),
-                      "limitations": "Each HRU uses its SWAT+ assigned station; cohort forcing is a basin-area and 2019 CDL crop-fraction weighted mix. The FSPM remains a single representative population for each unique management calendar."}
+                      "limitations": ("Each HRU uses its SWAT+ assigned station; cohort forcing is a basin-area and 2019 CDL crop-fraction weighted mix. The FSPM remains a single representative population for each unique management calendar."
+                                      if selected is not None else "Basin weather uses all HRU areas and assigned stations from hru.con; this is a summary of model inputs, not station observations. Runtime climate adjustments require separate auditing.")}
         return forcing, provenance
 
 

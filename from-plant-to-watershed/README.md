@@ -16,6 +16,8 @@ pendientes se describen en [estado actual](docs/CURRENT_STATE.md); el
   trazabilidad por hashes, configuración efectiva y versión del código.
 - [Motor de investigación desde fuente](docs/SWAT_SOURCE_BUILD_2019.md), con
   locks de compilación y salida independiente de almacenamiento fluvial.
+- [Auditoría meteorológica y ET/PET](docs/METEOROLOGY_DIAGNOSTIC_2019.md), con
+  procedencia gridMET, comparaciones externas y alertas del warm-up en pglocal.
 - FSPM por calendario de siembra/cosecha ejecutado por SWAT+, con agregación
   ponderada y estimación de humedad radicular desde salidas diarias de HRU.
 - Playback persistido como JSONB en PostgreSQL, consultable por fecha y resolución.

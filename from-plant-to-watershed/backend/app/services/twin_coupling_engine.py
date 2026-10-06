@@ -134,7 +134,7 @@ class TwinCouplingEngine:
         """Expose direct dated forcing when available; generated SWAT weather is opaque."""
         weather_directory = project / "TxtInOut" if (project / "TxtInOut" / "file.cio").is_file() else project
         try:
-            return SwatClimateForcingReader(weather_directory).for_period(start, end, require_fspm=False)
+            return SwatClimateForcingReader(weather_directory).for_hrus(start, end, require_fspm=False)
         except SwatPlantMappingError as exc:
             if "weather-sta.cli is required" not in str(exc) and "SWAT_GENERATED_WEATHER_NOT_RECONSTRUCTABLE" not in str(exc):
                 raise
@@ -207,7 +207,7 @@ class TwinCouplingEngine:
             outlet_unit=config.outlet_unit, run_type=config.run_type,
             resolution=config.output_frequency, records=result.records, hru_results=result.hru_results,
             channel_results=result.channel_results,
-            forcing=climate, forcing_source="SWAT+ direct station basin mean",
+            forcing=climate, forcing_source="SWAT+ direct weather weighted by assigned HRU areas",
             start_date=sim_run.start_date, end_date=sim_run.end_date,
             observations=observations, observation_source=observation_source),
             provenance={"code_version": sim_run.provenance["code_version"], "model": "SWAT+",

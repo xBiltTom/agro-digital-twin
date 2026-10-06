@@ -178,7 +178,36 @@ export interface SimulationValidation {
   improvement_percent?: { value?: number | null; [key: string]: unknown };
   observation_station_id?: string | null;
   baseline_diagnostic?: SwatBaselineDiagnostic;
+  meteorology_diagnostic?: SwatMeteorologyDiagnostic;
   [key: string]: unknown;
+}
+
+export interface SwatMeteorologyDiagnostic {
+  audit_id: string;
+  status: string;
+  period: string[];
+  weather_source: {
+    status: string;
+    provider: string;
+    coverage: { start: string; end: string; days_per_station: number; stations: number; daily_missing_values: number };
+    runtime_coverage: { start: string; end: string; interpolated_dates: string[]; interpolated_station_days: number };
+    source_cache_consistency: { status: string; conflicting_station_variable_years: number };
+  };
+  forcing_aggregation: {
+    hru_count: number;
+    equal_station_annual_precip_mm: number;
+    area_weighted_annual_precip_mm: number;
+    equal_minus_area_weighted_precip_mm: number;
+  };
+  annual_mm: Record<string, number>;
+  monthly: Array<{
+    month: string;
+    swat_et_mm: number;
+    swat_pet_mm: number;
+    gridmet_etr_mm: number;
+    terraclimate_aet_mm: number;
+    terraclimate_pet_mm: number;
+  }>;
 }
 
 export interface SwatBaselineDiagnostic {

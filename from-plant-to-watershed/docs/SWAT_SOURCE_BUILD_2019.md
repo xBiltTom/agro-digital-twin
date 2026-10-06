@@ -112,6 +112,9 @@ conserva PBIAS mensual **−67,297 %** y NSE negativo. El cierre de la red no
 resuelve la subestimación observada ni demuestra H1. El siguiente trabajo
 es contrastar ET/PET y procedencia meteorológica con evidencia independiente,
 revisar pérdidas y preparar calibración/evaluación temporal multianual.
+La [auditoría posterior](METEOROLOGY_DIAGNOSTIC_2019.md) completa la comparación
+externa y encuentra anomalías de lluvia/viento y cierres de año en el warm-up.
+Su siguiente paso es corregir ese forcing en una variante controlada.
 
 Evidencia versionada:
 [south_fork_source_build_2019.json](../research_domain/south_fork_source_build_2019.json).

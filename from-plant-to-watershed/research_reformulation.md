@@ -115,7 +115,13 @@ contabilidad fluvial antes del experimento A/B del paper.
 La [etapa posterior desde fuente](docs/SWAT_SOURCE_BUILD_2019.md) completó esa
 receta y recuperó el almacenamiento de llanura: red cerrada numéricamente,
 cuenca todavía parcial y métricas USGS idénticas. Antes de calibrar A/B sigue
-pendiente contrastar ET/PET, meteorología y pérdidas con evidencia independiente.
+pendiente revisar la referencia física antes de calibrar A/B.
+La [auditoría meteorológica posterior](docs/METEOROLOGY_DIAGNOSTIC_2019.md)
+reconstruye gridMET y contrasta ET/PET con productos externos. Identifica cinco
+cierres de año interpolados y discrepancias de lluvia de 2011 y viento de 2015
+en el warm-up. Estos inputs requieren una variante corregida y una comparación
+controlada antes de estudiar sensibilidad o calibrar. TerraClimate aporta ET
+modelada; su comparación no acredita validación observacional de ET ni H1.
 
 El primer estudio será una **evaluación retrospectiva multianual en South Fork
 Iowa River, USGS 05451210**. Una sola cuenca permite un estudio de caso temporal,
@@ -311,7 +317,9 @@ Base comprobada en la revisión de 2026-10-06:
 - 25 puntos meteorológicos de rejilla y 125 archivos diarios 2000–2025 de la
   copia experimental coinciden por hash con el proyecto fuente. Sus metadatos
   externos identifican gridMET; `soils.sol` coincide y el constructor identifica
-  gNATSGO/bases de referencia. Integrar ese linaje en el manifiesto científico.
+  gNATSGO/bases de referencia. La auditoría meteorológica ya integra las
+  conversiones y alertas de calendario/caché en las referencias de pglocal;
+  el linaje de suelos requiere su propia revisión.
 - CDL disponible para 2019; falta historia anual para afirmaciones de rotación.
 - El bundle corregido `phase234-sf-2019-v2` contiene 365 fechas de 2019; el LAI
   FSPM está disponible en 112 días y ausente en 253. La disponibilidad estacional

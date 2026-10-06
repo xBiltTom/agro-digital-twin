@@ -18,6 +18,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Visor | Tres escalas y estados fechados; mallas anatómicas y terreno ilustrativos/contextuales. |
 | Diagnóstico observacional | Tres variantes estándar 2019 con lectura de caudal corregida; la pareja acoplada requiere su propia comparación. |
 | Recorrido del agua | 37 cauces delineados con almacenamiento independiente de llanura y cierre numérico de red; balance de cuenca todavía parcial. |
+| Meteorología / ET | Auditoría gridMET y comparación externa 2019; detecta rellenos de calendario y discrepancias de lluvia/viento en warm-up. |
 | Descargas SWAT+ | CSV de registros y JSON con configuración, procedencia, métricas y cobertura desde Simulaciones e Informes. |
 | CMIP6 / rendimiento | Sin proyecciones CMIP6 normalizadas en el experimento publicado ni validación de rendimiento a escala HRU/cuenca. |
 
@@ -73,6 +74,17 @@ directorios independientes. La pareja definitiva reproduce las series diarias
 anteriores. Su salida independiente recupera 0,819 hm³ de cambio de llanura,
 con cierre numérico de la red y contabilidad de cuenca todavía parcial.
 Las métricas USGS siguen mostrando una referencia insuficiente; no se evaluó H1.
+
+La [auditoría meteorológica](METEOROLOGY_DIAGNOSTIC_2019.md) contrasta los mismos
+inputs con caché gridMET y nuevas descargas. En 2019 las conversiones coinciden
+dentro del redondeo; el warm-up contiene cinco cierres de año interpolados,
+192 valores de lluvia de 2011 y 328 valores de viento de 2015 distintos de la
+referencia gridMET recuperada. ET SWAT+ suma 834,971 mm frente a 683,073 mm de
+TerraClimate, que es otro modelo y no una medición. PET difiere según el producto
+de referencia; la comparación no justifica una reducción global de PET.
+Ambas corridas en pglocal tienen la auditoría completa, su revisión anterior
+conservada y sus 365 frames originales. El panel científico expone comparaciones
+y alertas; las futuras corridas agregan weather por área de HRU.
 
 ## 3. Gemelo South Fork 2019 corregido
 
@@ -141,8 +153,10 @@ tiene su propio linaje y no se registra automáticamente como reporte de H1.
 - **Dominio:** un piloto en South Fork; no validación cruzada multicuenca.
 - **Manejo:** CDL 2019 estático informa una variante experimental; no
   reconstruye rotaciones ni operaciones históricas observadas.
-- **Forcing reciente:** el bundle conserva los archivos SWAT+, pero su origen
-  meteorológico no está documentado suficientemente y se marca sin verificar.
+- **Meteorología:** la auditoría de las referencias 2019 identifica gridMET y
+  reconstruye sus conversiones; registra anomalías de calendario/caché en el
+  warm-up. Las etiquetas de procedencia de bundles anteriores se conservan;
+  los contrastes externos de ET son comparaciones entre modelos.
 - **Humedad:** estimación de zona radicular, no humedad diaria medida por capa.
   Las plantas de un calendario reciben condiciones ponderadas del grupo.
 - **Acoplamiento:** el resumen de los grupos actualiza un único registro `corn`;
@@ -157,8 +171,10 @@ tiene su propio linaje y no se registra automáticamente como reporte de H1.
 
 ## 5. Siguiente etapa de investigación
 
-1. Contrastar ET/PET y procedencia meteorológica con evidencia externa; revisar
-   pérdidas fluviales y alcance espacial del proyecto antes de calibrar.
+1. Corregir el forcing de warm-up en una variante trazable: cierres de año,
+   lluvia de 2011 y viento de 2015. Comparar contra la referencia preservada
+   bajo el mismo motor, geometría, parámetros y observaciones; después revisar
+   partición ET, pérdidas fluviales y alcance espacial antes de calibrar.
 2. Comparar baseline/acoplado con caudal consistente contra USGS, manteniendo
    proyecto, forcing, warm-up, periodo, outlet, motor y controles comunes.
 3. Extender a varios años y separar desarrollo/calibración de evaluación para
@@ -185,3 +201,8 @@ en la tarea de longitudes no se ejecutaron suites de tests.
 En la tarea posterior desde fuente se compilaron dos ejecutables idénticos,
 se ejecutaron cuatro corridas científicas en pglocal y se compiló TypeScript
 sin errores. No se ejecutaron suites de tests ni inspección visual en navegador.
+En la auditoría meteorológica se inspeccionaron las corridas existentes,
+se contrastaron productos externos y se compiló Python/TypeScript sin errores.
+Los hashes de procedencia, métricas, caudales y frames permanecieron idénticos
+después de adjuntar el diagnóstico a pglocal. No se ejecutaron nuevas simulaciones,
+suites de tests ni inspección visual en navegador.
