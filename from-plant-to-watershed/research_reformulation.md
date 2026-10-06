@@ -106,6 +106,12 @@ identificó además un error del reporte de canales artificiales y corrigió su
 lectura con volúmenes nativos. Antes de calibrar A/B se deben recuperar longitudes
 reales y comprobar el ruteo físico; cerrar conexiones y corregir la lectura
 no acredita desempeño hidrológico ni evaluación de H1.
+La [recuperación de longitudes de cauces](docs/CHANNEL_GEOMETRY_DIAGNOSTIC_2019.md)
+completó una comparación controlada de desarrollo: 212,637 km delineados,
+ruteo físico y menor volumen outlet, con NSE todavía negativo. Una copia
+diagnóstica del binario permitió underflow sin cambiar rutinas del modelo;
+se debe fijar un motor reproducible y completar la contabilidad fluvial antes
+del experimento A/B del paper.
 
 El primer estudio será una **evaluación retrospectiva multianual en South Fork
 Iowa River, USGS 05451210**. Una sola cuenca permite un estudio de caso temporal,

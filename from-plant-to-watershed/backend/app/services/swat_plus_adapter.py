@@ -177,7 +177,7 @@ _TRACEABLE_INPUT_FILES = (
     "soils.sol", "soil_plant.ini", "time.sim", "print.prt",
     "tiledrain.str", "hydrology.hyd", "codes.bsn", "rout_unit.con", "hru.con",
     "aquifer.con", "chandeg.con", "rout_unit.rtu", "ls_unit.def", "ls_unit.ele",
-    "hyd-sed-lte.cha", "channel-lte.cha", "aquifer.aqu", "object.cnt", "file.cio",
+    "hyd-sed-lte.cha", "channel-lte.cha", "nutrients.cha", "aquifer.aqu", "object.cnt", "file.cio", "parameters.bsn",
     "rout_unit.def", "rout_unit.ele",
 )
 

@@ -253,15 +253,25 @@ class TwinCouplingEngine:
             diagnostic["physical"]["balance_closure"] = (
                 f"NETWORK_{path_diagnostic['network']['status']}; CATCHMENT_PARTIAL_ACCOUNTING"
                 if path_diagnostic.get("network") else path_diagnostic.get("status", "NOT_AVAILABLE"))
-            if path_diagnostic.get("network"):
+            if path_diagnostic.get("network") and path_diagnostic.get("routing_mode") != "PHYSICAL_CHANNEL_ROUTING":
                 diagnostic["flags"].append({"code": "ARTIFICIAL_CHANNEL_NETWORK",
                     "message": "Los canales actúan como conexiones sin transformación; este balance no valida el ruteo físico de la cuenca."})
+            elif path_diagnostic.get("routing_mode") == "PHYSICAL_CHANNEL_ROUTING":
+                diagnostic["flags"].append({"code": "PHYSICAL_CHANNEL_PARTIAL_ACCOUNTING",
+                    "message": "Los cauces incluyen tránsito, almacenamiento y pérdidas. El balance es parcial: falta el almacenamiento de llanura de inundación."})
         if result.water_balance.get("channel_flow_normalization", {}).get("normalized_channel_rows", 0):
             diagnostic["flags"].append({"code": "BYPASS_CHANNEL_FLOW_NORMALIZED",
                 "message": "Caudal obtenido de hidrogramas SWAT+: se corrigió un error de reporte en canales artificiales; el valor original se conserva en la descarga."})
         elif result.water_balance.get("channel_flow_normalization", {}).get("status") == "AFFECTED_UNAVAILABLE":
             diagnostic.setdefault("flags", []).append({"code": "BYPASS_CHANNEL_FLOW_UNAVAILABLE",
                 "message": "El reporte de caudal está afectado por un error del motor. Ejecuta salidas diarias con hidrogramas para obtener una lectura trazable."})
+        intervention = (sim_run.requested_config or {}).get("development_diagnostic", {}).get("intervention") or {}
+        if intervention.get("channel_kinetics"):
+            diagnostic["flags"].append({"code": "ZERO_CHANNEL_KINETICS_DIAGNOSTIC",
+                "message": "Esta prueba cambió entradas de cinética fluvial a cero; el motor puede sustituirlas por valores predeterminados. No valida nutrientes ni calidad del agua."})
+        if (sim_run.requested_config or {}).get("development_diagnostic", {}).get("runtime_diagnostic"):
+            diagnostic["flags"].append({"code": "UNDERFLOW_RUNTIME_DIAGNOSTIC",
+                "message": "Esta corrida usa una copia diagnóstica del motor que permite underflow. Conserva las paradas ante división por cero, overflow y operaciones inválidas; requiere fijar el motor de investigación."})
         sim_run.validation = {"status": diagnostic["status"],
                               "interpretation": "DEVELOPMENT_DIAGNOSTIC_NOT_HYPOTHESIS_TEST",
                               "observation_station_id": sim_run.station_id,

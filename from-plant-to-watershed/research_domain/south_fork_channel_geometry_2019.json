@@ -1,0 +1,2766 @@
+{
+  "schema_version": "south-fork-water-path-comparison/v1",
+  "created_at": "2026-10-06T19:06:33.222183+00:00",
+  "classification": "DEVELOPMENT_DIAGNOSTIC",
+  "hypothesis_status": "NOT_EVALUATED",
+  "database": "existing local PostgreSQL digitaltwin",
+  "runs": {
+    "sf19-trace-v3-tile-routed": {
+      "status": "COMPLETED",
+      "persisted_frames": 365,
+      "observed_dataset_ids": [
+        "17f4ce03-c3c9-443b-aad5-6179e0043202"
+      ],
+      "station_id": "05451210",
+      "executable_version": "Revision 61.0.2.61",
+      "executable_sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+      "source_project_sha256": "623c8130f05b86ed4b7c339cecfde57ab7ae8a3a2d420807ac5a1f961e098eaa",
+      "effective_config": {
+        "backend": "SWAT_PLUS",
+        "run_type": "SWAT_STANDARD_BASELINE",
+        "simulation_start": "2019-01-01",
+        "simulation_end": "2019-12-31",
+        "warmup_period": 19,
+        "output_frequency": "DAILY",
+        "watershed_id": "USGS-05451210-PARTIAL",
+        "outlet_unit": "153"
+      },
+      "input_checksums": {
+        "plants.plt": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+        "plant.ini": "544e70ef716d9276d69dc87e379dedbd3e4c5188a7739cb7be07f66ce7888be8",
+        "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "management.sch": "b951aff77d5583d467b9937db67dbc5da6a3a6c271f38c22d0dac7ce4c3f2654",
+        "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+        "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+        "soil_plant.ini": "f9a8b8b16c3ecd04f766cb517749ea9c5b5fa071f0a2d45b737b500986a74aa4",
+        "time.sim": "bf051e264b75f5be8d534171c0b712ae027adcef0f868688bd436d61f7d3696d",
+        "print.prt": "4acd29029a044578dfce7b58a2430c2b982100cecda11785eec1e606513d4790",
+        "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+        "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+        "codes.bsn": "c9f009b02e21c061514fb05449d4868b3d1d0d1f347b935137348185e4f2965c",
+        "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732",
+        "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+        "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+        "chandeg.con": "c9fc10d477b032107dacef05c711985d4dce733d691eed2df6c69e58f1feb863",
+        "rout_unit.rtu": "0b49250929273cd0243f4e7030fb62de2a8fa2f5c2bb9f1038c0daf11aecf609",
+        "ls_unit.def": "28fa0e6ec3cad2f6d0962c72b5038ab1205804da9ffe3d47a755a2b7a86b4860",
+        "ls_unit.ele": "a5d8f6a1235603a80713fa44dc2cab9d0639ffd5e1c6ee660e28fb8ac40052b9",
+        "hyd-sed-lte.cha": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+        "channel-lte.cha": "37940fee6237b9a3c8e51f0bf0e30ba5bd29459ee5ff8967cd83fcec560f50e3",
+        "aquifer.aqu": "e2cf68fbacfec0b4c1bd0c2d6c4ccc9911f78a3e7331ae129a1207e371061818",
+        "object.cnt": "9a0462e24063fa6f439c54437d84facf66f6067726874c3769d550c1064050c4",
+        "file.cio": "585de9decfefebe7017e2ec41d3ddf5f1be78987f692a53902f6c584ef3078c1",
+        "rout_unit.def": "617d3a461d653d69d51e7e691462e552354c6cdb06d5bdc9f4ac93c8b80892cf",
+        "rout_unit.ele": "b7105b3832d1f75716b0f0750737dea550dee8ad35cdfb4afe11bc49884eb97e"
+      },
+      "intervention": {
+        "classification": "CONTROLLED_DRAINAGE_PROBE",
+        "file": "landuse.lum",
+        "landuse": "corn_lum",
+        "before": "null",
+        "after": "mw24_1000",
+        "before_sha256": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+        "after_sha256": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "limitation": "Drainage mask is a diagnostic intervention, not observed historical management.",
+        "routing": {
+          "file": "rout_unit.con",
+          "routing_units_changed": 36,
+          "connection": "til -> existing surface-flow sdc; fraction 1",
+          "before_sha256": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63",
+          "after_sha256": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+        }
+      },
+      "runtime_diagnostic": null,
+      "monthly": {
+        "n_pairs": 12,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 7.775936774210122,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 6.061719799738572,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.30490413943090044,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -64.16461821921966,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.49030691735816756,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.23490545580226208,
+          "reason": null
+        }
+      },
+      "coverage": {
+        "simulation_days": 365,
+        "paired_days": 365,
+        "unmatched_dates": [],
+        "estimated_days": 86,
+        "qualifiers": {
+          "A": 279,
+          "A;e": 86
+        },
+        "minimum_monthly_coverage": 0.9,
+        "aggregation": "Both monthly means use identical valid days; observations are never imputed."
+      },
+      "observed_volume_m3": 289423232.3529391,
+      "persisted_volume_m3": 103552566.93422815,
+      "water_path": {
+        "schema_version": "swat-water-path/v1",
+        "status": "DIAGNOSTIC_AVAILABLE",
+        "routing_mode": "ARTIFICIAL_BYPASS",
+        "geometry": {
+          "channel_count": 37,
+          "bypass_channel_count": 37,
+          "total_length_km": 0.0185,
+          "min_length_km": 0.0005,
+          "max_length_km": 0.0005
+        },
+        "evaluation": [
+          "2019-01-01",
+          "2019-12-31"
+        ],
+        "outlet_gis_id": "153",
+        "area_km2": 560.8882651,
+        "reference_area_km2": 580.1576,
+        "area_difference_percent": -3.3213966170571596,
+        "network": {
+          "status": "CLOSED",
+          "direct_inputs_m3": 103552566.00807779,
+          "hru_components_m3": {
+            "sur": 61612478.29610129,
+            "lat": 846755.360028881,
+            "til": 36029340.95840262
+          },
+          "aquifer_to_channel_m3": 5063991.393545,
+          "outlet_volume_m3": 103552566.93422815,
+          "reported_outlet_volume_m3": 68022830.592,
+          "reporting_difference_m3": 35529736.34222816,
+          "residual_m3": -0.9261503666639328,
+          "relative_residual": -8.943770322327762e-09,
+          "max_channel_edge_difference_m3": 0.180332999676466
+        },
+        "catchment_accounting": {
+          "status": "PARTIAL_ACCOUNTING",
+          "evaluation": [
+            "2019-01-02",
+            "2019-12-31"
+          ],
+          "precip_m3": 606217572.0205866,
+          "hru_et_m3": 468212697.05752695,
+          "aquifer_revap_m3": 11537699.1220899,
+          "outlet_m3": 103353487.43666716,
+          "soil_storage_change_m3": 1230027.9653642906,
+          "snow_storage_change_m3": -1549734.2764712998,
+          "aquifer_storage_change_m3": 23005521.151018493,
+          "routing_lag_storage_change_m3": 434688.4054524999,
+          "residual_m3": -6814.841061374929,
+          "residual_mm": -0.01215008672032017,
+          "limitation": "Canopy storage and independent unrounded state diagnostics unavailable; residual is not a full physical validation."
+        },
+        "annual_land_terms_mm": {
+          "precip": 1080.817,
+          "et": 834.971,
+          "eplant": 321.848,
+          "esoil": 491.172,
+          "ecanopy": 21.943,
+          "pet": 978.812,
+          "perc": 70.784,
+          "qtile": 64.234
+        },
+        "normalization": {
+          "status": "AVAILABLE",
+          "engine_version": "61.0.2.61",
+          "channels": {
+            "1": {
+              "name": "cha029",
+              "gis_id": "29",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "2": {
+              "name": "cha035",
+              "gis_id": "35",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "3": {
+              "name": "cha037",
+              "gis_id": "37",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "4": {
+              "name": "cha038",
+              "gis_id": "38",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "5": {
+              "name": "cha039",
+              "gis_id": "39",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "6": {
+              "name": "cha041",
+              "gis_id": "41",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "7": {
+              "name": "cha043",
+              "gis_id": "43",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "8": {
+              "name": "cha044",
+              "gis_id": "44",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "9": {
+              "name": "cha045",
+              "gis_id": "45",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "10": {
+              "name": "cha050",
+              "gis_id": "50",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "11": {
+              "name": "cha051",
+              "gis_id": "51",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "12": {
+              "name": "cha054",
+              "gis_id": "54",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "13": {
+              "name": "cha057",
+              "gis_id": "57",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "14": {
+              "name": "cha059",
+              "gis_id": "59",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "15": {
+              "name": "cha064",
+              "gis_id": "64",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "16": {
+              "name": "cha066",
+              "gis_id": "66",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "17": {
+              "name": "cha070",
+              "gis_id": "70",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "18": {
+              "name": "cha071",
+              "gis_id": "71",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "19": {
+              "name": "cha074",
+              "gis_id": "74",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "20": {
+              "name": "cha138",
+              "gis_id": "138",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "21": {
+              "name": "cha141",
+              "gis_id": "141",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "22": {
+              "name": "cha142",
+              "gis_id": "142",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "23": {
+              "name": "cha146",
+              "gis_id": "146",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "24": {
+              "name": "cha148",
+              "gis_id": "148",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "25": {
+              "name": "cha153",
+              "gis_id": "153",
+              "length_km": 0.0005,
+              "terminal": true
+            },
+            "26": {
+              "name": "cha155",
+              "gis_id": "155",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "27": {
+              "name": "cha158",
+              "gis_id": "158",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "28": {
+              "name": "cha161",
+              "gis_id": "161",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "29": {
+              "name": "cha162",
+              "gis_id": "162",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "30": {
+              "name": "cha165",
+              "gis_id": "165",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "31": {
+              "name": "cha166",
+              "gis_id": "166",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "32": {
+              "name": "cha167",
+              "gis_id": "167",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "33": {
+              "name": "cha168",
+              "gis_id": "168",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "34": {
+              "name": "cha169",
+              "gis_id": "169",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "35": {
+              "name": "cha170",
+              "gis_id": "170",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "36": {
+              "name": "cha171",
+              "gis_id": "171",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "37": {
+              "name": "cha173",
+              "gis_id": "173",
+              "length_km": 0.0005,
+              "terminal": false
+            }
+          },
+          "native_unit": "m3 per daily connection",
+          "printed_unit": "m^3/s (incorrect in this release)",
+          "normalization": "sum(fraction-applied incoming volumes) / 86400 for verified bypass channels",
+          "source": "hydin_day.txt",
+          "source_sha256": "6ba16282a8da12abef3df2d97536184d39e1eb6609fe4ac3309fef6673813305",
+          "reference": "https://github.com/swat-model/swatplus/blob/61.0.2.61/src/command.f90"
+        },
+        "input_checksums": {
+          "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+          "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732",
+          "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+          "chandeg.con": "c9fc10d477b032107dacef05c711985d4dce733d691eed2df6c69e58f1feb863",
+          "hyd-sed-lte.cha": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+          "channel-lte.cha": "37940fee6237b9a3c8e51f0bf0e30ba5bd29459ee5ff8967cd83fcec560f50e3",
+          "nutrients.cha": "ecad793efa93ad3fc3f652facbfedf1908d762fe23cf82c41213a5b6aecc50bd",
+          "codes.bsn": "c9f009b02e21c061514fb05449d4868b3d1d0d1f347b935137348185e4f2965c",
+          "parameters.bsn": "18924a6a2ae4e50b20aeb62b62484a41d8af9f1d91c16edfe5919a8f44096dac",
+          "object.cnt": "9a0462e24063fa6f439c54437d84facf66f6067726874c3769d550c1064050c4"
+        },
+        "output_checksums": {
+          "basin_wb_day.txt": "93829f0157a52f55998837da1dc17f5da673909809b93c01bd0bcbb041717a3f",
+          "hru_wb_day.txt": "3e65d6237ff97f7e00751817a8e0821bfd8126031ec8b0647e3603531a0157d6",
+          "aquifer_day.txt": "d0bead921a775f5d5fbabf5f11b4bec57b940b3fadeb0ba5245475feeb382835",
+          "hydin_day.txt": "6ba16282a8da12abef3df2d97536184d39e1eb6609fe4ac3309fef6673813305",
+          "hydout_day.txt": "9dc4619f0f91086bf577ff55266e91a7e1aa3bce4e8e0fefe6de2fcccbbc3488",
+          "channel_sd_day.txt": "ea8d273b24deadb1b7b0cd3b84dbd85fd04bdf73352f427f3ceafcbdae38e5f6"
+        },
+        "limitations": [
+          "All channels are artificial bypass objects; this does not validate physical channel routing.",
+          "Calibration and research H1 are not evaluated by a closed connection-flow balance."
+        ]
+      }
+    },
+    "sf19-geom-ctrl-v1-tile-routed": {
+      "status": "COMPLETED",
+      "persisted_frames": 365,
+      "observed_dataset_ids": [
+        "17f4ce03-c3c9-443b-aad5-6179e0043202"
+      ],
+      "station_id": "05451210",
+      "executable_version": "Revision 61.0.2.61",
+      "executable_sha256": "aa8cdbd8e05374f55f4c352dea05be265f2d751b12ea9044c9c49967b08463a2",
+      "source_project_sha256": "623c8130f05b86ed4b7c339cecfde57ab7ae8a3a2d420807ac5a1f961e098eaa",
+      "effective_config": {
+        "backend": "SWAT_PLUS",
+        "run_type": "SWAT_STANDARD_BASELINE",
+        "simulation_start": "2019-01-01",
+        "simulation_end": "2019-12-31",
+        "warmup_period": 19,
+        "output_frequency": "DAILY",
+        "watershed_id": "USGS-05451210-PARTIAL",
+        "outlet_unit": "153"
+      },
+      "input_checksums": {
+        "plants.plt": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+        "plant.ini": "544e70ef716d9276d69dc87e379dedbd3e4c5188a7739cb7be07f66ce7888be8",
+        "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "management.sch": "b951aff77d5583d467b9937db67dbc5da6a3a6c271f38c22d0dac7ce4c3f2654",
+        "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+        "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+        "soil_plant.ini": "f9a8b8b16c3ecd04f766cb517749ea9c5b5fa071f0a2d45b737b500986a74aa4",
+        "time.sim": "bf051e264b75f5be8d534171c0b712ae027adcef0f868688bd436d61f7d3696d",
+        "print.prt": "4acd29029a044578dfce7b58a2430c2b982100cecda11785eec1e606513d4790",
+        "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+        "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+        "codes.bsn": "c9f009b02e21c061514fb05449d4868b3d1d0d1f347b935137348185e4f2965c",
+        "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732",
+        "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+        "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+        "chandeg.con": "c9fc10d477b032107dacef05c711985d4dce733d691eed2df6c69e58f1feb863",
+        "rout_unit.rtu": "0b49250929273cd0243f4e7030fb62de2a8fa2f5c2bb9f1038c0daf11aecf609",
+        "ls_unit.def": "28fa0e6ec3cad2f6d0962c72b5038ab1205804da9ffe3d47a755a2b7a86b4860",
+        "ls_unit.ele": "a5d8f6a1235603a80713fa44dc2cab9d0639ffd5e1c6ee660e28fb8ac40052b9",
+        "hyd-sed-lte.cha": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+        "channel-lte.cha": "37940fee6237b9a3c8e51f0bf0e30ba5bd29459ee5ff8967cd83fcec560f50e3",
+        "nutrients.cha": "ecad793efa93ad3fc3f652facbfedf1908d762fe23cf82c41213a5b6aecc50bd",
+        "aquifer.aqu": "e2cf68fbacfec0b4c1bd0c2d6c4ccc9911f78a3e7331ae129a1207e371061818",
+        "object.cnt": "9a0462e24063fa6f439c54437d84facf66f6067726874c3769d550c1064050c4",
+        "file.cio": "585de9decfefebe7017e2ec41d3ddf5f1be78987f692a53902f6c584ef3078c1",
+        "parameters.bsn": "18924a6a2ae4e50b20aeb62b62484a41d8af9f1d91c16edfe5919a8f44096dac",
+        "rout_unit.def": "617d3a461d653d69d51e7e691462e552354c6cdb06d5bdc9f4ac93c8b80892cf",
+        "rout_unit.ele": "b7105b3832d1f75716b0f0750737dea550dee8ad35cdfb4afe11bc49884eb97e"
+      },
+      "intervention": {
+        "classification": "CONTROLLED_DRAINAGE_PROBE",
+        "file": "landuse.lum",
+        "landuse": "corn_lum",
+        "before": "null",
+        "after": "mw24_1000",
+        "before_sha256": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+        "after_sha256": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "limitation": "Drainage mask is a diagnostic intervention, not observed historical management.",
+        "routing": {
+          "file": "rout_unit.con",
+          "routing_units_changed": 36,
+          "connection": "til -> existing surface-flow sdc; fraction 1",
+          "before_sha256": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63",
+          "after_sha256": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+        }
+      },
+      "runtime_diagnostic": {
+        "classification": "UNDERFLOW_RUNTIME_DIAGNOSTIC",
+        "official_release": false,
+        "source_executable": "/home/bilton/.swatplus_builder/engines/61.0.2.61/swatplus-61.0.2.61-gnu-lin_x86_64-Rel",
+        "source_sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+        "executable": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/backend/data/baseline-diagnostic-geometry-control-v1/engine/swatplus-61.0.2.61-underflow-diagnostic",
+        "executable_sha256": "aa8cdbd8e05374f55f4c352dea05be265f2d751b12ea9044c9c49967b08463a2",
+        "changed_byte_offset": 4614363,
+        "before_byte": 29,
+        "after_byte": 13,
+        "runtime_call": "main -> _gfortran_set_fpe",
+        "traps_before": [
+          "invalid",
+          "zero",
+          "overflow",
+          "underflow"
+        ],
+        "traps_after": [
+          "invalid",
+          "zero",
+          "overflow"
+        ],
+        "model_routines_changed": false,
+        "limitation": "Derived diagnostic executable; production/research engine selection requires a reproducible source build or an official release with this runtime policy.",
+        "reference": "https://gcc.gnu.org/onlinedocs/gfortran/_005fgfortran_005fset_005ffpe.html"
+      },
+      "monthly": {
+        "n_pairs": 12,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 7.775936774210122,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 6.061719799738572,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.30490413943090044,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -64.16461821921966,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.49030691735816756,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.23490545580226208,
+          "reason": null
+        }
+      },
+      "coverage": {
+        "simulation_days": 365,
+        "paired_days": 365,
+        "unmatched_dates": [],
+        "estimated_days": 86,
+        "qualifiers": {
+          "A": 279,
+          "A;e": 86
+        },
+        "minimum_monthly_coverage": 0.9,
+        "aggregation": "Both monthly means use identical valid days; observations are never imputed."
+      },
+      "observed_volume_m3": 289423232.3529391,
+      "persisted_volume_m3": 103552566.93422815,
+      "water_path": {
+        "schema_version": "swat-water-path/v1",
+        "status": "DIAGNOSTIC_AVAILABLE",
+        "routing_mode": "ARTIFICIAL_BYPASS",
+        "geometry": {
+          "channel_count": 37,
+          "bypass_channel_count": 37,
+          "total_length_km": 0.0185,
+          "min_length_km": 0.0005,
+          "max_length_km": 0.0005
+        },
+        "evaluation": [
+          "2019-01-01",
+          "2019-12-31"
+        ],
+        "outlet_gis_id": "153",
+        "area_km2": 560.8882651,
+        "reference_area_km2": 580.1576,
+        "area_difference_percent": -3.3213966170571596,
+        "network": {
+          "status": "CLOSED",
+          "direct_inputs_m3": 103552566.00807779,
+          "hru_components_m3": {
+            "sur": 61612478.29610129,
+            "lat": 846755.360028881,
+            "til": 36029340.95840262
+          },
+          "aquifer_to_channel_m3": 5063991.393545,
+          "outlet_volume_m3": 103552566.93422815,
+          "reported_outlet_volume_m3": 68022830.592,
+          "reporting_difference_m3": 35529736.34222816,
+          "residual_m3": -0.9261503666639328,
+          "relative_residual": -8.943770322327762e-09,
+          "max_channel_edge_difference_m3": 0.180332999676466
+        },
+        "catchment_accounting": {
+          "status": "PARTIAL_ACCOUNTING",
+          "evaluation": [
+            "2019-01-02",
+            "2019-12-31"
+          ],
+          "precip_m3": 606217572.0205866,
+          "hru_et_m3": 468212697.05752695,
+          "aquifer_revap_m3": 11537699.1220899,
+          "outlet_m3": 103353487.43666716,
+          "soil_storage_change_m3": 1230027.9653642906,
+          "snow_storage_change_m3": -1549734.2764712998,
+          "aquifer_storage_change_m3": 23005521.151018493,
+          "routing_lag_storage_change_m3": 434688.4054524999,
+          "residual_m3": -6814.841061374929,
+          "residual_mm": -0.01215008672032017,
+          "limitation": "Canopy storage and independent unrounded state diagnostics unavailable; residual is not a full physical validation."
+        },
+        "annual_land_terms_mm": {
+          "precip": 1080.817,
+          "et": 834.971,
+          "eplant": 321.848,
+          "esoil": 491.172,
+          "ecanopy": 21.943,
+          "pet": 978.812,
+          "perc": 70.784,
+          "qtile": 64.234
+        },
+        "normalization": {
+          "status": "AVAILABLE",
+          "engine_version": "61.0.2.61",
+          "channels": {
+            "1": {
+              "name": "cha029",
+              "gis_id": "29",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "2": {
+              "name": "cha035",
+              "gis_id": "35",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "3": {
+              "name": "cha037",
+              "gis_id": "37",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "4": {
+              "name": "cha038",
+              "gis_id": "38",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "5": {
+              "name": "cha039",
+              "gis_id": "39",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "6": {
+              "name": "cha041",
+              "gis_id": "41",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "7": {
+              "name": "cha043",
+              "gis_id": "43",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "8": {
+              "name": "cha044",
+              "gis_id": "44",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "9": {
+              "name": "cha045",
+              "gis_id": "45",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "10": {
+              "name": "cha050",
+              "gis_id": "50",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "11": {
+              "name": "cha051",
+              "gis_id": "51",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "12": {
+              "name": "cha054",
+              "gis_id": "54",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "13": {
+              "name": "cha057",
+              "gis_id": "57",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "14": {
+              "name": "cha059",
+              "gis_id": "59",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "15": {
+              "name": "cha064",
+              "gis_id": "64",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "16": {
+              "name": "cha066",
+              "gis_id": "66",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "17": {
+              "name": "cha070",
+              "gis_id": "70",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "18": {
+              "name": "cha071",
+              "gis_id": "71",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "19": {
+              "name": "cha074",
+              "gis_id": "74",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "20": {
+              "name": "cha138",
+              "gis_id": "138",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "21": {
+              "name": "cha141",
+              "gis_id": "141",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "22": {
+              "name": "cha142",
+              "gis_id": "142",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "23": {
+              "name": "cha146",
+              "gis_id": "146",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "24": {
+              "name": "cha148",
+              "gis_id": "148",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "25": {
+              "name": "cha153",
+              "gis_id": "153",
+              "length_km": 0.0005,
+              "terminal": true
+            },
+            "26": {
+              "name": "cha155",
+              "gis_id": "155",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "27": {
+              "name": "cha158",
+              "gis_id": "158",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "28": {
+              "name": "cha161",
+              "gis_id": "161",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "29": {
+              "name": "cha162",
+              "gis_id": "162",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "30": {
+              "name": "cha165",
+              "gis_id": "165",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "31": {
+              "name": "cha166",
+              "gis_id": "166",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "32": {
+              "name": "cha167",
+              "gis_id": "167",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "33": {
+              "name": "cha168",
+              "gis_id": "168",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "34": {
+              "name": "cha169",
+              "gis_id": "169",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "35": {
+              "name": "cha170",
+              "gis_id": "170",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "36": {
+              "name": "cha171",
+              "gis_id": "171",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "37": {
+              "name": "cha173",
+              "gis_id": "173",
+              "length_km": 0.0005,
+              "terminal": false
+            }
+          },
+          "native_unit": "m3 per daily connection",
+          "printed_unit": "m^3/s (incorrect in this release)",
+          "normalization": "sum(fraction-applied incoming volumes) / 86400 for verified bypass channels",
+          "source": "hydin_day.txt",
+          "source_sha256": "6ba16282a8da12abef3df2d97536184d39e1eb6609fe4ac3309fef6673813305",
+          "reference": "https://github.com/swat-model/swatplus/blob/61.0.2.61/src/command.f90"
+        },
+        "input_checksums": {
+          "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+          "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732",
+          "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+          "chandeg.con": "c9fc10d477b032107dacef05c711985d4dce733d691eed2df6c69e58f1feb863",
+          "hyd-sed-lte.cha": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+          "channel-lte.cha": "37940fee6237b9a3c8e51f0bf0e30ba5bd29459ee5ff8967cd83fcec560f50e3",
+          "nutrients.cha": "ecad793efa93ad3fc3f652facbfedf1908d762fe23cf82c41213a5b6aecc50bd",
+          "codes.bsn": "c9f009b02e21c061514fb05449d4868b3d1d0d1f347b935137348185e4f2965c",
+          "parameters.bsn": "18924a6a2ae4e50b20aeb62b62484a41d8af9f1d91c16edfe5919a8f44096dac",
+          "object.cnt": "9a0462e24063fa6f439c54437d84facf66f6067726874c3769d550c1064050c4"
+        },
+        "output_checksums": {
+          "basin_wb_day.txt": "93829f0157a52f55998837da1dc17f5da673909809b93c01bd0bcbb041717a3f",
+          "hru_wb_day.txt": "3e65d6237ff97f7e00751817a8e0821bfd8126031ec8b0647e3603531a0157d6",
+          "aquifer_day.txt": "d0bead921a775f5d5fbabf5f11b4bec57b940b3fadeb0ba5245475feeb382835",
+          "hydin_day.txt": "6ba16282a8da12abef3df2d97536184d39e1eb6609fe4ac3309fef6673813305",
+          "hydout_day.txt": "9dc4619f0f91086bf577ff55266e91a7e1aa3bce4e8e0fefe6de2fcccbbc3488",
+          "channel_sd_day.txt": "ea8d273b24deadb1b7b0cd3b84dbd85fd04bdf73352f427f3ceafcbdae38e5f6"
+        },
+        "limitations": [
+          "All channels are artificial bypass objects; this does not validate physical channel routing.",
+          "Calibration and research H1 are not evaluated by a closed connection-flow balance."
+        ]
+      }
+    },
+    "sf19-geom-v3-geom-routed": {
+      "status": "COMPLETED",
+      "persisted_frames": 365,
+      "observed_dataset_ids": [
+        "17f4ce03-c3c9-443b-aad5-6179e0043202"
+      ],
+      "station_id": "05451210",
+      "executable_version": "Revision 61.0.2.61",
+      "executable_sha256": "aa8cdbd8e05374f55f4c352dea05be265f2d751b12ea9044c9c49967b08463a2",
+      "source_project_sha256": "623c8130f05b86ed4b7c339cecfde57ab7ae8a3a2d420807ac5a1f961e098eaa",
+      "effective_config": {
+        "backend": "SWAT_PLUS",
+        "run_type": "SWAT_STANDARD_BASELINE",
+        "simulation_start": "2019-01-01",
+        "simulation_end": "2019-12-31",
+        "warmup_period": 19,
+        "output_frequency": "DAILY",
+        "watershed_id": "USGS-05451210-PARTIAL",
+        "outlet_unit": "153"
+      },
+      "input_checksums": {
+        "plants.plt": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+        "plant.ini": "544e70ef716d9276d69dc87e379dedbd3e4c5188a7739cb7be07f66ce7888be8",
+        "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "management.sch": "b951aff77d5583d467b9937db67dbc5da6a3a6c271f38c22d0dac7ce4c3f2654",
+        "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+        "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+        "soil_plant.ini": "f9a8b8b16c3ecd04f766cb517749ea9c5b5fa071f0a2d45b737b500986a74aa4",
+        "time.sim": "bf051e264b75f5be8d534171c0b712ae027adcef0f868688bd436d61f7d3696d",
+        "print.prt": "4acd29029a044578dfce7b58a2430c2b982100cecda11785eec1e606513d4790",
+        "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+        "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+        "codes.bsn": "c9f009b02e21c061514fb05449d4868b3d1d0d1f347b935137348185e4f2965c",
+        "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732",
+        "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+        "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+        "chandeg.con": "c9fc10d477b032107dacef05c711985d4dce733d691eed2df6c69e58f1feb863",
+        "rout_unit.rtu": "0b49250929273cd0243f4e7030fb62de2a8fa2f5c2bb9f1038c0daf11aecf609",
+        "ls_unit.def": "28fa0e6ec3cad2f6d0962c72b5038ab1205804da9ffe3d47a755a2b7a86b4860",
+        "ls_unit.ele": "a5d8f6a1235603a80713fa44dc2cab9d0639ffd5e1c6ee660e28fb8ac40052b9",
+        "hyd-sed-lte.cha": "7e6e3afccbe93a7b7b54a6cfd1b131541319874fc5f83e545f24d0ebc84eda36",
+        "channel-lte.cha": "37940fee6237b9a3c8e51f0bf0e30ba5bd29459ee5ff8967cd83fcec560f50e3",
+        "nutrients.cha": "ecad793efa93ad3fc3f652facbfedf1908d762fe23cf82c41213a5b6aecc50bd",
+        "aquifer.aqu": "e2cf68fbacfec0b4c1bd0c2d6c4ccc9911f78a3e7331ae129a1207e371061818",
+        "object.cnt": "9a0462e24063fa6f439c54437d84facf66f6067726874c3769d550c1064050c4",
+        "file.cio": "585de9decfefebe7017e2ec41d3ddf5f1be78987f692a53902f6c584ef3078c1",
+        "parameters.bsn": "18924a6a2ae4e50b20aeb62b62484a41d8af9f1d91c16edfe5919a8f44096dac",
+        "rout_unit.def": "617d3a461d653d69d51e7e691462e552354c6cdb06d5bdc9f4ac93c8b80892cf",
+        "rout_unit.ele": "b7105b3832d1f75716b0f0750737dea550dee8ad35cdfb4afe11bc49884eb97e"
+      },
+      "intervention": {
+        "classification": "CONTROLLED_DRAINAGE_PROBE",
+        "file": "landuse.lum",
+        "landuse": "corn_lum",
+        "before": "null",
+        "after": "mw24_1000",
+        "before_sha256": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+        "after_sha256": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "limitation": "Drainage mask is a diagnostic intervention, not observed historical management.",
+        "routing": {
+          "file": "rout_unit.con",
+          "routing_units_changed": 36,
+          "connection": "til -> existing surface-flow sdc; fraction 1",
+          "before_sha256": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63",
+          "after_sha256": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+        },
+        "channel_geometry": {
+          "classification": "CONTROLLED_CHANNEL_LENGTH_PROBE",
+          "file": "hyd-sed-lte.cha",
+          "changed_fields": [
+            "len"
+          ],
+          "before_sha256": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+          "after_sha256": "7e6e3afccbe93a7b7b54a6cfd1b131541319874fc5f83e545f24d0ebc84eda36",
+          "source": {
+            "channels": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/delin/shapes/channels.gpkg",
+            "channels_sha256": "c5afe7ec73c977afcd46eb43d6fe0bc4e8a48efa3d79a4f82295922b25f904d4",
+            "routing_graph": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/delin/routing_graph.graphml",
+            "routing_graph_sha256": "5c56a4bef907009fd1f81df4508a48e381673d9178b51a963100191946bd3d1a",
+            "crs": "EPSG:5070",
+            "attribute": "length_m",
+            "conversion": "metres / 1000 -> kilometres",
+            "geometry_check": "2D polyline length agrees within 0.01 m"
+          },
+          "channel_count": 37,
+          "edge_count": 36,
+          "terminal_gis_id": "153",
+          "total_length_km": 212.63707,
+          "min_length_km": 0.58204,
+          "max_length_km": 29.5296,
+          "channels": [
+            {
+              "unit": "1",
+              "gis_id": "29",
+              "parameter": "hydcha029",
+              "before_length_km": 0.0005,
+              "after_length_km": 1.9036199999999999,
+              "length_m": 1903.62,
+              "slope_m_m": 0.0001,
+              "width_m": 13.33,
+              "depth_m": 0.617,
+              "geometry_length_m": 1903.620012326288
+            },
+            {
+              "unit": "2",
+              "gis_id": "35",
+              "parameter": "hydcha035",
+              "before_length_km": 0.0005,
+              "after_length_km": 3.36358,
+              "length_m": 3363.58,
+              "slope_m_m": 0.0010225225911408076,
+              "width_m": 21.51,
+              "depth_m": 0.848,
+              "geometry_length_m": 3363.5811485989966
+            },
+            {
+              "unit": "3",
+              "gis_id": "37",
+              "parameter": "hydcha037",
+              "before_length_km": 0.0005,
+              "after_length_km": 1.60267,
+              "length_m": 1602.67,
+              "slope_m_m": 0.0036935171597923164,
+              "width_m": 10.38,
+              "depth_m": 0.522,
+              "geometry_length_m": 1602.6737529208474
+            },
+            {
+              "unit": "4",
+              "gis_id": "38",
+              "parameter": "hydcha038",
+              "before_length_km": 0.0005,
+              "after_length_km": 3.2035500000000003,
+              "length_m": 3203.55,
+              "slope_m_m": 0.0002657624287166613,
+              "width_m": 16.41,
+              "depth_m": 0.708,
+              "geometry_length_m": 3203.5545882693164
+            },
+            {
+              "unit": "5",
+              "gis_id": "39",
+              "parameter": "hydcha039",
+              "before_length_km": 0.0005,
+              "after_length_km": 0.58204,
+              "length_m": 582.04,
+              "slope_m_m": 0.0001,
+              "width_m": 7.955,
+              "depth_m": 0.437,
+              "geometry_length_m": 582.0430067813055
+            },
+            {
+              "unit": "6",
+              "gis_id": "41",
+              "parameter": "hydcha041",
+              "before_length_km": 0.0005,
+              "after_length_km": 1.38248,
+              "length_m": 1382.48,
+              "slope_m_m": 0.0011964308847369975,
+              "width_m": 7.955,
+              "depth_m": 0.437,
+              "geometry_length_m": 1382.4834244562542
+            },
+            {
+              "unit": "7",
+              "gis_id": "43",
+              "parameter": "hydcha043",
+              "before_length_km": 0.0005,
+              "after_length_km": 6.48459,
+              "length_m": 6484.59,
+              "slope_m_m": 0.0017033111953323869,
+              "width_m": 34.575,
+              "depth_m": 1.164,
+              "geometry_length_m": 6484.586888356174
+            },
+            {
+              "unit": "8",
+              "gis_id": "44",
+              "parameter": "hydcha044",
+              "before_length_km": 0.0005,
+              "after_length_km": 6.636699999999999,
+              "length_m": 6636.7,
+              "slope_m_m": 0.0009920786497807782,
+              "width_m": 10.38,
+              "depth_m": 0.522,
+              "geometry_length_m": 6636.699127619392
+            },
+            {
+              "unit": "9",
+              "gis_id": "45",
+              "parameter": "hydcha045",
+              "before_length_km": 0.0005,
+              "after_length_km": 2.70585,
+              "length_m": 2705.85,
+              "slope_m_m": 0.0010692279249991386,
+              "width_m": 10.204,
+              "depth_m": 0.516,
+              "geometry_length_m": 2705.8533475734566
+            },
+            {
+              "unit": "10",
+              "gis_id": "50",
+              "parameter": "hydcha050",
+              "before_length_km": 0.0005,
+              "after_length_km": 3.66199,
+              "length_m": 3661.99,
+              "slope_m_m": 0.0012489191034321964,
+              "width_m": 10.204,
+              "depth_m": 0.516,
+              "geometry_length_m": 3661.991839656963
+            },
+            {
+              "unit": "11",
+              "gis_id": "51",
+              "parameter": "hydcha051",
+              "before_length_km": 0.0005,
+              "after_length_km": 2.0820100000000004,
+              "length_m": 2082.01,
+              "slope_m_m": 0.0037208392483403592,
+              "width_m": 36.556,
+              "depth_m": 1.208,
+              "geometry_length_m": 2082.010783137085
+            },
+            {
+              "unit": "12",
+              "gis_id": "54",
+              "parameter": "hydcha054",
+              "before_length_km": 0.0005,
+              "after_length_km": 2.77035,
+              "length_m": 2770.35,
+              "slope_m_m": 0.002278162483982119,
+              "width_m": 31.584,
+              "depth_m": 1.096,
+              "geometry_length_m": 2770.345601628878
+            },
+            {
+              "unit": "13",
+              "gis_id": "57",
+              "parameter": "hydcha057",
+              "before_length_km": 0.0005,
+              "after_length_km": 3.40538,
+              "length_m": 3405.38,
+              "slope_m_m": 0.004434279967126473,
+              "width_m": 38.976,
+              "depth_m": 1.261,
+              "geometry_length_m": 3405.380706253601
+            },
+            {
+              "unit": "14",
+              "gis_id": "59",
+              "parameter": "hydcha059",
+              "before_length_km": 0.0005,
+              "after_length_km": 11.31066,
+              "length_m": 11310.66,
+              "slope_m_m": 0.0007048877276640898,
+              "width_m": 17.107,
+              "depth_m": 0.728,
+              "geometry_length_m": 11310.664741576535
+            },
+            {
+              "unit": "15",
+              "gis_id": "64",
+              "parameter": "hydcha064",
+              "before_length_km": 0.0005,
+              "after_length_km": 6.20961,
+              "length_m": 6209.61,
+              "slope_m_m": 0.001457390999218345,
+              "width_m": 22.992,
+              "depth_m": 0.887,
+              "geometry_length_m": 6209.61154447219
+            },
+            {
+              "unit": "16",
+              "gis_id": "66",
+              "parameter": "hydcha066",
+              "before_length_km": 0.0005,
+              "after_length_km": 4.19463,
+              "length_m": 4194.63,
+              "slope_m_m": 0.0007933359866513472,
+              "width_m": 9.432,
+              "depth_m": 0.49,
+              "geometry_length_m": 4194.628583739812
+            },
+            {
+              "unit": "17",
+              "gis_id": "70",
+              "parameter": "hydcha070",
+              "before_length_km": 0.0005,
+              "after_length_km": 3.1834000000000002,
+              "length_m": 3183.4,
+              "slope_m_m": 0.0007219428170108829,
+              "width_m": 9.432,
+              "depth_m": 0.49,
+              "geometry_length_m": 3183.3974602160147
+            },
+            {
+              "unit": "18",
+              "gis_id": "71",
+              "parameter": "hydcha071",
+              "before_length_km": 0.0005,
+              "after_length_km": 4.52872,
+              "length_m": 4528.72,
+              "slope_m_m": 0.001677763827651612,
+              "width_m": 19.807,
+              "depth_m": 0.803,
+              "geometry_length_m": 4528.717428960352
+            },
+            {
+              "unit": "19",
+              "gis_id": "74",
+              "parameter": "hydcha074",
+              "before_length_km": 0.0005,
+              "after_length_km": 6.55594,
+              "length_m": 6555.94,
+              "slope_m_m": 0.0016425941600765942,
+              "width_m": 25.423,
+              "depth_m": 0.948,
+              "geometry_length_m": 6555.943196680107
+            },
+            {
+              "unit": "20",
+              "gis_id": "138",
+              "parameter": "hydcha138",
+              "before_length_km": 0.0005,
+              "after_length_km": 24.87876,
+              "length_m": 24878.76,
+              "slope_m_m": 0.0015654345295758804,
+              "width_m": 58.015,
+              "depth_m": 1.644,
+              "geometry_length_m": 24878.760433996613
+            },
+            {
+              "unit": "21",
+              "gis_id": "141",
+              "parameter": "hydcha141",
+              "before_length_km": 0.0005,
+              "after_length_km": 4.0526599999999995,
+              "length_m": 4052.66,
+              "slope_m_m": 0.0012458840035001815,
+              "width_m": 22.992,
+              "depth_m": 0.887,
+              "geometry_length_m": 4052.658617866855
+            },
+            {
+              "unit": "22",
+              "gis_id": "142",
+              "parameter": "hydcha142",
+              "before_length_km": 0.0005,
+              "after_length_km": 6.254689999999999,
+              "length_m": 6254.69,
+              "slope_m_m": 0.0012950114231156014,
+              "width_m": 17.107,
+              "depth_m": 0.728,
+              "geometry_length_m": 6254.689321251848
+            },
+            {
+              "unit": "23",
+              "gis_id": "146",
+              "parameter": "hydcha146",
+              "before_length_km": 0.0005,
+              "after_length_km": 0.737,
+              "length_m": 737.0,
+              "slope_m_m": 0.0018644517230962598,
+              "width_m": 19.807,
+              "depth_m": 0.803,
+              "geometry_length_m": 736.9984304161975
+            },
+            {
+              "unit": "24",
+              "gis_id": "148",
+              "parameter": "hydcha148",
+              "before_length_km": 0.0005,
+              "after_length_km": 3.35925,
+              "length_m": 3359.25,
+              "slope_m_m": 0.0007730607353994703,
+              "width_m": 25.423,
+              "depth_m": 0.948,
+              "geometry_length_m": 3359.2526626784693
+            },
+            {
+              "unit": "25",
+              "gis_id": "153",
+              "parameter": "hydcha153",
+              "before_length_km": 0.0005,
+              "after_length_km": 8.98534,
+              "length_m": 8985.34,
+              "slope_m_m": 0.0009876126146433155,
+              "width_m": 70.425,
+              "depth_m": 1.871,
+              "geometry_length_m": 8985.335898821073
+            },
+            {
+              "unit": "26",
+              "gis_id": "155",
+              "parameter": "hydcha155",
+              "before_length_km": 0.0005,
+              "after_length_km": 29.5296,
+              "length_m": 29529.6,
+              "slope_m_m": 0.001207736337345092,
+              "width_m": 58.015,
+              "depth_m": 1.644,
+              "geometry_length_m": 29529.598316807434
+            },
+            {
+              "unit": "27",
+              "gis_id": "158",
+              "parameter": "hydcha158",
+              "before_length_km": 0.0005,
+              "after_length_km": 4.61559,
+              "length_m": 4615.59,
+              "slope_m_m": 0.0005528340461180108,
+              "width_m": 34.575,
+              "depth_m": 1.164,
+              "geometry_length_m": 4615.594763392941
+            },
+            {
+              "unit": "28",
+              "gis_id": "161",
+              "parameter": "hydcha161",
+              "before_length_km": 0.0005,
+              "after_length_km": 7.43924,
+              "length_m": 7439.24,
+              "slope_m_m": 0.0006894479723189651,
+              "width_m": 38.976,
+              "depth_m": 1.261,
+              "geometry_length_m": 7439.240078888176
+            },
+            {
+              "unit": "29",
+              "gis_id": "162",
+              "parameter": "hydcha162",
+              "before_length_km": 0.0005,
+              "after_length_km": 3.57511,
+              "length_m": 3575.11,
+              "slope_m_m": 0.000690716733409664,
+              "width_m": 29.889,
+              "depth_m": 1.057,
+              "geometry_length_m": 3575.11450522361
+            },
+            {
+              "unit": "30",
+              "gis_id": "165",
+              "parameter": "hydcha165",
+              "before_length_km": 0.0005,
+              "after_length_km": 1.63656,
+              "length_m": 1636.56,
+              "slope_m_m": 0.0001,
+              "width_m": 31.584,
+              "depth_m": 1.096,
+              "geometry_length_m": 1636.5589895101662
+            },
+            {
+              "unit": "31",
+              "gis_id": "166",
+              "parameter": "hydcha166",
+              "before_length_km": 0.0005,
+              "after_length_km": 4.38959,
+              "length_m": 4389.59,
+              "slope_m_m": 0.0012922184499113577,
+              "width_m": 13.33,
+              "depth_m": 0.617,
+              "geometry_length_m": 4389.59064745677
+            },
+            {
+              "unit": "32",
+              "gis_id": "167",
+              "parameter": "hydcha167",
+              "before_length_km": 0.0005,
+              "after_length_km": 7.97157,
+              "length_m": 7971.57,
+              "slope_m_m": 0.0006603344979505848,
+              "width_m": 36.556,
+              "depth_m": 1.208,
+              "geometry_length_m": 7971.56920694943
+            },
+            {
+              "unit": "33",
+              "gis_id": "168",
+              "parameter": "hydcha168",
+              "before_length_km": 0.0005,
+              "after_length_km": 3.93338,
+              "length_m": 3933.38,
+              "slope_m_m": 0.0006931939459508738,
+              "width_m": 24.543,
+              "depth_m": 0.926,
+              "geometry_length_m": 3933.3813483940917
+            },
+            {
+              "unit": "34",
+              "gis_id": "169",
+              "parameter": "hydcha169",
+              "before_length_km": 0.0005,
+              "after_length_km": 5.21093,
+              "length_m": 5210.93,
+              "slope_m_m": 0.0004260015314263826,
+              "width_m": 29.889,
+              "depth_m": 1.057,
+              "geometry_length_m": 5210.930843959341
+            },
+            {
+              "unit": "35",
+              "gis_id": "170",
+              "parameter": "hydcha170",
+              "before_length_km": 0.0005,
+              "after_length_km": 15.458120000000001,
+              "length_m": 15458.12,
+              "slope_m_m": 0.0006616225840418079,
+              "width_m": 21.51,
+              "depth_m": 0.848,
+              "geometry_length_m": 15458.115014940922
+            },
+            {
+              "unit": "36",
+              "gis_id": "171",
+              "parameter": "hydcha171",
+              "before_length_km": 0.0005,
+              "after_length_km": 2.19084,
+              "length_m": 2190.84,
+              "slope_m_m": 0.00018736737660412215,
+              "width_m": 16.41,
+              "depth_m": 0.708,
+              "geometry_length_m": 2190.8381631954253
+            },
+            {
+              "unit": "37",
+              "gis_id": "173",
+              "parameter": "hydcha173",
+              "before_length_km": 0.0005,
+              "after_length_km": 2.6510700000000003,
+              "length_m": 2651.07,
+              "slope_m_m": 0.0004364855105966425,
+              "width_m": 24.543,
+              "depth_m": 0.926,
+              "geometry_length_m": 2651.068332156457
+            }
+          ],
+          "limitations": [
+            "Lengths come from DEM delineation, not a field survey.",
+            "Existing derived width/depth/slope and uncalibrated hydraulic parameters remain model assumptions.",
+            "This intervention is development evidence, not a test of H1."
+          ]
+        }
+      },
+      "runtime_diagnostic": {
+        "classification": "UNDERFLOW_RUNTIME_DIAGNOSTIC",
+        "official_release": false,
+        "source_executable": "/home/bilton/.swatplus_builder/engines/61.0.2.61/swatplus-61.0.2.61-gnu-lin_x86_64-Rel",
+        "source_sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+        "executable": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/backend/data/baseline-diagnostic-geometry-v3/engine/swatplus-61.0.2.61-underflow-diagnostic",
+        "executable_sha256": "aa8cdbd8e05374f55f4c352dea05be265f2d751b12ea9044c9c49967b08463a2",
+        "changed_byte_offset": 4614363,
+        "before_byte": 29,
+        "after_byte": 13,
+        "runtime_call": "main -> _gfortran_set_fpe",
+        "traps_before": [
+          "invalid",
+          "zero",
+          "overflow",
+          "underflow"
+        ],
+        "traps_after": [
+          "invalid",
+          "zero",
+          "overflow"
+        ],
+        "model_routines_changed": false,
+        "limitation": "Derived diagnostic executable; production/research engine selection requires a reproducible source build or an official release with this runtime policy.",
+        "reference": "https://gcc.gnu.org/onlinedocs/gfortran/_005fgfortran_005fset_005ffpe.html"
+      },
+      "monthly": {
+        "n_pairs": 12,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 8.080961988612698,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 6.282271857477742,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.4092865115120856,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -67.2965315039476,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.49131485966531485,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.22699865247099715,
+          "reason": null
+        }
+      },
+      "coverage": {
+        "simulation_days": 365,
+        "paired_days": 365,
+        "unmatched_dates": [],
+        "estimated_days": 86,
+        "qualifiers": {
+          "A": 279,
+          "A;e": 86
+        },
+        "minimum_monthly_coverage": 0.9,
+        "aggregation": "Both monthly means use identical valid days; observations are never imputed."
+      },
+      "observed_volume_m3": 289423232.3529391,
+      "persisted_volume_m3": 94460193.792,
+      "water_path": {
+        "schema_version": "swat-water-path/v2",
+        "status": "DIAGNOSTIC_AVAILABLE",
+        "routing_mode": "PHYSICAL_CHANNEL_ROUTING",
+        "geometry": {
+          "channel_count": 37,
+          "bypass_channel_count": 0,
+          "total_length_km": 212.63707,
+          "min_length_km": 0.58204,
+          "max_length_km": 29.5296
+        },
+        "evaluation": [
+          "2019-01-01",
+          "2019-12-31"
+        ],
+        "outlet_gis_id": "153",
+        "area_km2": 560.8882651,
+        "reference_area_km2": 580.1576,
+        "area_difference_percent": -3.3213966170571596,
+        "network": {
+          "status": "PARTIAL_ACCOUNTING",
+          "direct_inputs_m3": 103552566.00807779,
+          "hru_components_m3": {
+            "sur": 61612478.29610129,
+            "lat": 846755.360028881,
+            "til": 36029340.95840262
+          },
+          "aquifer_to_channel_m3": 5063991.393545,
+          "outlet_volume_m3": 94460193.792,
+          "reported_outlet_volume_m3": 94460193.792,
+          "reporting_difference_m3": 0.0,
+          "residual_m3": 817249.5369043614,
+          "relative_residual": 0.007907324314863785,
+          "max_channel_edge_difference_m3": 431.74999999976717,
+          "evaluation": [
+            "2019-01-02",
+            "2019-12-31"
+          ],
+          "direct_inputs_window_m3": 103353486.50973345,
+          "outlet_window_m3": 92711457.792,
+          "channel_evaporation_m3": 900470.0077,
+          "channel_seepage_m3": 16347157.1721291,
+          "channel_precipitation_m3": 7749454.899,
+          "channel_storage_change_m3": 326606.9,
+          "floodplain_storage_change_m3": null,
+          "annual_input_outlet_difference_m3": 9092372.21607779,
+          "max_channel_inflow_report_difference_m3": 430.6539060000796,
+          "max_inflow_difference_beyond_print_rounding_m3": 6.42572948975767e-06,
+          "max_outflow_difference_beyond_print_rounding_m3": 2.499999977014445e-06,
+          "rounding_interpretation": "Half-step intervals of printed incoming volumes and daily m3/s reports; not a model accuracy tolerance.",
+          "limitation": "Floodplain storage is absent from channel_sd (flo_stor writes only ch_stor); canopy storage and independent unrounded states unavailable. The physical network and catchment accounting remain partial."
+        },
+        "catchment_accounting": {
+          "status": "PARTIAL_ACCOUNTING",
+          "evaluation": [
+            "2019-01-02",
+            "2019-12-31"
+          ],
+          "precip_m3": 606217572.0205866,
+          "hru_et_m3": 468212697.05752695,
+          "aquifer_revap_m3": 11537699.1220899,
+          "outlet_m3": 92711457.792,
+          "soil_storage_change_m3": 1230027.9653642906,
+          "snow_storage_change_m3": -1549734.2764712998,
+          "aquifer_storage_change_m3": 23005521.151018493,
+          "routing_lag_storage_change_m3": 434688.4054524999,
+          "channel_evaporation_m3": 900470.0077,
+          "channel_seepage_m3": 16347157.1721291,
+          "channel_precipitation_m3": 7749454.899,
+          "channel_storage_change_m3": 326606.9,
+          "floodplain_storage_change_m3": null,
+          "residual_m3": 810435.6227767396,
+          "residual_mm": 1.4449145635668599,
+          "limitation": "Floodplain storage is absent from channel_sd (flo_stor writes only ch_stor); canopy storage and independent unrounded states unavailable. The physical network and catchment accounting remain partial."
+        },
+        "annual_land_terms_mm": {
+          "precip": 1080.817,
+          "et": 834.971,
+          "eplant": 321.848,
+          "esoil": 491.172,
+          "ecanopy": 21.943,
+          "pet": 978.812,
+          "perc": 70.784,
+          "qtile": 64.234
+        },
+        "normalization": {
+          "status": "NOT_APPLICABLE",
+          "engine_version": "61.0.2.61",
+          "reason": "Physical channel outputs use the engine's m3/s conversion; bypass correction is unnecessary",
+          "source": "channel_sd_day.txt"
+        },
+        "input_checksums": {
+          "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+          "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732",
+          "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+          "chandeg.con": "c9fc10d477b032107dacef05c711985d4dce733d691eed2df6c69e58f1feb863",
+          "hyd-sed-lte.cha": "7e6e3afccbe93a7b7b54a6cfd1b131541319874fc5f83e545f24d0ebc84eda36",
+          "channel-lte.cha": "37940fee6237b9a3c8e51f0bf0e30ba5bd29459ee5ff8967cd83fcec560f50e3",
+          "nutrients.cha": "ecad793efa93ad3fc3f652facbfedf1908d762fe23cf82c41213a5b6aecc50bd",
+          "codes.bsn": "c9f009b02e21c061514fb05449d4868b3d1d0d1f347b935137348185e4f2965c",
+          "parameters.bsn": "18924a6a2ae4e50b20aeb62b62484a41d8af9f1d91c16edfe5919a8f44096dac",
+          "object.cnt": "9a0462e24063fa6f439c54437d84facf66f6067726874c3769d550c1064050c4"
+        },
+        "output_checksums": {
+          "basin_wb_day.txt": "93829f0157a52f55998837da1dc17f5da673909809b93c01bd0bcbb041717a3f",
+          "hru_wb_day.txt": "3e65d6237ff97f7e00751817a8e0821bfd8126031ec8b0647e3603531a0157d6",
+          "aquifer_day.txt": "d0bead921a775f5d5fbabf5f11b4bec57b940b3fadeb0ba5245475feeb382835",
+          "hydin_day.txt": "291c62920133652962ca208b1a1f3ac3421acbc127a0ba80d34396ca57be817d",
+          "hydout_day.txt": "24dfabc52ac57abcd518e30568555dbfdbbb8962ed6ec0d4f4b78c032517fe3f",
+          "channel_sd_day.txt": "c901ed4ed74553a8cf5527ce76d466194878c803fdbc4fc87bd5a39d8ca7e2fd"
+        },
+        "limitations": [
+          "Floodplain storage is absent from channel_sd (flo_stor writes only ch_stor); canopy storage and independent unrounded states unavailable. The physical network and catchment accounting remain partial.",
+          "Calibration and research H1 are not evaluated by a closed connection-flow balance."
+        ]
+      }
+    }
+  },
+  "failed_runs": {
+    "sf19-geom-v1-geom-routed": {
+      "status": "FAILED",
+      "development_diagnostic": {
+        "experiment_id": "sf19-geom-v1",
+        "classification": "CONTROLLED_CHANNEL_LENGTH_PROBE",
+        "intervention": {
+          "classification": "CONTROLLED_DRAINAGE_PROBE",
+          "file": "landuse.lum",
+          "landuse": "corn_lum",
+          "before": "null",
+          "after": "mw24_1000",
+          "before_sha256": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+          "after_sha256": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+          "limitation": "Drainage mask is a diagnostic intervention, not observed historical management.",
+          "routing": {
+            "file": "rout_unit.con",
+            "routing_units_changed": 36,
+            "connection": "til -> existing surface-flow sdc; fraction 1",
+            "before_sha256": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63",
+            "after_sha256": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+          },
+          "channel_geometry": {
+            "classification": "CONTROLLED_CHANNEL_LENGTH_PROBE",
+            "file": "hyd-sed-lte.cha",
+            "changed_fields": [
+              "len"
+            ],
+            "before_sha256": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+            "after_sha256": "7e6e3afccbe93a7b7b54a6cfd1b131541319874fc5f83e545f24d0ebc84eda36",
+            "source": {
+              "channels": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/delin/shapes/channels.gpkg",
+              "channels_sha256": "c5afe7ec73c977afcd46eb43d6fe0bc4e8a48efa3d79a4f82295922b25f904d4",
+              "routing_graph": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/delin/routing_graph.graphml",
+              "routing_graph_sha256": "5c56a4bef907009fd1f81df4508a48e381673d9178b51a963100191946bd3d1a",
+              "crs": "EPSG:5070",
+              "attribute": "length_m",
+              "conversion": "metres / 1000 -> kilometres",
+              "geometry_check": "2D polyline length agrees within 0.01 m"
+            },
+            "channel_count": 37,
+            "edge_count": 36,
+            "terminal_gis_id": "153",
+            "total_length_km": 212.63707,
+            "min_length_km": 0.58204,
+            "max_length_km": 29.5296,
+            "channels": [
+              {
+                "unit": "1",
+                "gis_id": "29",
+                "parameter": "hydcha029",
+                "before_length_km": 0.0005,
+                "after_length_km": 1.9036199999999999,
+                "length_m": 1903.62,
+                "slope_m_m": 0.0001,
+                "width_m": 13.33,
+                "depth_m": 0.617,
+                "geometry_length_m": 1903.620012326288
+              },
+              {
+                "unit": "2",
+                "gis_id": "35",
+                "parameter": "hydcha035",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.36358,
+                "length_m": 3363.58,
+                "slope_m_m": 0.0010225225911408076,
+                "width_m": 21.51,
+                "depth_m": 0.848,
+                "geometry_length_m": 3363.5811485989966
+              },
+              {
+                "unit": "3",
+                "gis_id": "37",
+                "parameter": "hydcha037",
+                "before_length_km": 0.0005,
+                "after_length_km": 1.60267,
+                "length_m": 1602.67,
+                "slope_m_m": 0.0036935171597923164,
+                "width_m": 10.38,
+                "depth_m": 0.522,
+                "geometry_length_m": 1602.6737529208474
+              },
+              {
+                "unit": "4",
+                "gis_id": "38",
+                "parameter": "hydcha038",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.2035500000000003,
+                "length_m": 3203.55,
+                "slope_m_m": 0.0002657624287166613,
+                "width_m": 16.41,
+                "depth_m": 0.708,
+                "geometry_length_m": 3203.5545882693164
+              },
+              {
+                "unit": "5",
+                "gis_id": "39",
+                "parameter": "hydcha039",
+                "before_length_km": 0.0005,
+                "after_length_km": 0.58204,
+                "length_m": 582.04,
+                "slope_m_m": 0.0001,
+                "width_m": 7.955,
+                "depth_m": 0.437,
+                "geometry_length_m": 582.0430067813055
+              },
+              {
+                "unit": "6",
+                "gis_id": "41",
+                "parameter": "hydcha041",
+                "before_length_km": 0.0005,
+                "after_length_km": 1.38248,
+                "length_m": 1382.48,
+                "slope_m_m": 0.0011964308847369975,
+                "width_m": 7.955,
+                "depth_m": 0.437,
+                "geometry_length_m": 1382.4834244562542
+              },
+              {
+                "unit": "7",
+                "gis_id": "43",
+                "parameter": "hydcha043",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.48459,
+                "length_m": 6484.59,
+                "slope_m_m": 0.0017033111953323869,
+                "width_m": 34.575,
+                "depth_m": 1.164,
+                "geometry_length_m": 6484.586888356174
+              },
+              {
+                "unit": "8",
+                "gis_id": "44",
+                "parameter": "hydcha044",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.636699999999999,
+                "length_m": 6636.7,
+                "slope_m_m": 0.0009920786497807782,
+                "width_m": 10.38,
+                "depth_m": 0.522,
+                "geometry_length_m": 6636.699127619392
+              },
+              {
+                "unit": "9",
+                "gis_id": "45",
+                "parameter": "hydcha045",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.70585,
+                "length_m": 2705.85,
+                "slope_m_m": 0.0010692279249991386,
+                "width_m": 10.204,
+                "depth_m": 0.516,
+                "geometry_length_m": 2705.8533475734566
+              },
+              {
+                "unit": "10",
+                "gis_id": "50",
+                "parameter": "hydcha050",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.66199,
+                "length_m": 3661.99,
+                "slope_m_m": 0.0012489191034321964,
+                "width_m": 10.204,
+                "depth_m": 0.516,
+                "geometry_length_m": 3661.991839656963
+              },
+              {
+                "unit": "11",
+                "gis_id": "51",
+                "parameter": "hydcha051",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.0820100000000004,
+                "length_m": 2082.01,
+                "slope_m_m": 0.0037208392483403592,
+                "width_m": 36.556,
+                "depth_m": 1.208,
+                "geometry_length_m": 2082.010783137085
+              },
+              {
+                "unit": "12",
+                "gis_id": "54",
+                "parameter": "hydcha054",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.77035,
+                "length_m": 2770.35,
+                "slope_m_m": 0.002278162483982119,
+                "width_m": 31.584,
+                "depth_m": 1.096,
+                "geometry_length_m": 2770.345601628878
+              },
+              {
+                "unit": "13",
+                "gis_id": "57",
+                "parameter": "hydcha057",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.40538,
+                "length_m": 3405.38,
+                "slope_m_m": 0.004434279967126473,
+                "width_m": 38.976,
+                "depth_m": 1.261,
+                "geometry_length_m": 3405.380706253601
+              },
+              {
+                "unit": "14",
+                "gis_id": "59",
+                "parameter": "hydcha059",
+                "before_length_km": 0.0005,
+                "after_length_km": 11.31066,
+                "length_m": 11310.66,
+                "slope_m_m": 0.0007048877276640898,
+                "width_m": 17.107,
+                "depth_m": 0.728,
+                "geometry_length_m": 11310.664741576535
+              },
+              {
+                "unit": "15",
+                "gis_id": "64",
+                "parameter": "hydcha064",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.20961,
+                "length_m": 6209.61,
+                "slope_m_m": 0.001457390999218345,
+                "width_m": 22.992,
+                "depth_m": 0.887,
+                "geometry_length_m": 6209.61154447219
+              },
+              {
+                "unit": "16",
+                "gis_id": "66",
+                "parameter": "hydcha066",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.19463,
+                "length_m": 4194.63,
+                "slope_m_m": 0.0007933359866513472,
+                "width_m": 9.432,
+                "depth_m": 0.49,
+                "geometry_length_m": 4194.628583739812
+              },
+              {
+                "unit": "17",
+                "gis_id": "70",
+                "parameter": "hydcha070",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.1834000000000002,
+                "length_m": 3183.4,
+                "slope_m_m": 0.0007219428170108829,
+                "width_m": 9.432,
+                "depth_m": 0.49,
+                "geometry_length_m": 3183.3974602160147
+              },
+              {
+                "unit": "18",
+                "gis_id": "71",
+                "parameter": "hydcha071",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.52872,
+                "length_m": 4528.72,
+                "slope_m_m": 0.001677763827651612,
+                "width_m": 19.807,
+                "depth_m": 0.803,
+                "geometry_length_m": 4528.717428960352
+              },
+              {
+                "unit": "19",
+                "gis_id": "74",
+                "parameter": "hydcha074",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.55594,
+                "length_m": 6555.94,
+                "slope_m_m": 0.0016425941600765942,
+                "width_m": 25.423,
+                "depth_m": 0.948,
+                "geometry_length_m": 6555.943196680107
+              },
+              {
+                "unit": "20",
+                "gis_id": "138",
+                "parameter": "hydcha138",
+                "before_length_km": 0.0005,
+                "after_length_km": 24.87876,
+                "length_m": 24878.76,
+                "slope_m_m": 0.0015654345295758804,
+                "width_m": 58.015,
+                "depth_m": 1.644,
+                "geometry_length_m": 24878.760433996613
+              },
+              {
+                "unit": "21",
+                "gis_id": "141",
+                "parameter": "hydcha141",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.0526599999999995,
+                "length_m": 4052.66,
+                "slope_m_m": 0.0012458840035001815,
+                "width_m": 22.992,
+                "depth_m": 0.887,
+                "geometry_length_m": 4052.658617866855
+              },
+              {
+                "unit": "22",
+                "gis_id": "142",
+                "parameter": "hydcha142",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.254689999999999,
+                "length_m": 6254.69,
+                "slope_m_m": 0.0012950114231156014,
+                "width_m": 17.107,
+                "depth_m": 0.728,
+                "geometry_length_m": 6254.689321251848
+              },
+              {
+                "unit": "23",
+                "gis_id": "146",
+                "parameter": "hydcha146",
+                "before_length_km": 0.0005,
+                "after_length_km": 0.737,
+                "length_m": 737.0,
+                "slope_m_m": 0.0018644517230962598,
+                "width_m": 19.807,
+                "depth_m": 0.803,
+                "geometry_length_m": 736.9984304161975
+              },
+              {
+                "unit": "24",
+                "gis_id": "148",
+                "parameter": "hydcha148",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.35925,
+                "length_m": 3359.25,
+                "slope_m_m": 0.0007730607353994703,
+                "width_m": 25.423,
+                "depth_m": 0.948,
+                "geometry_length_m": 3359.2526626784693
+              },
+              {
+                "unit": "25",
+                "gis_id": "153",
+                "parameter": "hydcha153",
+                "before_length_km": 0.0005,
+                "after_length_km": 8.98534,
+                "length_m": 8985.34,
+                "slope_m_m": 0.0009876126146433155,
+                "width_m": 70.425,
+                "depth_m": 1.871,
+                "geometry_length_m": 8985.335898821073
+              },
+              {
+                "unit": "26",
+                "gis_id": "155",
+                "parameter": "hydcha155",
+                "before_length_km": 0.0005,
+                "after_length_km": 29.5296,
+                "length_m": 29529.6,
+                "slope_m_m": 0.001207736337345092,
+                "width_m": 58.015,
+                "depth_m": 1.644,
+                "geometry_length_m": 29529.598316807434
+              },
+              {
+                "unit": "27",
+                "gis_id": "158",
+                "parameter": "hydcha158",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.61559,
+                "length_m": 4615.59,
+                "slope_m_m": 0.0005528340461180108,
+                "width_m": 34.575,
+                "depth_m": 1.164,
+                "geometry_length_m": 4615.594763392941
+              },
+              {
+                "unit": "28",
+                "gis_id": "161",
+                "parameter": "hydcha161",
+                "before_length_km": 0.0005,
+                "after_length_km": 7.43924,
+                "length_m": 7439.24,
+                "slope_m_m": 0.0006894479723189651,
+                "width_m": 38.976,
+                "depth_m": 1.261,
+                "geometry_length_m": 7439.240078888176
+              },
+              {
+                "unit": "29",
+                "gis_id": "162",
+                "parameter": "hydcha162",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.57511,
+                "length_m": 3575.11,
+                "slope_m_m": 0.000690716733409664,
+                "width_m": 29.889,
+                "depth_m": 1.057,
+                "geometry_length_m": 3575.11450522361
+              },
+              {
+                "unit": "30",
+                "gis_id": "165",
+                "parameter": "hydcha165",
+                "before_length_km": 0.0005,
+                "after_length_km": 1.63656,
+                "length_m": 1636.56,
+                "slope_m_m": 0.0001,
+                "width_m": 31.584,
+                "depth_m": 1.096,
+                "geometry_length_m": 1636.5589895101662
+              },
+              {
+                "unit": "31",
+                "gis_id": "166",
+                "parameter": "hydcha166",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.38959,
+                "length_m": 4389.59,
+                "slope_m_m": 0.0012922184499113577,
+                "width_m": 13.33,
+                "depth_m": 0.617,
+                "geometry_length_m": 4389.59064745677
+              },
+              {
+                "unit": "32",
+                "gis_id": "167",
+                "parameter": "hydcha167",
+                "before_length_km": 0.0005,
+                "after_length_km": 7.97157,
+                "length_m": 7971.57,
+                "slope_m_m": 0.0006603344979505848,
+                "width_m": 36.556,
+                "depth_m": 1.208,
+                "geometry_length_m": 7971.56920694943
+              },
+              {
+                "unit": "33",
+                "gis_id": "168",
+                "parameter": "hydcha168",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.93338,
+                "length_m": 3933.38,
+                "slope_m_m": 0.0006931939459508738,
+                "width_m": 24.543,
+                "depth_m": 0.926,
+                "geometry_length_m": 3933.3813483940917
+              },
+              {
+                "unit": "34",
+                "gis_id": "169",
+                "parameter": "hydcha169",
+                "before_length_km": 0.0005,
+                "after_length_km": 5.21093,
+                "length_m": 5210.93,
+                "slope_m_m": 0.0004260015314263826,
+                "width_m": 29.889,
+                "depth_m": 1.057,
+                "geometry_length_m": 5210.930843959341
+              },
+              {
+                "unit": "35",
+                "gis_id": "170",
+                "parameter": "hydcha170",
+                "before_length_km": 0.0005,
+                "after_length_km": 15.458120000000001,
+                "length_m": 15458.12,
+                "slope_m_m": 0.0006616225840418079,
+                "width_m": 21.51,
+                "depth_m": 0.848,
+                "geometry_length_m": 15458.115014940922
+              },
+              {
+                "unit": "36",
+                "gis_id": "171",
+                "parameter": "hydcha171",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.19084,
+                "length_m": 2190.84,
+                "slope_m_m": 0.00018736737660412215,
+                "width_m": 16.41,
+                "depth_m": 0.708,
+                "geometry_length_m": 2190.8381631954253
+              },
+              {
+                "unit": "37",
+                "gis_id": "173",
+                "parameter": "hydcha173",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.6510700000000003,
+                "length_m": 2651.07,
+                "slope_m_m": 0.0004364855105966425,
+                "width_m": 24.543,
+                "depth_m": 0.926,
+                "geometry_length_m": 2651.068332156457
+              }
+            ],
+            "limitations": [
+              "Lengths come from DEM delineation, not a field survey.",
+              "Existing derived width/depth/slope and uncalibrated hydraulic parameters remain model assumptions.",
+              "This intervention is development evidence, not a test of H1."
+            ]
+          }
+        },
+        "source_project_sha256": "623c8130f05b86ed4b7c339cecfde57ab7ae8a3a2d420807ac5a1f961e098eaa"
+      },
+      "exit_code": -8,
+      "reason": "NON_ZERO_EXIT_CODE",
+      "stderr_tail": "\nProgram received signal SIGFPE: Floating-point exception - erroneous arithmetic operation.\n\nBacktrace for this error:\n#0  0xbe135f in ???\n#1  0xb8e197 in wq_semianalyt_\n#2  0x531ced in ch_watqual4_\n#3  0xa80f8c in sd_channel_control3_\n#4  0x578311 in command_\n#5  0xb1ac6b in time_control_\n#6  0x866446 in MAIN__\n#7  0x8668e8 in main\n",
+      "status_artifact_sha256": "4254e644cdbdd367ec97f478371f549359520b52de3f2c1dd43e907219ea044b",
+      "configuration_caveat": "Zero nutrient inputs, if present, are replaced by nonzero defaults in ch_read_nut; the attempted profile does not disable reactions.",
+      "interpretation": "No completed hydrograph or observational metrics are available."
+    },
+    "sf19-geom-v2-geom-routed": {
+      "status": "FAILED",
+      "development_diagnostic": {
+        "experiment_id": "sf19-geom-v2",
+        "classification": "CONTROLLED_CHANNEL_LENGTH_PROBE",
+        "intervention": {
+          "classification": "CONTROLLED_DRAINAGE_PROBE",
+          "file": "landuse.lum",
+          "landuse": "corn_lum",
+          "before": "null",
+          "after": "mw24_1000",
+          "before_sha256": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+          "after_sha256": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+          "limitation": "Drainage mask is a diagnostic intervention, not observed historical management.",
+          "routing": {
+            "file": "rout_unit.con",
+            "routing_units_changed": 36,
+            "connection": "til -> existing surface-flow sdc; fraction 1",
+            "before_sha256": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63",
+            "after_sha256": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+          },
+          "channel_geometry": {
+            "classification": "CONTROLLED_CHANNEL_LENGTH_PROBE",
+            "file": "hyd-sed-lte.cha",
+            "changed_fields": [
+              "len"
+            ],
+            "before_sha256": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+            "after_sha256": "7e6e3afccbe93a7b7b54a6cfd1b131541319874fc5f83e545f24d0ebc84eda36",
+            "source": {
+              "channels": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/delin/shapes/channels.gpkg",
+              "channels_sha256": "c5afe7ec73c977afcd46eb43d6fe0bc4e8a48efa3d79a4f82295922b25f904d4",
+              "routing_graph": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/delin/routing_graph.graphml",
+              "routing_graph_sha256": "5c56a4bef907009fd1f81df4508a48e381673d9178b51a963100191946bd3d1a",
+              "crs": "EPSG:5070",
+              "attribute": "length_m",
+              "conversion": "metres / 1000 -> kilometres",
+              "geometry_check": "2D polyline length agrees within 0.01 m"
+            },
+            "channel_count": 37,
+            "edge_count": 36,
+            "terminal_gis_id": "153",
+            "total_length_km": 212.63707,
+            "min_length_km": 0.58204,
+            "max_length_km": 29.5296,
+            "channels": [
+              {
+                "unit": "1",
+                "gis_id": "29",
+                "parameter": "hydcha029",
+                "before_length_km": 0.0005,
+                "after_length_km": 1.9036199999999999,
+                "length_m": 1903.62,
+                "slope_m_m": 0.0001,
+                "width_m": 13.33,
+                "depth_m": 0.617,
+                "geometry_length_m": 1903.620012326288
+              },
+              {
+                "unit": "2",
+                "gis_id": "35",
+                "parameter": "hydcha035",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.36358,
+                "length_m": 3363.58,
+                "slope_m_m": 0.0010225225911408076,
+                "width_m": 21.51,
+                "depth_m": 0.848,
+                "geometry_length_m": 3363.5811485989966
+              },
+              {
+                "unit": "3",
+                "gis_id": "37",
+                "parameter": "hydcha037",
+                "before_length_km": 0.0005,
+                "after_length_km": 1.60267,
+                "length_m": 1602.67,
+                "slope_m_m": 0.0036935171597923164,
+                "width_m": 10.38,
+                "depth_m": 0.522,
+                "geometry_length_m": 1602.6737529208474
+              },
+              {
+                "unit": "4",
+                "gis_id": "38",
+                "parameter": "hydcha038",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.2035500000000003,
+                "length_m": 3203.55,
+                "slope_m_m": 0.0002657624287166613,
+                "width_m": 16.41,
+                "depth_m": 0.708,
+                "geometry_length_m": 3203.5545882693164
+              },
+              {
+                "unit": "5",
+                "gis_id": "39",
+                "parameter": "hydcha039",
+                "before_length_km": 0.0005,
+                "after_length_km": 0.58204,
+                "length_m": 582.04,
+                "slope_m_m": 0.0001,
+                "width_m": 7.955,
+                "depth_m": 0.437,
+                "geometry_length_m": 582.0430067813055
+              },
+              {
+                "unit": "6",
+                "gis_id": "41",
+                "parameter": "hydcha041",
+                "before_length_km": 0.0005,
+                "after_length_km": 1.38248,
+                "length_m": 1382.48,
+                "slope_m_m": 0.0011964308847369975,
+                "width_m": 7.955,
+                "depth_m": 0.437,
+                "geometry_length_m": 1382.4834244562542
+              },
+              {
+                "unit": "7",
+                "gis_id": "43",
+                "parameter": "hydcha043",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.48459,
+                "length_m": 6484.59,
+                "slope_m_m": 0.0017033111953323869,
+                "width_m": 34.575,
+                "depth_m": 1.164,
+                "geometry_length_m": 6484.586888356174
+              },
+              {
+                "unit": "8",
+                "gis_id": "44",
+                "parameter": "hydcha044",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.636699999999999,
+                "length_m": 6636.7,
+                "slope_m_m": 0.0009920786497807782,
+                "width_m": 10.38,
+                "depth_m": 0.522,
+                "geometry_length_m": 6636.699127619392
+              },
+              {
+                "unit": "9",
+                "gis_id": "45",
+                "parameter": "hydcha045",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.70585,
+                "length_m": 2705.85,
+                "slope_m_m": 0.0010692279249991386,
+                "width_m": 10.204,
+                "depth_m": 0.516,
+                "geometry_length_m": 2705.8533475734566
+              },
+              {
+                "unit": "10",
+                "gis_id": "50",
+                "parameter": "hydcha050",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.66199,
+                "length_m": 3661.99,
+                "slope_m_m": 0.0012489191034321964,
+                "width_m": 10.204,
+                "depth_m": 0.516,
+                "geometry_length_m": 3661.991839656963
+              },
+              {
+                "unit": "11",
+                "gis_id": "51",
+                "parameter": "hydcha051",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.0820100000000004,
+                "length_m": 2082.01,
+                "slope_m_m": 0.0037208392483403592,
+                "width_m": 36.556,
+                "depth_m": 1.208,
+                "geometry_length_m": 2082.010783137085
+              },
+              {
+                "unit": "12",
+                "gis_id": "54",
+                "parameter": "hydcha054",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.77035,
+                "length_m": 2770.35,
+                "slope_m_m": 0.002278162483982119,
+                "width_m": 31.584,
+                "depth_m": 1.096,
+                "geometry_length_m": 2770.345601628878
+              },
+              {
+                "unit": "13",
+                "gis_id": "57",
+                "parameter": "hydcha057",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.40538,
+                "length_m": 3405.38,
+                "slope_m_m": 0.004434279967126473,
+                "width_m": 38.976,
+                "depth_m": 1.261,
+                "geometry_length_m": 3405.380706253601
+              },
+              {
+                "unit": "14",
+                "gis_id": "59",
+                "parameter": "hydcha059",
+                "before_length_km": 0.0005,
+                "after_length_km": 11.31066,
+                "length_m": 11310.66,
+                "slope_m_m": 0.0007048877276640898,
+                "width_m": 17.107,
+                "depth_m": 0.728,
+                "geometry_length_m": 11310.664741576535
+              },
+              {
+                "unit": "15",
+                "gis_id": "64",
+                "parameter": "hydcha064",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.20961,
+                "length_m": 6209.61,
+                "slope_m_m": 0.001457390999218345,
+                "width_m": 22.992,
+                "depth_m": 0.887,
+                "geometry_length_m": 6209.61154447219
+              },
+              {
+                "unit": "16",
+                "gis_id": "66",
+                "parameter": "hydcha066",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.19463,
+                "length_m": 4194.63,
+                "slope_m_m": 0.0007933359866513472,
+                "width_m": 9.432,
+                "depth_m": 0.49,
+                "geometry_length_m": 4194.628583739812
+              },
+              {
+                "unit": "17",
+                "gis_id": "70",
+                "parameter": "hydcha070",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.1834000000000002,
+                "length_m": 3183.4,
+                "slope_m_m": 0.0007219428170108829,
+                "width_m": 9.432,
+                "depth_m": 0.49,
+                "geometry_length_m": 3183.3974602160147
+              },
+              {
+                "unit": "18",
+                "gis_id": "71",
+                "parameter": "hydcha071",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.52872,
+                "length_m": 4528.72,
+                "slope_m_m": 0.001677763827651612,
+                "width_m": 19.807,
+                "depth_m": 0.803,
+                "geometry_length_m": 4528.717428960352
+              },
+              {
+                "unit": "19",
+                "gis_id": "74",
+                "parameter": "hydcha074",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.55594,
+                "length_m": 6555.94,
+                "slope_m_m": 0.0016425941600765942,
+                "width_m": 25.423,
+                "depth_m": 0.948,
+                "geometry_length_m": 6555.943196680107
+              },
+              {
+                "unit": "20",
+                "gis_id": "138",
+                "parameter": "hydcha138",
+                "before_length_km": 0.0005,
+                "after_length_km": 24.87876,
+                "length_m": 24878.76,
+                "slope_m_m": 0.0015654345295758804,
+                "width_m": 58.015,
+                "depth_m": 1.644,
+                "geometry_length_m": 24878.760433996613
+              },
+              {
+                "unit": "21",
+                "gis_id": "141",
+                "parameter": "hydcha141",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.0526599999999995,
+                "length_m": 4052.66,
+                "slope_m_m": 0.0012458840035001815,
+                "width_m": 22.992,
+                "depth_m": 0.887,
+                "geometry_length_m": 4052.658617866855
+              },
+              {
+                "unit": "22",
+                "gis_id": "142",
+                "parameter": "hydcha142",
+                "before_length_km": 0.0005,
+                "after_length_km": 6.254689999999999,
+                "length_m": 6254.69,
+                "slope_m_m": 0.0012950114231156014,
+                "width_m": 17.107,
+                "depth_m": 0.728,
+                "geometry_length_m": 6254.689321251848
+              },
+              {
+                "unit": "23",
+                "gis_id": "146",
+                "parameter": "hydcha146",
+                "before_length_km": 0.0005,
+                "after_length_km": 0.737,
+                "length_m": 737.0,
+                "slope_m_m": 0.0018644517230962598,
+                "width_m": 19.807,
+                "depth_m": 0.803,
+                "geometry_length_m": 736.9984304161975
+              },
+              {
+                "unit": "24",
+                "gis_id": "148",
+                "parameter": "hydcha148",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.35925,
+                "length_m": 3359.25,
+                "slope_m_m": 0.0007730607353994703,
+                "width_m": 25.423,
+                "depth_m": 0.948,
+                "geometry_length_m": 3359.2526626784693
+              },
+              {
+                "unit": "25",
+                "gis_id": "153",
+                "parameter": "hydcha153",
+                "before_length_km": 0.0005,
+                "after_length_km": 8.98534,
+                "length_m": 8985.34,
+                "slope_m_m": 0.0009876126146433155,
+                "width_m": 70.425,
+                "depth_m": 1.871,
+                "geometry_length_m": 8985.335898821073
+              },
+              {
+                "unit": "26",
+                "gis_id": "155",
+                "parameter": "hydcha155",
+                "before_length_km": 0.0005,
+                "after_length_km": 29.5296,
+                "length_m": 29529.6,
+                "slope_m_m": 0.001207736337345092,
+                "width_m": 58.015,
+                "depth_m": 1.644,
+                "geometry_length_m": 29529.598316807434
+              },
+              {
+                "unit": "27",
+                "gis_id": "158",
+                "parameter": "hydcha158",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.61559,
+                "length_m": 4615.59,
+                "slope_m_m": 0.0005528340461180108,
+                "width_m": 34.575,
+                "depth_m": 1.164,
+                "geometry_length_m": 4615.594763392941
+              },
+              {
+                "unit": "28",
+                "gis_id": "161",
+                "parameter": "hydcha161",
+                "before_length_km": 0.0005,
+                "after_length_km": 7.43924,
+                "length_m": 7439.24,
+                "slope_m_m": 0.0006894479723189651,
+                "width_m": 38.976,
+                "depth_m": 1.261,
+                "geometry_length_m": 7439.240078888176
+              },
+              {
+                "unit": "29",
+                "gis_id": "162",
+                "parameter": "hydcha162",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.57511,
+                "length_m": 3575.11,
+                "slope_m_m": 0.000690716733409664,
+                "width_m": 29.889,
+                "depth_m": 1.057,
+                "geometry_length_m": 3575.11450522361
+              },
+              {
+                "unit": "30",
+                "gis_id": "165",
+                "parameter": "hydcha165",
+                "before_length_km": 0.0005,
+                "after_length_km": 1.63656,
+                "length_m": 1636.56,
+                "slope_m_m": 0.0001,
+                "width_m": 31.584,
+                "depth_m": 1.096,
+                "geometry_length_m": 1636.5589895101662
+              },
+              {
+                "unit": "31",
+                "gis_id": "166",
+                "parameter": "hydcha166",
+                "before_length_km": 0.0005,
+                "after_length_km": 4.38959,
+                "length_m": 4389.59,
+                "slope_m_m": 0.0012922184499113577,
+                "width_m": 13.33,
+                "depth_m": 0.617,
+                "geometry_length_m": 4389.59064745677
+              },
+              {
+                "unit": "32",
+                "gis_id": "167",
+                "parameter": "hydcha167",
+                "before_length_km": 0.0005,
+                "after_length_km": 7.97157,
+                "length_m": 7971.57,
+                "slope_m_m": 0.0006603344979505848,
+                "width_m": 36.556,
+                "depth_m": 1.208,
+                "geometry_length_m": 7971.56920694943
+              },
+              {
+                "unit": "33",
+                "gis_id": "168",
+                "parameter": "hydcha168",
+                "before_length_km": 0.0005,
+                "after_length_km": 3.93338,
+                "length_m": 3933.38,
+                "slope_m_m": 0.0006931939459508738,
+                "width_m": 24.543,
+                "depth_m": 0.926,
+                "geometry_length_m": 3933.3813483940917
+              },
+              {
+                "unit": "34",
+                "gis_id": "169",
+                "parameter": "hydcha169",
+                "before_length_km": 0.0005,
+                "after_length_km": 5.21093,
+                "length_m": 5210.93,
+                "slope_m_m": 0.0004260015314263826,
+                "width_m": 29.889,
+                "depth_m": 1.057,
+                "geometry_length_m": 5210.930843959341
+              },
+              {
+                "unit": "35",
+                "gis_id": "170",
+                "parameter": "hydcha170",
+                "before_length_km": 0.0005,
+                "after_length_km": 15.458120000000001,
+                "length_m": 15458.12,
+                "slope_m_m": 0.0006616225840418079,
+                "width_m": 21.51,
+                "depth_m": 0.848,
+                "geometry_length_m": 15458.115014940922
+              },
+              {
+                "unit": "36",
+                "gis_id": "171",
+                "parameter": "hydcha171",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.19084,
+                "length_m": 2190.84,
+                "slope_m_m": 0.00018736737660412215,
+                "width_m": 16.41,
+                "depth_m": 0.708,
+                "geometry_length_m": 2190.8381631954253
+              },
+              {
+                "unit": "37",
+                "gis_id": "173",
+                "parameter": "hydcha173",
+                "before_length_km": 0.0005,
+                "after_length_km": 2.6510700000000003,
+                "length_m": 2651.07,
+                "slope_m_m": 0.0004364855105966425,
+                "width_m": 24.543,
+                "depth_m": 0.926,
+                "geometry_length_m": 2651.068332156457
+              }
+            ],
+            "limitations": [
+              "Lengths come from DEM delineation, not a field survey.",
+              "Existing derived width/depth/slope and uncalibrated hydraulic parameters remain model assumptions.",
+              "This intervention is development evidence, not a test of H1."
+            ]
+          },
+          "channel_kinetics": {
+            "classification": "ZERO_CHANNEL_KINETICS_DIAGNOSTIC",
+            "file": "nutrients.cha",
+            "before_sha256": "ecad793efa93ad3fc3f652facbfedf1908d762fe23cf82c41213a5b6aecc50bd",
+            "after_sha256": "c49af3c7acd19b6245139c8fe23724dfd63b4daa5f5ea9dbf1fca34b457d424d",
+            "changed_fields": [
+              "alg_stl",
+              "ben_disp",
+              "ben_nh3n",
+              "ptln_stl",
+              "ptlp_stl",
+              "cst_stl",
+              "ben_cst",
+              "cbn_bod_co",
+              "air_rt",
+              "cbn_bod_stl",
+              "ben_bod",
+              "bact_die",
+              "cst_decay",
+              "nh3n_no2n",
+              "no2n_no3n",
+              "ptln_nh3n",
+              "ptlp_solp",
+              "alg_grow",
+              "alg_resp"
+            ],
+            "rows": [
+              {
+                "name": "nutcha1",
+                "before": {
+                  "alg_stl": 1.0,
+                  "ben_disp": 0.05,
+                  "ben_nh3n": 0.5,
+                  "ptln_stl": 0.05,
+                  "ptlp_stl": 0.05,
+                  "cst_stl": 2.5,
+                  "ben_cst": 2.5,
+                  "cbn_bod_co": 1.71,
+                  "air_rt": 50.0,
+                  "cbn_bod_stl": 0.36,
+                  "ben_bod": 2.0,
+                  "bact_die": 2.0,
+                  "cst_decay": 1.71,
+                  "nh3n_no2n": 0.55,
+                  "no2n_no3n": 1.1,
+                  "ptln_nh3n": 0.21,
+                  "ptlp_solp": 0.35,
+                  "alg_grow": 2.0,
+                  "alg_resp": 2.5
+                },
+                "after": {
+                  "alg_stl": 0,
+                  "ben_disp": 0,
+                  "ben_nh3n": 0,
+                  "ptln_stl": 0,
+                  "ptlp_stl": 0,
+                  "cst_stl": 0,
+                  "ben_cst": 0,
+                  "cbn_bod_co": 0,
+                  "air_rt": 0,
+                  "cbn_bod_stl": 0,
+                  "ben_bod": 0,
+                  "bact_die": 0,
+                  "cst_decay": 0,
+                  "nh3n_no2n": 0,
+                  "no2n_no3n": 0,
+                  "ptln_nh3n": 0,
+                  "ptlp_solp": 0,
+                  "alg_grow": 0,
+                  "alg_resp": 0
+                }
+              }
+            ],
+            "reason": "Original physical-channel run fails in the QUAL2E semi-analytic solver (SIGFPE).",
+            "limitation": "Channel reaction/source rates are zero for this hydrological diagnostic; nutrient and water-quality outputs are not valid research results.",
+            "reference": "https://github.com/swat-model/swatplus/blob/61.0.2.61/src/ch_watqual4.f90"
+          }
+        },
+        "source_project_sha256": "623c8130f05b86ed4b7c339cecfde57ab7ae8a3a2d420807ac5a1f961e098eaa"
+      },
+      "exit_code": -8,
+      "reason": "NON_ZERO_EXIT_CODE",
+      "stderr_tail": "\nProgram received signal SIGFPE: Floating-point exception - erroneous arithmetic operation.\n\nBacktrace for this error:\n#0  0xbe135f in ???\n#1  0xbc7e4e in xflowf\n#2  0xa9d738 in sd_channel_sediment3_\n#3  0xa801c5 in sd_channel_control3_\n#4  0x578311 in command_\n#5  0xb1ac6b in time_control_\n#6  0x866446 in MAIN__\n#7  0x8668e8 in main\n",
+      "status_artifact_sha256": "0383bd27e4c37a321cb00ab389a28ebfd2838ca36b12f7f43f3705e3488bbafe",
+      "configuration_caveat": "Zero nutrient inputs, if present, are replaced by nonzero defaults in ch_read_nut; the attempted profile does not disable reactions.",
+      "interpretation": "No completed hydrograph or observational metrics are available."
+    }
+  },
+  "code_sha256": {
+    "app/services/swat_water_path.py": "7b51b9c23a112062ebf989ea3035ea515c95b63784e501564df49cc079b58226",
+    "app/services/swat_channel_geometry.py": "3c67349fd55e08e983892acff2bfde5998d36012989c0d541a6a2893eaa5ef2e",
+    "app/services/swat_runtime_diagnostic.py": "106be862b45df7e63f68f1631d71f49831c6e41d35b9dc815b84e7cba5043433",
+    "app/services/swat_plus_parser.py": "832c91ba0d701c49fd3dc1b3c5c305b392d6e2cf0755a5ca17695e821abb7737",
+    "app/services/swat_plus_adapter.py": "895b9dcf846c7cb4c4444515d71116c92ecca18d3039b49028c49cc1e0358d6b",
+    "app/services/twin_coupling_engine.py": "a085d3a003e5196cbf36ba5d33cdf0275e9baf8d06dada64af9dd7d36d0190b4",
+    "app/services/playback_builder.py": "804353296c1c28af2c93262f47676511c2c41cdc4f6bd2ac527335bcce347448",
+    "scripts/inspect_swat_water_path.py": "1fbcf850989bd5606bec7d01b833ce7de7caac51b4978abc217ba5090e450ed4",
+    "scripts/run_south_fork_baseline_diagnostic.py": "739ee5149ccad45b176081915832b6394195f05ce92ea500454f21fa41c796cd"
+  },
+  "controlled_comparison": {
+    "control_id": "sf19-geom-ctrl-v1-tile-routed",
+    "treatment_id": "sf19-geom-v3-geom-routed",
+    "differing_traceable_inputs": [
+      "hyd-sed-lte.cha"
+    ],
+    "changed_fields": [
+      "len"
+    ],
+    "identical_engine": true,
+    "identical_land_water_terms": true,
+    "outlet_volume_change_m3": -9092373.142228156,
+    "monthly_rmse_change_m3s": 0.30502521440257535,
+    "interpretation": "Controlled development sensitivity to channel lengths; no calibration or H1 claim."
+  },
+  "failure_forensics": {
+    "file": "data/baseline-diagnostic-geometry-forensics/debug-trace.txt",
+    "sha256": "7bacb57d0b87614471978d0dc929bd9b692abb9c60d2b69f268ddee4649bbe15",
+    "debugger_tail": "0x0000000000bc7e4e in xflowf ()\n$1 = {si_signo = 8, si_errno = 0, si_code = 5, _sifields = {_pad = {12353102, 0 <repeats 27 times>}, _kill = {si_pid = 12353102, si_uid = 0}, _timer = {si_tid = 12353102, si_overrun = 0, si_sigval = {sival_int = 0, sival_ptr = 0x0}}, _rt = {si_pid = 12353102, si_uid = 0, si_sigval = {sival_int = 0, sival_ptr = 0x0}}, _sigchld = {si_pid = 12353102, si_uid = 0, si_status = 0, si_utime = 0, si_stime = 0}, _sigfault = {si_addr = 0xbc7e4e <xflowf+14>}, _sigpoll = {si_band = 12353102, si_fd = 0}, _sigsys = {_call_addr = 0xbc7e4e <xflowf+14>, _syscall = 0, _arch = 0}}}\n#0  0x0000000000bc7e4e in xflowf ()\n#1  0x0000000000a9d739 in sd_channel_sediment3_ ()\n#2  0x0000000000a801c6 in sd_channel_control3_ ()\n#3  0x0000000000578312 in command_ ()\n#4  0x0000000000b1ac6c in time_control_ ()\n#5  0x0000000000866447 in MAIN__ ()\n#6  0x00000000008668e9 in main ()\nmxcsr          0x1130              [ UE PE DM PM ]\n=> 0xbc7e4e <xflowf+14>:\tmulss  %xmm1,%xmm0\n   0xbc7e52 <xflowf+18>:\tjmp    0xbc7e30 <with_errnof.constprop.0>\n   0xbc7e54:\tdata16 cs nopw 0x0(%rax,%rax,1)\n   0xbc7e5f:\tnop\n   0xbc7e60 <__math_edomf>:\tendbr64\n   0xbc7e64 <__math_edomf+4>:\tmov    $0x21,%edi",
+    "interpretation": "Linux si_code=5 (FPE_FLTUND) identifies the sediment failure as floating-point underflow."
+  }
+}

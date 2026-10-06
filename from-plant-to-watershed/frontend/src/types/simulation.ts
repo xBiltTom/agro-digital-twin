@@ -194,10 +194,14 @@ export interface SwatBaselineDiagnostic {
     project: { hru_count?: number; tile_linked_hru_count?: number };
     water_path?: {
       status: string;
+      routing_mode?: "PHYSICAL_CHANNEL_ROUTING" | "ARTIFICIAL_BYPASS";
+      geometry?: { channel_count: number; bypass_channel_count: number; total_length_km: number };
       area_km2?: number;
       area_difference_percent?: number;
       network?: { status: string; outlet_volume_m3: number; reported_outlet_volume_m3: number;
-        reporting_difference_m3: number; residual_m3: number };
+        reporting_difference_m3: number; residual_m3: number;
+        evaluation?: string[]; channel_evaporation_m3?: number; channel_seepage_m3?: number;
+        channel_storage_change_m3?: number; limitation?: string };
       catchment_accounting?: { status: string; residual_mm: number; evaluation: string[] };
     };
   };

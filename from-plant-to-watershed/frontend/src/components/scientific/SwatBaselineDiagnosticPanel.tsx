@@ -11,10 +11,12 @@ const number = (value: number | null | undefined, digits = 3) =>
 export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation: SimulationRun }) {
   const diagnostic = simulation.validation?.baseline_diagnostic;
   const waterPath = diagnostic?.physical?.water_path;
+  const physicalRouting = waterPath?.routing_mode === "PHYSICAL_CHANNEL_ROUTING";
   const [downloading, setDownloading] = useState<"csv" | "json" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const experiment = simulation.requested_config?.development_diagnostic as { classification?: string } | undefined;
-  const isProbe = experiment?.classification === "CONTROLLED_DRAINAGE_PROBE";
+  const isGeometryProbe = experiment?.classification === "CONTROLLED_CHANNEL_LENGTH_PROBE";
+  const isProbe = experiment?.classification === "CONTROLLED_DRAINAGE_PROBE" || isGeometryProbe;
   const isCoupled = simulation.effective_config?.run_type === "SWAT_MULTISCALE_COUPLED";
   const unavailableMessage = isCoupled
     ? "Las observaciones vinculadas se consultan en el playback. La comparación mensual de este panel está disponible para SWAT+ sin acoplamiento con salidas diarias."
@@ -39,7 +41,7 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            {isProbe ? "Prueba controlada de drenaje" : "Comparación con caudal observado"}
+            {isGeometryProbe ? "Prueba de longitudes de cauces" : isProbe ? "Prueba controlada de drenaje" : "Comparación con caudal observado"}
           </h4>
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
             {diagnostic?.status === "OBSERVATIONAL_DIAGNOSTIC"
@@ -101,7 +103,7 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
             {[
               ["Volumen outlet", number(waterPath.network.outlet_volume_m3 / 1e6, 2), "hm³"],
               ["Diferencia con reporte original", number(waterPath.network.reporting_difference_m3 / 1e6, 2), "hm³"],
-              ["Residuo de conexiones", number(waterPath.network.residual_m3, 2), "m³"],
+              [physicalRouting ? "Residuo parcial de la red" : "Residuo de conexiones", number(waterPath.network.residual_m3, 2), "m³"],
               ["Área modelada", number(waterPath.area_km2, 2), "km²"],
             ].map(([label, value, unit]) => (
               <div key={label} className="bg-slate-50 p-3 dark:bg-slate-950/40">
@@ -111,10 +113,20 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
             ))}
           </dl>
           <p className="text-xs text-slate-600 dark:text-slate-400">
-            El caudal conserva los aportes transportados por el motor. Los canales de esta corrida actúan como conexiones sin transformación.
+            {physicalRouting
+              ? `Los ${waterPath.geometry?.channel_count ?? "—"} cauces suman ${number(waterPath.geometry?.total_length_km, 2)} km e incluyen tránsito, almacenamiento y pérdidas fluviales. El almacenamiento de la llanura de inundación no está disponible en estas salidas.`
+              : "El caudal conserva los aportes transportados por el motor. Los canales de esta corrida actúan como conexiones sin transformación."}
             {waterPath.catchment_accounting && ` El balance parcial de la cuenca tiene un residuo de ${number(waterPath.catchment_accounting.residual_mm, 3)} mm (${waterPath.catchment_accounting.evaluation.join(" a ")}).`}
             {" "}Este diagnóstico de conservación requiere evaluación física adicional antes de usar la referencia en el artículo.
           </p>
+          {physicalRouting && (
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Evaporación fluvial: {number((waterPath.network.channel_evaporation_m3 ?? 0) / 1e6, 3)} hm³ ·
+              {" "}Infiltración fluvial: {number((waterPath.network.channel_seepage_m3 ?? 0) / 1e6, 3)} hm³ ·
+              {" "}Cambio de almacenamiento en cauces: {number((waterPath.network.channel_storage_change_m3 ?? 0) / 1e6, 3)} hm³.
+              {waterPath.network.evaluation && ` Ventana: ${waterPath.network.evaluation.join(" a ")}.`}
+            </p>
+          )}
         </section>
       )}
       {(diagnostic?.flags?.length ?? 0) > 0 && (

@@ -160,7 +160,10 @@ diagnóstico anterior, con IDs/carpetas nuevos. El inspector exige PostgreSQL lo
 
 ## Siguiente tarea
 
-Recuperar geometría/longitudes reales desde la delineación y verificar el ruteo
-en una prueba controlada. Después, contrastar ET/PET y manejo, delimitar parámetros
+La [prueba de longitudes delineadas](CHANNEL_GEOMETRY_DIAGNOSTIC_2019.md)
+ya ejecutó una pareja controlada con 37 cauces físicos y una copia diagnóstica
+del motor que permite underflow. El balance continúa parcial y el NSE negativo.
+Falta fijar el motor definitivo y recuperar estados de llanura de inundación.
+Después, contrastar ET/PET y manejo, delimitar parámetros
 y periodo de calibración, y reservar la evaluación temporal. La referencia A/B
 necesita superar estos pasos antes de entrenar C/D.

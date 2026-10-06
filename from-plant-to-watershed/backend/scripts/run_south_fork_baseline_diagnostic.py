@@ -28,6 +28,8 @@ from app.models.observation import Dataset, StreamflowObservation
 from app.models.simulation import ClimateScenario, SimulationRun
 from app.services.swat_baseline_diagnostic import inspect_project, link_drainage_probe, route_drainage_probe
 from app.services.twin_coupling_engine import TwinCouplingEngine
+from app.services.swat_channel_geometry import restore_channel_lengths, zero_channel_kinetics
+from app.services.swat_runtime_diagnostic import prepare_underflow_diagnostic
 
 
 def fingerprint(root: Path) -> str:
@@ -56,7 +58,11 @@ async def run(args) -> dict:
         raise ValueError("Diagnostic output must be outside the source project")
     if args.warmup_years < 0 or not args.project.is_dir() or not args.executable.is_file():
         raise ValueError("Existing project/executable and nonnegative warmup are required")
-    ids = [args.experiment_id + ("-tile-routed" if args.routing_probe else "-reference")]
+    if bool(args.channel_geometry) != bool(args.routing_graph) or (args.channel_geometry and not args.routing_probe):
+        raise ValueError("Channel geometry and routing graph must be supplied together with --routing-probe")
+    if args.zero_channel_kinetics and not args.routing_probe:
+        raise ValueError("Zero channel kinetics requires an explicit copied routing probe")
+    ids = [args.experiment_id + ("-geom-routed" if args.channel_geometry else "-tile-routed" if args.routing_probe else "-reference")]
     if args.drainage_probe and not args.routing_probe:
         ids.append(args.experiment_id + "-tile-probe")
     if any(len(value) > 36 for value in ids):
@@ -82,6 +88,11 @@ async def run(args) -> dict:
             if await db.get(SimulationRun, run_id):
                 raise ValueError(f"Simulation ID already exists: {run_id}")
         args.output_root.mkdir(parents=True)
+        runtime_diagnostic = None
+        if args.underflow_diagnostic:
+            runtime_diagnostic = prepare_underflow_diagnostic(args.executable,
+                args.output_root / "engine/swatplus-61.0.2.61-underflow-diagnostic")
+            args.executable = Path(runtime_diagnostic["executable"])
         before = fingerprint(args.project)
         projects = [] if args.routing_probe else [(ids[0], args.project, None)]
         if args.drainage_probe or args.routing_probe:
@@ -90,6 +101,11 @@ async def run(args) -> dict:
             intervention = link_drainage_probe(probe_project, landuse_name="corn_lum", tile_name="mw24_1000")
             if args.routing_probe:
                 intervention["routing"] = route_drainage_probe(probe_project)
+            if args.channel_geometry:
+                intervention["channel_geometry"] = restore_channel_lengths(probe_project,
+                    channels=args.channel_geometry, routing_graph=args.routing_graph)
+            if args.zero_channel_kinetics:
+                intervention["channel_kinetics"] = zero_channel_kinetics(probe_project)
             projects.append((ids[0] if args.routing_probe else ids[1], probe_project, intervention))
         report = {"schema_version": "south-fork-baseline-diagnostic/v1",
                   "experiment_id": args.experiment_id, "classification": "DEVELOPMENT_DIAGNOSTIC",
@@ -105,7 +121,7 @@ async def run(args) -> dict:
             sim = SimulationRun(
                 id=run_id, user_id=args.owner_id, watershed_id=args.watershed_id,
                 scenario_id=args.scenario_id,
-                name="South Fork 2019 · " + ("drenaje con ruteo" if args.routing_probe else "diagnóstico de drenaje" if intervention else "referencia física"),
+                name="South Fork 2019 · " + ("longitudes delineadas y drenaje conectado" if args.channel_geometry else "drenaje con ruteo" if args.routing_probe else "diagnóstico de drenaje" if intervention else "referencia física"),
                 status="PENDING", duration_days=365, seed=42, plant_count=1000,
                 mode="SWAT_PLUS", hydrology_backend="SWAT_PLUS", climate_source="SWAT_PROJECT",
                 management_scenario="BASELINE", station_id="05451210",
@@ -117,9 +133,11 @@ async def run(args) -> dict:
                     "warmup_period": args.warmup_years, "output_frequency": "DAILY",
                     "outlet_unit": "153", "run_type": "SWAT_STANDARD_BASELINE"},
                     "development_diagnostic": {"experiment_id": args.experiment_id,
-                        "classification": "CONTROLLED_DRAINAGE_PROBE" if intervention else "DEVELOPMENT_REFERENCE",
+                        "classification": "CONTROLLED_CHANNEL_LENGTH_PROBE" if args.channel_geometry else "CONTROLLED_DRAINAGE_PROBE" if intervention else "DEVELOPMENT_REFERENCE",
                         "intervention": intervention, "source_project_sha256": before}},
             )
+            if runtime_diagnostic:
+                sim.requested_config["development_diagnostic"]["runtime_diagnostic"] = runtime_diagnostic
             db.add(sim)
             await db.commit()
             completed = await TwinCouplingEngine.execute_simulation_run(db, run_id)
@@ -163,6 +181,10 @@ async def main():
     parser.add_argument("--warmup-years", type=int, default=19)
     parser.add_argument("--drainage-probe", action="store_true")
     parser.add_argument("--routing-probe", action="store_true", help="Run only the drainage probe with explicit til routing")
+    parser.add_argument("--channel-geometry", type=Path, help="Existing delineation channels.gpkg; read-only GIS source")
+    parser.add_argument("--routing-graph", type=Path, help="Existing delineation routing_graph.graphml")
+    parser.add_argument("--zero-channel-kinetics", action="store_true", help="Reproduce the failed zero-input probe; the engine substitutes nonzero defaults, so this does not disable reactions")
+    parser.add_argument("--underflow-diagnostic", action="store_true", help="Explicit copy of the audited binary allowing underflow; invalid/zero/overflow traps remain active")
     args = parser.parse_args()
     try:
         await run(args)

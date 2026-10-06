@@ -17,7 +17,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Persistencia | Frames JSONB PostgreSQL con clave temporal y SHA-256. |
 | Visor | Tres escalas y estados fechados; mallas anatómicas y terreno ilustrativos/contextuales. |
 | Diagnóstico observacional | Tres variantes estándar 2019 con lectura de caudal corregida; la pareja acoplada requiere su propia comparación. |
-| Recorrido del agua | Conexiones verificadas mediante hidrogramas nativos; balance parcial de suelo, nieve, acuíferos y retrasos. Los 37 canales son artificiales sin transformación. |
+| Recorrido del agua | Referencias anteriores con canales artificiales y una nueva variante con 37 longitudes delineadas, ruteo físico y balances parciales. |
 | Descargas SWAT+ | CSV de registros y JSON con configuración, procedencia, métricas y cobertura desde Simulaciones e Informes. |
 | CMIP6 / rendimiento | Sin proyecciones CMIP6 normalizadas en el experimento publicado ni validación de rendimiento a escala HRU/cuenca. |
 
@@ -36,6 +36,10 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `sf19-flow-v1-reference` | Referencia repetida con lectura corregida de hidrogramas | RMSE mensual 8,574 m³/s; NSE −0,587; volumen 100,420 hm³. |
 | `sf19-flow-v1-tile-probe` | Drenaje sin conexión, con lectura corregida | Drenaje fuera del recorrido; residuo parcial 64,224 mm. |
 | `sf19-trace-v3-tile-routed` | Drenaje conectado y lectura corregida | RMSE mensual 7,776 m³/s; NSE −0,305; volumen 103,553 hm³. |
+| `sf19-geom-v1-geom-routed` | Longitudes delineadas con binario original | `FAILED`: SIGFPE en calidad del agua durante warm-up. |
+| `sf19-geom-v2-geom-routed` | Intento de cinética con entradas cero | `FAILED`: underflow en sedimentos; varias entradas cero se sustituyen por valores predeterminados. |
+| `sf19-geom-ctrl-v1-tile-routed` | Control con copia diagnóstica que permite underflow | Reproduce volumen y métricas de la variante artificial conectada; 365 frames. |
+| `sf19-geom-v3-geom-routed` | Longitudes delineadas y misma copia diagnóstica | RMSE mensual 8,081 m³/s; NSE −0,409; volumen 94,460 hm³; 365 frames. |
 
 Dashboard y reportes consultan el experimento final v2. El visor prioriza el
 gemelo diario corregido, salvo que se indique una corrida accesible mediante
@@ -51,6 +55,14 @@ error del reporte de canales artificiales. Las tres variantes `sf19-flow-*` y
 `sf19-trace-v3-*` conservan valores originales y normalizados; sus comparaciones
 son consistentes entre sí. Las métricas de `sf19-diag-*` corresponden a la lectura
 anterior y no deben mezclarse con ellas al atribuir mejoras físicas.
+
+La [recuperación de longitudes](CHANNEL_GEOMETRY_DIAGNOSTIC_2019.md) añade
+212,637 km de cauces derivados del DEM. La pareja controlada cambia únicamente
+`len` entre inputs trazables; los términos terrestres siguen idénticos. El
+ruteo físico incluye almacenamiento y pérdidas, con balance parcial: falta el
+estado de llanura de inundación. El ejecutable diagnóstico cambia solamente
+la trampa de underflow de una copia del binario auditado; no es una versión
+oficial ni una selección definitiva del motor para el paper.
 
 ## 3. Gemelo South Fork 2019 corregido
 
@@ -135,14 +147,14 @@ tiene su propio linaje y no se registra automáticamente como reporte de H1.
 
 ## 5. Siguiente etapa de investigación
 
-1. Precisar la variable primaria del experimento: hoy el evaluador utiliza
-   caudal medio mensual del outlet en m³/s, distinto de escorrentía superficial
-   en mm. Registrar esa operacionalización respecto a la ficha técnica.
-2. Comparar baseline/acoplado con el flujo corregido de 2019 contra USGS,
-   manteniendo proyecto, forcing, warm-up, periodo, outlet y controles comunes.
-3. Revisar el ajuste del baseline, procedencia meteorológica y respuesta
-   hidrológica antes de atribuir una mejora al FSPM.
-4. Extender a varios años y separar desarrollo/calibración de evaluación;
+1. Fijar un motor reproducible desde fuente o una distribución oficial con la
+   política de underflow adecuada y repetir la pareja de longitudes delineadas.
+2. Recuperar estados de llanura de inundación, revisar pérdidas fluviales y
+   contrastar ET/PET y procedencia meteorológica con evidencia externa.
+3. Comparar baseline/acoplado con caudal consistente contra USGS, manteniendo
+   proyecto, forcing, warm-up, periodo, outlet, motor y controles comunes.
+4. Extender a varios años y separar desarrollo/calibración de evaluación para
+   el caudal medio mensual del outlet en m³/s, fijado en la reformulación;
    estimar incertidumbre teniendo en cuenta dependencia temporal.
 5. Publicar el nuevo experimento con su propio linaje y conectar comparación,
    reportes y visor a la misma evidencia.
@@ -158,5 +170,7 @@ En la revisión de 2026-10-05 se ejecutaron:
 - `pnpm test` desde frontend: **31 aprobadas**.
 - `pnpm exec tsc --noEmit --incremental false`: aprobado.
 
-Son comprobaciones de software; no se ejecutó aquí un nuevo experimento SWAT+,
-una nueva evaluación USGS ni una inspección visual en navegador.
+Son comprobaciones de software de aquella revisión; no incluyeron un nuevo
+experimento SWAT+, evaluación USGS ni inspección visual en navegador. Las
+corridas científicas del 2026-10-06 se documentan en las secciones anteriores;
+en la tarea de longitudes no se ejecutaron suites de tests.
