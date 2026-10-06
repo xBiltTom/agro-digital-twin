@@ -125,6 +125,8 @@ def _hydrology(row: dict, evidence: Evidence, source: str, resolution: str,
         "soil_water_average_mm": value(row.get("soil_water_average_mm"), "mm", evidence, source),
         "streamflow_m3s": value(row.get("streamflow_m3s"), "m3/s", evidence, source),
     }
+    if row.get("streamflow_source"):
+        result["streamflow_m3s"] = value(row.get("streamflow_m3s"), "m3/s", Evidence.DERIVED, row["streamflow_source"])
     if evidence == Evidence.SIMPLIFIED_HYDROLOGY:
         result["soil_moisture_vol_percent"] = value(row.get("soil_moisture_vol"), "volumetric percent", evidence, source)
     if observation_source:
@@ -297,8 +299,10 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
             channel_states.append(ChannelState(
                 channel_id=str(channel["channel_unit"]),
                 gis_id=str(channel["channel_gis_id"]) if channel.get("channel_gis_id") is not None else None,
-                variables={name: value(channel.get(name), unit, Evidence.MODELLED_SWAT_PLUS,
-                                       "SWAT+ channel_sd_day") for name, unit in channel_units.items()},
+                variables={name: value(channel.get(name), unit,
+                                       Evidence.DERIVED if channel.get("streamflow_source") and name in {"streamflow_m3s", "channel_inflow_m3s"} else Evidence.MODELLED_SWAT_PLUS,
+                                       channel["streamflow_source"] if channel.get("streamflow_source") and name in {"streamflow_m3s", "channel_inflow_m3s"} else "SWAT+ channel_sd_day")
+                           for name, unit in channel_units.items()},
             ))
         weather = _weather(weather_by_date.get(day), resolution=resolution, source=forcing_source, evidence=Evidence.DERIVED)
         observed_values = observations_by_period.get(day, [])

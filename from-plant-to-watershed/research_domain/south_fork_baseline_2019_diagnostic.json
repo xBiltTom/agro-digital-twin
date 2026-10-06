@@ -1,0 +1,2332 @@
+{
+  "schema_version": "south-fork-baseline-comparison/v1",
+  "created_on": "2026-10-06",
+  "classification": "DEVELOPMENT_DIAGNOSTIC",
+  "hypothesis_status": "NOT_EVALUATED",
+  "station_id": "05451210",
+  "outlet_gis_id": "153",
+  "evaluation": [
+    "2019-01-01",
+    "2019-12-31"
+  ],
+  "warmup_years": 19,
+  "database": "existing local PostgreSQL digitaltwin",
+  "source_project_sha256": "623c8130f05b86ed4b7c339cecfde57ab7ae8a3a2d420807ac5a1f961e098eaa",
+  "source_unchanged": true,
+  "source_fingerprints_identical": true,
+  "api_downloads": {
+    "sf19-diag-v1-reference": {
+      "detail_status": 200,
+      "availability_status": 200,
+      "playback_status": 200,
+      "exports": {
+        "csv": {
+          "status": 200,
+          "rows": 365,
+          "observed_rows": 365,
+          "estimated_rows": 86
+        },
+        "json": {
+          "status": 200,
+          "records": 365,
+          "months": 12,
+          "hypothesis_status": "NOT_EVALUATED"
+        }
+      }
+    },
+    "sf19-diag-v1-tile-probe": {
+      "detail_status": 200,
+      "availability_status": 200,
+      "playback_status": 200,
+      "exports": {
+        "csv": {
+          "status": 200,
+          "rows": 365,
+          "observed_rows": 365,
+          "estimated_rows": 86
+        },
+        "json": {
+          "status": 200,
+          "records": 365,
+          "months": 12,
+          "hypothesis_status": "NOT_EVALUATED"
+        }
+      }
+    },
+    "sf19-diag-v2-tile-routed": {
+      "detail_status": 200,
+      "availability_status": 200,
+      "playback_status": 200,
+      "exports": {
+        "csv": {
+          "status": 200,
+          "rows": 365,
+          "observed_rows": 365,
+          "estimated_rows": 86
+        },
+        "json": {
+          "status": 200,
+          "records": 365,
+          "months": 12,
+          "hypothesis_status": "NOT_EVALUATED"
+        }
+      }
+    },
+    "swat_capability": {
+      "status": "ACTIVE",
+      "executable": "/home/bilton/.swatplus_builder/bin/swatplus_exe",
+      "project_dir": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/project/Scenarios/Default/TxtInOut",
+      "input_directory": "/home/bilton/.swatplus_builder/artifacts/south_fork_05451210_2000_2025_retry/project/Scenarios/Default/TxtInOut",
+      "reason": null
+    }
+  },
+  "runs": {
+    "sf19-diag-v1-reference": {
+      "simulation_id": "sf19-diag-v1-reference",
+      "status": "COMPLETED",
+      "intervention": null,
+      "artifact": "backend/data/baseline-diagnostic-2019-v1/sf19-diag-v1-reference.json",
+      "artifact_sha256": "dba9c7f2b8a572f2c4dfe36e2f1dcfdd5d8797b28a42688da168435130c1ed4f",
+      "diagnostic": {
+        "schema_version": "swat-baseline-diagnostic/v1",
+        "status": "OBSERVATIONAL_DIAGNOSTIC",
+        "interpretation": "DEVELOPMENT_DIAGNOSTIC_NOT_HYPOTHESIS_TEST",
+        "station_id": "05451210",
+        "unit": "m3/s",
+        "daily": {
+          "n_pairs": 365,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 12.356763328415154,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 8.08649368966513,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.28204259372464224,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -78.19369225375902,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.15396567095951022,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": -0.46137717602931083,
+            "reason": null
+          }
+        },
+        "monthly": {
+          "n_pairs": 12,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 9.532741790432542,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 7.223050547697916,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.9611410334659256,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -78.07395845429467,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.16024752537191556,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.013545074434858306,
+            "reason": null
+          }
+        },
+        "aligned_months": 12,
+        "monthly_outputs": [
+          {
+            "month": "2019-01",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 26,
+            "observed_streamflow_m3s": 3.8539228211711998,
+            "baseline_streamflow_m3s": 0.35355677419354836
+          },
+          {
+            "month": "2019-02",
+            "paired_days": 28,
+            "expected_days": 28,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 28,
+            "observed_streamflow_m3s": 3.304778260476343,
+            "baseline_streamflow_m3s": 2.125984642857143
+          },
+          {
+            "month": "2019-03",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 14,
+            "observed_streamflow_m3s": 18.3355235469857,
+            "baseline_streamflow_m3s": 6.631928064516129
+          },
+          {
+            "month": "2019-04",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 8.111832653721601,
+            "baseline_streamflow_m3s": 1.4970333333333334
+          },
+          {
+            "month": "2019-05",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 19.748716881259355,
+            "baseline_streamflow_m3s": 1.9276129032258065
+          },
+          {
+            "month": "2019-06",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 13.2154723044864,
+            "baseline_streamflow_m3s": 2.5119666666666665
+          },
+          {
+            "month": "2019-07",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 3.9633537315493164,
+            "baseline_streamflow_m3s": 0.6284241935483871
+          },
+          {
+            "month": "2019-08",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 1.1059920866170219,
+            "baseline_streamflow_m3s": 1.7370554838709678
+          },
+          {
+            "month": "2019-09",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 4.468200174291456,
+            "baseline_streamflow_m3s": 0.730724
+          },
+          {
+            "month": "2019-10",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 21.250423197299614,
+            "baseline_streamflow_m3s": 0.9338774193548387
+          },
+          {
+            "month": "2019-11",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 4,
+            "observed_streamflow_m3s": 5.94653778432,
+            "baseline_streamflow_m3s": 2.0267666666666666
+          },
+          {
+            "month": "2019-12",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 14,
+            "observed_streamflow_m3s": 6.097256483922581,
+            "baseline_streamflow_m3s": 2.8826
+          }
+        ],
+        "coverage": {
+          "simulation_days": 365,
+          "paired_days": 365,
+          "unmatched_dates": [],
+          "estimated_days": 86,
+          "qualifiers": {
+            "A": 279,
+            "A;e": 86
+          },
+          "minimum_monthly_coverage": 0.9,
+          "aggregation": "Both monthly means use identical valid days; observations are never imputed."
+        },
+        "daily_excluding_estimated": {
+          "n_pairs": 279,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 13.57745815679205,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 9.451465582866406,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.5330185180129758,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -82.41227295862565,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.11651185036390074,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": -0.3435146036618901,
+            "reason": null
+          }
+        },
+        "physical": {
+          "totals_mm": {
+            "precip_mm": 1080.817,
+            "evapotranspiration_mm": 843.991,
+            "potential_evapotranspiration_mm": 978.812,
+            "runoff_mm": 108.48,
+            "percolation_mm": 125.13,
+            "tile_drainage_mm": 0.0,
+            "lateral_flow_mm": 1.155,
+            "water_yield_mm": 109.64
+          },
+          "et_precipitation_ratio": 0.7808824250543801,
+          "project": {
+            "status": "INSPECTED",
+            "hru_count": 36,
+            "tile_linked_hru_count": 0,
+            "landuse_tile_links": [
+              {
+                "hru_id": 1,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 2,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 3,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 4,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 5,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 6,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 7,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 8,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 9,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 10,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 11,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 12,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 13,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 14,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 15,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 16,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 17,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 18,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 19,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 20,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 21,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 22,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 23,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 24,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 25,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 26,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 27,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 28,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 29,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 30,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 31,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 32,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 33,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 34,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 35,
+                "landuse": "corn_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 36,
+                "landuse": "corn_lum",
+                "tile": "null"
+              }
+            ],
+            "tile_definitions": [
+              {
+                "name": "mw24_1000",
+                "dp": "1000.00000",
+                "t_fc": "24.00000",
+                "lag": "96.00000",
+                "rad": "100.00000",
+                "dist": "5.00000",
+                "drain": "10.00000",
+                "pump": "1.00000",
+                "lat_ksat": "2.00000"
+              }
+            ],
+            "input_checksums": {
+              "landuse.lum": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+              "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+              "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+              "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+              "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0"
+            },
+            "interpretation": "Input linkage only; inspect qtile to establish simulated drainage."
+          },
+          "balance_closure": "NOT_COMPUTED: these reported terms are not a complete mass balance"
+        },
+        "flags": [
+          {
+            "code": "DRAINAGE_NOT_LINKED",
+            "message": "El drenaje artificial no está enlazado a las HRU."
+          },
+          {
+            "code": "HIGH_ET_FRACTION",
+            "message": "ET supera el 70 % de la lluvia: revisar procesos y forcing; indicador diagnóstico."
+          },
+          {
+            "code": "NEGATIVE_MONTHLY_NSE",
+            "message": "El NSE mensual es negativo; la referencia necesita diagnóstico."
+          },
+          {
+            "code": "LARGE_VOLUME_BIAS",
+            "message": "El sesgo mensual supera ±30 %; revisar el volumen simulado."
+          }
+        ],
+        "hypothesis_status": "NOT_EVALUATED",
+        "metric_conventions": {
+          "pbias": "100 * sum(simulated - observed) / sum(observed)",
+          "kge": "Modified KGE using coefficient-of-variation ratio"
+        }
+      },
+      "output_checksums": {
+        "basin_wb_day.txt": "80315e077b9cf4122eeb63b6d7fc802b2d8b914489ca709e1e56ddb4b1d6a551",
+        "channel_sd_day.txt": "41cda6f3d431f456af788b0a20eb76bcf11341b9f9f327a63356a2363aff7659",
+        "hru_wb_day.txt": "bdb5ae6ae14088fbe7573514e262a8392b09961553aae4235f376c483da74331",
+        "hru_pw_day.txt": "eadabbf85c34754b534e212eac4c0d41e1146a6addc4a6715e9730baab30d309",
+        "mgt_out.txt": "ab191da4c7839674c1138ab1e0129ef52129dcb2de4dde464b79fe7349d83862"
+      },
+      "input_checksums": {
+        "plants.plt": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+        "plant.ini": "544e70ef716d9276d69dc87e379dedbd3e4c5188a7739cb7be07f66ce7888be8",
+        "landuse.lum": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+        "management.sch": "b951aff77d5583d467b9937db67dbc5da6a3a6c271f38c22d0dac7ce4c3f2654",
+        "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+        "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+        "soil_plant.ini": "f9a8b8b16c3ecd04f766cb517749ea9c5b5fa071f0a2d45b737b500986a74aa4",
+        "time.sim": "bf051e264b75f5be8d534171c0b712ae027adcef0f868688bd436d61f7d3696d",
+        "print.prt": "c0905355520dfbe971c89030806050c055fde691f9e207480a776c7d39b2294b"
+      },
+      "workspace": "backend/data/baseline-diagnostic-2019-v1/workspaces/sf19-diag-v1-reference",
+      "persisted_frames": 365,
+      "summary_metrics": {
+        "evidence_type": "REAL_SWAT_PLUS",
+        "period_count": 365,
+        "total_precip_mm": 1083.11,
+        "total_discharge_hm3": 63.112520736,
+        "total_discharge_status": "AVAILABLE",
+        "total_discharge_limitation": null,
+        "total_runoff_mm": 108.48,
+        "total_evapotranspiration_mm": 843.991,
+        "total_percolation_mm": 125.13
+      },
+      "executed_project_inspection": {
+        "status": "INSPECTED",
+        "hru_count": 36,
+        "tile_linked_hru_count": 0,
+        "landuse_tile_links": [
+          {
+            "hru_id": 1,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 2,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 3,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 4,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 5,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 6,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 7,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 8,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 9,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 10,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 11,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 12,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 13,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 14,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 15,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 16,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 17,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 18,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 19,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 20,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 21,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 22,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 23,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 24,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 25,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 26,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 27,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 28,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 29,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 30,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 31,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 32,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 33,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 34,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 35,
+            "landuse": "corn_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 36,
+            "landuse": "corn_lum",
+            "tile": "null"
+          }
+        ],
+        "tile_definitions": [
+          {
+            "name": "mw24_1000",
+            "dp": "1000.00000",
+            "t_fc": "24.00000",
+            "lag": "96.00000",
+            "rad": "100.00000",
+            "dist": "5.00000",
+            "drain": "10.00000",
+            "pump": "1.00000",
+            "lat_ksat": "2.00000"
+          }
+        ],
+        "input_checksums": {
+          "landuse.lum": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+          "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+          "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+          "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+          "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+          "rout_unit.con": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63"
+        },
+        "routing_unit_count": 36,
+        "routing_units_with_tile_connection": 0,
+        "interpretation": "Input linkage only; inspect qtile to establish simulated drainage."
+      },
+      "executable_version": "Revision 61.0.2.61",
+      "executable_sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+      "code_version": "eff4eadb274ffa007eba10fa31292e03a7220db0+dirty"
+    },
+    "sf19-diag-v1-tile-probe": {
+      "simulation_id": "sf19-diag-v1-tile-probe",
+      "status": "COMPLETED",
+      "intervention": {
+        "classification": "CONTROLLED_DRAINAGE_PROBE",
+        "file": "landuse.lum",
+        "landuse": "corn_lum",
+        "before": "null",
+        "after": "mw24_1000",
+        "before_sha256": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+        "after_sha256": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "limitation": "Drainage mask is a diagnostic intervention, not observed historical management."
+      },
+      "artifact": "backend/data/baseline-diagnostic-2019-v1/sf19-diag-v1-tile-probe.json",
+      "artifact_sha256": "1acd6e53aa59efb3c05775cba85ba706ca13dcf0ba7c80c280504a2f28293c05",
+      "diagnostic": {
+        "schema_version": "swat-baseline-diagnostic/v1",
+        "status": "OBSERVATIONAL_DIAGNOSTIC",
+        "interpretation": "DEVELOPMENT_DIAGNOSTIC_NOT_HYPOTHESIS_TEST",
+        "station_id": "05451210",
+        "unit": "m3/s",
+        "daily": {
+          "n_pairs": 365,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 12.879453242141853,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 8.72871566226787,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.39279708900077104,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -85.1779840273198,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.13005072668299822,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": -1.3539082667601359,
+            "reason": null
+          }
+        },
+        "monthly": {
+          "n_pairs": 12,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 10.19097125649156,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 7.863104939851014,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -1.2413223442742178,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -85.09485187067449,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.057573214083633015,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": -0.30777261652281873,
+            "reason": null
+          }
+        },
+        "aligned_months": 12,
+        "monthly_outputs": [
+          {
+            "month": "2019-01",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 26,
+            "observed_streamflow_m3s": 3.8539228211711998,
+            "baseline_streamflow_m3s": 0.28135677419354843
+          },
+          {
+            "month": "2019-02",
+            "paired_days": 28,
+            "expected_days": 28,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 28,
+            "observed_streamflow_m3s": 3.304778260476343,
+            "baseline_streamflow_m3s": 2.0948635714285713
+          },
+          {
+            "month": "2019-03",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 14,
+            "observed_streamflow_m3s": 18.3355235469857,
+            "baseline_streamflow_m3s": 6.416496774193549
+          },
+          {
+            "month": "2019-04",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 8.111832653721601,
+            "baseline_streamflow_m3s": 0.138137
+          },
+          {
+            "month": "2019-05",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 19.748716881259355,
+            "baseline_streamflow_m3s": 0.6028170967741935
+          },
+          {
+            "month": "2019-06",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 13.2154723044864,
+            "baseline_streamflow_m3s": 0.8006933333333334
+          },
+          {
+            "month": "2019-07",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 3.9633537315493164,
+            "baseline_streamflow_m3s": 0.10667225806451613
+          },
+          {
+            "month": "2019-08",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 1.1059920866170219,
+            "baseline_streamflow_m3s": 1.736882580645161
+          },
+          {
+            "month": "2019-09",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 4.468200174291456,
+            "baseline_streamflow_m3s": 0.732076
+          },
+          {
+            "month": "2019-10",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 21.250423197299614,
+            "baseline_streamflow_m3s": 0.3846003225806452
+          },
+          {
+            "month": "2019-11",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 4,
+            "observed_streamflow_m3s": 5.94653778432,
+            "baseline_streamflow_m3s": 1.0382136666666666
+          },
+          {
+            "month": "2019-12",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 14,
+            "observed_streamflow_m3s": 6.097256483922581,
+            "baseline_streamflow_m3s": 1.9737222580645162
+          }
+        ],
+        "coverage": {
+          "simulation_days": 365,
+          "paired_days": 365,
+          "unmatched_dates": [],
+          "estimated_days": 86,
+          "qualifiers": {
+            "A": 279,
+            "A;e": 86
+          },
+          "minimum_monthly_coverage": 0.9,
+          "aggregation": "Both monthly means use identical valid days; observations are never imputed."
+        },
+        "daily_excluding_estimated": {
+          "n_pairs": 279,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 14.182528862519602,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 10.217353109748126,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.6726990372450179,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -89.53708475320414,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.09409154345773532,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": -1.431610829009753,
+            "reason": null
+          }
+        },
+        "physical": {
+          "totals_mm": {
+            "precip_mm": 1080.817,
+            "evapotranspiration_mm": 834.971,
+            "potential_evapotranspiration_mm": 978.812,
+            "runoff_mm": 109.843,
+            "percolation_mm": 70.784,
+            "tile_drainage_mm": 64.234,
+            "lateral_flow_mm": 1.512,
+            "water_yield_mm": 175.592
+          },
+          "et_precipitation_ratio": 0.772536886447937,
+          "project": {
+            "status": "INSPECTED",
+            "hru_count": 36,
+            "tile_linked_hru_count": 32,
+            "landuse_tile_links": [
+              {
+                "hru_id": 1,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 2,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 3,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 4,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 5,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 6,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 7,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 8,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 9,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 10,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 11,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 12,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 13,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 14,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 15,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 16,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 17,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 18,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 19,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 20,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 21,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 22,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 23,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 24,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 25,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 26,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 27,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 28,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 29,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 30,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 31,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 32,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 33,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 34,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 35,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 36,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              }
+            ],
+            "tile_definitions": [
+              {
+                "name": "mw24_1000",
+                "dp": "1000.00000",
+                "t_fc": "24.00000",
+                "lag": "96.00000",
+                "rad": "100.00000",
+                "dist": "5.00000",
+                "drain": "10.00000",
+                "pump": "1.00000",
+                "lat_ksat": "2.00000"
+              }
+            ],
+            "input_checksums": {
+              "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+              "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+              "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+              "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+              "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0"
+            },
+            "interpretation": "Input linkage only; inspect qtile to establish simulated drainage."
+          },
+          "balance_closure": "NOT_COMPUTED: these reported terms are not a complete mass balance"
+        },
+        "flags": [
+          {
+            "code": "HIGH_ET_FRACTION",
+            "message": "ET supera el 70 % de la lluvia: revisar procesos y forcing; indicador diagnóstico."
+          },
+          {
+            "code": "NEGATIVE_MONTHLY_NSE",
+            "message": "El NSE mensual es negativo; la referencia necesita diagnóstico."
+          },
+          {
+            "code": "LARGE_VOLUME_BIAS",
+            "message": "El sesgo mensual supera ±30 %; revisar el volumen simulado."
+          }
+        ],
+        "hypothesis_status": "NOT_EVALUATED",
+        "metric_conventions": {
+          "pbias": "100 * sum(simulated - observed) / sum(observed)",
+          "kge": "Modified KGE using coefficient-of-variation ratio"
+        }
+      },
+      "output_checksums": {
+        "basin_wb_day.txt": "93829f0157a52f55998837da1dc17f5da673909809b93c01bd0bcbb041717a3f",
+        "channel_sd_day.txt": "87d9c5f811296a09a8469a0c04abe5a372905a7493b2682377564adccf9f6d17",
+        "hru_wb_day.txt": "3e65d6237ff97f7e00751817a8e0821bfd8126031ec8b0647e3603531a0157d6",
+        "hru_pw_day.txt": "d721dd52794b91c2c1d017db160d1930994a97b0cb30ab84126de933972cf914",
+        "mgt_out.txt": "2e0156871e9a21959c16c385712b3e07fdc92d605538d81e98ff49121c7eddcc"
+      },
+      "input_checksums": {
+        "plants.plt": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+        "plant.ini": "544e70ef716d9276d69dc87e379dedbd3e4c5188a7739cb7be07f66ce7888be8",
+        "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "management.sch": "b951aff77d5583d467b9937db67dbc5da6a3a6c271f38c22d0dac7ce4c3f2654",
+        "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+        "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+        "soil_plant.ini": "f9a8b8b16c3ecd04f766cb517749ea9c5b5fa071f0a2d45b737b500986a74aa4",
+        "time.sim": "bf051e264b75f5be8d534171c0b712ae027adcef0f868688bd436d61f7d3696d",
+        "print.prt": "c0905355520dfbe971c89030806050c055fde691f9e207480a776c7d39b2294b"
+      },
+      "workspace": "backend/data/baseline-diagnostic-2019-v1/workspaces/sf19-diag-v1-tile-probe",
+      "persisted_frames": 365,
+      "summary_metrics": {
+        "evidence_type": "REAL_SWAT_PLUS",
+        "period_count": 365,
+        "total_precip_mm": 1083.11,
+        "total_discharge_hm3": 42.898357728,
+        "total_discharge_status": "AVAILABLE",
+        "total_discharge_limitation": null,
+        "total_runoff_mm": 109.843,
+        "total_evapotranspiration_mm": 834.971,
+        "total_percolation_mm": 70.784
+      },
+      "executed_project_inspection": {
+        "status": "INSPECTED",
+        "hru_count": 36,
+        "tile_linked_hru_count": 32,
+        "landuse_tile_links": [
+          {
+            "hru_id": 1,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 2,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 3,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 4,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 5,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 6,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 7,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 8,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 9,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 10,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 11,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 12,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 13,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 14,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 15,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 16,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 17,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 18,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 19,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 20,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 21,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 22,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 23,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 24,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 25,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 26,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 27,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 28,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 29,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 30,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 31,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 32,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 33,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 34,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 35,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 36,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          }
+        ],
+        "tile_definitions": [
+          {
+            "name": "mw24_1000",
+            "dp": "1000.00000",
+            "t_fc": "24.00000",
+            "lag": "96.00000",
+            "rad": "100.00000",
+            "dist": "5.00000",
+            "drain": "10.00000",
+            "pump": "1.00000",
+            "lat_ksat": "2.00000"
+          }
+        ],
+        "input_checksums": {
+          "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+          "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+          "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+          "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+          "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+          "rout_unit.con": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63"
+        },
+        "routing_unit_count": 36,
+        "routing_units_with_tile_connection": 0,
+        "interpretation": "Input linkage only; inspect qtile to establish simulated drainage."
+      },
+      "executable_version": "Revision 61.0.2.61",
+      "executable_sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+      "code_version": "eff4eadb274ffa007eba10fa31292e03a7220db0+dirty"
+    },
+    "sf19-diag-v2-tile-routed": {
+      "simulation_id": "sf19-diag-v2-tile-routed",
+      "status": "COMPLETED",
+      "intervention": {
+        "classification": "CONTROLLED_DRAINAGE_PROBE",
+        "file": "landuse.lum",
+        "landuse": "corn_lum",
+        "before": "null",
+        "after": "mw24_1000",
+        "before_sha256": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+        "after_sha256": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "limitation": "Drainage mask is a diagnostic intervention, not observed historical management.",
+        "routing": {
+          "file": "rout_unit.con",
+          "routing_units_changed": 36,
+          "connection": "til -> existing surface-flow sdc; fraction 1",
+          "before_sha256": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63",
+          "after_sha256": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+        }
+      },
+      "artifact": "backend/data/baseline-diagnostic-2019-v2/sf19-diag-v2-tile-routed.json",
+      "artifact_sha256": "73b005beddd6c9945894619b5dea3ebdf72d91ca0dcee2ee80258e127f54ebf1",
+      "diagnostic": {
+        "schema_version": "swat-baseline-diagnostic/v1",
+        "status": "OBSERVATIONAL_DIAGNOSTIC",
+        "interpretation": "DEVELOPMENT_DIAGNOSTIC_NOT_HYPOTHESIS_TEST",
+        "station_id": "05451210",
+        "unit": "m3/s",
+        "daily": {
+          "n_pairs": 365,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 11.624846564642807,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 7.93284577185691,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.13466446929912745,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -76.49710769968559,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.2796741123959465,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": -0.4636659567164958,
+            "reason": null
+          }
+        },
+        "monthly": {
+          "n_pairs": 12,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 8.91437989059137,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 7.078088574259616,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.7149657182452722,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -76.48422726381399,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.4762020329550674,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.11014094040157718,
+            "reason": null
+          }
+        },
+        "aligned_months": 12,
+        "monthly_outputs": [
+          {
+            "month": "2019-01",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 26,
+            "observed_streamflow_m3s": 3.8539228211711998,
+            "baseline_streamflow_m3s": 0.28135677419354843
+          },
+          {
+            "month": "2019-02",
+            "paired_days": 28,
+            "expected_days": 28,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 28,
+            "observed_streamflow_m3s": 3.304778260476343,
+            "baseline_streamflow_m3s": 2.0948635714285713
+          },
+          {
+            "month": "2019-03",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 14,
+            "observed_streamflow_m3s": 18.3355235469857,
+            "baseline_streamflow_m3s": 7.1367954838709675
+          },
+          {
+            "month": "2019-04",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 8.111832653721601,
+            "baseline_streamflow_m3s": 0.4522153333333333
+          },
+          {
+            "month": "2019-05",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 19.748716881259355,
+            "baseline_streamflow_m3s": 6.1228945161290325
+          },
+          {
+            "month": "2019-06",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 13.2154723044864,
+            "baseline_streamflow_m3s": 1.5392833333333333
+          },
+          {
+            "month": "2019-07",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 3.9633537315493164,
+            "baseline_streamflow_m3s": 0.10706612903225805
+          },
+          {
+            "month": "2019-08",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 1.1059920866170219,
+            "baseline_streamflow_m3s": 1.736882580645161
+          },
+          {
+            "month": "2019-09",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 4.468200174291456,
+            "baseline_streamflow_m3s": 0.732076
+          },
+          {
+            "month": "2019-10",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 0,
+            "observed_streamflow_m3s": 21.250423197299614,
+            "baseline_streamflow_m3s": 2.1059548387096774
+          },
+          {
+            "month": "2019-11",
+            "paired_days": 30,
+            "expected_days": 30,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 4,
+            "observed_streamflow_m3s": 5.94653778432,
+            "baseline_streamflow_m3s": 1.2191233333333333
+          },
+          {
+            "month": "2019-12",
+            "paired_days": 31,
+            "expected_days": 31,
+            "coverage_fraction": 1.0,
+            "included": true,
+            "estimated_days": 14,
+            "observed_streamflow_m3s": 6.097256483922581,
+            "baseline_streamflow_m3s": 2.198216129032258
+          }
+        ],
+        "coverage": {
+          "simulation_days": 365,
+          "paired_days": 365,
+          "unmatched_dates": [],
+          "estimated_days": 86,
+          "qualifiers": {
+            "A": 279,
+            "A;e": 86
+          },
+          "minimum_monthly_coverage": 0.9,
+          "aggregation": "Both monthly means use identical valid days; observations are never imputed."
+        },
+        "daily_excluding_estimated": {
+          "n_pairs": 279,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 12.686560876475394,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 9.17921185526784,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.3384380371077855,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -79.84368540208078,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.28586557899443726,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": -0.3953649670475581,
+            "reason": null
+          }
+        },
+        "physical": {
+          "totals_mm": {
+            "precip_mm": 1080.817,
+            "evapotranspiration_mm": 834.971,
+            "potential_evapotranspiration_mm": 978.812,
+            "runoff_mm": 109.843,
+            "percolation_mm": 70.784,
+            "tile_drainage_mm": 64.234,
+            "lateral_flow_mm": 1.512,
+            "water_yield_mm": 175.592
+          },
+          "et_precipitation_ratio": 0.772536886447937,
+          "project": {
+            "status": "INSPECTED",
+            "hru_count": 36,
+            "tile_linked_hru_count": 32,
+            "landuse_tile_links": [
+              {
+                "hru_id": 1,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 2,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 3,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 4,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 5,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 6,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 7,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 8,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 9,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 10,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 11,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 12,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 13,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 14,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 15,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 16,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 17,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 18,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 19,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 20,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 21,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 22,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 23,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 24,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 25,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 26,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 27,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 28,
+                "landuse": "agrl_lum",
+                "tile": "null"
+              },
+              {
+                "hru_id": 29,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 30,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 31,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 32,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 33,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 34,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 35,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              },
+              {
+                "hru_id": 36,
+                "landuse": "corn_lum",
+                "tile": "mw24_1000"
+              }
+            ],
+            "tile_definitions": [
+              {
+                "name": "mw24_1000",
+                "dp": "1000.00000",
+                "t_fc": "24.00000",
+                "lag": "96.00000",
+                "rad": "100.00000",
+                "dist": "5.00000",
+                "drain": "10.00000",
+                "pump": "1.00000",
+                "lat_ksat": "2.00000"
+              }
+            ],
+            "input_checksums": {
+              "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+              "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+              "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+              "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+              "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+              "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+            },
+            "routing_unit_count": 36,
+            "routing_units_with_tile_connection": 36,
+            "interpretation": "Input linkage only; inspect qtile to establish simulated drainage."
+          },
+          "balance_closure": "NOT_COMPUTED: these reported terms are not a complete mass balance"
+        },
+        "flags": [
+          {
+            "code": "HIGH_ET_FRACTION",
+            "message": "ET supera el 70 % de la lluvia: revisar procesos y forcing; indicador diagnóstico."
+          },
+          {
+            "code": "NEGATIVE_MONTHLY_NSE",
+            "message": "El NSE mensual es negativo; la referencia necesita diagnóstico."
+          },
+          {
+            "code": "LARGE_VOLUME_BIAS",
+            "message": "El sesgo mensual supera ±30 %; revisar el volumen simulado."
+          }
+        ],
+        "hypothesis_status": "NOT_EVALUATED",
+        "metric_conventions": {
+          "pbias": "100 * sum(simulated - observed) / sum(observed)",
+          "kge": "Modified KGE using coefficient-of-variation ratio"
+        }
+      },
+      "output_checksums": {
+        "basin_wb_day.txt": "93829f0157a52f55998837da1dc17f5da673909809b93c01bd0bcbb041717a3f",
+        "channel_sd_day.txt": "ea8d273b24deadb1b7b0cd3b84dbd85fd04bdf73352f427f3ceafcbdae38e5f6",
+        "hru_wb_day.txt": "3e65d6237ff97f7e00751817a8e0821bfd8126031ec8b0647e3603531a0157d6",
+        "hru_pw_day.txt": "d721dd52794b91c2c1d017db160d1930994a97b0cb30ab84126de933972cf914",
+        "mgt_out.txt": "2e0156871e9a21959c16c385712b3e07fdc92d605538d81e98ff49121c7eddcc"
+      },
+      "input_checksums": {
+        "plants.plt": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+        "plant.ini": "544e70ef716d9276d69dc87e379dedbd3e4c5188a7739cb7be07f66ce7888be8",
+        "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "management.sch": "b951aff77d5583d467b9937db67dbc5da6a3a6c271f38c22d0dac7ce4c3f2654",
+        "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+        "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+        "soil_plant.ini": "f9a8b8b16c3ecd04f766cb517749ea9c5b5fa071f0a2d45b737b500986a74aa4",
+        "time.sim": "bf051e264b75f5be8d534171c0b712ae027adcef0f868688bd436d61f7d3696d",
+        "print.prt": "c0905355520dfbe971c89030806050c055fde691f9e207480a776c7d39b2294b"
+      },
+      "workspace": "backend/data/baseline-diagnostic-2019-v2/workspaces/sf19-diag-v2-tile-routed",
+      "persisted_frames": 365,
+      "summary_metrics": {
+        "evidence_type": "REAL_SWAT_PLUS",
+        "period_count": 365,
+        "total_precip_mm": 1083.11,
+        "total_discharge_hm3": 68.02283059199999,
+        "total_discharge_status": "AVAILABLE",
+        "total_discharge_limitation": null,
+        "total_runoff_mm": 109.843,
+        "total_evapotranspiration_mm": 834.971,
+        "total_percolation_mm": 70.784
+      },
+      "executed_project_inspection": {
+        "status": "INSPECTED",
+        "hru_count": 36,
+        "tile_linked_hru_count": 32,
+        "landuse_tile_links": [
+          {
+            "hru_id": 1,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 2,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 3,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 4,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 5,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 6,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 7,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 8,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 9,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 10,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 11,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 12,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 13,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 14,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 15,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 16,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 17,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 18,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 19,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 20,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 21,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 22,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 23,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 24,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 25,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 26,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 27,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 28,
+            "landuse": "agrl_lum",
+            "tile": "null"
+          },
+          {
+            "hru_id": 29,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 30,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 31,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 32,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 33,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 34,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 35,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          },
+          {
+            "hru_id": 36,
+            "landuse": "corn_lum",
+            "tile": "mw24_1000"
+          }
+        ],
+        "tile_definitions": [
+          {
+            "name": "mw24_1000",
+            "dp": "1000.00000",
+            "t_fc": "24.00000",
+            "lag": "96.00000",
+            "rad": "100.00000",
+            "dist": "5.00000",
+            "drain": "10.00000",
+            "pump": "1.00000",
+            "lat_ksat": "2.00000"
+          }
+        ],
+        "input_checksums": {
+          "landuse.lum": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+          "hru-data.hru": "23b43caa6394a9b04a10de3fb526e843846256d38a7d6c4f61dd489f4e94a4ce",
+          "tiledrain.str": "5509072cf4c41ad383cf240f59e797e49cba51548ec227671d57e50e850cf1d3",
+          "hydrology.hyd": "7450681129304ce4aa484058fa8d470cc77abe55f4561188ba331a1340c29d6f",
+          "soils.sol": "b181516ca84995595e4cb73c0af9df894ef703e6db107ac2ec8933c5b7f17fc0",
+          "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+        },
+        "routing_unit_count": 36,
+        "routing_units_with_tile_connection": 36,
+        "interpretation": "Input linkage only; inspect qtile to establish simulated drainage."
+      },
+      "executable_version": "Revision 61.0.2.61",
+      "executable_sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+      "code_version": "eff4eadb274ffa007eba10fa31292e03a7220db0+dirty"
+    }
+  },
+  "limitations": [
+    "2019 was already explored; this is development evidence.",
+    "A corn-landuse drainage probe is not a historical drainage-mask reconstruction.",
+    "Neither reference nor probe is calibrated or evidence of the research H1.",
+    "Full catchment mass-balance closure has not been computed.",
+    "Working tree contained the diagnostic implementation at execution; code_version alone is not a clean commit snapshot.",
+    "The original per-run traceable-input list did not include rout_unit.con; physical-project inspection and intervention hashes cover that file. Future runs include it."
+  ],
+  "observed_raw_artifact": {
+    "path": "data/raw/usgs/05451210_2000-01-01_2025-12-31.json",
+    "sha256": "5d63af30789bf2f970bfafdea9b8151271b5c96bc30601fe856b7a369df42a3d"
+  },
+  "observed_dataset_id": "17f4ce03-c3c9-443b-aad5-6179e0043202"
+}

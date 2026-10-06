@@ -33,6 +33,9 @@ _VARIABLES = {
     "soil_water_initial_mm": ("swinit",),
     "soil_water_average_mm": ("swave",),
     "percolation_mm": ("perc", "perco", "percolation", "sepbtm"),
+    "tile_drainage_mm": ("qtile",),
+    "lateral_flow_mm": ("latq",),
+    "water_yield_mm": ("wateryld",),
     "streamflow_m3s": ("floout", "flowout", "streamflow", "discharge", "flow"),
     "channel_area_ha": ("area",),
     "channel_precip_volume_m3": ("precip",),
@@ -58,6 +61,7 @@ _WATER_BALANCE_VARIABLES = (
     "plant_evapotranspiration_mm", "soil_evaporation_mm", "canopy_evaporation_mm",
     "potential_evapotranspiration_mm", "soil_water_mm", "soil_water_initial_mm",
     "soil_water_average_mm", "percolation_mm", "streamflow_m3s",
+    "tile_drainage_mm", "lateral_flow_mm", "water_yield_mm",
 )
 
 
@@ -344,7 +348,8 @@ class SwatOutputParser:
         water_balance_fields = {"precip_mm", "runoff_mm", "runoff_contribution_mm", "evapotranspiration_mm",
                                 "plant_evapotranspiration_mm", "soil_evaporation_mm", "canopy_evaporation_mm",
                                 "potential_evapotranspiration_mm", "soil_water_mm", "soil_water_initial_mm",
-                                "soil_water_average_mm", "percolation_mm"}
+                                "soil_water_average_mm", "percolation_mm",
+                                "tile_drainage_mm", "lateral_flow_mm", "water_yield_mm"}
         water_balance_rows = self._select_outlet(
             [row for path in wb_files for row in self._read(path, water_balance_fields)], "basin water-balance",
         )
@@ -354,6 +359,14 @@ class SwatOutputParser:
             "channel_inflow_m3s", "channel_water_temp_c",
         }
         all_channel_rows = [row for path in channel_files for row in self._read(path, channel_fields)]
+        from app.services.swat_water_path import normalize_bypass_channels
+        all_channel_rows, flow_normalization = normalize_bypass_channels(run_directory, all_channel_rows, self.output_frequency)
+        if flow_normalization.get("normalized_channel_rows", 0):
+            self._parse_warnings.append({"code": "BYPASS_CHANNEL_FLOW_NORMALIZED",
+                "message": "Audited SWAT+ 61.0.2.61 bypass-channel print bug: flow normalized from native incoming hydrograph volumes; reported values retained."})
+        elif flow_normalization.get("status") == "AFFECTED_UNAVAILABLE":
+            self._parse_warnings.append({"code": "BYPASS_CHANNEL_FLOW_UNAVAILABLE",
+                "message": flow_normalization["reason"]})
         channel_rows = self._select_outlet(all_channel_rows, "channel")
         for kind, rows in (("basin water-balance", water_balance_rows), ("outlet channel", channel_rows)):
             periods = [row["period"] for row in rows]
@@ -418,6 +431,7 @@ class SwatOutputParser:
         balance_terms = ("precip_mm", "runoff_mm", "evapotranspiration_mm", "percolation_mm")
         complete = all(period_coverage[name]["complete"] for name in balance_terms)
         water_balance = {
+            "channel_flow_normalization": flow_normalization,
             # This is a coverage check for reported terms, not a physical
             # closure calculation. No residual or balance error is inferred.
             "status": "TERMS_COMPLETE" if complete else "INCOMPLETE",
@@ -445,6 +459,8 @@ class SwatOutputParser:
         channel_results = [{"channel_unit" if key == "_unit" else "channel_gis_id" if key == "_gis_id" else "channel_name" if key == "_name" else key: value
                             for key, value in row.items()} for row in all_channel_rows]
         source_files = wb_files + channel_files + hru_files + plant_files + ([event_path] if event_path.is_file() else [])
+        source_files += [run_directory / name for name in ("hydin_day.txt", "hydout_day.txt", "ru_day.txt", "aquifer_day.txt")
+                         if (run_directory / name).is_file()]
         return SwatParsedOutput(records=records, hru_results=hru_results, water_balance=water_balance,
                                 plant_results=plant_results, channel_results=channel_results,
                                 management_events=management_events,

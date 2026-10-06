@@ -206,13 +206,21 @@ class ApiService {
 
   // --- Reports (PDF, Word, Excel) ---
   async downloadReport(simulationId: string, format: "pdf" | "docx" | "xlsx"): Promise<void> {
+    return this.downloadFile(`/reports/download/${encodeURIComponent(simulationId)}/${format}`, `reporte_simulacion.${format}`);
+  }
+
+  async downloadSwatResults(simulationId: string, format: "csv" | "json"): Promise<void> {
+    return this.downloadFile(`/simulations/${encodeURIComponent(simulationId)}/export/${format}`, `swat_simulacion.${format}`);
+  }
+
+  private async downloadFile(endpoint: string, fallbackFilename: string): Promise<void> {
     const token = this.getToken();
     const headers: Record<string, string> = {};
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const res = await fetch(`${API_BASE}/reports/download/${simulationId}/${format}`, {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
       headers,
     });
 
@@ -223,7 +231,7 @@ class ApiService {
     }
 
     // Extraer nombre del archivo del Content-Disposition si está disponible
-    let filename = `reporte_simulacion.${format}`;
+    let filename = fallbackFilename;
     const disposition = res.headers.get("content-disposition");
     if (disposition && disposition.includes("filename=")) {
       const match = disposition.match(/filename="?([^";]+)"?/);

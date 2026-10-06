@@ -1,0 +1,1152 @@
+{
+  "schema_version": "south-fork-water-path-comparison/v1",
+  "created_at": "2026-10-06T18:26:18.420040+00:00",
+  "classification": "DEVELOPMENT_DIAGNOSTIC",
+  "hypothesis_status": "NOT_EVALUATED",
+  "database": "existing local PostgreSQL digitaltwin",
+  "runs": {
+    "sf19-flow-v1-reference": {
+      "status": "COMPLETED",
+      "persisted_frames": 365,
+      "observed_dataset_ids": [
+        "17f4ce03-c3c9-443b-aad5-6179e0043202"
+      ],
+      "station_id": "05451210",
+      "executable_version": "Revision 61.0.2.61",
+      "executable_sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+      "source_project_sha256": "623c8130f05b86ed4b7c339cecfde57ab7ae8a3a2d420807ac5a1f961e098eaa",
+      "intervention": null,
+      "monthly": {
+        "n_pairs": 12,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 8.574014032462843,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 6.152728085462949,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.5865053731609768,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -65.08478041083781,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.17737973998566106,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.1286621093694157,
+          "reason": null
+        }
+      },
+      "coverage": {
+        "simulation_days": 365,
+        "paired_days": 365,
+        "unmatched_dates": [],
+        "estimated_days": 86,
+        "qualifiers": {
+          "A": 279,
+          "A;e": 86
+        },
+        "minimum_monthly_coverage": 0.9,
+        "aggregation": "Both monthly means use identical valid days; observations are never imputed."
+      },
+      "observed_volume_m3": 289423232.3529391,
+      "persisted_volume_m3": 100420288.71899515,
+      "water_path": {
+        "schema_version": "swat-water-path/v1",
+        "status": "DIAGNOSTIC_AVAILABLE",
+        "evaluation": [
+          "2019-01-01",
+          "2019-12-31"
+        ],
+        "outlet_gis_id": "153",
+        "area_km2": 560.8882651,
+        "reference_area_km2": 580.1576,
+        "area_difference_percent": -3.3213966170571596,
+        "network": {
+          "status": "CLOSED",
+          "direct_inputs_m3": 100420288.56754135,
+          "hru_components_m3": {
+            "sur": 60848526.48614616,
+            "lat": 647650.96561989,
+            "til": 0
+          },
+          "aquifer_to_channel_m3": 38924111.1157753,
+          "outlet_volume_m3": 100420288.71899515,
+          "reported_outlet_volume_m3": 63112520.736,
+          "reporting_difference_m3": 37307767.98299515,
+          "residual_m3": -0.15145380795001984,
+          "relative_residual": -1.5081992903072971e-09,
+          "max_channel_edge_difference_m3": 0.14675079006701708
+        },
+        "catchment_accounting": {
+          "status": "PARTIAL_ACCOUNTING",
+          "evaluation": [
+            "2019-01-02",
+            "2019-12-31"
+          ],
+          "precip_m3": 606217572.0205866,
+          "hru_et_m3": 473271909.20872897,
+          "aquifer_revap_m3": 11537699.1220899,
+          "outlet_m3": 100183090.23643415,
+          "soil_storage_change_m3": 2695068.1138055036,
+          "snow_storage_change_m3": -1549734.2764712998,
+          "aquifer_storage_change_m3": 19654498.215014413,
+          "routing_lag_storage_change_m3": 431883.96412699996,
+          "residual_m3": -6842.563142016064,
+          "residual_mm": -0.012199512037920981,
+          "limitation": "Canopy storage and independent unrounded state diagnostics unavailable; residual is not a full physical validation."
+        },
+        "annual_land_terms_mm": {
+          "precip": 1080.817,
+          "et": 843.991,
+          "eplant": 322.396,
+          "esoil": 499.647,
+          "ecanopy": 21.943,
+          "pet": 978.812,
+          "perc": 125.13,
+          "qtile": 0.0
+        },
+        "normalization": {
+          "status": "AVAILABLE",
+          "engine_version": "61.0.2.61",
+          "channels": {
+            "1": {
+              "name": "cha029",
+              "gis_id": "29",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "2": {
+              "name": "cha035",
+              "gis_id": "35",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "3": {
+              "name": "cha037",
+              "gis_id": "37",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "4": {
+              "name": "cha038",
+              "gis_id": "38",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "5": {
+              "name": "cha039",
+              "gis_id": "39",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "6": {
+              "name": "cha041",
+              "gis_id": "41",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "7": {
+              "name": "cha043",
+              "gis_id": "43",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "8": {
+              "name": "cha044",
+              "gis_id": "44",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "9": {
+              "name": "cha045",
+              "gis_id": "45",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "10": {
+              "name": "cha050",
+              "gis_id": "50",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "11": {
+              "name": "cha051",
+              "gis_id": "51",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "12": {
+              "name": "cha054",
+              "gis_id": "54",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "13": {
+              "name": "cha057",
+              "gis_id": "57",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "14": {
+              "name": "cha059",
+              "gis_id": "59",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "15": {
+              "name": "cha064",
+              "gis_id": "64",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "16": {
+              "name": "cha066",
+              "gis_id": "66",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "17": {
+              "name": "cha070",
+              "gis_id": "70",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "18": {
+              "name": "cha071",
+              "gis_id": "71",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "19": {
+              "name": "cha074",
+              "gis_id": "74",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "20": {
+              "name": "cha138",
+              "gis_id": "138",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "21": {
+              "name": "cha141",
+              "gis_id": "141",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "22": {
+              "name": "cha142",
+              "gis_id": "142",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "23": {
+              "name": "cha146",
+              "gis_id": "146",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "24": {
+              "name": "cha148",
+              "gis_id": "148",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "25": {
+              "name": "cha153",
+              "gis_id": "153",
+              "length_km": 0.0005,
+              "terminal": true
+            },
+            "26": {
+              "name": "cha155",
+              "gis_id": "155",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "27": {
+              "name": "cha158",
+              "gis_id": "158",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "28": {
+              "name": "cha161",
+              "gis_id": "161",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "29": {
+              "name": "cha162",
+              "gis_id": "162",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "30": {
+              "name": "cha165",
+              "gis_id": "165",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "31": {
+              "name": "cha166",
+              "gis_id": "166",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "32": {
+              "name": "cha167",
+              "gis_id": "167",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "33": {
+              "name": "cha168",
+              "gis_id": "168",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "34": {
+              "name": "cha169",
+              "gis_id": "169",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "35": {
+              "name": "cha170",
+              "gis_id": "170",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "36": {
+              "name": "cha171",
+              "gis_id": "171",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "37": {
+              "name": "cha173",
+              "gis_id": "173",
+              "length_km": 0.0005,
+              "terminal": false
+            }
+          },
+          "native_unit": "m3 per daily connection",
+          "printed_unit": "m^3/s (incorrect in this release)",
+          "normalization": "sum(fraction-applied incoming volumes) / 86400 for verified bypass channels",
+          "source": "hydin_day.txt",
+          "source_sha256": "f09250c0e27df35156febd9aecab99e0cd69ef307eb9b66a8129b371af98aaa4",
+          "reference": "https://github.com/swat-model/swatplus/blob/61.0.2.61/src/command.f90"
+        },
+        "input_checksums": {
+          "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+          "rout_unit.con": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63",
+          "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+          "chandeg.con": "c9fc10d477b032107dacef05c711985d4dce733d691eed2df6c69e58f1feb863",
+          "hyd-sed-lte.cha": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+          "channel-lte.cha": "37940fee6237b9a3c8e51f0bf0e30ba5bd29459ee5ff8967cd83fcec560f50e3",
+          "object.cnt": "9a0462e24063fa6f439c54437d84facf66f6067726874c3769d550c1064050c4"
+        },
+        "output_checksums": {
+          "basin_wb_day.txt": "80315e077b9cf4122eeb63b6d7fc802b2d8b914489ca709e1e56ddb4b1d6a551",
+          "hru_wb_day.txt": "bdb5ae6ae14088fbe7573514e262a8392b09961553aae4235f376c483da74331",
+          "aquifer_day.txt": "6cff76ce017fb19bd96ede0f656ceec3953db139af74e9c1630886eb1c56f472",
+          "hydin_day.txt": "f09250c0e27df35156febd9aecab99e0cd69ef307eb9b66a8129b371af98aaa4",
+          "hydout_day.txt": "13494669e27c00caab99100fbd738d3f449e65f4006e07109f1a0d3823277745",
+          "channel_sd_day.txt": "41cda6f3d431f456af788b0a20eb76bcf11341b9f9f327a63356a2363aff7659"
+        },
+        "limitations": [
+          "All 37 channels are artificial bypass objects; this does not validate physical channel routing.",
+          "Calibration and research H1 are not evaluated by a closed connection-flow balance."
+        ]
+      }
+    },
+    "sf19-flow-v1-tile-probe": {
+      "status": "COMPLETED",
+      "persisted_frames": 365,
+      "observed_dataset_ids": [
+        "17f4ce03-c3c9-443b-aad5-6179e0043202"
+      ],
+      "station_id": "05451210",
+      "executable_version": "Revision 61.0.2.61",
+      "executable_sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+      "source_project_sha256": "623c8130f05b86ed4b7c339cecfde57ab7ae8a3a2d420807ac5a1f961e098eaa",
+      "intervention": {
+        "classification": "CONTROLLED_DRAINAGE_PROBE",
+        "file": "landuse.lum",
+        "landuse": "corn_lum",
+        "before": "null",
+        "after": "mw24_1000",
+        "before_sha256": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+        "after_sha256": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "limitation": "Drainage mask is a diagnostic intervention, not observed historical management."
+      },
+      "monthly": {
+        "n_pairs": 12,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 9.603437695207194,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 7.187559613724094,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.9903369867548286,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -76.51363975634875,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.07062953776482224,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": -0.20629734172931324,
+          "reason": null
+        }
+      },
+      "coverage": {
+        "simulation_days": 365,
+        "paired_days": 365,
+        "unmatched_dates": [],
+        "estimated_days": 86,
+        "qualifiers": {
+          "A": 279,
+          "A;e": 86
+        },
+        "minimum_monthly_coverage": 0.9,
+        "aggregation": "Both monthly means use identical valid days; observations are never imputed."
+      },
+      "observed_volume_m3": 289423232.3529391,
+      "persisted_volume_m3": 67523225.65898615,
+      "water_path": {
+        "schema_version": "swat-water-path/v1",
+        "status": "DIAGNOSTIC_AVAILABLE",
+        "evaluation": [
+          "2019-01-01",
+          "2019-12-31"
+        ],
+        "outlet_gis_id": "153",
+        "area_km2": 560.8882651,
+        "reference_area_km2": 580.1576,
+        "area_difference_percent": -3.3213966170571596,
+        "network": {
+          "status": "CLOSED",
+          "direct_inputs_m3": 67523225.04967517,
+          "hru_components_m3": {
+            "sur": 61612478.29610129,
+            "lat": 846755.360028881,
+            "til": 0
+          },
+          "aquifer_to_channel_m3": 5063991.393545,
+          "outlet_volume_m3": 67523225.65898615,
+          "reported_outlet_volume_m3": 42898357.728,
+          "reporting_difference_m3": 24624867.93098615,
+          "residual_m3": -0.6093109846115112,
+          "relative_residual": -9.023724565336686e-09,
+          "max_channel_edge_difference_m3": 0.180332999676466
+        },
+        "catchment_accounting": {
+          "status": "PARTIAL_ACCOUNTING",
+          "evaluation": [
+            "2019-01-02",
+            "2019-12-31"
+          ],
+          "precip_m3": 606217572.0205866,
+          "hru_et_m3": 468212697.05752695,
+          "aquifer_revap_m3": 11537699.1220899,
+          "outlet_m3": 67324146.30952516,
+          "soil_storage_change_m3": 1230027.9653642906,
+          "snow_storage_change_m3": -1549734.2764712998,
+          "aquifer_storage_change_m3": 23005521.151018493,
+          "routing_lag_storage_change_m3": 434688.4054524999,
+          "residual_m3": 36022526.28608063,
+          "residual_mm": 64.22406837065529,
+          "limitation": "Canopy storage and independent unrounded state diagnostics unavailable; residual is not a full physical validation."
+        },
+        "annual_land_terms_mm": {
+          "precip": 1080.817,
+          "et": 834.971,
+          "eplant": 321.848,
+          "esoil": 491.172,
+          "ecanopy": 21.943,
+          "pet": 978.812,
+          "perc": 70.784,
+          "qtile": 64.234
+        },
+        "normalization": {
+          "status": "AVAILABLE",
+          "engine_version": "61.0.2.61",
+          "channels": {
+            "1": {
+              "name": "cha029",
+              "gis_id": "29",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "2": {
+              "name": "cha035",
+              "gis_id": "35",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "3": {
+              "name": "cha037",
+              "gis_id": "37",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "4": {
+              "name": "cha038",
+              "gis_id": "38",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "5": {
+              "name": "cha039",
+              "gis_id": "39",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "6": {
+              "name": "cha041",
+              "gis_id": "41",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "7": {
+              "name": "cha043",
+              "gis_id": "43",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "8": {
+              "name": "cha044",
+              "gis_id": "44",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "9": {
+              "name": "cha045",
+              "gis_id": "45",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "10": {
+              "name": "cha050",
+              "gis_id": "50",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "11": {
+              "name": "cha051",
+              "gis_id": "51",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "12": {
+              "name": "cha054",
+              "gis_id": "54",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "13": {
+              "name": "cha057",
+              "gis_id": "57",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "14": {
+              "name": "cha059",
+              "gis_id": "59",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "15": {
+              "name": "cha064",
+              "gis_id": "64",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "16": {
+              "name": "cha066",
+              "gis_id": "66",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "17": {
+              "name": "cha070",
+              "gis_id": "70",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "18": {
+              "name": "cha071",
+              "gis_id": "71",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "19": {
+              "name": "cha074",
+              "gis_id": "74",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "20": {
+              "name": "cha138",
+              "gis_id": "138",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "21": {
+              "name": "cha141",
+              "gis_id": "141",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "22": {
+              "name": "cha142",
+              "gis_id": "142",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "23": {
+              "name": "cha146",
+              "gis_id": "146",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "24": {
+              "name": "cha148",
+              "gis_id": "148",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "25": {
+              "name": "cha153",
+              "gis_id": "153",
+              "length_km": 0.0005,
+              "terminal": true
+            },
+            "26": {
+              "name": "cha155",
+              "gis_id": "155",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "27": {
+              "name": "cha158",
+              "gis_id": "158",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "28": {
+              "name": "cha161",
+              "gis_id": "161",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "29": {
+              "name": "cha162",
+              "gis_id": "162",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "30": {
+              "name": "cha165",
+              "gis_id": "165",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "31": {
+              "name": "cha166",
+              "gis_id": "166",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "32": {
+              "name": "cha167",
+              "gis_id": "167",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "33": {
+              "name": "cha168",
+              "gis_id": "168",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "34": {
+              "name": "cha169",
+              "gis_id": "169",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "35": {
+              "name": "cha170",
+              "gis_id": "170",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "36": {
+              "name": "cha171",
+              "gis_id": "171",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "37": {
+              "name": "cha173",
+              "gis_id": "173",
+              "length_km": 0.0005,
+              "terminal": false
+            }
+          },
+          "native_unit": "m3 per daily connection",
+          "printed_unit": "m^3/s (incorrect in this release)",
+          "normalization": "sum(fraction-applied incoming volumes) / 86400 for verified bypass channels",
+          "source": "hydin_day.txt",
+          "source_sha256": "7b908ebfee4dbe1f1c05d702dd854dcd42e1701db8e6ce69b637a11404e05b3a",
+          "reference": "https://github.com/swat-model/swatplus/blob/61.0.2.61/src/command.f90"
+        },
+        "input_checksums": {
+          "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+          "rout_unit.con": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63",
+          "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+          "chandeg.con": "c9fc10d477b032107dacef05c711985d4dce733d691eed2df6c69e58f1feb863",
+          "hyd-sed-lte.cha": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+          "channel-lte.cha": "37940fee6237b9a3c8e51f0bf0e30ba5bd29459ee5ff8967cd83fcec560f50e3",
+          "object.cnt": "9a0462e24063fa6f439c54437d84facf66f6067726874c3769d550c1064050c4"
+        },
+        "output_checksums": {
+          "basin_wb_day.txt": "93829f0157a52f55998837da1dc17f5da673909809b93c01bd0bcbb041717a3f",
+          "hru_wb_day.txt": "3e65d6237ff97f7e00751817a8e0821bfd8126031ec8b0647e3603531a0157d6",
+          "aquifer_day.txt": "d0bead921a775f5d5fbabf5f11b4bec57b940b3fadeb0ba5245475feeb382835",
+          "hydin_day.txt": "7b908ebfee4dbe1f1c05d702dd854dcd42e1701db8e6ce69b637a11404e05b3a",
+          "hydout_day.txt": "592e3e66e8674599130b069e0b9d4466d1ecceb5eb67822315eb4a2509a36ba5",
+          "channel_sd_day.txt": "87d9c5f811296a09a8469a0c04abe5a372905a7493b2682377564adccf9f6d17"
+        },
+        "limitations": [
+          "All 37 channels are artificial bypass objects; this does not validate physical channel routing.",
+          "Calibration and research H1 are not evaluated by a closed connection-flow balance."
+        ]
+      }
+    },
+    "sf19-trace-v3-tile-routed": {
+      "status": "COMPLETED",
+      "persisted_frames": 365,
+      "observed_dataset_ids": [
+        "17f4ce03-c3c9-443b-aad5-6179e0043202"
+      ],
+      "station_id": "05451210",
+      "executable_version": "Revision 61.0.2.61",
+      "executable_sha256": "5f0e6b43833bce1dbd6d416813bffc7b742dcff79ae1e7008d8f65bacd9b314e",
+      "source_project_sha256": "623c8130f05b86ed4b7c339cecfde57ab7ae8a3a2d420807ac5a1f961e098eaa",
+      "intervention": {
+        "classification": "CONTROLLED_DRAINAGE_PROBE",
+        "file": "landuse.lum",
+        "landuse": "corn_lum",
+        "before": "null",
+        "after": "mw24_1000",
+        "before_sha256": "bbd3c856247230cea872779db5e43b29814a1ebb53a65e7f50ea4c6b84350046",
+        "after_sha256": "2e1545a80c20ee88119f844f1e0717d85318d69d24fc4998ce9950c226a8c84c",
+        "limitation": "Drainage mask is a diagnostic intervention, not observed historical management.",
+        "routing": {
+          "file": "rout_unit.con",
+          "routing_units_changed": 36,
+          "connection": "til -> existing surface-flow sdc; fraction 1",
+          "before_sha256": "3049447e698edf960ec09000a9443e8f43ee3d01a124e5cbd20e7930f0936c63",
+          "after_sha256": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732"
+        }
+      },
+      "monthly": {
+        "n_pairs": 12,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 7.775936774210122,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 6.061719799738572,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.30490413943090044,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -64.16461821921966,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.49030691735816756,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.23490545580226208,
+          "reason": null
+        }
+      },
+      "coverage": {
+        "simulation_days": 365,
+        "paired_days": 365,
+        "unmatched_dates": [],
+        "estimated_days": 86,
+        "qualifiers": {
+          "A": 279,
+          "A;e": 86
+        },
+        "minimum_monthly_coverage": 0.9,
+        "aggregation": "Both monthly means use identical valid days; observations are never imputed."
+      },
+      "observed_volume_m3": 289423232.3529391,
+      "persisted_volume_m3": 103552566.93422815,
+      "water_path": {
+        "schema_version": "swat-water-path/v1",
+        "status": "DIAGNOSTIC_AVAILABLE",
+        "evaluation": [
+          "2019-01-01",
+          "2019-12-31"
+        ],
+        "outlet_gis_id": "153",
+        "area_km2": 560.8882651,
+        "reference_area_km2": 580.1576,
+        "area_difference_percent": -3.3213966170571596,
+        "network": {
+          "status": "CLOSED",
+          "direct_inputs_m3": 103552566.00807779,
+          "hru_components_m3": {
+            "sur": 61612478.29610129,
+            "lat": 846755.360028881,
+            "til": 36029340.95840262
+          },
+          "aquifer_to_channel_m3": 5063991.393545,
+          "outlet_volume_m3": 103552566.93422815,
+          "reported_outlet_volume_m3": 68022830.592,
+          "reporting_difference_m3": 35529736.34222816,
+          "residual_m3": -0.9261503666639328,
+          "relative_residual": -8.943770322327762e-09,
+          "max_channel_edge_difference_m3": 0.180332999676466
+        },
+        "catchment_accounting": {
+          "status": "PARTIAL_ACCOUNTING",
+          "evaluation": [
+            "2019-01-02",
+            "2019-12-31"
+          ],
+          "precip_m3": 606217572.0205866,
+          "hru_et_m3": 468212697.05752695,
+          "aquifer_revap_m3": 11537699.1220899,
+          "outlet_m3": 103353487.43666716,
+          "soil_storage_change_m3": 1230027.9653642906,
+          "snow_storage_change_m3": -1549734.2764712998,
+          "aquifer_storage_change_m3": 23005521.151018493,
+          "routing_lag_storage_change_m3": 434688.4054524999,
+          "residual_m3": -6814.841061374929,
+          "residual_mm": -0.01215008672032017,
+          "limitation": "Canopy storage and independent unrounded state diagnostics unavailable; residual is not a full physical validation."
+        },
+        "annual_land_terms_mm": {
+          "precip": 1080.817,
+          "et": 834.971,
+          "eplant": 321.848,
+          "esoil": 491.172,
+          "ecanopy": 21.943,
+          "pet": 978.812,
+          "perc": 70.784,
+          "qtile": 64.234
+        },
+        "normalization": {
+          "status": "AVAILABLE",
+          "engine_version": "61.0.2.61",
+          "channels": {
+            "1": {
+              "name": "cha029",
+              "gis_id": "29",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "2": {
+              "name": "cha035",
+              "gis_id": "35",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "3": {
+              "name": "cha037",
+              "gis_id": "37",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "4": {
+              "name": "cha038",
+              "gis_id": "38",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "5": {
+              "name": "cha039",
+              "gis_id": "39",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "6": {
+              "name": "cha041",
+              "gis_id": "41",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "7": {
+              "name": "cha043",
+              "gis_id": "43",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "8": {
+              "name": "cha044",
+              "gis_id": "44",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "9": {
+              "name": "cha045",
+              "gis_id": "45",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "10": {
+              "name": "cha050",
+              "gis_id": "50",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "11": {
+              "name": "cha051",
+              "gis_id": "51",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "12": {
+              "name": "cha054",
+              "gis_id": "54",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "13": {
+              "name": "cha057",
+              "gis_id": "57",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "14": {
+              "name": "cha059",
+              "gis_id": "59",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "15": {
+              "name": "cha064",
+              "gis_id": "64",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "16": {
+              "name": "cha066",
+              "gis_id": "66",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "17": {
+              "name": "cha070",
+              "gis_id": "70",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "18": {
+              "name": "cha071",
+              "gis_id": "71",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "19": {
+              "name": "cha074",
+              "gis_id": "74",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "20": {
+              "name": "cha138",
+              "gis_id": "138",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "21": {
+              "name": "cha141",
+              "gis_id": "141",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "22": {
+              "name": "cha142",
+              "gis_id": "142",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "23": {
+              "name": "cha146",
+              "gis_id": "146",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "24": {
+              "name": "cha148",
+              "gis_id": "148",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "25": {
+              "name": "cha153",
+              "gis_id": "153",
+              "length_km": 0.0005,
+              "terminal": true
+            },
+            "26": {
+              "name": "cha155",
+              "gis_id": "155",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "27": {
+              "name": "cha158",
+              "gis_id": "158",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "28": {
+              "name": "cha161",
+              "gis_id": "161",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "29": {
+              "name": "cha162",
+              "gis_id": "162",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "30": {
+              "name": "cha165",
+              "gis_id": "165",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "31": {
+              "name": "cha166",
+              "gis_id": "166",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "32": {
+              "name": "cha167",
+              "gis_id": "167",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "33": {
+              "name": "cha168",
+              "gis_id": "168",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "34": {
+              "name": "cha169",
+              "gis_id": "169",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "35": {
+              "name": "cha170",
+              "gis_id": "170",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "36": {
+              "name": "cha171",
+              "gis_id": "171",
+              "length_km": 0.0005,
+              "terminal": false
+            },
+            "37": {
+              "name": "cha173",
+              "gis_id": "173",
+              "length_km": 0.0005,
+              "terminal": false
+            }
+          },
+          "native_unit": "m3 per daily connection",
+          "printed_unit": "m^3/s (incorrect in this release)",
+          "normalization": "sum(fraction-applied incoming volumes) / 86400 for verified bypass channels",
+          "source": "hydin_day.txt",
+          "source_sha256": "6ba16282a8da12abef3df2d97536184d39e1eb6609fe4ac3309fef6673813305",
+          "reference": "https://github.com/swat-model/swatplus/blob/61.0.2.61/src/command.f90"
+        },
+        "input_checksums": {
+          "hru.con": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7",
+          "rout_unit.con": "ca56d9c5ad6a774f2a5d48d450ff29cd3c9d61253a57817c2abaf33e59f37732",
+          "aquifer.con": "efa5a7287bfa9ea04d0bf19e9c2b00f798fca084af58133ff771a3a1d78e6798",
+          "chandeg.con": "c9fc10d477b032107dacef05c711985d4dce733d691eed2df6c69e58f1feb863",
+          "hyd-sed-lte.cha": "c2999c5f328f4fdf00854af533bf7ac9eaa2ba1c02fb0ec1dd717e0798894099",
+          "channel-lte.cha": "37940fee6237b9a3c8e51f0bf0e30ba5bd29459ee5ff8967cd83fcec560f50e3",
+          "object.cnt": "9a0462e24063fa6f439c54437d84facf66f6067726874c3769d550c1064050c4"
+        },
+        "output_checksums": {
+          "basin_wb_day.txt": "93829f0157a52f55998837da1dc17f5da673909809b93c01bd0bcbb041717a3f",
+          "hru_wb_day.txt": "3e65d6237ff97f7e00751817a8e0821bfd8126031ec8b0647e3603531a0157d6",
+          "aquifer_day.txt": "d0bead921a775f5d5fbabf5f11b4bec57b940b3fadeb0ba5245475feeb382835",
+          "hydin_day.txt": "6ba16282a8da12abef3df2d97536184d39e1eb6609fe4ac3309fef6673813305",
+          "hydout_day.txt": "9dc4619f0f91086bf577ff55266e91a7e1aa3bce4e8e0fefe6de2fcccbbc3488",
+          "channel_sd_day.txt": "ea8d273b24deadb1b7b0cd3b84dbd85fd04bdf73352f427f3ceafcbdae38e5f6"
+        },
+        "limitations": [
+          "All 37 channels are artificial bypass objects; this does not validate physical channel routing.",
+          "Calibration and research H1 are not evaluated by a closed connection-flow balance."
+        ]
+      }
+    }
+  },
+  "code_sha256": {
+    "app/services/swat_water_path.py": "9c7a76f4ae2b4fb13d0c5f71e502374f409e311e890fc975390082f02b62b856",
+    "app/services/swat_plus_parser.py": "832c91ba0d701c49fd3dc1b3c5c305b392d6e2cf0755a5ca17695e821abb7737",
+    "app/services/swat_plus_adapter.py": "9427930b437a97e7b69f2f70153fcfdd26d4fea51ed5e612047eec07cafabcba",
+    "app/services/twin_coupling_engine.py": "a2186a619aa008c0a3e742467190fd3179830bffa5169bf1228809ebd4308b17",
+    "app/services/playback_builder.py": "804353296c1c28af2c93262f47676511c2c41cdc4f6bd2ac527335bcce347448",
+    "scripts/inspect_swat_water_path.py": "f352efc31dcfd7d26a0b6354b8a03ac1b05d9d98e60c360d32c44fb35591472c"
+  }
+}

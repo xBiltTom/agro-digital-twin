@@ -133,9 +133,11 @@ class SimulationRunCreate(BaseModel):
                 raise ValueError("external_model_id is only implemented by the SIMPLIFIED backend")
             if self.climate_source != "SWAT_PROJECT":
                 raise ValueError("SWAT+ runs require climate_source=SWAT_PROJECT because forcing is read from the configured SWAT+ project")
-            invalid_swat_dataset_roles = set(self.dataset_roles.values()) - {"CONTEXT_ONLY"}
+            invalid_swat_dataset_roles = set(self.dataset_roles.values()) - {"CONTEXT_ONLY", "OBSERVATION", "VALIDATION"}
             if invalid_swat_dataset_roles:
-                raise ValueError("SWAT+ dataset attachments are provenance-only until input mappers are implemented; use CONTEXT_ONLY")
+                raise ValueError("SWAT+ accepts CONTEXT_ONLY, OBSERVATION and VALIDATION datasets; forcing and physical inputs come from its project")
+            if {"OBSERVATION", "VALIDATION"} & set(self.dataset_roles.values()) and not self.station_id:
+                raise ValueError("SWAT+ observational comparison requires station_id")
         else:
             unsupported_input_roles = set(self.dataset_roles.values()) & {"SOIL_INPUT", "LAND_COVER", "YIELD_OBSERVATION"}
             if unsupported_input_roles:

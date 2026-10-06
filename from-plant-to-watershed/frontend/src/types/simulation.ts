@@ -177,7 +177,31 @@ export interface SimulationValidation {
   daily?: { matched_count?: number | null; [key: string]: unknown };
   improvement_percent?: { value?: number | null; [key: string]: unknown };
   observation_station_id?: string | null;
+  baseline_diagnostic?: SwatBaselineDiagnostic;
   [key: string]: unknown;
+}
+
+export interface SwatBaselineDiagnostic {
+  status: string;
+  station_id?: string | null;
+  aligned_months?: number;
+  monthly?: Record<string, { value: number | null; status: string }>;
+  monthly_outputs?: SwatComparisonMonth[];
+  coverage?: { paired_days: number; estimated_days: number; minimum_monthly_coverage: number };
+  physical?: {
+    totals_mm: Record<string, number | null>;
+    et_precipitation_ratio: number | null;
+    project: { hru_count?: number; tile_linked_hru_count?: number };
+    water_path?: {
+      status: string;
+      area_km2?: number;
+      area_difference_percent?: number;
+      network?: { status: string; outlet_volume_m3: number; reported_outlet_volume_m3: number;
+        reporting_difference_m3: number; residual_m3: number };
+      catchment_accounting?: { status: string; residual_mm: number; evaluation: string[] };
+    };
+  };
+  flags?: Array<{ code: string; message: string }>;
 }
 
 export interface SimulationResult {

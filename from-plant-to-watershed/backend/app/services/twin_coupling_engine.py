@@ -27,6 +27,8 @@ from app.services.playback_database import PlaybackDatabaseStore
 from app.services.playback_builder import simplified_frames, swat_frames
 from app.services.swat_soil_water import read_hru_gis_ids, read_hru_soils
 from app.services.swat_crop_chain_diagnostic import SwatCropChainDiagnostic
+from app.services.swat_baseline_diagnostic import diagnose_baseline, inspect_project
+from app.services.swat_water_path import diagnose_water_path
 from app.core.config import settings
 from app.schemas.coupling import CouplingPlantParameterSummary
 from scientific_core import MultiscaleSimulationOrchestrator, PlantPopulation, PlantToFieldAggregator, RunConfig, SimulationOrchestrator, ValidationEngine
@@ -174,7 +176,8 @@ class TwinCouplingEngine:
     @staticmethod
     async def _execute_swat_baseline(db: AsyncSession, sim_run: SimulationRun, watershed: Watershed,
                                      observations: dict[str, float] | None = None,
-                                     observation_source: str | None = None) -> None:
+                                     observation_source: str | None = None,
+                                     observation_quality: dict[str, str] | None = None) -> None:
         """Execute SWAT+ without leaking project/process details into the engine."""
         requested_swat = (sim_run.requested_config or {}).get("swat_plus") or {}
         config = swat_run_config_from_request(
@@ -220,7 +223,6 @@ class TwinCouplingEngine:
         sim_run.hru_aggregates = {"status": "AVAILABLE" if result.hru_results else "NOT_AVAILABLE", "results": result.hru_results}
         sim_run.field_aggregates = {"status": "NOT_AVAILABLE", "reason": "SWAT_STANDARD_BASELINE does not execute the FSPM layer"}
         sim_run.plant_sample = []
-        sim_run.validation = {"status": "NOT_AVAILABLE", "reason": "SWAT baseline output integrity only; observational alignment is not part of this run"}
         totals = result.water_balance.get("totals_mm", {})
         discharge_hm3, discharge_limitation = _daily_streamflow_volume_hm3(
             result.records, result.water_balance or {}, config.output_frequency
@@ -239,6 +241,38 @@ class TwinCouplingEngine:
             "total_percolation_mm": totals.get("percolation_mm"),
             "water_balance": result.water_balance,
         }
+        diagnostic = diagnose_baseline(
+            result.records, observations or {}, quality=observation_quality,
+            station_id=sim_run.station_id, frequency=config.output_frequency,
+            project=inspect_project(Path(result.workspace)),
+        )
+        if config.output_frequency == "DAILY" and config.outlet_unit:
+            path_diagnostic = diagnose_water_path(Path(result.workspace), outlet_gis_id=config.outlet_unit,
+                start=sim_run.start_date, end=sim_run.end_date, reference_area_km2=watershed.area_km2)
+            diagnostic["physical"]["water_path"] = path_diagnostic
+            diagnostic["physical"]["balance_closure"] = (
+                f"NETWORK_{path_diagnostic['network']['status']}; CATCHMENT_PARTIAL_ACCOUNTING"
+                if path_diagnostic.get("network") else path_diagnostic.get("status", "NOT_AVAILABLE"))
+            if path_diagnostic.get("network"):
+                diagnostic["flags"].append({"code": "ARTIFICIAL_CHANNEL_NETWORK",
+                    "message": "Los canales actúan como conexiones sin transformación; este balance no valida el ruteo físico de la cuenca."})
+        if result.water_balance.get("channel_flow_normalization", {}).get("normalized_channel_rows", 0):
+            diagnostic["flags"].append({"code": "BYPASS_CHANNEL_FLOW_NORMALIZED",
+                "message": "Caudal obtenido de hidrogramas SWAT+: se corrigió un error de reporte en canales artificiales; el valor original se conserva en la descarga."})
+        elif result.water_balance.get("channel_flow_normalization", {}).get("status") == "AFFECTED_UNAVAILABLE":
+            diagnostic.setdefault("flags", []).append({"code": "BYPASS_CHANNEL_FLOW_UNAVAILABLE",
+                "message": "El reporte de caudal está afectado por un error del motor. Ejecuta salidas diarias con hidrogramas para obtener una lectura trazable."})
+        sim_run.validation = {"status": diagnostic["status"],
+                              "interpretation": "DEVELOPMENT_DIAGNOSTIC_NOT_HYPOTHESIS_TEST",
+                              "observation_station_id": sim_run.station_id,
+                              "aligned_months": diagnostic.get("aligned_months", 0),
+                              "baseline_diagnostic": diagnostic}
+        # Keep raw SWAT+ records for its results endpoint, and publish monthly
+        # observational comparisons through the dedicated diagnostic contract.
+        sim_run.summary_metrics = {**sim_run.summary_metrics, "baseline_diagnostic": diagnostic}
+        sim_run.provenance = {**sim_run.provenance,
+                              "observation_source": observation_source,
+                              "development_diagnostic": (sim_run.requested_config or {}).get("development_diagnostic")}
 
     @staticmethod
     async def _execute_swat_coupled(db: AsyncSession, sim_run: SimulationRun, watershed: Watershed,
@@ -419,6 +453,7 @@ class TwinCouplingEngine:
                 observation_ids = [dataset_id for dataset_id, role in (sim_run.dataset_roles or {}).items()
                                    if role in {"OBSERVATION", "VALIDATION"}]
                 swat_observations: dict[str, float] = {}
+                observation_quality: dict[str, str] = {}
                 observation_source = None
                 if sim_run.station_id and observation_ids:
                     observed_rows = (await db.execute(
@@ -433,11 +468,15 @@ class TwinCouplingEngine:
                             if observed_on in swat_observations and swat_observations[observed_on] != observation.value_m3s:
                                 raise ValueError(f"Conflicting observations for {observed_on}")
                             swat_observations[observed_on] = observation.value_m3s
+                            previous = set(observation_quality.get(observed_on, "").split(";"))
+                            previous.update((observation.quality_status or "").replace(",", ";").split(";"))
+                            observation_quality[observed_on] = ";".join(sorted(previous - {""}))
                     observation_source = f"USGS station {sim_run.station_id}; linked observation datasets"
                 if ((sim_run.requested_config or {}).get("swat_plus") or {}).get("run_type") == "SWAT_MULTISCALE_COUPLED":
                     await TwinCouplingEngine._execute_swat_coupled(db, sim_run, watershed, swat_observations, observation_source)
                 else:
-                    await TwinCouplingEngine._execute_swat_baseline(db, sim_run, watershed, swat_observations, observation_source)
+                    await TwinCouplingEngine._execute_swat_baseline(
+                        db, sim_run, watershed, swat_observations, observation_source, observation_quality)
                 sim_run.status = "COMPLETED"
                 sim_run.finished_at = datetime.now(timezone.utc)
                 await db.commit()
