@@ -1,5 +1,10 @@
 # Protocolo de selección de cuencas — Fase C
 
+Este protocolo conserva los criterios del dominio definidos para la
+[investigación](../../project_framework.md). La evidencia ejecutada sigue
+siendo un piloto South Fork; los candidatos y sus manifests no equivalen a
+validación multicuenca. Estado implementado en [CURRENT_STATE](../CURRENT_STATE.md).
+
 ## Universo y definición de Corn Belt
 
 El universo inicial usa la región de producción **Corn Belt** de USDA ERS:
@@ -58,4 +63,5 @@ relevantes, fuente y decisión. Landsat se registra como disponibilidad futura
 
 Sólo las candidatas `INCLUDE` entran al manifiesto congelado de dominio. El
 conjunto debe incluir múltiples cuencas si los datos permiten la futura
-validación espacial; de lo contrario la limitación se declara y bloquea Fase D.
+validación espacial. Con una sola cuenca solo se reporta el piloto temporal;
+no se declara completada la validación cruzada espacial.

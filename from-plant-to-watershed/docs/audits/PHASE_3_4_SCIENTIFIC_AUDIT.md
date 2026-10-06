@@ -1,5 +1,13 @@
 # Fase 3.4: auditoría y primera ejecución FSPM–SWAT+
 
+> **Registro histórico.** Describe la ejecución de fase 3.4 y sus comprobaciones,
+> no el estado operativo actual. La compatibilidad de inputs, los calendarios
+> ejecutados, la estimación hídrica y la persistencia PostgreSQL evolucionaron
+> después. Véanse [estado actual](../CURRENT_STATE.md),
+> [acoplamiento vigente](../FSPM_SWAT_PLUS_COUPLING.md) y
+> [auditoría de sensibilidad](PHASE_3_5_COUPLING_SENSITIVITY_AUDIT.md).
+> Las métricas, hashes y limitaciones originales se conservan como evidencia.
+
 Fecha de verificación: 2026-09-27. Commit de partida: `398c92facda4086eb5636815250a913d2b9e4354`.
 
 ## Resultado

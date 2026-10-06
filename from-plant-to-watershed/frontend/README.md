@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend — plataforma y gemelo 3D
 
-## Getting Started
+Next.js 16, React 19, Tailwind CSS, Recharts y React Three Fiber/Three.js.
+Consume la API FastAPI de la [plataforma](../README.md).
 
-First, run the development server:
+## Desarrollo
+
+Desde esta carpeta, con Node.js compatible con Next.js 16 y pnpm:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install --frozen-lockfile
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir `http://localhost:3000` con backend disponible en `localhost:8000`.
+La configuración del cliente está en `src/lib/api.ts`; `NEXT_PUBLIC_API_URL`
+permite cambiar la base completa, por defecto `http://localhost:8000/api/v1`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Rutas principales
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/`: resumen del reporte científico publicado.
+- `/simulations`: registro, ejecución y consulta de corridas.
+- `/twin-3d?simId=ID`: reproducción del gemelo por corrida/fecha y tres escalas.
+- `/datasets`: catálogo de datos.
+- `/reports`: evidencia e informes descargables.
+- `/users` y `/profile`: administración/perfil según permisos.
 
-## Learn More
+Las páginas viven en `src/app/`; componentes en `src/components/`; hooks de
+playback en `src/hooks/`. La representación recibe datos desde
+`adaptPlaybackVisual()` y `sceneFromRecord()`, no calcula procesos científicos.
 
-To learn more about Next.js, take a look at the following resources:
+## Contratos
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Playback, disponibilidad y reglas visuales](../docs/TWIN_PLAYBACK_CONTRACT.md).
+- [Estado actual y separación de experimentos](../docs/CURRENT_STATE.md).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Dashboard/reportes y visor pueden mostrar experimentos distintos. El reporte
+publicado es final v2; el visor prioriza el gemelo diario 2019 corregido.
+Conservar versión, fecha, unidad y evidencia en cada vista.
 
-## Deploy on Vercel
+## Comprobaciones
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm test
+pnpm lint
+pnpm exec tsc --noEmit
+pnpm build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`pnpm test` ejecuta `tests/playback.test.ts`. `pnpm lint:playback` revisa el
+conjunto de archivos del visor. `tests/visual-playback.mjs` contiene el recorrido
+Playwright con fixtures; requisitos en el contrato temporal.

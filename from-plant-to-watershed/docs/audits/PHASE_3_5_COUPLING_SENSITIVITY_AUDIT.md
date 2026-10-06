@@ -1,5 +1,11 @@
 # Auditoría fase 3.5: sensibilidad del acoplamiento FSPM → SWAT+
 
+> **Registro histórico de diagnóstico.** Las conclusiones de sensibilidad de
+> estas copias instrumentadas se conservan. Los apartados sobre PostgreSQL no
+> disponible, humedad constante y registro pendiente describen esa fase, no el
+> runtime actual. Véanse [estado actual](../CURRENT_STATE.md) y
+> [acoplamiento vigente](../FSPM_SWAT_PLUS_COUPLING.md).
+
 ## Pregunta y resultado
 
 ¿SWAT+ lee los parámetros de maíz que modifica el FSPM y estos alteran el estado vegetal o hidrológico?
@@ -11,7 +17,7 @@ En 12 workspaces nuevos, aislados y etiquetados `SENSITIVITY_DIAGNOSTIC_ONLY`, r
 ## Inspección del repositorio y artefactos
 
 - HEAD al iniciar: `f2bd12f2eadd416b09b038d908e7db6cc6a6a832`; no había commits posteriores.
-- Se inspeccionaron `docs/PHASE_3_4_SCIENTIFIC_AUDIT.md`, `docs/GEMINI_3D_HANDOFF.md` y los scripts de preparación y verificación de fase 3.4.
+- Se inspeccionaron la auditoría de fase 3.4 (ahora en `docs/audits/PHASE_3_4_SCIENTIFIC_AUDIT.md`), el antiguo traspaso visual a Gemini (integrado en `docs/TWIN_PLAYBACK_CONTRACT.md`) y los scripts de preparación y verificación de fase 3.4.
 - Se comprobó la existencia y el manifest/checksum de la variante local `backend/data/phase34-cdl-2019`, los dos workspaces y los artefactos playback antes de usarlos.
 - Identidad del par: experimento `phase34-south-fork-cdl-2019-verification`; baseline `phase34-sf19-baseline`; acoplado `phase34-sf19-coupled`; periodo 2019-01-01–2019-12-31; seed 42. El manifest clasifica el caso como `EXPERIMENTAL_CDL_CORN_MAJORITY_MANAGEMENT_NOT_HISTORICAL_RECONSTRUCTION`.
 - PostgreSQL local no respondió en `localhost:5432`. No se escribieron filas ni se modificó SQLite de fase 3.4.

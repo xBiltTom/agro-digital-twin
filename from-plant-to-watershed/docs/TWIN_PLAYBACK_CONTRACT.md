@@ -1,112 +1,192 @@
-# Contrato temporal del gemelo — `twin-playback-v1`
+# Contrato temporal y representación — `twin-playback-v1`
 
-El contrato oficial de disponibilidad y adaptación para la fase 3.2 está en [GEMINI_3D_HANDOFF.md](GEMINI_3D_HANDOFF.md). `GET /api/v1/simulations/{id}/availability` resume todas las resoluciones y primeras fechas con cultivo/campo/muestras sin transferir la serie; acepta `?date=` para evaluar un periodo. El listado `/simulations` filtra por dueño (salvo `SUPERADMIN`) antes de paginar; la paginación `skip`/`limit` permanece. Los artefactos inexistentes, ausentes y dañados tienen diagnósticos distintos. La acción de navegación a cultivo es explícita y no cambia automáticamente la fecha seleccionada.
+Contrato vigente de FastAPI, PostgreSQL y visor 3D. La versión del esquema no
+es la versión del experimento científico; véase [estado actual](CURRENT_STATE.md).
 
-## Inventario y alcance
+## 1. API y acceso
 
-| Fuente | Disponibilidad anterior | Estado de reproducción |
-|---|---|---|
-| SWAT+ `records` normalizados | Fechados en `monthly_outputs` incluso cuando la frecuencia era diaria; el nombre histórico se conserva | Caudal, escorrentía, ET, percolación y almacenamiento de suelo por periodo real `DAILY`, `MONTHLY` o `ANNUAL` |
-| SWAT+ `hru_results` | Fechados en `hru_aggregates.results` | Por identificador `hru_unit` verificable en la salida; sin identidad de polígono asumida |
-| SWAT+ estaciones de forcing directo | Archivos diarios `weather-sta.cli`/`*.pcp`/`*.tmp`; opcionalmente `*.slr`/`*.hmd` | Fechas explícitas, media aritmética entre estaciones como resumen de cuenca; no equivale a observación USGS ni a ponderación HRU |
-| FSPM acoplado | Estados diarios calculados pero descartados salvo máximos y muestra final | Nuevas corridas capturan agregado diario y hasta 10 estados de miembros representativos de la población modelada con IDs estables; no reconstruible para corridas antiguas |
-| Hidrología/FSPM simplificados | `SimulationResult` diario y agregados/muestra solo finales | Nuevas corridas capturan agregado y muestra diaria; forcing sintético clasificado `SYNTHETIC` |
-| USGS | Observaciones por fecha en el registro de datos; validación mensual separada | Si se enlazan a una corrida, `observed_streamflow_m3s` conserva la fecha y evidencia `OBSERVED`; para SWAT+ mensual/anual se promedia solo los días observados disponibles, indicando su cobertura; nunca rellena fechas ausentes |
-| South Fork v2 | Informe y datasets históricos | Intactos. Este contrato no los reetiqueta ni los promueve como playback completo |
+Todos los endpoints requieren autenticación. Las corridas se filtran por dueño,
+salvo `SUPERADMIN`; una corrida fuera del alcance responde 404.
 
-El runner South Fork v3 conserva su exportación propia; no se ha ejecutado ni validado completamente. Este contrato no declara resultados v3 nuevos.
+| Endpoint | Uso |
+| --- | --- |
+| `GET /api/v1/simulations?skip=0&limit=100` | Catálogo paginado de corridas accesibles. |
+| `GET /api/v1/simulations/{id}/availability` | Origen, resoluciones, disponibilidad FSPM y primeras fechas representables; acepta `?date=YYYY-MM-DD`. |
+| `GET /api/v1/simulations/{id}/playback` | Estados fechados, catálogo de variables, procedencia y limitaciones. |
+| `GET /api/v1/simulations/{id}/swat-results` | Resultados SWAT+ persistidos y origen ejecutado/importado. |
 
-## API y almacenamiento
+Parámetros de playback:
 
-`GET /api/v1/simulations/{id}/playback` requiere autenticación y que el usuario sea dueño de la corrida o `SUPERADMIN`. Parámetros: `date=YYYY-MM-DD` **o** `start=YYYY-MM-DD&end=YYYY-MM-DD`, `offset` desde 0 y `limit` entre 1 y 500 (100 por defecto). `resolution=DAILY|MONTHLY|ANNUAL` permite elegir una frecuencia disponible; sin él se devuelve la frecuencia SWAT+ principal. Una corrida acoplada con salida SWAT+ mensual/anual ofrece además `DAILY` con FSPM y forcing, dejando la hidrología diaria en `null`. `available_resolutions` informa las opciones. Responde `simulation_status` (`PENDING`, `RUNNING`, `FAILED`, `COMPLETED`), `artifact_status`, frecuencia efectiva, total filtrado, registros, catálogo de variables, procedencia y limitaciones. Una corrida histórica sin artefacto responde `NOT_AVAILABLE` y cero registros, sin representar ceros científicos. Una falla de integridad/archivo responde 503.
+- `date=YYYY-MM-DD` **o** intervalo inclusivo `start=...&end=...`.
+- `resolution=DAILY|MONTHLY|ANNUAL`; sin selección usa la frecuencia principal.
+- `offset` desde 0 y `limit` entre 1 y 500, por defecto 100.
 
-El resumen `total_discharge_hm3` solo se integra con una salida DAILY de caudal completa. En frecuencia MONTHLY/ANNUAL o con periodos diarios faltantes se conserva como `null`, con `total_discharge_status` y `total_discharge_limitation`; no se multiplica el promedio mensual/anual por el número de días.
+La respuesta `PlaybackPage` incluye `artifact_status`, `simulation_status`,
+`available_resolutions`, `total`, `records`, `variables`, `provenance` y
+`limitations`. Una corrida sin artefacto entrega cero registros y
+`NOT_AVAILABLE`; un artefacto inválido o un fallo de integridad produce 503.
+Ausencia de datos e integridad fallida son estados distintos.
 
-Cada corrida nueva guarda sus frames completos en PostgreSQL `playback_frames` como JSONB, con clave `(simulation_id, resolution, date)`, índice por resolución/fecha y SHA-256 por frame. Una corrida SWAT+ mensual/anual puede añadir la serie FSPM diaria bajo otra resolución de la misma simulación. `SimulationRun.provenance.playback` y, cuando corresponda, `playback_daily_fspm` conservan `schema_version`, periodo, frecuencia, catálogo, configuración, semilla, versión del código y procedencia; no contienen los frames. La consulta de un día usa la clave temporal y no necesita archivos locales.
+## 2. Persistencia
 
-El lector PostgreSQL valida el checksum de cada frame consultado y devuelve 503 ante un error de integridad. La clave única impide duplicar fechas y la importación histórica comprueba que un frame ya presente tenga el mismo contenido. `PlaybackArtifactStore` permanece como lector de archivos SQLite comprimidos para migración y recuperación científica; FastAPI no lo consulta en funcionamiento normal.
+`playback_frames` almacena el payload JSONB completo y SHA-256 por
+`(simulation_id, resolution, date)`. La migración
+`backend/migrations/009_playback_frames.sql` crea la tabla y el índice temporal.
+`SimulationRun.provenance.playback` contiene periodo, catálogo y linaje, sin
+duplicar los frames; puede existir `playback_daily_fspm` para otra resolución.
 
-`code_version` añade `+dirty` si hay cambios locales sin confirmar; una ejecución científica publicable requiere conservar también el commit final y los insumos versionados.
+FastAPI consulta PostgreSQL y verifica el checksum de los frames leídos.
+La clave única evita duplicados y una importación idempotente comprueba que el
+contenido existente coincida. `PlaybackArtifactStore` se conserva como lector
+de archivos SQLite comprimidos para importación/recuperación, no para consultas
+normales de la API.
 
-`backend/scripts/backfill_playback.py RUN_ID`, ejecutado desde `backend`, publica frames en PostgreSQL **solo** para una línea base SWAT+ terminada y ya persistida. No ejecuta SWAT+, no sintetiza FSPM, y deja el forcing en `null` si el workspace aislado original no existe. Rechaza corridas acopladas históricas porque su trayectoria diaria fue descartada.
+Herramientas de recuperación, desde `backend/`:
 
-Para una fila de línea base con un manifiesto SQLite antiguo y cero frames PostgreSQL, existe el paso explícito `backfill_playback.py RUN_ID --repair-legacy-sidecar`. Verifica el SHA-256 del sidecar antes de migrar, conserva un resumen del manifiesto anterior y rechaza cualquier fila que ya tenga frames PostgreSQL, para no sobrescribir una serie parcial. Respaldar la base antes de usarlo. No ejecuta SWAT+ ni crea datos FSPM.
+- `scripts/register_phase234_south_fork_2019.py`: verifica e importa un bundle
+  South Fork 2019 completado. Argumentos en [estado actual](CURRENT_STATE.md).
+- `scripts/backfill_playback.py RUN_ID`: publica playback de una línea base
+  SWAT+ ya persistida a partir de datos recuperables. No ejecuta SWAT+ ni crea
+  trayectoria FSPM para un acoplado histórico.
+- `scripts/backfill_playback.py RUN_ID --repair-legacy-sidecar`: migra un sidecar
+  baseline verificado si todavía no hay frames PostgreSQL. Rechaza una serie
+  parcial existente; conserva el manifiesto anterior.
 
-## Semántica de fechas, variables y evidencia
+Las importaciones no corrigen retrospectivamente cálculos o etiquetas
+científicas de filas antiguas. Una reparación requiere conservar el contenido
+previo y documentar exactamente qué cambió.
 
-Cada registro lleva `simulation_id`, fecha ISO 8601, `resolution`, `run_type`, `watershed_id` (clave de la base de datos), `watershed_code`, `outlet_unit` cuando se configuró, soporte espacial, grupos `weather`, `crop`, `field`, `plant_samples`, `hydrology` y `hru_results`. Cada variable lleva `value`, `unit`, `evidence`, `source`, `availability` y, cuando corresponde, `limitation`. Valores ausentes son `null` con `NOT_AVAILABLE`; `0` solamente aparece cuando el modelo o forcing lo registra como cero. Evidencias: `OBSERVED`, `MODELLED_SWAT_PLUS`, `SIMPLIFIED_FSPM`, `SIMPLIFIED_HYDROLOGY`, `DERIVED`, `ASSUMED`, `SYNTHETIC`, `NOT_AVAILABLE`. La clasificación se hace por variable; una fecha puede mezclar forcing derivado de estaciones, hidrología SWAT+ y humedad FSPM asumida.
+## 3. Estructura y evidencia
 
-Los archivos meteorológicos conservan el día del año original, incluidos años bisiestos. Se rechazan fechas duplicadas, días inválidos y la falta de temperatura/precipitación en cualquier estación directa; el acoplado exige también solar y humedad relativa. Viento y PET directos se exponen si están completos; variables secundarias incompletas de una línea base permanecen `null`. Los registros SWAT+ se alinean por `period`, FSPM por fecha calculada y observaciones por fecha observada; nunca por longitud/posición. Si falta una salida SWAT+ para un periodo solicitado, se conserva el periodo con hidrología `null` y una limitación. Mensual/anual se etiqueta con su frecuencia efectiva; precipitación y radiación se suman en el periodo disponible y temperatura/humedad relativa se promedian. El primer día del mes/año identifica el periodo, incluso si la solicitud comienza a mitad del mismo. `date` devuelve el periodo que contiene el día; `start` y `end` son inclusivos y devuelven todos los periodos que se solapan con el intervalo. Por ejemplo, `date=2020-02-28` devuelve el registro mensual `2020-02-01`. El total meteorológico puede abarcar solo el fragmento solicitado del periodo; no se presenta como mes/año completo.
+`PlaybackRecord` conserva simulación, fecha, resolución, tipo de corrida,
+cuenca, código externo, outlet, soporte espacial y estos grupos:
 
-El lector no reconstruye series generadas internamente por el generador climático de SWAT+ (`sim`/WGN). En una línea base, la meteorología no recuperable queda ausente; un acoplado requiere forcing directo completo para poder justificar su FSPM. Si el workspace SWAT+ efectivo cambia el forcing respecto del leído por el FSPM, la publicación acoplada se rechaza en vez de atribuir a ambos modelos entradas diferentes.
+| Grupo | Contenido |
+| --- | --- |
+| `weather` | Forcing disponible con unidad y procedencia. |
+| `crop` | Actividad, cultivo, etapa y fuente del calendario. |
+| `field` | Agregados FSPM de la fecha, incluida fracción de área activa cuando existe. |
+| `plant_samples` | Slots representativos persistidos, IDs y variables individuales. |
+| `plant_sample_context` | Población, conteo capturado, método e identidad `SIMULATION_SLOT`. |
+| `hydrology` | Resultados de cuenca y caudal outlet; observación solo si se enlaza explícitamente. |
+| `hru_results` | IDs HRU, GIS, calendario y variables de salida/estimadas. |
+| `channel_results` | IDs canal/GIS y variables impresas de caudal, volumen y temperatura. |
 
-El proveedor normalizado externo anterior rellenaba solar, humedad relativa y CO₂ ausentes con valores de metadatos o valores por defecto del modelo. Ese comportamiento de entrada existente se conserva para no cambiar corridas simplificadas, pero ahora cada variable rellenada se marca `ASSUMED` en playback, con la limitación correspondiente. No se presenta como observación del archivo climático.
+Cada `VariableState` lleva `value`, `unit`, `availability`, `evidence`, `source`
+y `limitation` opcional. **`null` significa desconocido; `0` es un cero registrado.**
+Una variable ausente lleva `NOT_AVAILABLE` en disponibilidad y evidencia.
 
-`soil_water_mm` significa almacenamiento SWAT+ por encima del punto de marchitez, en milímetros. En `phase234-sf-2019-v2`, `field.soil_moisture_vol_percent` es una estimación `DERIVED` de humedad volumétrica radicular: añade el punto de marchitez de `soils.sol` y distribuye uniformemente la fracción de agua disponible entre capas hasta la profundidad de raíz. No hay humedad diaria por capa; la distribución es una hipótesis declarada. En corridas sin salidas HRU diarias, el FSPM puede conservar la entrada de 24 % marcada `ASSUMED`. `hydrology.evapotranspiration_mm` proviene de SWAT+ o del modelo hidrológico simplificado; `field.actual_transpiration_mm_day` proviene del FSPM.
+Evidencias permitidas: `OBSERVED`, `MODELLED_SWAT_PLUS`, `SIMPLIFIED_FSPM`,
+`SIMPLIFIED_HYDROLOGY`, `DERIVED`, `ASSUMED`, `SYNTHETIC`, `NOT_AVAILABLE`.
+Se clasifican por variable: un mismo frame puede mezclar estados modelados,
+estimaciones, observaciones y entradas supuestas.
 
-El cultivo acoplado se marca activo únicamente dentro de las ventanas calculadas por PHU; fuera de ellas, `crop.active=false`, `field={}` y `plant_samples=[]`. `window_status=APPROXIMATE_PLANTING_WINDOW` declara que siembra/cosecha no son eventos SWAT+ observados. Una línea base SWAT+ deja `crop=null` y no contiene estados FSPM. La corrida simplificada no dispone todavía de un calendario explícito de siembra/cosecha y declara esa limitación.
+- `soil_water_mm`: almacenamiento SWAT+ por encima de WP, en mm, para el
+  perfil/soporte declarado.
+- `field.soil_moisture_vol_percent`: humedad FSPM en porcentaje volumétrico.
+  En South Fork corregido es `DERIVED`; sin agua HRU diaria puede ser `ASSUMED`.
+  No es `soil_water_mm / 10` ni se multiplica de nuevo por 100.
+- `hydrology.evapotranspiration_mm`: ET hidrológica de SWAT+ o motor simplificado.
+  `field.actual_transpiration_mm_day` es transpiración FSPM, otra variable.
+- Biomasa FSPM: g/planta; biomasa HRU SWAT+: kg/ha cuando se imprime.
+- Caudal: m³/s. Almacenamiento de canal: m³. No hay nivel/profundidad inferidos.
 
-Las coordenadas `x_m`/`y_m` de las muestras de plantas son relativas a la cuadrícula de población simulada; no son coordenadas geográficas ni observaciones de individuos de campo. `plant_sample_context` indica `population_count`, `captured_count`, `selection_method` e `identity_scope=SIMULATION_SLOT`; cuando la población supera diez miembros, la selección está espaciada determinísticamente entre IDs estables, no toma solo el primer bloque. La identidad de polígono HRU sigue siendo `null` hasta documentar una correspondencia espacial comprobable.
+`plant_samples[*].calendar_id` y `hru_ids` enlazan muestras con sus grupos.
+`x_m/y_m` son coordenadas locales de población, no geográficas.
+`polygon_id` y `geometry_id` siguen nulos hasta verificar la unión espacial.
+Un GIS ID conservado no equivale a tener esa unión.
 
-Los agregados de campo incluyen `lai_p10`, `lai_p90`, `lai_std`, `root_depth_p10_m`, `root_depth_p90_m` y `representative_plant_count` cuando el FSPM los calcula. Cada uno sigue el mismo esquema `VariableState`; ausencia es `null`. `SCIENTIFIC_STATE_AVAILABLE` no implica que todas las variables estén presentes.
+## 4. Tiempo, cobertura y temporadas
 
-El resumen `water_balance.status=TERMS_COMPLETE` significa únicamente que runoff, ET y percolación están disponibles para todos los periodos solicitados; no afirma cierre del balance. `period_coverage` declara filas disponibles/esperadas por variable. Los totales son null si falta algún periodo o valor; cero se conserva si SWAT+ reportó cero.
+Los registros se alinean por fecha/periodo y clave espacial, no por posición
+en una lista. Se rechazan duplicados y fechas inválidas; los faltantes
+permanecen ausentes, sin interpolación ni reconstrucción de días históricos.
 
-Ejemplo abreviado de **fixture determinista**, no resultado South Fork:
+En mensual/anual, el primer día identifica el periodo. `date` devuelve el
+periodo que contiene esa fecha; un intervalo incluye periodos solapados.
+Forcing acumulado en un fragmento solicitado no se presenta como mes completo.
+Los flujos mm se agregan según periodo; temperatura y caudal medio conservan
+su semántica de promedio y las observaciones declaran cobertura.
 
-```json
-{
-  "schema_version": "twin-playback-v1",
-  "simulation_id": "run-1",
-  "simulation_status": "COMPLETED",
-  "artifact_status": "AVAILABLE",
-  "resolution": "DAILY",
-  "available_resolutions": ["DAILY"],
-  "total": 1,
-  "offset": 0,
-  "limit": 1,
-  "records": [{
-    "schema_version": "twin-playback-v1",
-    "simulation_id": "run-1",
-    "date": "2020-02-29",
-    "resolution": "DAILY",
-    "run_type": "SWAT_STANDARD_BASELINE",
-    "watershed_id": "basin",
-    "watershed_code": null,
-    "outlet_unit": null,
-    "spatial_support": "WATERSHED_OUTLET_AND_BASIN",
-    "weather": {"precipitation_mm": {"value": 2.0, "unit": "mm/day", "evidence": "DERIVED", "source": "SWAT station basin mean", "availability": "AVAILABLE", "limitation": null}},
-    "crop": null,
-    "field": {},
-    "plant_samples": [],
-    "hydrology": {"soil_water_mm": {"value": null, "unit": "mm", "evidence": "NOT_AVAILABLE", "source": "SWAT+ normalized output", "availability": "NOT_AVAILABLE", "limitation": "No recorded value"}},
-    "hru_results": [],
-    "availability": {"weather": "AVAILABLE", "field": "NOT_AVAILABLE", "plant_samples": "NOT_AVAILABLE", "hydrology": "NOT_AVAILABLE", "hru_results": "NOT_AVAILABLE"},
-    "limitations": ["SWAT+ has no normalized output for this period; hydrological values are null"]
-  }],
-  "variables": {},
-  "provenance": {"fixture": true},
-  "limitations": []
-}
-```
+Una corrida acoplada de frecuencia mensual/anual puede ofrecer además `DAILY`
+con FSPM/forcing y **sin hidrología diaria**. Son series independientes:
+no se duplican ni interpolan resultados mensuales para animar días.
 
-La respuesta real incluye las demás variables meteorológicas e hidrológicas, con valores `null` cuando faltan, y el catálogo correspondiente. El ejemplo muestra un día bisiesto sin salida SWAT+, precisamente para ilustrar que una laguna no equivale a cero.
+La ruta vigente usa eventos ejecutados de siembra/cosecha; las corridas
+anteriores con `APPROXIMATE_PLANTING_WINDOW` conservan esa limitación. Fuera de
+temporada no se arrastra el último estado vegetal: `crop.active=false`, campo
+sin cultivo y muestras vacías. Durante cosecha escalonada se conservan solo
+grupos/muestras activos y la fracción de área activa.
 
-## Consumo del visor 3D en la fase 3
+`total_discharge_hm3` solo se integra desde caudales diarios completos.
+Con frecuencia gruesa o cobertura insuficiente queda nulo con estado/razón.
+`water_balance.status=TERMS_COMPLETE` expresa cobertura de términos, no cierre
+físico del balance. `code_version` añade `+dirty` para cambios locales no
+confirmados; los manifiestos y hashes mantienen el linaje de cada corrida.
 
-1. Consultar `/api/v1/simulations/{id}/playback` por fecha/intervalo y paginar. Usar `resolution` y `availability` antes de animar; una muestra de planta no equivale al promedio de campo.
-2. Para lluvia usar `weather.precipitation_mm.value`, respetando su unidad y su evidencia. Eliminar la precipitación derivada de escorrentía/caudal.
-3. Para crecimiento usar `field.lai`, `field.height_m`, `field.root_depth_m`, `field.biomass_g_plant` y `crop.active`; para plantas individuales usar solo `plant_samples` con sus IDs estables. Eliminar estados maduros persistentes fuera de temporada.
-4. Para estrés y transpiración usar `field.water_stress` y `field.actual_transpiration_mm_day` cuando existan. Eliminar los proxies `1 - SWAT_ET/5.8` y `SWAT_ET * 0.78`.
-5. Eliminar la multiplicación heredada `soil_moisture_vol * 100`. `field.soil_moisture_vol_percent.value` ya es porcentaje volumétrico. `hydrology.soil_water_mm` es almacenamiento en mm; no sustituye esa humedad.
-6. Usar `hydrology.streamflow_m3s`, `runoff_mm`, `evapotranspiration_mm`, `percolation_mm` y `soil_water_mm` para el soporte de cuenca. Usar `hru_results` únicamente como HRU identificada por la salida SWAT+; falta un mapa verificado HRU→polígono.
+## 5. Entrada oficial del frontend
 
-El visor consulta el endpoint autenticado con páginas de 100 registros; conserva páginas ya obtenidas y precarga la siguiente cerca del borde. La selección de simulación o resolución cancela e invalida las peticiones anteriores. El control temporal se mueve por índice de **registro real**, muestra su fecha o periodo y no asume una frecuencia diaria. La búsqueda directa por fecha usa `date` y localiza el índice con búsqueda binaria sobre las páginas, sin descargar la serie completa. Las gráficas muestran únicamente la página cargada; las brechas permanecen `null`.
+| Archivo en `frontend/src/` | Responsabilidad |
+| --- | --- |
+| `hooks/useTwinPlayback.ts` | Disponibilidad, paginación/caché, reproducción, selección de resolución y navegación por fecha. |
+| `lib/playback-visual-adapter.ts` | `adaptPlaybackVisual()` puro; devuelve `TwinVisualState` con unidades, evidencia y límites. |
+| `lib/playback-scene.ts` | `sceneFromRecord()` y puntos de gráfica desde el mismo registro. |
+| `lib/playback-navigation.ts` | Primera fecha representable y resolución preferida según disponibilidad guardada. |
+| `types/playback.ts` | Contrato `PlaybackPage`/`PlaybackRecord`. |
+| `types/playback-availability.ts` | Modos y códigos del diagnóstico. |
+| `lib/visual-state.ts` | Dimensiones ilustrativas `REFERENCE_MAIZE`, separadas de datos científicos. |
 
-Si una corrida terminada y accesible carece de artefacto v1, el visor conserva los gráficos históricos mediante los resultados persistidos de `/swat-results` o `/results`. Los etiqueta como series sin contrato temporal y no los usa para reconstruir la escena. SWAT+ histórico muestra solo caudal y términos hidrológicos realmente almacenados; no infiere precipitación ni estados FSPM. El endpoint simplificado histórico expone como máximo los primeros 1000 resultados y la interfaz indica el truncamiento. En el panel 3D se conserva únicamente un contexto espacial estático, identificado como ilustrativo y sin lluvia, cultivo ni caudal de la corrida. La lista de simulaciones del visor se restringe a las corridas que el usuario puede consultar mediante playback.
+La URL `/twin-3d?simId=...` respeta la corrida solicitada si es accesible.
+Sin ID, el visor prioriza `phase234-sf-2019-v2` cuando está en el catálogo.
+Inicialmente prefiere la resolución con trayectoria FSPM; no inventa una fecha
+de cultivo. **Ir al primer cultivo** es una acción explícita basada en el
+manifiesto. Las peticiones de una selección anterior se invalidan/cancelan.
+El timeline avanza por índice de registro real; las gráficas usan la página
+cargada y conservan brechas nulas.
 
-El adaptador de escena usa solamente valores `AVAILABLE`. Una precipitación diaria de 0 apaga la lluvia; una positiva activa partículas con densidad gráfica acotada y proporcional (25 mm/día corresponde al máximo visual). Los acumulados mensuales/anuales se muestran como tales, sin tormentas diarias. El campo muestra instancias **decorativas** cuya altura usa 1 unidad de escena por metro, acotada a 3,2; la copa se escala con LAI y cobertura disponibles. La planta individual usa solo la muestra persistida seleccionada por ID; la geometría de hojas y raíces es ilustrativa del FSPM simplificado. Fuera de temporada y en baseline SWAT+ no se genera planta FSPM. La red fluvial y topografía South Fork permanecen contextuales; para otras cuencas se muestra un plano sin atribuirles dicha geometría. El caudal de salida aparece como cifra etiquetada por evidencia, sin atribuirlo a cada canal. Ningún polígono se asocia a HRU por índice.
+| Modo visual | Significado |
+| --- | --- |
+| `SCIENTIFIC_ACTIVE` | Cultivo fechado activo con campo o muestra representable; puede ser incompleto. |
+| `SCIENTIFIC_FALLOW` | El registro declara cultivo inactivo. No significa datos desconocidos. |
+| `HYDROLOGY_ONLY` | Hidrología fechada sin FSPM representable. |
+| `HISTORICAL_REFERENCE` | Importación histórica sin trayectoria playback; gráficos persistidos y contexto estático. |
+| `DATA_UNAVAILABLE` | Falta estado utilizable o hay un problema de disponibilidad/integridad. |
 
-Se eliminaron del visor los proxies de lluvia desde escorrentía, estrés/transpiración desde ET SWAT+, humedad porcentual desde almacenamiento SWAT+ y el calendario fijo de crecimiento. No se anima savia sin variable calculada. `soil_water_mm` y `soil_moisture_vol_percent` permanecen separados. La fecha de siembra aproximada por PHU se marca expresamente.
+`fieldRepresentable` y `sampleRepresentable` se evalúan por separado. Los
+códigos distinguen falta de artefacto, artefacto inválido, ausencia de muestras,
+altura/LAI faltantes, cultivo incompatible y fecha fuera de temporada.
 
-Continúan pendientes para la fase 4 la retroalimentación física SWAT+→FSPM, las fechas de manejo ejecutadas, la ponderación estación→HRU, la georreferenciación comprobada de HRUs y la validación observacional de los estados vegetales. La sincronización visual con estados disponibles no equivale a una validación científica completa del gemelo.
+## 6. Reglas de representación 3D
+
+- Usar únicamente el `PlaybackRecord` seleccionado, no `field_aggregates`
+  estacionales ni fórmulas científicas dentro de Three.js.
+- Lluvia animada solo con precipitación **DAILY**, disponible y positiva.
+  Cero apaga partículas; mensual/anual muestra acumulados sin tormentas diarias.
+- Planta individual solo con muestra persistida compatible. Su altura, raíces
+  y etapa provienen de esa muestra; si desaparece tras cosecha no se sustituye
+  silenciosamente por el promedio del campo.
+- Las 1.014 instancias del campo son decorativas, gobernadas por agregados y
+  fracción de área activa; los marcadores con ID son muestras persistidas.
+- LAI/estrés modulan geometría/color como transformaciones gráficas. Hojas,
+  nervaduras, mazorca y raíces laterales no son mallas botánicas validadas.
+- El terreno y la red de South Fork son contexto espacial con relieve
+  ilustrativo. Un clic en sector no identifica una HRU; no asociar por índice.
+- El outlet no se replica como caudal de cada canal. Los valores por canal
+  proceden de `channel_results`; sin sección hidráulica no se calcula nivel.
+- Viento, materiales y movimiento ambiental deben distinguirse de efectos
+  impulsados por variables persistidas. Sin variable no se fabrica un sensor.
+- Para otras cuencas no atribuir geometría South Fork. En modo histórico,
+  la referencia planta/parcela es estática y explícitamente ilustrativa.
+
+## 7. Verificación
+
+Desde `frontend/`, `pnpm test` verifica el adaptador, navegación, frecuencias,
+integridad de identidades y casos South Fork/fixtures. `tests/visual-playback.mjs`
+usa Playwright para interceptar la API con fixtures y capturar las tres escalas;
+requiere Next.js iniciado y Chromium disponible. Puede configurarse con
+`PLAYWRIGHT_MODULE`, `CHROMIUM_PATH` y `VISUAL_OUTPUT_DIR`.
+
+`backend/scripts/generate_visual_fixtures.py` genera fixtures con los esquemas
+Pydantic reales. Llevan `test_only` y no son resultados científicos.
+Una prueba visual o de contrato no valida la fisiología ni el caudal frente a
+observaciones.
