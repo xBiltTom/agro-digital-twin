@@ -633,7 +633,7 @@ export default function SimulationsPage() {
   };
 
   const chartData = results.filter((_, idx) => idx % Math.max(1, Math.floor(results.length / 90)) === 0);
-  const monthlyComparisonData = selectedSim?.monthly_outputs ?? [];
+  const monthlyComparisonData = selectedSim?.validation?.baseline_diagnostic?.monthly_outputs ?? selectedSim?.monthly_outputs ?? [];
   const isSelectedSwatBackend = selectedSim ? isSwatBackend(selectedSim) : false;
   const selectedWatershed = selectedSim
     ? watersheds.find((watershed) => watershed.id === selectedSim.watershed_id)
@@ -2161,6 +2161,21 @@ export default function SimulationsPage() {
                 {formHydrologyBackend === "SWAT_PLUS" ? (
                   <div className="p-3 rounded-none border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/20 text-xs text-purple-900 dark:text-purple-200">
                     <span className="font-semibold block mb-1">Tipo de ejecución</span>
+                    <label className="mb-3 block text-[11px]">
+                      Observaciones de caudal para comparar (opcional)
+                      <select aria-label="Observaciones de caudal USGS" className="mt-1 w-full border border-purple-300 bg-white px-2 py-1 text-slate-900 dark:border-purple-800 dark:bg-slate-950 dark:text-slate-100"
+                        value={formDatasetIds.find((id) => formDatasetRoles[id] === "OBSERVATION") ?? ""}
+                        onChange={(event) => {
+                          const id = event.target.value;
+                          setFormDatasetIds(id ? [id] : []);
+                          setFormDatasetRoles(id ? { [id]: "OBSERVATION" } : {});
+                        }}>
+                        <option value="">Sin comparación observacional</option>
+                        {datasets.filter((dataset) => dataset.evidence_type === "OBSERVED" && dataset.variable === "streamflow").map((dataset) => (
+                          <option key={dataset.id} value={dataset.id}>{dataset.dataset_name}</option>
+                        ))}
+                      </select>
+                    </label>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <select
                         aria-label="Modalidad SWAT+"
@@ -2358,10 +2373,10 @@ export default function SimulationsPage() {
                     </>
                   )}
 
-                  {formHydrologyBackend === "SIMPLIFIED" && (
+                  {(formHydrologyBackend === "SIMPLIFIED" || formDatasetIds.some((id) => formDatasetRoles[id] === "OBSERVATION")) && (
                     <label className="text-[11px] text-slate-600 dark:text-slate-400">
-                      Estación USGS (opcional)
-                        <input value={formStationId} onChange={(event) => setFormStationId(event.target.value)} minLength={8} maxLength={15} pattern="\d{8,15}" placeholder="Usar estación asociada a la cuenca"
+                      {formHydrologyBackend === "SWAT_PLUS" ? "Estación USGS para comparación" : "Estación USGS (opcional)"}
+                        <input value={formStationId} onChange={(event) => setFormStationId(event.target.value)} required={formHydrologyBackend === "SWAT_PLUS"} minLength={8} maxLength={15} pattern="\d{8,15}" placeholder="Usar estación asociada a la cuenca"
                         className="mt-1 w-full border border-slate-200 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100" />
                     </label>
                   )}

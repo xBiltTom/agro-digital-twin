@@ -173,6 +173,8 @@ _RECOGNIZED_OUTPUT_PATTERNS = (
 _TRACEABLE_INPUT_FILES = (
     "plants.plt", "plant.ini", "landuse.lum", "management.sch", "hru-data.hru",
     "soils.sol", "soil_plant.ini", "time.sim", "print.prt",
+    "tiledrain.str", "hydrology.hyd", "codes.bsn", "rout_unit.con", "hru.con",
+    "aquifer.con", "chandeg.con", "rout_unit.rtu", "ls_unit.def", "ls_unit.ele",
 )
 
 

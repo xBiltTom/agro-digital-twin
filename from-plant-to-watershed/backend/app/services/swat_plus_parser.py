@@ -33,6 +33,9 @@ _VARIABLES = {
     "soil_water_initial_mm": ("swinit",),
     "soil_water_average_mm": ("swave",),
     "percolation_mm": ("perc", "perco", "percolation", "sepbtm"),
+    "tile_drainage_mm": ("qtile",),
+    "lateral_flow_mm": ("latq",),
+    "water_yield_mm": ("wateryld",),
     "streamflow_m3s": ("floout", "flowout", "streamflow", "discharge", "flow"),
     "channel_area_ha": ("area",),
     "channel_precip_volume_m3": ("precip",),
@@ -58,6 +61,7 @@ _WATER_BALANCE_VARIABLES = (
     "plant_evapotranspiration_mm", "soil_evaporation_mm", "canopy_evaporation_mm",
     "potential_evapotranspiration_mm", "soil_water_mm", "soil_water_initial_mm",
     "soil_water_average_mm", "percolation_mm", "streamflow_m3s",
+    "tile_drainage_mm", "lateral_flow_mm", "water_yield_mm",
 )
 
 
@@ -344,7 +348,8 @@ class SwatOutputParser:
         water_balance_fields = {"precip_mm", "runoff_mm", "runoff_contribution_mm", "evapotranspiration_mm",
                                 "plant_evapotranspiration_mm", "soil_evaporation_mm", "canopy_evaporation_mm",
                                 "potential_evapotranspiration_mm", "soil_water_mm", "soil_water_initial_mm",
-                                "soil_water_average_mm", "percolation_mm"}
+                                "soil_water_average_mm", "percolation_mm",
+                                "tile_drainage_mm", "lateral_flow_mm", "water_yield_mm"}
         water_balance_rows = self._select_outlet(
             [row for path in wb_files for row in self._read(path, water_balance_fields)], "basin water-balance",
         )

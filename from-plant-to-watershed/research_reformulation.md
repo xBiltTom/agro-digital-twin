@@ -83,6 +83,10 @@ Objetivos específicos:
    validación, conservando contratos y predicciones reproducibles.
 4. Comparar los cuatro brazos en periodos reservados, cuantificando diferencias,
    incertidumbre temporal y límites del aporte vegetal y del ML.
+5. Entregar un gemelo funcional para usuarios autenticados: configurar y ejecutar
+   corridas, consultar estados por fecha y escala, contrastar caudales observados
+   y simulados, y descargar resultados con unidades, cobertura y procedencia.
+   La disponibilidad de cada salida debe corresponder a la frecuencia ejecutada.
 
 Evidencia de cumplimiento: dataset y protocolo versionados; manifiestos y
 exportaciones A/B; bundles C/D con registro de selección; y tablas de errores,
@@ -90,6 +94,13 @@ contrastes e incertidumbre. Los objetivos se cumplen al producir y evaluar
 esa evidencia, aunque el efecto resulte nulo o negativo. La integración en la
 plataforma conservará por separado resultados físicos y asistidos, con sus
 unidades y procedencia, como entregable de software del mismo estudio.
+El objetivo funcional requiere un recorrido completo desde la creación hasta
+la descarga sobre PostgreSQL; una visualización aislada no acredita su cumplimiento.
+
+Primer avance: [diagnóstico de la referencia South Fork 2019](docs/BASELINE_DIAGNOSTIC_2019.md).
+Las corridas de desarrollo detectaron drenaje sin enlace vegetal y sin conexión
+de ruteo; sus intervenciones no sustituyen una máscara histórica observada ni
+la evaluación independiente de los brazos A/B/C/D.
 
 El primer estudio será una **evaluación retrospectiva multianual en South Fork
 Iowa River, USGS 05451210**. Una sola cuenca permite un estudio de caso temporal,

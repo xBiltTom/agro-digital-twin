@@ -1,6 +1,6 @@
 # Estado actual del proyecto
 
-Revisión documental: **2026-10-05**. Describe el código y los artefactos del
+Revisión documental: **2026-10-06**. Describe el código y los artefactos del
 repositorio; la disponibilidad de servicios locales se comprueba al ejecutarlos.
 La [ficha técnica](../project_framework.md) conserva el alcance de investigación.
 
@@ -16,7 +16,8 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Planta → SWAT+ | Diez parámetros del registro vegetal `corn` en `plants.plt`; SWAT+ mantiene sus propias ecuaciones de agua y cultivo. |
 | Persistencia | Frames JSONB PostgreSQL con clave temporal y SHA-256. |
 | Visor | Tres escalas y estados fechados; mallas anatómicas y terreno ilustrativos/contextuales. |
-| Validación actualizada | Pendiente de comparación observacional propia para la ruta diaria corregida. |
+| Diagnóstico observacional | Tres corridas SWAT+ estándar 2019 comparadas con USGS; la pareja acoplada corregida aún requiere su propia comparación. |
+| Descargas SWAT+ | CSV de registros y JSON con configuración, procedencia, métricas y cobertura desde Simulaciones e Informes. |
 | CMIP6 / rendimiento | Sin proyecciones CMIP6 normalizadas en el experimento publicado ni validación de rendimiento a escala HRU/cuenca. |
 
 ## 2. Experimentos que conviven
@@ -28,10 +29,18 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `phase1-sf-2019-v3` | Bundle de ejecución 2019 | Calendarios ejecutados y inputs compatibles, todavía con humedad FSPM constante asumida. |
 | `phase234-sf-2019-v1` | Bundle diario anterior | Anterior a la corrección de interpretación del almacenamiento SWAT+. |
 | `phase234-sf-2019-v2` | Bundle diario corregido y selección preferida del visor cuando es accesible | Gemelo planta–suelo–agua experimental, no calibración ni nueva prueba de H1. |
+| `sf19-diag-v1-reference` | Ejecución estándar diaria registrada en PostgreSQL | Referencia de desarrollo: RMSE mensual 9,533 m³/s; NSE −0,961. |
+| `sf19-diag-v1-tile-probe` | Activación experimental de drenaje en maíz | Genera drenaje, pero carece de conexión `til` en las unidades de ruteo. |
+| `sf19-diag-v2-tile-routed` | Misma activación y conexión `til` al canal | RMSE mensual 8,914 m³/s; NSE −0,715; referencia todavía insuficiente. |
 
 Dashboard y reportes consultan el experimento final v2. El visor prioriza el
 gemelo diario corregido, salvo que se indique una corrida accesible mediante
 `?simId=`. Esa diferencia de linaje debe permanecer explícita.
+
+El [diagnóstico 2019](BASELINE_DIAGNOSTIC_2019.md) documenta las tres nuevas
+corridas, las intervenciones y el siguiente trabajo físico. Cada corrida tiene
+365 frames persistidos; la comparación incluye 12 meses completos y conserva
+86 valores USGS estimados. Este avance evalúa el baseline estándar, sin FSPM/ML.
 
 ## 3. Gemelo South Fork 2019 corregido
 

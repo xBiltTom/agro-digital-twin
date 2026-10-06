@@ -12,6 +12,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { api } from "../../../lib/api";
+import SwatBaselineDiagnosticPanel from "../../../components/scientific/SwatBaselineDiagnosticPanel";
 import { classifySimulationEvidence, simulationEvidenceLabel } from "../../../lib/simulation-evidence";
 import type {
   CurrentFinalScientificReportResponse,
@@ -291,7 +292,7 @@ export default function ReportsPage() {
     : selectedSim.status !== "COMPLETED"
       ? `La corrida está ${runStatusLabel(selectedSim.status).toLowerCase()}; los archivos estarán disponibles al completarse.`
       : selectedSim.hydrology_backend !== "SIMPLIFIED"
-        ? "El exportador multiformato aún no representa resultados SWAT+. La corrida conserva sus resultados en Simulaciones."
+        ? "Descarga los datos CSV y el informe JSON de SWAT+ en el panel de esta corrida."
         : "El exportador incluye los indicadores y los registros diarios guardados para esta corrida.";
 
   return (
@@ -674,6 +675,9 @@ export default function ReportsPage() {
             </dl>
 
             <p className="mt-4 text-xs leading-5 text-slate-600 dark:text-slate-400">{exportAvailability}</p>
+            {selectedSim.status === "COMPLETED" && selectedSim.hydrology_backend === "SWAT_PLUS" && (
+              <div className="mt-4"><SwatBaselineDiagnosticPanel simulation={selectedSim} /></div>
+            )}
           </div>
         )}
 
@@ -683,7 +687,7 @@ export default function ReportsPage() {
           </p>
         )}
 
-        <div className="mt-3 grid grid-cols-1 divide-y divide-slate-300 border-y border-slate-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0 dark:divide-slate-800 dark:border-slate-800">
+        {selectedSim?.hydrology_backend !== "SWAT_PLUS" && <div className="mt-3 grid grid-cols-1 divide-y divide-slate-300 border-y border-slate-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0 dark:divide-slate-800 dark:border-slate-800">
           {EXPORTS.map((item) => {
             const Icon = item.icon;
             const isDownloading = downloadingFormat === item.format;
@@ -710,7 +714,7 @@ export default function ReportsPage() {
               </button>
             );
           })}
-        </div>
+        </div>}
       </section>
 
       <section aria-labelledby="history-heading" className="border-t border-slate-300 pt-6 dark:border-slate-800">

@@ -2,14 +2,18 @@ from typing import List
 from datetime import date
 from pathlib import Path
 import copy
+import csv
+import io
+import json
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from app.core.database import get_db
 from app.models.user import User
 from app.models.watershed import Watershed
-from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult
+from app.models.simulation import ClimateScenario, SimulationRun, SimulationResult, PlaybackFrame
 from app.models.observation import Dataset, DatasetArtifact
 from app.core.config import settings
 from app.services.swat_plus_adapter import (
@@ -231,6 +235,10 @@ async def create_and_run_simulation(
             raise HTTPException(status_code=422, detail=f"Datasets not found: {', '.join(sorted(missing))}")
     if sim_in.climate_source in {"CMIP6_FILE", "OBSERVED", "OBSERVED_HYBRID"} and not any(sim_in.dataset_roles.get(item.id) == "FORCING" for item in datasets):
         raise HTTPException(status_code=422, detail="Selected climate_source requires a registered FORCING dataset")
+    for dataset in datasets:
+        if sim_in.hydrology_backend == "SWAT_PLUS" and sim_in.dataset_roles.get(dataset.id) in {"OBSERVATION", "VALIDATION"}:
+            if dataset.evidence_type != "OBSERVED" or dataset.variable != "streamflow":
+                raise HTTPException(status_code=422, detail="Streamflow comparison requires an observed streamflow dataset")
     if sim_in.climate_source != "SYNTHETIC" and (scenario.temp_anomaly_c != 0 or scenario.precip_factor != 1):
         raise HTTPException(
             status_code=422,
@@ -339,6 +347,52 @@ async def get_simulation_detail(
     _user: User = Depends(get_current_active_user)
 ):
     return await _visible_simulation(db, sim_id, _user)
+
+
+@router.get("/{sim_id}/export/{format}")
+async def export_swat_simulation(
+    sim_id: str, format: str, db: AsyncSession = Depends(get_db),
+    _user: User = Depends(get_current_active_user),
+):
+    sim = await _visible_simulation(db, sim_id, _user)
+    if sim.status != "COMPLETED" or sim.hydrology_backend != "SWAT_PLUS":
+        raise HTTPException(status_code=409, detail="La descarga requiere una corrida SWAT+ completada.")
+    if format not in {"csv", "json"}:
+        raise HTTPException(status_code=400, detail="Formatos disponibles: csv, json")
+    rows = sim.monthly_outputs or []
+    diagnostic = (sim.validation or {}).get("baseline_diagnostic") or {}
+    resolution = ((sim.effective_config or {}).get("output_frequency")
+                  or (sim.validation or {}).get("temporal_resolution") or "DAILY")
+    observed_frames = await db.execute(select(PlaybackFrame.date,
+                                             PlaybackFrame.payload["hydrology"]["observed_streamflow_m3s"])
+                                      .where(PlaybackFrame.simulation_id == sim_id,
+                                             PlaybackFrame.resolution == resolution).order_by(PlaybackFrame.date))
+    observations = {day.isoformat(): payload
+                    for day, payload in observed_frames}
+    quality = {row["date"]: row["qualifiers"] for row in diagnostic.get("daily_comparison", [])}
+    if format == "json":
+        content = json.dumps({"schema_version": "swat-simulation-export/v1", "simulation_id": sim.id,
+                              "name": sim.name, "configuration": sim.effective_config,
+                              "station_id": sim.station_id, "dataset_ids": sim.dataset_ids,
+                              "dataset_roles": sim.dataset_roles,
+                              "provenance": sim.provenance, "validation": sim.validation,
+                              "records": rows, "monthly_comparison": diagnostic.get("monthly_outputs", []),
+                              "observations": observations}, ensure_ascii=False, allow_nan=False)
+        media_type = "application/json"
+    else:
+        exported = [{**row, "simulation_id": sim.id,
+                     "observed_streamflow_m3s": (observations.get(str(row.get("period"))) or {}).get("value"),
+                     "observation_qualifiers": quality.get(str(row.get("period"))),
+                     "temporal_resolution": resolution,
+                     "evidence_type": (sim.provenance or {}).get("evidence_type")} for row in rows]
+        fields = list(dict.fromkeys(key for row in exported for key in row))
+        buffer = io.StringIO(newline="")
+        writer = csv.DictWriter(buffer, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(exported)
+        content, media_type = buffer.getvalue(), "text/csv"
+    return Response(content, media_type=media_type,
+                    headers={"Content-Disposition": f'attachment; filename="swat_{sim.id}.{format}"'})
 
 @router.get("/{sim_id}/results", response_model=List[SimulationResultResponse])
 async def get_simulation_results(
