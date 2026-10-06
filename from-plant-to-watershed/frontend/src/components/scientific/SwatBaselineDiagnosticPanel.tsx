@@ -10,6 +10,7 @@ const number = (value: number | null | undefined, digits = 3) =>
 
 export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation: SimulationRun }) {
   const diagnostic = simulation.validation?.baseline_diagnostic;
+  const waterPath = diagnostic?.physical?.water_path;
   const [downloading, setDownloading] = useState<"csv" | "json" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const experiment = simulation.requested_config?.development_diagnostic as { classification?: string } | undefined;
@@ -92,6 +93,29 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
           ET/lluvia: {number(diagnostic.physical.et_precipitation_ratio, 2)} · Drenaje simulado: {number(diagnostic.physical.totals_mm.tile_drainage_mm, 2)} mm ·
           {" "}HRU con drenaje enlazado: {diagnostic.physical.project.tile_linked_hru_count ?? "—"}/{diagnostic.physical.project.hru_count ?? "—"}.
         </p>
+      )}
+      {waterPath?.network && (
+        <section aria-label="Recorrido del agua" className="space-y-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+          <h5 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Recorrido del agua</h5>
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["Volumen outlet", number(waterPath.network.outlet_volume_m3 / 1e6, 2), "hm³"],
+              ["Diferencia con reporte original", number(waterPath.network.reporting_difference_m3 / 1e6, 2), "hm³"],
+              ["Residuo de conexiones", number(waterPath.network.residual_m3, 2), "m³"],
+              ["Área modelada", number(waterPath.area_km2, 2), "km²"],
+            ].map(([label, value, unit]) => (
+              <div key={label} className="bg-slate-50 p-3 dark:bg-slate-950/40">
+                <dt className="text-xs text-slate-500">{label}</dt>
+                <dd className="mt-1 font-mono text-sm text-slate-900 dark:text-slate-100">{value} {unit}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            El caudal conserva los aportes transportados por el motor. Los canales de esta corrida actúan como conexiones sin transformación.
+            {waterPath.catchment_accounting && ` El balance parcial de la cuenca tiene un residuo de ${number(waterPath.catchment_accounting.residual_mm, 3)} mm (${waterPath.catchment_accounting.evaluation.join(" a ")}).`}
+            {" "}Este diagnóstico de conservación requiere evaluación física adicional antes de usar la referencia en el artículo.
+          </p>
+        </section>
       )}
       {(diagnostic?.flags?.length ?? 0) > 0 && (
         <ul className="list-disc space-y-1 border-l-2 border-amber-500 bg-amber-50 py-3 pl-7 pr-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">

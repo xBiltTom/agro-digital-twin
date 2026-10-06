@@ -11,6 +11,7 @@ Los documentos de esta carpeta describen lo implementado y la evidencia disponib
 | --- | --- |
 | [Estado actual](CURRENT_STATE.md) | Capacidades, corridas de referencia, límites y siguiente etapa científica. |
 | [Diagnóstico de referencia 2019](BASELINE_DIAGNOSTIC_2019.md) | Corridas en PostgreSQL, comparación USGS, drenaje/ruteo y exportaciones. |
+| [Recorrido del agua 2019](WATER_PATH_DIAGNOSTIC_2019.md) | Error de reporte, volúmenes nativos, balances y límites de los canales artificiales. |
 | [Reporte científico publicado](FINAL_REPORT.md) | Resultado v2, separación respecto al gemelo diario y reproducción del runner final. |
 | [Acoplamiento FSPM–SWAT+](FSPM_SWAT_PLUS_COUPLING.md) | Calendarios ejecutados, feedback hídrico aproximado y mapeo de parámetros. |
 | [Contrato de playback y representación](TWIN_PLAYBACK_CONTRACT.md) | API, PostgreSQL, evidencia, frecuencias y consumo del visor 3D. |

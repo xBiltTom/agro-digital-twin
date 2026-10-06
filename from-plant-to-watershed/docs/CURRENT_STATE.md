@@ -16,7 +16,8 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Planta → SWAT+ | Diez parámetros del registro vegetal `corn` en `plants.plt`; SWAT+ mantiene sus propias ecuaciones de agua y cultivo. |
 | Persistencia | Frames JSONB PostgreSQL con clave temporal y SHA-256. |
 | Visor | Tres escalas y estados fechados; mallas anatómicas y terreno ilustrativos/contextuales. |
-| Diagnóstico observacional | Tres corridas SWAT+ estándar 2019 comparadas con USGS; la pareja acoplada corregida aún requiere su propia comparación. |
+| Diagnóstico observacional | Tres variantes estándar 2019 con lectura de caudal corregida; la pareja acoplada requiere su propia comparación. |
+| Recorrido del agua | Conexiones verificadas mediante hidrogramas nativos; balance parcial de suelo, nieve, acuíferos y retrasos. Los 37 canales son artificiales sin transformación. |
 | Descargas SWAT+ | CSV de registros y JSON con configuración, procedencia, métricas y cobertura desde Simulaciones e Informes. |
 | CMIP6 / rendimiento | Sin proyecciones CMIP6 normalizadas en el experimento publicado ni validación de rendimiento a escala HRU/cuenca. |
 
@@ -32,6 +33,9 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `sf19-diag-v1-reference` | Ejecución estándar diaria registrada en PostgreSQL | Referencia de desarrollo: RMSE mensual 9,533 m³/s; NSE −0,961. |
 | `sf19-diag-v1-tile-probe` | Activación experimental de drenaje en maíz | Genera drenaje, pero carece de conexión `til` en las unidades de ruteo. |
 | `sf19-diag-v2-tile-routed` | Misma activación y conexión `til` al canal | RMSE mensual 8,914 m³/s; NSE −0,715; referencia todavía insuficiente. |
+| `sf19-flow-v1-reference` | Referencia repetida con lectura corregida de hidrogramas | RMSE mensual 8,574 m³/s; NSE −0,587; volumen 100,420 hm³. |
+| `sf19-flow-v1-tile-probe` | Drenaje sin conexión, con lectura corregida | Drenaje fuera del recorrido; residuo parcial 64,224 mm. |
+| `sf19-trace-v3-tile-routed` | Drenaje conectado y lectura corregida | RMSE mensual 7,776 m³/s; NSE −0,305; volumen 103,553 hm³. |
 
 Dashboard y reportes consultan el experimento final v2. El visor prioriza el
 gemelo diario corregido, salvo que se indique una corrida accesible mediante
@@ -41,6 +45,12 @@ El [diagnóstico 2019](BASELINE_DIAGNOSTIC_2019.md) documenta las tres nuevas
 corridas, las intervenciones y el siguiente trabajo físico. Cada corrida tiene
 365 frames persistidos; la comparación incluye 12 meses completos y conserva
 86 valores USGS estimados. Este avance evalúa el baseline estándar, sin FSPM/ML.
+
+El [recorrido del agua](WATER_PATH_DIAGNOSTIC_2019.md) identificó después un
+error del reporte de canales artificiales. Las tres variantes `sf19-flow-*` y
+`sf19-trace-v3-*` conservan valores originales y normalizados; sus comparaciones
+son consistentes entre sí. Las métricas de `sf19-diag-*` corresponden a la lectura
+anterior y no deben mezclarse con ellas al atribuir mejoras físicas.
 
 ## 3. Gemelo South Fork 2019 corregido
 
@@ -59,6 +69,10 @@ Bundle: `backend/data/phase1-south-fork-2019/results/phase234-sf-2019-v2/`.
 En el frame del **2019-07-15** se documentan humedad FSPM estimada de
 29,2263 vol%, estrés 0,0442, biomasa 167,6516 g/planta, transpiración
 2,3156 mm/día y caudal outlet de 0,3202 m³/s. Son estados modelados/derivados.
+
+Ese caudal pertenece al bundle archivado; requiere auditoría con hidrogramas
+nativos ante el hallazgo del reporte de canales artificiales. El nuevo diagnóstico
+no modifica retrospectivamente este gemelo ni el reporte científico publicado.
 
 La verificación operativa previa registró v1 y v2 en PostgreSQL y comprobó
 playback autenticado, reconexión y consultas sin lector SQLite. También migró

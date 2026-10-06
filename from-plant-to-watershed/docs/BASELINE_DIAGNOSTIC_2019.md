@@ -4,6 +4,12 @@ Fecha: **2026-10-06**. Primer avance de la
 [reformulación](../research_reformulation.md): diagnosticar la referencia física
 y hacer consultables sus resultados antes del experimento A/B/C/D.
 
+**Seguimiento:** el [diagnóstico del recorrido del agua](WATER_PATH_DIAGNOSTIC_2019.md)
+detectó un error adicional en el reporte de canales artificiales y repitió las
+tres variantes con lectura consistente. Las métricas de este documento conservan
+su interpretación anterior al hallazgo; no representan los nuevos caudales
+normalizados ni deben mezclarse con ellos al atribuir efectos físicos.
+
 ## Ejecuciones y persistencia
 
 Se ejecutó SWAT+ **61.0.2.61** por la ruta de producción

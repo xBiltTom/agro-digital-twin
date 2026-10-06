@@ -169,12 +169,16 @@ _RECOGNIZED_OUTPUT_PATTERNS = (
     "hru_pw*", "mgt_out*", "crop_yld*", "basin_crop_yld*", "success.fin",
     "simulation.out", "diagnostics.out", "checker.out",
     "area_calc.out", "erosion.out",
+    "hydin_*", "hydout_*", "ru_day*", "ru_mon*", "ru_yr*", "ru_aa*",
+    "aquifer_day*", "aquifer_mon*", "aquifer_yr*", "aquifer_aa*",
 )
 _TRACEABLE_INPUT_FILES = (
     "plants.plt", "plant.ini", "landuse.lum", "management.sch", "hru-data.hru",
     "soils.sol", "soil_plant.ini", "time.sim", "print.prt",
     "tiledrain.str", "hydrology.hyd", "codes.bsn", "rout_unit.con", "hru.con",
     "aquifer.con", "chandeg.con", "rout_unit.rtu", "ls_unit.def", "ls_unit.ele",
+    "hyd-sed-lte.cha", "channel-lte.cha", "aquifer.aqu", "object.cnt", "file.cio",
+    "rout_unit.def", "rout_unit.ele",
 )
 
 
@@ -217,7 +221,7 @@ def _configure_print_prt(path: Path, config: SwatPlusRunConfig) -> dict[str, Any
     configured_objects: list[str] = []
     # These are real SWAT+ object labels. Keep AVANN disabled: the API asks for a
     # period-specific baseline, and the parser consumes the selected frequency.
-    desired = {"basin_wb", "hru_wb", "hru_pw", "channel", "channel_sd"}
+    desired = {"basin_wb", "hru_wb", "hru_pw", "channel", "channel_sd", "aquifer", "ru", "hyd"}
     for index, line in enumerate(lines):
         tokens = line.split()
         # Official editor projects often enable unrelated daily diagnostics.

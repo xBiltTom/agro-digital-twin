@@ -101,6 +101,11 @@ Primer avance: [diagnóstico de la referencia South Fork 2019](docs/BASELINE_DIA
 Las corridas de desarrollo detectaron drenaje sin enlace vegetal y sin conexión
 de ruteo; sus intervenciones no sustituyen una máscara histórica observada ni
 la evaluación independiente de los brazos A/B/C/D.
+El [seguimiento del recorrido del agua](docs/WATER_PATH_DIAGNOSTIC_2019.md)
+identificó además un error del reporte de canales artificiales y corrigió su
+lectura con volúmenes nativos. Antes de calibrar A/B se deben recuperar longitudes
+reales y comprobar el ruteo físico; cerrar conexiones y corregir la lectura
+no acredita desempeño hidrológico ni evaluación de H1.
 
 El primer estudio será una **evaluación retrospectiva multianual en South Fork
 Iowa River, USGS 05451210**. Una sola cuenca permite un estudio de caso temporal,

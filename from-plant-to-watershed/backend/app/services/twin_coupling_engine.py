@@ -28,6 +28,7 @@ from app.services.playback_builder import simplified_frames, swat_frames
 from app.services.swat_soil_water import read_hru_gis_ids, read_hru_soils
 from app.services.swat_crop_chain_diagnostic import SwatCropChainDiagnostic
 from app.services.swat_baseline_diagnostic import diagnose_baseline, inspect_project
+from app.services.swat_water_path import diagnose_water_path
 from app.core.config import settings
 from app.schemas.coupling import CouplingPlantParameterSummary
 from scientific_core import MultiscaleSimulationOrchestrator, PlantPopulation, PlantToFieldAggregator, RunConfig, SimulationOrchestrator, ValidationEngine
@@ -245,6 +246,22 @@ class TwinCouplingEngine:
             station_id=sim_run.station_id, frequency=config.output_frequency,
             project=inspect_project(Path(result.workspace)),
         )
+        if config.output_frequency == "DAILY" and config.outlet_unit:
+            path_diagnostic = diagnose_water_path(Path(result.workspace), outlet_gis_id=config.outlet_unit,
+                start=sim_run.start_date, end=sim_run.end_date, reference_area_km2=watershed.area_km2)
+            diagnostic["physical"]["water_path"] = path_diagnostic
+            diagnostic["physical"]["balance_closure"] = (
+                f"NETWORK_{path_diagnostic['network']['status']}; CATCHMENT_PARTIAL_ACCOUNTING"
+                if path_diagnostic.get("network") else path_diagnostic.get("status", "NOT_AVAILABLE"))
+            if path_diagnostic.get("network"):
+                diagnostic["flags"].append({"code": "ARTIFICIAL_CHANNEL_NETWORK",
+                    "message": "Los canales actúan como conexiones sin transformación; este balance no valida el ruteo físico de la cuenca."})
+        if result.water_balance.get("channel_flow_normalization", {}).get("normalized_channel_rows", 0):
+            diagnostic["flags"].append({"code": "BYPASS_CHANNEL_FLOW_NORMALIZED",
+                "message": "Caudal obtenido de hidrogramas SWAT+: se corrigió un error de reporte en canales artificiales; el valor original se conserva en la descarga."})
+        elif result.water_balance.get("channel_flow_normalization", {}).get("status") == "AFFECTED_UNAVAILABLE":
+            diagnostic.setdefault("flags", []).append({"code": "BYPASS_CHANNEL_FLOW_UNAVAILABLE",
+                "message": "El reporte de caudal está afectado por un error del motor. Ejecuta salidas diarias con hidrogramas para obtener una lectura trazable."})
         sim_run.validation = {"status": diagnostic["status"],
                               "interpretation": "DEVELOPMENT_DIAGNOSTIC_NOT_HYPOTHESIS_TEST",
                               "observation_station_id": sim_run.station_id,

@@ -192,6 +192,14 @@ export interface SwatBaselineDiagnostic {
     totals_mm: Record<string, number | null>;
     et_precipitation_ratio: number | null;
     project: { hru_count?: number; tile_linked_hru_count?: number };
+    water_path?: {
+      status: string;
+      area_km2?: number;
+      area_difference_percent?: number;
+      network?: { status: string; outlet_volume_m3: number; reported_outlet_volume_m3: number;
+        reporting_difference_m3: number; residual_m3: number };
+      catchment_accounting?: { status: string; residual_mm: number; evaluation: string[] };
+    };
   };
   flags?: Array<{ code: string; message: string }>;
 }

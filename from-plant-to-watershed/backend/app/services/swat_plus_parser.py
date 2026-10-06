@@ -359,6 +359,14 @@ class SwatOutputParser:
             "channel_inflow_m3s", "channel_water_temp_c",
         }
         all_channel_rows = [row for path in channel_files for row in self._read(path, channel_fields)]
+        from app.services.swat_water_path import normalize_bypass_channels
+        all_channel_rows, flow_normalization = normalize_bypass_channels(run_directory, all_channel_rows, self.output_frequency)
+        if flow_normalization.get("normalized_channel_rows", 0):
+            self._parse_warnings.append({"code": "BYPASS_CHANNEL_FLOW_NORMALIZED",
+                "message": "Audited SWAT+ 61.0.2.61 bypass-channel print bug: flow normalized from native incoming hydrograph volumes; reported values retained."})
+        elif flow_normalization.get("status") == "AFFECTED_UNAVAILABLE":
+            self._parse_warnings.append({"code": "BYPASS_CHANNEL_FLOW_UNAVAILABLE",
+                "message": flow_normalization["reason"]})
         channel_rows = self._select_outlet(all_channel_rows, "channel")
         for kind, rows in (("basin water-balance", water_balance_rows), ("outlet channel", channel_rows)):
             periods = [row["period"] for row in rows]
@@ -423,6 +431,7 @@ class SwatOutputParser:
         balance_terms = ("precip_mm", "runoff_mm", "evapotranspiration_mm", "percolation_mm")
         complete = all(period_coverage[name]["complete"] for name in balance_terms)
         water_balance = {
+            "channel_flow_normalization": flow_normalization,
             # This is a coverage check for reported terms, not a physical
             # closure calculation. No residual or balance error is inferred.
             "status": "TERMS_COMPLETE" if complete else "INCOMPLETE",
@@ -450,6 +459,8 @@ class SwatOutputParser:
         channel_results = [{"channel_unit" if key == "_unit" else "channel_gis_id" if key == "_gis_id" else "channel_name" if key == "_name" else key: value
                             for key, value in row.items()} for row in all_channel_rows]
         source_files = wb_files + channel_files + hru_files + plant_files + ([event_path] if event_path.is_file() else [])
+        source_files += [run_directory / name for name in ("hydin_day.txt", "hydout_day.txt", "ru_day.txt", "aquifer_day.txt")
+                         if (run_directory / name).is_file()]
         return SwatParsedOutput(records=records, hru_results=hru_results, water_balance=water_balance,
                                 plant_results=plant_results, channel_results=channel_results,
                                 management_events=management_events,
