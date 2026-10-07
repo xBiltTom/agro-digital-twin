@@ -1,0 +1,769 @@
+{
+  "schema_version": "south-fork-monthly-residual-selection/v1",
+  "protocol_sha256": "a2768125bb9a1a3a109bffd6178b741886a6c90c5cad17d79cb12639991f9ce4",
+  "input_csv_sha256": "bccb27b4e290d65d0bcd6361ab4f3ffe735d4138748134d2174f7a73144de4d5",
+  "parent_dataset_id": "sf-multi-v1-monthly-ab",
+  "reference_status": "BUDGET_EXHAUSTED_EXPLORATORY_REFERENCE",
+  "test_accessed": false,
+  "hypothesis_status": "NOT_EVALUATED",
+  "selection": {
+    "C": {
+      "candidate_id": "C-03",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 10.0
+      },
+      "validation_rmse_m3s": 2.978153318372877,
+      "feature_names": [
+        "swat_baseline_streamflow_m3s",
+        "precipitation_mm",
+        "temperature_c",
+        "solar_radiation_mj_m2",
+        "relative_humidity_percent",
+        "wind_speed_ms",
+        "et_mm",
+        "pet_mm",
+        "percolation_mm",
+        "tile_drainage_mm",
+        "runoff_mm",
+        "soil_water_profile_mm",
+        "month_sin",
+        "month_cos"
+      ],
+      "scaler_fit_samples": 60,
+      "estimator_fit_partition": "TRAIN",
+      "bundle": "agro-digital-twin-st/artifacts/south_fork_monthly_residual_v1/C",
+      "test_accessed": false
+    },
+    "D": {
+      "candidate_id": "D-03",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 10.0
+      },
+      "validation_rmse_m3s": 2.9899310791949096,
+      "feature_names": [
+        "swat_baseline_streamflow_m3s",
+        "precipitation_mm",
+        "temperature_c",
+        "solar_radiation_mj_m2",
+        "relative_humidity_percent",
+        "wind_speed_ms",
+        "et_mm",
+        "pet_mm",
+        "percolation_mm",
+        "tile_drainage_mm",
+        "runoff_mm",
+        "soil_water_profile_mm",
+        "month_sin",
+        "month_cos",
+        "fspm_lai",
+        "fspm_root_depth_m",
+        "fspm_biomass_g_plant",
+        "fspm_transpiration_mm",
+        "fspm_water_stress",
+        "fspm_active_fraction",
+        "fspm_stress_available_fraction"
+      ],
+      "scaler_fit_samples": 60,
+      "estimator_fit_partition": "TRAIN",
+      "bundle": "agro-digital-twin-st/artifacts/south_fork_monthly_residual_v1/D",
+      "test_accessed": false
+    }
+  },
+  "candidates": [
+    {
+      "arm": "C",
+      "id": "C-01",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 0.1
+      },
+      "validation_rmse_m3s": 3.1947729222230805,
+      "train_rmse_m3s": 3.6330249232381533,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-02",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 1.0
+      },
+      "validation_rmse_m3s": 3.0736547733114876,
+      "train_rmse_m3s": 3.6706272178298067,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-03",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 10.0
+      },
+      "validation_rmse_m3s": 2.978153318372877,
+      "train_rmse_m3s": 3.803667316042972,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-04",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": 2,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.6071131995619656,
+      "train_rmse_m3s": 3.305841150067713,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-05",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": 4,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.483691748965325,
+      "train_rmse_m3s": 2.9664407839257136,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-06",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": null,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.4493107479977763,
+      "train_rmse_m3s": 2.907912486895078,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-01",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 0.1
+      },
+      "validation_rmse_m3s": 3.0781419586380894,
+      "train_rmse_m3s": 3.0443259512023904,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-02",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 1.0
+      },
+      "validation_rmse_m3s": 2.9976304714954445,
+      "train_rmse_m3s": 3.1989787382342527,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-03",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 10.0
+      },
+      "validation_rmse_m3s": 2.9899310791949096,
+      "train_rmse_m3s": 3.5330066185494307,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-04",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": 2,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.6593333942195345,
+      "train_rmse_m3s": 3.269236422074744,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-05",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": 4,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.5174241239633286,
+      "train_rmse_m3s": 2.9366603630209167,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-06",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": null,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.4905550110138144,
+      "train_rmse_m3s": 2.874697822476996,
+      "train_months": 60,
+      "validation_months": 36
+    }
+  ],
+  "simple_references": {
+    "fit_partition": "TRAIN",
+    "fit_months": 60,
+    "climatology": {
+      "01": 2.4945588988222758,
+      "02": 3.7210516679583727,
+      "03": 6.5353655999273625,
+      "04": 5.75558784880128,
+      "05": 12.686129962548852,
+      "06": 12.012044080121857,
+      "07": 6.860952702042178,
+      "08": 3.5273555298891908,
+      "09": 4.749966012410265,
+      "10": 3.116722036995072,
+      "11": 2.3116608738561024,
+      "12": 5.266025500127727
+    },
+    "affine": {
+      "A": {
+        "slope": 1.3068210799059845,
+        "intercept": 1.8502223166357301
+      },
+      "B": {
+        "slope": 1.295007875598461,
+        "intercept": 1.763244323692228
+      }
+    }
+  },
+  "dataset_id": "sf-ml-v1-development",
+  "development_metrics": {
+    "TRAIN_A": {
+      "n_pairs": 60,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 5.746605707788718,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 3.249553509093307,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.13416980076085627,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -48.088025887320136,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.3543781195745388,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.35965981582299944,
+        "reason": null
+      }
+    },
+    "TRAIN_AFFINE_A": {
+      "n_pairs": 60,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 4.962313014160488,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 3.187198988210316,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.3543781195745389,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -1.0420790819266734e-14,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.35437811957453874,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.42766305516006675,
+        "reason": null
+      }
+    },
+    "TRAIN_AFFINE_B": {
+      "n_pairs": 60,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 4.896760293042799,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 3.13870843749343,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.371322931375042,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -1.556686035964537e-14,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.3713229313750421,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.44755546860335205,
+        "reason": null
+      }
+    },
+    "TRAIN_B": {
+      "n_pairs": 60,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 5.643901620166663,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 3.186287724456056,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.16484170406280296,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -46.44704159086463,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.37132293137504213,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.381086387831964,
+        "reason": null
+      }
+    },
+    "TRAIN_C": {
+      "n_pairs": 60,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 3.8036673160429726,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 2.4313108492310254,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.62067193180779,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": 0.9088337391114658,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.6224187180218498,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.6659759347814161,
+        "reason": null
+      }
+    },
+    "TRAIN_CLIMATOLOGY": {
+      "n_pairs": 60,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 5.235062541572649,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 3.900175656318855,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.2814554850084897,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -3.537922809010311e-15,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.2814554850084897,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.33606036761313296,
+        "reason": null
+      }
+    },
+    "TRAIN_D": {
+      "n_pairs": 60,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 3.5330066185494307,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 2.3553118339888006,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.6727355497665104,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": 0.812203739064925,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.6752978459671933,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.7053388151319966,
+        "reason": null
+      }
+    },
+    "VALIDATION_A": {
+      "n_pairs": 36,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 4.007008956283825,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 2.978739135092353,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.6987393028585733,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -29.336180873291017,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.8012811147440501,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.6236272340702649,
+        "reason": null
+      }
+    },
+    "VALIDATION_AFFINE_A": {
+      "n_pairs": 36,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 3.8469127386795914,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 3.069909371090938,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.7223315597716365,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": 15.739732004552847,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.80128111474405,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.8079061660865721,
+        "reason": null
+      }
+    },
+    "VALIDATION_AFFINE_B": {
+      "n_pairs": 36,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 3.847487381115234,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 3.027264705306533,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.7222485987080614,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": 15.500869562717511,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.8042897519656903,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.8124211209879145,
+        "reason": null
+      }
+    },
+    "VALIDATION_B": {
+      "n_pairs": 36,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 3.9214031046410365,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 2.912079891764092,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.7114740848947692,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -28.02678388554235,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.8042897519656903,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.6342407793182108,
+        "reason": null
+      }
+    },
+    "VALIDATION_C": {
+      "n_pairs": 36,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 2.9781533183728772,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 2.3228576722345498,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.8335836646147535,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": 7.8672776852918345,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.8409822116407111,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.8028669454206978,
+        "reason": null
+      }
+    },
+    "VALIDATION_CLIMATOLOGY": {
+      "n_pairs": 36,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 7.1466301932340786,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 4.600224343492633,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.04169341999099818,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -27.25585274005831,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.13540820845621865,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.21230492233440634,
+        "reason": null
+      }
+    },
+    "VALIDATION_D": {
+      "n_pairs": 36,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 2.98993107919491,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 2.294893478530939,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.832264802062376,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": 7.254230352756321,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.8410974557640739,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.8533235197671301,
+        "reason": null
+      }
+    }
+  },
+  "inference_audit": {
+    "C": {
+      "months": 96,
+      "max_absolute_error_m3s": 3.552713678800501e-15,
+      "status": "MATCHED",
+      "bundle_sha256": "20a8fbfdb3146a458dc537ed137a9d0358800a31f857ab5f7960be0ac7ff87e3"
+    },
+    "D": {
+      "months": 96,
+      "max_absolute_error_m3s": 3.552713678800501e-15,
+      "status": "MATCHED",
+      "bundle_sha256": "313930f9b3bc4247df56babe250566eb166942ecc69e309a5407e4678294f051"
+    }
+  },
+  "freeze_receipt": {
+    "protocol_sha256": "a2768125bb9a1a3a109bffd6178b741886a6c90c5cad17d79cb12639991f9ce4",
+    "input_csv_sha256": "bccb27b4e290d65d0bcd6361ab4f3ffe735d4138748134d2174f7a73144de4d5",
+    "parent_dataset_id": "sf-multi-v1-monthly-ab",
+    "reference_status": "BUDGET_EXHAUSTED_EXPLORATORY_REFERENCE",
+    "test_accessed": false,
+    "hypothesis_status": "NOT_EVALUATED",
+    "frozen_at_utc": "2026-10-07T03:28:08.981849+00:00",
+    "implementation_sha256": {
+      "from-plant-to-watershed/backend/scripts/run_south_fork_ml.py": "0e58646d612df63805fbfb49a96c053136fe7f93d65441f72884c76bcaa889b1",
+      "agro-digital-twin-st/src/core/experiments/monthly_residual.py": "e4ff96dccc68129b51651f9ed291a970f6f8816e1d16168c549c4cd8fb20e2e7",
+      "agro-digital-twin-st/src/core/features/preprocessor.py": "f0000007ca386d34eb358315298391dcf90d5d3c9e3a07c25c986673696146d1",
+      "agro-digital-twin-st/src/core/inference/bundle.py": "0f9114025480d3ead901aecf8fbc4b50d0130f4f402a14b7d73804c16d9efa58",
+      "agro-digital-twin-st/src/core/training/residual.py": "95faa0eb0be13ef27a8652d2682553019589fd64767c15edbf73d0e34194ce4e"
+    },
+    "stage": "BEFORE_ANY_MODEL_FIT"
+  },
+  "interpretation": "TRAIN in-sample; VALIDATION previously explored development; no H1 conclusion",
+  "metric_convention": "Canonical scientific_core.ValidationEngine; PBIAS simulated minus observed; KGE variability is CV ratio",
+  "external_model_ids": {
+    "C": "sf-ml-v1-c",
+    "D": "sf-ml-v1-d"
+  },
+  "artifact_directory": "agro-digital-twin-st/artifacts/south_fork_monthly_residual_v1"
+}

@@ -191,13 +191,17 @@ class NextDayExperiment:
         self.random_seed = random_seed
         self.fast_dev_mode = fast_dev_mode
 
-    def _models(self) -> Dict[str, Any]:
+    def _models(self, selected_models) -> Dict[str, Any]:
         trees = 35 if self.fast_dev_mode else 150
-        return {
-            "random_forest": RandomForestModel(n_estimators=trees, random_state=self.random_seed),
-            "svr": SVRModel(C=10.0, epsilon=0.05),
-            "xgboost": XGBoostModel(n_estimators=trees, random_state=self.random_seed),
+        factories = {
+            "random_forest": lambda: RandomForestModel(n_estimators=trees, random_state=self.random_seed),
+            "svr": lambda: SVRModel(C=10.0, epsilon=0.05),
+            "xgboost": lambda: XGBoostModel(n_estimators=trees, random_state=self.random_seed),
         }
+        unknown = set(selected_models) - set(factories)
+        if unknown:
+            raise ValueError(f"Unknown next-day models: {sorted(unknown)}")
+        return {key: factories[key]() for key in selected_models}
 
     def run(
         self,
@@ -230,14 +234,14 @@ class NextDayExperiment:
             "model_version": "persistence-1",
         }}
         bundles: Dict[str, str] = {}
-        model_catalog = self._models()
+        model_catalog = self._models(selected_models)
         for model_key in selected_models:
             if model_key not in model_catalog:
                 raise ValueError(f"Unknown next-day model: {model_key}")
             model = model_catalog[model_key]
             model.fit(x_train, y_train, X_val=x_validation, y_val=y_validation, verbose=0)
-            predictions = np.asarray(model.predict(x_test), dtype=float).reshape(-1)
-            validation_predictions = np.asarray(model.predict(x_validation), dtype=float).reshape(-1)
+            predictions = np.maximum(0.0, np.asarray(model.predict(x_test), dtype=float).reshape(-1))
+            validation_predictions = np.maximum(0.0, np.asarray(model.predict(x_validation), dtype=float).reshape(-1))
             metrics = compute_all_metrics(y_test, predictions, target_type="streamflow")
             validation_metrics = compute_all_metrics(y_validation, validation_predictions, target_type="streamflow")
             model_dir = os.path.join(self.artifact_base_dir, TARGET, model_key)
@@ -278,6 +282,7 @@ class NextDayExperiment:
             results[model_key] = {
                 "metrics": metrics,
                 "validation_metrics": validation_metrics,
+                "selection_rmse": float(np.sqrt(np.mean((y_validation - validation_predictions) ** 2))),
                 "artifact_dir": model_dir,
                 "model_version": bundle.metadata.get("dataset_version"),
                 "roundtrip_max_abs_error": abs(before - after),
@@ -289,9 +294,9 @@ class NextDayExperiment:
         candidate_names = [name for name in results if name != "Persistence baseline" and results[name].get("artifact_dir")]
         if not candidate_names:
             raise ValueError("At least one trainable model is required")
-        best_model = min(candidate_names, key=lambda name: results[name]["metrics"]["rmse"])
-        baseline_rmse = results["Persistence baseline"]["metrics"]["rmse"]
-        if results[best_model]["metrics"]["rmse"] < baseline_rmse:
+        best_model = min(candidate_names, key=lambda name: (results[name]["selection_rmse"], name))
+        baseline_rmse = float(np.sqrt(np.mean((validation[TARGET].to_numpy(dtype=float) - validation["streamflow_persistence_m3s"].to_numpy(dtype=float)) ** 2)))
+        if results[best_model]["selection_rmse"] < baseline_rmse:
             champion_dir = promote_to_champion(TARGET, best_model, self.artifact_base_dir)
         else:
             best_model = "Persistence baseline"
@@ -308,6 +313,7 @@ class NextDayExperiment:
             "baseline": results["Persistence baseline"],
             "models": {key: value for key, value in results.items() if key != "Persistence baseline"},
             "best_model": best_model,
+            "selection_partition": "VALIDATION",
             "champion_dir": champion_dir,
             "duration_seconds": round(time.time() - started, 3),
         }

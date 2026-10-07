@@ -295,66 +295,36 @@ class ModelBundle:
         baseline_col = self.target_schema.get_baseline_col()
 
         if self.mode == "residual":
+            from src.core.training.residual import corrected_flow
             if baseline_col is None:
-                raise ValueError(f"Target '{self.target_name}' does not have a defined SWAT baseline variable.")
-
-            if is_single:
-                if isinstance(payload, dict):
-                    baseline_val = float(payload.get(baseline_col, 0.0))
-                elif isinstance(payload, pd.DataFrame):
-                    baseline_val = float(payload[baseline_col].iloc[0])
-                elif isinstance(payload, np.ndarray):
-                    if baseline_col in self.schema.feature_names:
-                        idx = self.schema.feature_names.index(baseline_col)
-                        baseline_val = float(payload[0, idx])
-                    else:
-                        baseline_val = 0.0
-                else:
-                    baseline_val = 0.0
-
-                residual = float(raw_pred[0])
-                corrected_val = max(0.0, baseline_val + residual)
-                return {
-                    "target": self.target_name,
-                    "mode": "residual_correction",
-                    "value": round(corrected_val, 3),
-                    "predicted_residual": round(residual, 3),
-                    "swat_baseline_value": round(baseline_val, 3),
-                    "unit": self.target_schema.unit,
-                    "model_used": self.metadata.get("model_name"),
-                    "model_version": self.metadata.get("bundle_version"),
-                    "forecast_horizon": self.metadata.get("forecast_horizon"),
-                    "artifact_classification": self.metadata.get("artifact_classification"),
-                    "artifact_dir": self.artifact_dir
-                }
+                raise ValueError(f"Target '{self.target_name}' has no defined physical baseline")
+            if isinstance(payload, dict):
+                baseline_vals = [float(payload[baseline_col])]
+            elif isinstance(payload, pd.DataFrame):
+                baseline_vals = payload[baseline_col].to_numpy(dtype=float)
+            elif isinstance(payload, list):
+                baseline_vals = [float(row[baseline_col]) for row in payload]
+            elif isinstance(payload, np.ndarray) and baseline_col in self.schema.feature_names:
+                idx = self.schema.feature_names.index(baseline_col)
+                baseline_vals = payload[:, idx] if payload.ndim == 2 else payload[:, -1, idx]
             else:
-                # Batch prediction
-                if isinstance(payload, pd.DataFrame):
-                    baseline_vals = payload[baseline_col].values
-                elif isinstance(payload, list):
-                    baseline_vals = np.array([float(d.get(baseline_col, 0.0)) for d in payload])
-                elif isinstance(payload, np.ndarray):
-                    if baseline_col in self.schema.feature_names:
-                        idx = self.schema.feature_names.index(baseline_col)
-                        baseline_vals = payload[:, idx] if payload.ndim == 2 else payload[:, -1, idx]
-                    else:
-                        baseline_vals = np.zeros(len(raw_pred))
-                else:
-                    baseline_vals = np.zeros(len(raw_pred))
-
-                corrected_vals = np.maximum(0.0, baseline_vals + raw_pred)
-                return {
-                    "target": self.target_name,
-                    "mode": "residual_correction",
-                    "values": [round(float(v), 3) for v in corrected_vals],
-                    "predicted_residuals": [round(float(r), 3) for r in raw_pred],
-                    "swat_baseline_values": [round(float(b), 3) for b in baseline_vals],
-                    "unit": self.target_schema.unit,
-                    "model_used": self.metadata.get("model_name"),
-                    "model_version": self.metadata.get("bundle_version"),
-                    "forecast_horizon": self.metadata.get("forecast_horizon"),
-                    "artifact_classification": self.metadata.get("artifact_classification")
-                }
+                raise ValueError("Residual inference requires a baseline in physical units")
+            corrected_vals = corrected_flow(baseline_vals, raw_pred)
+            result = {
+                "target": self.target_name, "mode": "residual_correction",
+                "unit": self.target_schema.unit,
+                "model_used": self.metadata.get("model_name"),
+                "model_version": self.metadata.get("bundle_version"),
+                "forecast_horizon": self.metadata.get("forecast_horizon"),
+                "artifact_classification": self.metadata.get("artifact_classification"),
+            }
+            if is_single:
+                result.update(value=float(corrected_vals[0]), predicted_residual=float(raw_pred[0]),
+                    swat_baseline_value=float(baseline_vals[0]), artifact_dir=self.artifact_dir)
+            else:
+                result.update(values=corrected_vals.tolist(), predicted_residuals=raw_pred.tolist(),
+                    swat_baseline_values=np.asarray(baseline_vals, dtype=float).tolist())
+            return result
         else:
             # Mode A: Direct Prediction
             if is_single:
@@ -362,7 +332,7 @@ class ModelBundle:
                 return {
                     "target": self.target_name,
                     "mode": "direct_prediction",
-                    "value": round(val, 3),
+                    "value": val,
                     "unit": self.target_schema.unit,
                     "model_used": self.metadata.get("model_name"),
                     "model_version": self.metadata.get("bundle_version"),
@@ -371,7 +341,7 @@ class ModelBundle:
                     "artifact_dir": self.artifact_dir
                 }
             else:
-                vals = [round(max(0.0, float(v)), 3) for v in raw_pred]
+                vals = [max(0.0, float(v)) for v in raw_pred]
                 return {
                     "target": self.target_name,
                     "mode": "direct_prediction",

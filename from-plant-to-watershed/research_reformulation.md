@@ -1,9 +1,11 @@
 # Reformulación experimental — From Plant to Watershed
 
-**Versión:** 0.3 · **Fecha:** 2026-10-06.
+**Versión:** 0.4 · **Fecha:** 2026-10-06.
 **Estado:** protocolo multianual v1 congelado antes de calibrar; búsqueda física
 de 12 candidatos terminada y 96 meses pareados A/B publicados. La referencia seleccionada
-incumple el criterio de sesgo y permanece exploratoria. H1 no se ha evaluado.
+incumple el criterio de sesgo y permanece exploratoria. C/D seleccionados en
+VALIDATION mediante búsqueda ML comparable; pesos TRAIN y referencias simples
+congelados. TEST reservado; H1 no se ha evaluado.
 
 ## 1. Relación con la ficha original
 
@@ -400,15 +402,13 @@ afirmar no inferioridad requiere margen y contraste definidos previamente.
    dato desconocido son distintos; fijar una estrategia por variable.
 5. Construir el target residual observado, armonizar sus contratos entre proyectos
    y habilitarlo en el laboratorio con fuentes observacionales compatibles.
-6. Reparar la evaluación residual en `src/core/training/trainer.py` del
-   laboratorio: en modelos tradicionales, `y_true_eval` ya contiene el caudal
-   total y vuelve a sumar el baseline. En secuencias, conservar el baseline en
-   unidades físicas antes de escalar features y alinear objetivos/baselines
-   de VALIDATION y TEST con las fechas de cada ventana. Ambas rutas deben
-   comparar caudal reconstruido con el objetivo observado original.
-7. Corregir selección del campeón: hoy el trainer general y el experimento diario
-   utilizan métricas de TEST para elegirlo; deben elegir en validación sobre
-   fechas comunes, según la métrica fijada por el protocolo.
+6. **Implementado en entrega 3:** evaluación residual en
+   `src/core/training/trainer.py`: observado tabular sin segunda suma del
+   baseline; secuencias con baseline físico separado del escalado y alineado
+   a la fecha objetivo. El experimento C/D mensual usa el contrato corregido.
+7. **Implementado en entrega 3:** trainer general y experimento diario seleccionan
+   por RMSE de VALIDATION. La nueva búsqueda C/D usa fechas comunes y el
+   presupuesto/métrica congelados; no accede a TEST.
 8. Integrar inferencia externa en SWAT+ real: hoy esa rama retorna antes del
    bloque ML de la ruta simplificada. Publicar resultado físico y asistido sin
    sobrescribir outputs originales ni fabricar playback diario desde meses.
@@ -432,9 +432,10 @@ evaluación reservada → integración y redacción.
 La entrega 1 de referencia física está completada. La
 [entrega 2](docs/MULTIYEAR_EXPERIMENT_DELIVERY_2.md) fija protocolo y particiones,
 preparación multianual, calibración acotada y exportación fechada A/B.
-Después siguen ML con selección en VALIDATION, evaluación reservada de H1,
-y gemelo funcional/paquete del paper.
-Las entregas 1 y 2 están completadas; quedan **tres entregas**.
+La [entrega 3](docs/ML_RESIDUAL_DELIVERY_3.md) completa la selección C/D en
+VALIDATION y congela modelos y referencias simples en pglocal.
+Las entregas 1, 2 y 3 están completadas; quedan **dos entregas**:
+evaluación reservada de H1 y gemelo funcional/paquete del paper.
 La decisión de escalar a varias temporadas se apoya en una referencia
 diagnosticada y contratos correctos de unidades y fechas.
 El acceso a TEST para desarrollo queda excluido de esta secuencia.
@@ -452,11 +453,17 @@ pero PBIAS −40,605 % incumple |PBIAS| ≤ 30 %. Se conserva exploratoria sin
 ampliar el presupuesto. La futura mejora ML contra esta referencia no bastará
 para afirmar validación física o fisiológica.
 
-Antes de entrenar/evaluar, completar y versionar:
+La [entrega ML](docs/ML_RESIDUAL_DELIVERY_3.md) fija seis candidatos iguales por
+brazo, 14 features C y 21 D, StandardScaler ajustado solo en TRAIN y selección
+por RMSE del caudal corregido en VALIDATION. Ambos ganadores son Ridge α = 10;
+RMSE de desarrollo C 2,978 y D 2,990 m³/s frente a A 4,007. D no supera C en
+estos años. La climatología y corrección afín se ajustaron solo en TRAIN y se
+congelaron junto con los bundles. Estos resultados no deciden H1 ni demuestran
+valor fisiológico adicional. La inferencia es retrospectiva con inputs del mes
+completo; el contraste D/C combina referencia física y features diferentes.
 
-- Familias de modelos, features C/D, preprocesamiento, presupuesto ML comparable
-  y selección del campeón exclusivamente en desarrollo.
-- Fórmulas e hiperparámetros de climatología TRAIN y corrección afín no negativa.
+Antes de evaluar TEST, completar y versionar:
+
 - Implementación del diseño inferencial congelado y comparaciones secundarias,
   incluida exclusión de valores USGS estimados sobre soporte común recalculado.
 - Referencias y novedad; disponibilidad de LAI y función en ajuste/evaluación.
@@ -496,6 +503,10 @@ aprendizaje automático en South Fork Iowa River*.
   presupuesto de 12 candidatos, calendario por temporada y contrato vegetal
   derivado en 2010. La referencia ganadora falla el criterio predefinido de
   sesgo; se conserva exploratoria y TEST permanece reservado.
+- **2026-10-06 · v0.4:** protocolo ML congelado antes del ajuste, reparación de
+  reconstrucción residual/alineación y selección exclusivamente en VALIDATION.
+  C/D Ridge α = 10, referencias simples y pesos TRAIN congelados; registro en
+  pglocal y paridad de inferencia. TEST y H1 continúan pendientes.
 
 ## Referencias iniciales para continuar la revisión
 

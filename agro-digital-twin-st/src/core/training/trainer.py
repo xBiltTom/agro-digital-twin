@@ -8,6 +8,7 @@ and generates complete exportable Artifact Bundles for each model.
 import os
 import json
 import time
+from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Callable
 import numpy as np
@@ -22,18 +23,18 @@ from src.core.features.schema import (
 from src.core.features.preprocessor import MultiScaleDataPreprocessor
 from src.core.features.sequences import build_grouped_temporal_sequences
 from src.core.models.traditional import RandomForestModel, XGBoostModel, SVRModel
-from src.core.models.deep_learning import CNNLSTMModel
-from src.core.models.hybrid_ae_rf import LSTMAERandomForestModel
 from src.core.training.splitters import get_three_way_split
-from src.core.metrics import compute_all_metrics, rank_models_multicriteria
+from src.core.training.residual import corrected_flow, sequence_evaluation, validation_winner
+from src.core.metrics import compute_all_metrics, calculate_rmse
 from src.core.inference.bundle import ModelBundle, promote_to_champion
-from src.utils.config import HISTORY_PATH
+
+HISTORY_PATH = str(Path(__file__).resolve().parents[3] / "history.json")
 
 
 class MultiScaleTrainer:
     """
     Coordinates training, validation, metric evaluation, and artifact bundling.
-    Enforces strict 3-way leak-free partitions and multi-criteria champion ranking.
+    Uses three partitions and selects the champion by VALIDATION RMSE.
     """
 
     def __init__(
@@ -80,7 +81,8 @@ class MultiScaleTrainer:
         X_tr: np.ndarray,
         y_tr: np.ndarray,
         X_v: np.ndarray,
-        y_v: np.ndarray
+        y_v: np.ndarray,
+        val_baseline: np.ndarray,
     ) -> Any:
         """Lightweight validation-based hyperparameter tuning on TRAIN + VAL."""
         best_model = None
@@ -96,7 +98,7 @@ class MultiScaleTrainer:
                 m = RandomForestModel(n_estimators=p["n_estimators"], max_depth=p["max_depth"], random_state=self.random_seed)
                 m.fit(X_tr, y_tr)
                 preds = m.predict(X_v)
-                rmse = float(np.sqrt(np.mean((y_v - preds) ** 2)))
+                rmse = calculate_rmse(y_v + val_baseline, corrected_flow(val_baseline, preds))
                 if rmse < best_rmse:
                     best_rmse = rmse
                     best_model = m
@@ -111,7 +113,7 @@ class MultiScaleTrainer:
                 m = XGBoostModel(n_estimators=p["n_estimators"], learning_rate=p["learning_rate"], max_depth=p["max_depth"], random_state=self.random_seed)
                 m.fit(X_tr, y_tr)
                 preds = m.predict(X_v)
-                rmse = float(np.sqrt(np.mean((y_v - preds) ** 2)))
+                rmse = calculate_rmse(y_v + val_baseline, corrected_flow(val_baseline, preds))
                 if rmse < best_rmse:
                     best_rmse = rmse
                     best_model = m
@@ -127,7 +129,7 @@ class MultiScaleTrainer:
                 m = SVRModel(C=p["C"], epsilon=p["epsilon"])
                 m.fit(X_tr, y_tr)
                 preds = m.predict(X_v)
-                rmse = float(np.sqrt(np.mean((y_v - preds) ** 2)))
+                rmse = calculate_rmse(y_v + val_baseline, corrected_flow(val_baseline, preds))
                 if rmse < best_rmse:
                     best_rmse = rmse
                     best_model = m
@@ -229,26 +231,29 @@ class MultiScaleTrainer:
                 tr_work = train_df.copy()
                 tr_work[self.schema.feature_names] = X_train_scaled
                 tr_work["_tgt_seq"] = y_train
+                tr_work["_physical_baseline_seq"] = train_baseline
 
                 v_work = val_df.copy()
                 v_work[self.schema.feature_names] = X_val_scaled
                 v_work["_tgt_seq"] = y_val
+                v_work["_physical_baseline_seq"] = val_baseline
 
                 te_work = test_df.copy()
                 te_work[self.schema.feature_names] = X_test_scaled
                 te_work["_tgt_seq"] = y_test
+                te_work["_physical_baseline_seq"] = test_baseline
 
                 X_tr_seq, y_tr_seq, meta_tr = build_grouped_temporal_sequences(
                     tr_work, self.schema.feature_names, "_tgt_seq",
-                    sequence_length=self.sequence_length, baseline_col=baseline_col
+                    sequence_length=self.sequence_length, baseline_col="_physical_baseline_seq"
                 )
                 X_val_seq, y_val_seq, meta_val = build_grouped_temporal_sequences(
                     v_work, self.schema.feature_names, "_tgt_seq",
-                    sequence_length=self.sequence_length, baseline_col=baseline_col
+                    sequence_length=self.sequence_length, baseline_col="_physical_baseline_seq"
                 )
                 X_test_seq, y_test_seq, meta_test = build_grouped_temporal_sequences(
                     te_work, self.schema.feature_names, "_tgt_seq",
-                    sequence_length=self.sequence_length, baseline_col=baseline_col
+                    sequence_length=self.sequence_length, baseline_col="_physical_baseline_seq"
                 )
                 if len(X_tr_seq) > 0 and len(X_test_seq) > 0:
                     has_sequences = True
@@ -261,41 +266,42 @@ class MultiScaleTrainer:
         epochs = 6 if self.fast_dev_mode else 20
         batch_size = 32
 
+        def cnn_model():
+            from src.core.models.deep_learning import CNNLSTMModel
+            return CNNLSTMModel(timesteps=self.sequence_length if has_sequences else 1,
+                                n_features=X_train_scaled.shape[1], lr=0.001)
+
+        def hybrid_model():
+            from src.core.models.hybrid_ae_rf import LSTMAERandomForestModel
+            return LSTMAERandomForestModel(timesteps=self.sequence_length if has_sequences else 1,
+                n_features=X_train_scaled.shape[1], latent_dim=6,
+                n_estimators=rf_trees, random_state=self.random_seed)
+
         model_catalog = {
             "Random Forest Regressor": (
                 "random_forest",
                 "traditional",
-                RandomForestModel(n_estimators=rf_trees, random_state=self.random_seed)
+                lambda: RandomForestModel(n_estimators=rf_trees, random_state=self.random_seed)
             ),
             "XGBoost Regressor": (
                 "xgboost",
                 "traditional",
-                XGBoostModel(n_estimators=xgb_trees, random_state=self.random_seed)
+                lambda: XGBoostModel(n_estimators=xgb_trees, random_state=self.random_seed)
             ),
             "Support Vector Regression (SVR)": (
                 "svr",
                 "traditional",
-                SVRModel(C=10.0, epsilon=0.1)
+                lambda: SVRModel(C=10.0, epsilon=0.1)
             ),
             "CNN-LSTM Hybrid": (
                 "cnn_lstm",
                 "sequence",
-                CNNLSTMModel(
-                    timesteps=self.sequence_length if has_sequences else 1,
-                    n_features=X_train_scaled.shape[1],
-                    lr=0.001
-                )
+                cnn_model
             ),
             "LSTM Autoencoder + Random Forest": (
                 "lstm_ae_rf",
                 "sequence",
-                LSTMAERandomForestModel(
-                    timesteps=self.sequence_length if has_sequences else 1,
-                    n_features=X_train_scaled.shape[1],
-                    latent_dim=6,
-                    n_estimators=rf_trees,
-                    random_state=self.random_seed
-                )
+                hybrid_model
             )
         }
 
@@ -313,7 +319,8 @@ class MultiScaleTrainer:
         total_models = len(models_to_run)
 
         # 6. Training Loop
-        for step, (display_name, (folder_name, model_category, default_inst)) in enumerate(models_to_run.items()):
+        for step, (display_name, (folder_name, model_category, factory)) in enumerate(models_to_run.items()):
+            default_inst = factory()
             if progress_callback:
                 progress_callback(step / total_models, f"Entrenando {display_name}...")
 
@@ -323,8 +330,8 @@ class MultiScaleTrainer:
                 X_tr_in, y_tr_in = X_tr_seq, y_tr_seq
                 X_v_in, y_v_in = X_val_seq, y_val_seq
                 X_te_in = X_test_seq
-                y_true_eval = np.array([m["target_val"] for m in meta_test.to_dict("records")]) if isinstance(meta_test, pd.DataFrame) else y_test_raw
-                te_baseline = np.array([m.get("baseline_val", 0.0) for m in meta_test.to_dict("records")]) if (isinstance(meta_test, pd.DataFrame) and self.learning_mode == "residual") else test_baseline
+                y_true_eval, te_baseline = sequence_evaluation(meta_test, self.learning_mode)
+                y_val_eval, v_baseline = sequence_evaluation(meta_val, self.learning_mode)
                 model_inst = default_inst
             else:
                 X_tr_in, y_tr_in = X_train_scaled, y_train
@@ -332,10 +339,11 @@ class MultiScaleTrainer:
                 X_te_in = X_test_scaled
                 y_true_eval = y_test_raw
                 te_baseline = test_baseline
+                y_val_eval, v_baseline = y_val_raw, val_baseline
 
                 # Apply Hyperparameter Tuning if enabled (P1.1)
                 if self.tune_hyperparameters and not self.fast_dev_mode and model_category == "traditional":
-                    tuned_inst = self._tune_traditional_model(folder_name, X_tr_in, y_tr_in, X_v_in, y_v_in)
+                    tuned_inst = self._tune_traditional_model(folder_name, X_tr_in, y_tr_in, X_v_in, y_v_in, val_baseline)
                     model_inst = tuned_inst if tuned_inst is not None else default_inst
                 else:
                     model_inst = default_inst
@@ -357,13 +365,9 @@ class MultiScaleTrainer:
 
             # Mode transformation (Direct vs Residual)
             if self.learning_mode == "residual":
-                final_test_preds = np.maximum(0.0, te_baseline[:len(raw_test_preds)] + raw_test_preds)
-                y_true_eval = y_true_eval[:len(raw_test_preds)]
-                if len(te_baseline) > 0 and baseline_col:
-                    y_true_eval = y_true_eval + te_baseline[:len(raw_test_preds)]
+                final_test_preds = corrected_flow(te_baseline, raw_test_preds)
             else:
                 final_test_preds = np.maximum(0.0, raw_test_preds)
-                y_true_eval = y_true_eval[:len(raw_test_preds)]
 
             # Compute hydrological & agronomic metrics on TEST partition
             metrics = compute_all_metrics(
@@ -375,11 +379,9 @@ class MultiScaleTrainer:
             # Also evaluate on VAL partition for provenance tracking
             raw_val_preds = np.asarray(model_inst.predict(X_v_in), dtype=np.float64).flatten()
             if self.learning_mode == "residual":
-                final_val_preds = np.maximum(0.0, val_baseline[:len(raw_val_preds)] + raw_val_preds)
-                y_val_eval = y_val_raw[:len(raw_val_preds)]
+                final_val_preds = corrected_flow(v_baseline, raw_val_preds)
             else:
                 final_val_preds = np.maximum(0.0, raw_val_preds)
-                y_val_eval = y_val_raw[:len(raw_val_preds)]
 
             val_metrics = compute_all_metrics(
                 y_true=y_val_eval,
@@ -417,17 +419,18 @@ class MultiScaleTrainer:
                 "folder": folder_name,
                 "metrics": metrics,
                 "val_metrics": val_metrics,
+                "selection_rmse": calculate_rmse(y_val_eval, final_val_preds),
                 "y_true": y_true_eval.tolist(),
                 "y_pred": final_test_preds.tolist(),
                 "artifact_dir": model_artifact_dir
             }
 
-        # 7. Select Champion Model using Unit-Independent Multi-Criteria Ranking (P0.6)
-        just_metrics = {name: res["metrics"] for name, res in results.items()}
-        champion_name, ranking_records = rank_models_multicriteria(
-            just_metrics,
-            target_type=self.target_schema.target_type
-        )
+        # 7. Selection uses VALIDATION only; TEST metrics remain diagnostics.
+        scores = {name: res["selection_rmse"] for name, res in results.items()}
+        champion_name = validation_winner(scores)
+        ranking_records = [{"model_name": name, "selection_partition": "VALIDATION",
+            "rmse": scores[name], "metrics": results[name]["val_metrics"]}
+            for name in sorted(scores, key=lambda name: (scores[name], name))]
         champion_folder = results[champion_name]["folder"]
 
         # Promote to champion directory: artifacts/<target_name>/champion/
@@ -450,7 +453,9 @@ class MultiScaleTrainer:
             "validation_strategy": self.validation_strategy,
             "split_description": split_desc,
             "champion_model_name": champion_name,
-            "champion_metrics": results[champion_name]["metrics"],
+            "champion_metrics": results[champion_name]["val_metrics"],
+            "champion_test_metrics": results[champion_name]["metrics"],
+            "selection_partition": "VALIDATION",
             "champion_artifact_dir": champ_dir,
             "ranking_records": ranking_records,
             "duration_seconds": total_elapsed,
@@ -470,7 +475,9 @@ class MultiScaleTrainer:
 
         return {
             "champion_model_name": champion_name,
-            "champion_metrics": results[champion_name]["metrics"],
+            "champion_metrics": results[champion_name]["val_metrics"],
+            "champion_test_metrics": results[champion_name]["metrics"],
+            "selection_partition": "VALIDATION",
             "champion_dir": champ_dir,
             "ranking_records": ranking_records,
             "results": results,

@@ -21,3 +21,9 @@ build/
 .idea/
 .DS_Store
 *.log
+
+# Frozen observational development bundles: include weights and TRAIN scalers.
+!artifacts/south_fork_monthly_residual_v1/C/model.joblib
+!artifacts/south_fork_monthly_residual_v1/C/preprocessing.joblib
+!artifacts/south_fork_monthly_residual_v1/D/model.joblib
+!artifacts/south_fork_monthly_residual_v1/D/preprocessing.joblib

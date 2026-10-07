@@ -1,0 +1,175 @@
+{
+  "feature_names": [
+    "swat_baseline_streamflow_m3s",
+    "precipitation_mm",
+    "temperature_c",
+    "solar_radiation_mj_m2",
+    "relative_humidity_percent",
+    "wind_speed_ms",
+    "et_mm",
+    "pet_mm",
+    "percolation_mm",
+    "tile_drainage_mm",
+    "runoff_mm",
+    "soil_water_profile_mm",
+    "month_sin",
+    "month_cos"
+  ],
+  "features": [
+    {
+      "name": "swat_baseline_streamflow_m3s",
+      "dtype": "float",
+      "unit": "m3/s",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "precipitation_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "temperature_c",
+      "dtype": "float",
+      "unit": "degC",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "solar_radiation_mj_m2",
+      "dtype": "float",
+      "unit": "MJ/m2/month",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "relative_humidity_percent",
+      "dtype": "float",
+      "unit": "percent",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "wind_speed_ms",
+      "dtype": "float",
+      "unit": "m/s",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "et_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "pet_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "percolation_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "tile_drainage_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "runoff_mm",
+      "dtype": "float",
+      "unit": "mm/month",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "soil_water_profile_mm",
+      "dtype": "float",
+      "unit": "mm",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "month_sin",
+      "dtype": "float",
+      "unit": "fraction",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    },
+    {
+      "name": "month_cos",
+      "dtype": "float",
+      "unit": "fraction",
+      "scale_level": "Climate/Watershed",
+      "min_val": null,
+      "max_val": null,
+      "required": true,
+      "default": null,
+      "description": ""
+    }
+  ],
+  "strict_missing": true
+}

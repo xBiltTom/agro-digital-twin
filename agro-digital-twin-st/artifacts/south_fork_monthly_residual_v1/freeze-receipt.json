@@ -1,0 +1,17 @@
+{
+  "protocol_sha256": "a2768125bb9a1a3a109bffd6178b741886a6c90c5cad17d79cb12639991f9ce4",
+  "input_csv_sha256": "bccb27b4e290d65d0bcd6361ab4f3ffe735d4138748134d2174f7a73144de4d5",
+  "parent_dataset_id": "sf-multi-v1-monthly-ab",
+  "reference_status": "BUDGET_EXHAUSTED_EXPLORATORY_REFERENCE",
+  "test_accessed": false,
+  "hypothesis_status": "NOT_EVALUATED",
+  "frozen_at_utc": "2026-10-07T03:28:08.981849+00:00",
+  "implementation_sha256": {
+    "from-plant-to-watershed/backend/scripts/run_south_fork_ml.py": "0e58646d612df63805fbfb49a96c053136fe7f93d65441f72884c76bcaa889b1",
+    "agro-digital-twin-st/src/core/experiments/monthly_residual.py": "e4ff96dccc68129b51651f9ed291a970f6f8816e1d16168c549c4cd8fb20e2e7",
+    "agro-digital-twin-st/src/core/features/preprocessor.py": "f0000007ca386d34eb358315298391dcf90d5d3c9e3a07c25c986673696146d1",
+    "agro-digital-twin-st/src/core/inference/bundle.py": "0f9114025480d3ead901aecf8fbc4b50d0130f4f402a14b7d73804c16d9efa58",
+    "agro-digital-twin-st/src/core/training/residual.py": "95faa0eb0be13ef27a8652d2682553019589fd64767c15edbf73d0e34194ce4e"
+  },
+  "stage": "BEFORE_ANY_MODEL_FIT"
+}

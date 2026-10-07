@@ -1,0 +1,262 @@
+{
+  "schema_version": "south-fork-monthly-residual-selection/v1",
+  "selection": {
+    "C": {
+      "candidate_id": "C-03",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 10.0
+      },
+      "validation_rmse_m3s": 2.978153318372877,
+      "feature_names": [
+        "swat_baseline_streamflow_m3s",
+        "precipitation_mm",
+        "temperature_c",
+        "solar_radiation_mj_m2",
+        "relative_humidity_percent",
+        "wind_speed_ms",
+        "et_mm",
+        "pet_mm",
+        "percolation_mm",
+        "tile_drainage_mm",
+        "runoff_mm",
+        "soil_water_profile_mm",
+        "month_sin",
+        "month_cos"
+      ],
+      "scaler_fit_samples": 60,
+      "estimator_fit_partition": "TRAIN",
+      "bundle": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESI\u00d3N-O1/gemelos-digitales/agro-digital-twin-st/artifacts/south_fork_monthly_residual_v1/C",
+      "test_accessed": false
+    },
+    "D": {
+      "candidate_id": "D-03",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 10.0
+      },
+      "validation_rmse_m3s": 2.9899310791949096,
+      "feature_names": [
+        "swat_baseline_streamflow_m3s",
+        "precipitation_mm",
+        "temperature_c",
+        "solar_radiation_mj_m2",
+        "relative_humidity_percent",
+        "wind_speed_ms",
+        "et_mm",
+        "pet_mm",
+        "percolation_mm",
+        "tile_drainage_mm",
+        "runoff_mm",
+        "soil_water_profile_mm",
+        "month_sin",
+        "month_cos",
+        "fspm_lai",
+        "fspm_root_depth_m",
+        "fspm_biomass_g_plant",
+        "fspm_transpiration_mm",
+        "fspm_water_stress",
+        "fspm_active_fraction",
+        "fspm_stress_available_fraction"
+      ],
+      "scaler_fit_samples": 60,
+      "estimator_fit_partition": "TRAIN",
+      "bundle": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESI\u00d3N-O1/gemelos-digitales/agro-digital-twin-st/artifacts/south_fork_monthly_residual_v1/D",
+      "test_accessed": false
+    }
+  },
+  "candidates": [
+    {
+      "arm": "C",
+      "id": "C-01",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 0.1
+      },
+      "validation_rmse_m3s": 3.1947729222230805,
+      "train_rmse_m3s": 3.6330249232381533,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-02",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 1.0
+      },
+      "validation_rmse_m3s": 3.0736547733114876,
+      "train_rmse_m3s": 3.6706272178298067,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-03",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 10.0
+      },
+      "validation_rmse_m3s": 2.978153318372877,
+      "train_rmse_m3s": 3.803667316042972,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-04",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": 2,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.6071131995619656,
+      "train_rmse_m3s": 3.305841150067713,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-05",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": 4,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.483691748965325,
+      "train_rmse_m3s": 2.9664407839257136,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "C",
+      "id": "C-06",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": null,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.4493107479977763,
+      "train_rmse_m3s": 2.907912486895078,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-01",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 0.1
+      },
+      "validation_rmse_m3s": 3.0781419586380894,
+      "train_rmse_m3s": 3.0443259512023904,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-02",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 1.0
+      },
+      "validation_rmse_m3s": 2.9976304714954445,
+      "train_rmse_m3s": 3.1989787382342527,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-03",
+      "family": "ridge",
+      "parameters": {
+        "alpha": 10.0
+      },
+      "validation_rmse_m3s": 2.9899310791949096,
+      "train_rmse_m3s": 3.5330066185494307,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-04",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": 2,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.6593333942195345,
+      "train_rmse_m3s": 3.269236422074744,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-05",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": 4,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.5174241239633286,
+      "train_rmse_m3s": 2.9366603630209167,
+      "train_months": 60,
+      "validation_months": 36
+    },
+    {
+      "arm": "D",
+      "id": "D-06",
+      "family": "forest",
+      "parameters": {
+        "n_estimators": 100,
+        "max_depth": null,
+        "min_samples_leaf": 3,
+        "n_jobs": 1
+      },
+      "validation_rmse_m3s": 3.4905550110138144,
+      "train_rmse_m3s": 2.874697822476996,
+      "train_months": 60,
+      "validation_months": 36
+    }
+  ],
+  "simple_references": {
+    "fit_partition": "TRAIN",
+    "fit_months": 60,
+    "climatology": {
+      "01": 2.4945588988222758,
+      "02": 3.7210516679583727,
+      "03": 6.5353655999273625,
+      "04": 5.75558784880128,
+      "05": 12.686129962548852,
+      "06": 12.012044080121857,
+      "07": 6.860952702042178,
+      "08": 3.5273555298891908,
+      "09": 4.749966012410265,
+      "10": 3.116722036995072,
+      "11": 2.3116608738561024,
+      "12": 5.266025500127727
+    },
+    "affine": {
+      "A": {
+        "slope": 1.3068210799059845,
+        "intercept": 1.8502223166357301
+      },
+      "B": {
+        "slope": 1.295007875598461,
+        "intercept": 1.763244323692228
+      }
+    }
+  },
+  "test_accessed": false,
+  "hypothesis_status": "NOT_EVALUATED"
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": "south-fork-monthly-residual-protocol/v1",
+  "experiment_id": "sf-ml-v1",
+  "status": "FROZEN_BEFORE_ML_TRAINING",
+  "parent_protocol_sha256": "c0920e03e089d55117cb4c719230848c5769b82f46ed84a2580a7a04af45d695",
+  "dataset_id": "sf-multi-v1-monthly-ab",
+  "input_csv_sha256": "bccb27b4e290d65d0bcd6361ab4f3ffe735d4138748134d2174f7a73144de4d5",
+  "station_id": "05451210",
+  "partitions": {"TRAIN": ["2013-01", "2017-12"], "VALIDATION": ["2018-01", "2020-12"], "TEST_RESERVED": ["2021-01", "2025-12"]},
+  "target": "monthly_streamflow_m3s",
+  "unit": "m3/s",
+  "learning_mode": "residual",
+  "residual_formula": "observed_streamflow_m3s - physical_streamflow_m3s",
+  "prediction_formula": "max(0, physical_streamflow_m3s + predicted_residual)",
+  "baseline_feature": "swat_baseline_streamflow_m3s",
+  "arms": {"C": "A physical baseline plus common features", "D": "B physical baseline plus common and FSPM features"},
+  "common_features": ["swat_baseline_streamflow_m3s", "precipitation_mm", "temperature_c", "solar_radiation_mj_m2", "relative_humidity_percent", "wind_speed_ms", "et_mm", "pet_mm", "percolation_mm", "tile_drainage_mm", "runoff_mm", "soil_water_profile_mm", "month_sin", "month_cos"],
+  "fspm_features": ["fspm_lai", "fspm_root_depth_m", "fspm_biomass_g_plant", "fspm_transpiration_mm", "fspm_water_stress", "fspm_active_fraction", "fspm_stress_available_fraction"],
+  "feature_policy": {
+    "calendar": "sin/cos of 2*pi*(calendar_month-1)/12, known without observations",
+    "inactive_crop": "Keep exported biological zeros. Encode missing stress as 0 with a separate available fraction and active fraction; the placeholder is not a no-stress measurement.",
+    "unknown": "Reject missing/nonfinite common or structural FSPM inputs; never fill with synthetic crop defaults or drop all plant features.",
+    "preprocessing": "Strict ordered feature schema; StandardScaler fitted on 60 TRAIN rows only for each arm. No learned target transform or global feature filtering.",
+    "history": "No lagged observations or sequence models. Every candidate covers the same 36 VALIDATION months.",
+    "excluded": ["observed_streamflow_m3s", "residual_streamflow_m3s", "estimated_days", "paired_days", "coverage_fraction", "station_id", "simulation_id", "partition", "arm"],
+    "inference": "Retrospective monthly inference using full-month weather/model states; not advance forecasting."
+  },
+  "seed": 42,
+  "max_candidates_per_arm": 6,
+  "candidates": [
+    {"id": "01", "family": "ridge", "parameters": {"alpha": 0.1}},
+    {"id": "02", "family": "ridge", "parameters": {"alpha": 1.0}},
+    {"id": "03", "family": "ridge", "parameters": {"alpha": 10.0}},
+    {"id": "04", "family": "forest", "parameters": {"n_estimators": 100, "max_depth": 2, "min_samples_leaf": 3, "n_jobs": 1}},
+    {"id": "05", "family": "forest", "parameters": {"n_estimators": 100, "max_depth": 4, "min_samples_leaf": 3, "n_jobs": 1}},
+    {"id": "06", "family": "forest", "parameters": {"n_estimators": 100, "max_depth": null, "min_samples_leaf": 3, "n_jobs": 1}}
+  ],
+  "selection": "Minimum unrounded RMSE of clipped corrected Q on VALIDATION; exact ties by candidate id ascending. Same six candidates for C and D; no budget extension.",
+  "final_fit": "Keep the winning estimator/scaler fitted on TRAIN only, with no refit after selection. Freeze both bundles before delivery 4.",
+  "simple_references": {
+    "climatology": "For each calendar month, arithmetic mean of the five TRAIN observed monthly Q values; reuse unchanged in VALIDATION/TEST.",
+    "affine_A_B": "For each physical arm, fit y=a*x+b on TRAIN by least squares with a>=0 and unconstrained b: a=max(0,cov(x,y)/var(x)), b=mean(y)-a*mean(x); if var(x)=0, a=0. Predict max(0,a*x+b). No validation fitting or tuning."
+  },
+  "test_policy": "No TEST outcome query, export, training, scoring or selection. Delivery 4 consumes the frozen bundles and paired temporal bootstrap from the parent protocol.",
+  "hypothesis_status": "NOT_EVALUATED",
+  "reference_status": "BUDGET_EXHAUSTED_EXPLORATORY_REFERENCE",
+  "limitations": ["One basin, 60 TRAIN months and 36 previously explored development validation months.", "FSPM parameters and states are model-derived, not independent physiological observations.", "A/B retain substantial bias; ML improvement does not validate physical processes or conserve water balance.", "D versus C combines a changed physical baseline and extra model features; it does not isolate FSPM feature value on the same physical arm."]
+}

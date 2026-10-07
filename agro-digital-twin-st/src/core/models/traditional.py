@@ -11,7 +11,6 @@ from typing import Dict, Any, Optional
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
-import xgboost as xgb
 
 from .base import BaseMultiScaleModel
 
@@ -89,6 +88,7 @@ class XGBoostModel(BaseMultiScaleModel):
         random_state: int = 42,
         n_jobs: int = -1
     ):
+        import xgboost as xgb
         super().__init__(name="XGBoost Regressor", model_type="traditional")
         self.params = {
             "n_estimators": n_estimators,

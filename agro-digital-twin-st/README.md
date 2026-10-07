@@ -11,12 +11,20 @@ la [plataforma FastAPI + Next.js](../from-plant-to-watershed/README.md).
 | Generador sintético | Desarrollo y demostración mensual de entrenamiento/inferencia. | `SYNTHETIC_DEVELOPMENT_ARTIFACT`. |
 | Bundle South Fork con manifiesto | Exploración de tablas y preparación de resultados SWAT+/FSPM. | Simulación experimental con procedencia por variable. |
 | Playback FastAPI diario | Experimento de pronóstico `next_day_streamflow_m3s`. | `EXPERIMENTAL_SIMULATION_ONLY`, no validación USGS. |
+| Pares mensuales USGS/SWAT+ 2013–2020 | Residuales C/D de `sf-ml-v1`. | Target observado y predictores modelados; desarrollo, TEST reservado. |
 
 Los modelos mensuales presentes en `artifacts/monthly_runoff_mm/` fueron
 entrenados con datos sintéticos. Su campeón LSTM Autoencoder + Random Forest
 reporta NSE 0,9861 y RMSE 2,5809 mm/mes **sobre ese dataset sintético**.
 No son resultados de la hipótesis de acoplamiento planta–cuenca.
 Véase [Model Card](MODEL_CARD.md).
+
+Los nuevos bundles en `artifacts/south_fork_monthly_residual_v1/C` y `D`
+predicen caudal mensual en m³/s, con pesos Ridge y scalers ajustados solo en
+TRAIN. Ambos se seleccionaron por VALIDATION y están registrados en pglocal.
+Su [entrega científica](../from-plant-to-watershed/docs/ML_RESIDUAL_DELIVERY_3.md)
+documenta features, búsqueda congelada, resultados y referencias simples.
+La inferencia utiliza inputs del mes completo; no es pronóstico anticipado.
 
 ## Ejecutar
 

@@ -13,6 +13,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Planta | `SIMPLIFIED_FSPM`: poblaciones deterministas con variabilidad paramétrica, no un FSPM botánico completo validado. |
 | Calendario | Siembra/cosecha por HRU desde `mgt_out.txt`; eventos modelados, no operaciones agrícolas observadas. |
 | Experimento multianual | `sf-multi-v1`: particiones congeladas, búsqueda física 12/12 y 96 meses pareados A/B publicados; referencia exploratoria por PBIAS. |
+| ML observacional | `sf-ml-v1`: búsqueda igual de seis candidatos C/D; Ridge α = 10 seleccionado en VALIDATION, pesos/scalers TRAIN congelados y bundles registrados en pglocal. TEST reservado. |
 | Agua SWAT+ → FSPM | Estimación de humedad radicular desde `sw_ave` y `soils.sol`, bajo hipótesis de fracción de agua disponible uniforme en el perfil. |
 | Planta → SWAT+ | Diez parámetros del registro vegetal `corn` en `plants.plt`; SWAT+ mantiene sus propias ecuaciones de agua y cultivo. |
 | Persistencia | Frames JSONB PostgreSQL con clave temporal y SHA-256. |
@@ -48,6 +49,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `sf19-phys-ctrl-v1-reference` | Control con código actual sobre inputs físicos preparados | Reproduce exactamente los 365 caudales de la referencia; 365 frames. |
 | `sf19-phys-fix-v1-reference` | Misma física y clima de warm-up corregido | RMSE mensual 8,079 m³/s; NSE −0,408; volumen 94,520 hm³; 365 frames. |
 | `sf-multi-v1-cal-10` | Mejor candidato en CALIBRATION 2005–2012 | RMSE mensual 4,718 m³/s; NSE 0,649; PBIAS −40,605 %. Falla el criterio de sesgo; exploratorio. |
+| `sf-ml-v1-c` / `sf-ml-v1-d` | Bundles residuales observacionales en PostgreSQL | RMSE de desarrollo VALIDATION 2,978 / 2,990 m³/s; no decisión de H1. |
 
 Dashboard y reportes consultan el experimento final v2. El visor prioriza el
 gemelo diario corregido, salvo que se indique una corrida accesible mediante
@@ -191,12 +193,14 @@ tiene su propio linaje y no se registra automáticamente como reporte de H1.
   prueban por sí solos una unión con las mallas del frontend.
 - **Planta 3D:** hojas, raíces laterales y órganos son geometría ilustrativa;
   las 1.014 instancias del campo no son 1.014 trayectorias individuales.
-- **ML:** los bundles mensuales versionados son sintéticos; el pronóstico diario
-  sobre playback aprende de simulación y no demuestra mejora contra USGS.
+- **ML:** los bundles históricos de runoff son sintéticos. Los nuevos C/D aprenden
+  residuos contra USGS con predictores modelados; la inferencia mensual es retrospectiva.
+  D queda ligeramente detrás de C en desarrollo; TEST y H1 siguen pendientes.
+  El pronóstico diario sobre playback aprende de simulación.
 
 ## 5. Siguiente etapa de investigación
 
-El trabajo se organiza en cinco entregas; las dos primeras están completadas:
+El trabajo se organiza en cinco entregas; las tres primeras están completadas:
 
 1. **Referencia física — completada:** corrección controlada del warm-up,
    reproducción, ET, suelos, drenaje, acuíferos, pérdidas fluviales y área.
@@ -204,9 +208,11 @@ El trabajo se organiza en cinco entregas; las dos primeras están completadas:
    agrícola fijos; calibración acotada 12/12, calendarios por temporada y contrato
    vegetal 2010 congelado. Publicación A/B anual y exportaciones fechadas.
    Referencia exploratoria por incumplimiento de sesgo.
-3. **ML — siguiente:** reparar residual y alineación temporal, features y selección C/D
-   exclusivamente en VALIDATION.
-4. **Evaluación de H1:** TEST reservado, referencias simples, incertidumbre
+3. **ML — completada:** residual y alineación temporal reparados; protocolo ML,
+   seis candidatos iguales por brazo, selección C/D exclusivamente en VALIDATION.
+   Pesos TRAIN, referencias simples y artefactos congelados en pglocal.
+   Véase [entrega 3](ML_RESIDUAL_DELIVERY_3.md).
+4. **Evaluación de H1 — siguiente:** TEST reservado, referencias simples, incertidumbre
    temporal y decisión según el protocolo congelado.
 5. **Gemelo funcional y paper:** creación/ejecución/consulta/descarga sobre
    PostgreSQL, comparación/reportes/visor con el mismo linaje y paquete del artículo.
@@ -243,3 +249,8 @@ USGS pareado, hashes, contrato vegetal congelado y 16 balances nativos.
 Tres casos puros existentes de calendario/agregación/playback pasaron por
 invocación directa, sin cargar el fixture SQLite temporal. Los módulos Python
 modificados compilan; no se ejecutó la suite completa ni inspección del navegador.
+En la entrega 3 se ajustaron doce candidatos sobre TRAIN y se seleccionaron C/D
+por VALIDATION. Se cotejaron 96 inferencias por brazo entre entrenamiento,
+bundle del laboratorio y backend; se registraron dos modelos externos y 17
+artefactos en la misma base pglocal. No se ejecutó una suite de tests ni se
+inspeccionó el navegador. TEST permanece reservado.
