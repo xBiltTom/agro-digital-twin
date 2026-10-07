@@ -95,9 +95,9 @@ export default function Twin3DPage() {
       const requestedId = new URLSearchParams(window.location.search).get("simId");
       const requestedRun = requestedId ? accessible.find((run) => run.id === requestedId) : null;
       setSelectionError(requestedId && !requestedRun ? "La corrida del enlace no está disponible para este usuario." : null);
-      // Priorizar la simulación corregida v2 de South Fork 2019 si está disponible
-      const v2Run = accessible.find((run) => run.id === "phase234-sf-2019-v2");
-      const initialRun = requestedRun ?? (requestedId ? null : v2Run ?? accessible[0] ?? null);
+      // Prefer the latest accessible completed coupled research run.
+      const currentRun = accessible.find((run) => run.status === "COMPLETED" && run.name.startsWith("South Fork · reproducción B")) ?? accessible.find((run) => run.id === "sf-test-v1-b-2025");
+      const initialRun = requestedRun ?? (requestedId ? null : currentRun ?? accessible[0] ?? null);
       setSimulationId(initialRun?.id ?? null);
       setSimulationsLoaded(true);
     }).catch((cause: unknown) => {
@@ -147,7 +147,7 @@ export default function Twin3DPage() {
             {simulations.map((run) => (
               <option key={run.id} value={run.id}>
                 {run.id === "phase234-sf-2019-v2"
-                  ? `${run.name} (v2 corregida · FSPM/SWAT+ Recomendada)`
+                  ? `${run.name} (Archivo 2019 · v2 · FSPM/SWAT+ Histórica)`
                   : run.name}
               </option>
             ))}
@@ -203,6 +203,7 @@ export default function Twin3DPage() {
         )}
       </div>
     </header>
+    <p className="text-xs text-zinc-400">Estados físicos diarios modelados. La corrección ML mensual se consulta en Simulaciones y no modifica este visor. Anatomía y terreno ilustrativos.</p>
 
     {/* Barra de hitos científicos del año 2019 */}
     {(simulationId === "phase234-sf-2019-v2" || (record && record.date.startsWith("2019"))) && (

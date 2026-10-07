@@ -25,6 +25,22 @@ import { collectSimulationPages } from "./simulation-access";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 class ApiService {
+  async getSouthForkResearch() {
+    return this.request<import("../types/research").ResearchReport>("/research/south-fork");
+  }
+
+  async createSouthForkRun(payload: { year: number; arm: "A" | "B"; monthly_ml: boolean }) {
+    return this.request<SimulationRun>("/research/south-fork/runs", { method: "POST", body: JSON.stringify(payload) });
+  }
+
+  async downloadResearch(name: "report" | "predictions" | "paper" | "manuscript") {
+    return this.downloadFile(`/research/south-fork/artifacts/${name}`, name);
+  }
+
+  async downloadMonthlyResearch(simulationId: string) {
+    return this.downloadFile(`/research/south-fork/runs/${encodeURIComponent(simulationId)}/monthly`, "monthly.csv");
+  }
+
   private getToken(): string | null {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("digitaltwin_token");

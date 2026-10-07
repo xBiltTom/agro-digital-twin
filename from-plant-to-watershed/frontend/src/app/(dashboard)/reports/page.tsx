@@ -1,4 +1,5 @@
 "use client";
+import SouthForkResearchPanel from "../../../components/research/SouthForkResearchPanel";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -153,7 +154,7 @@ function conclusionLabel(value?: string): string {
 
 function hypothesisCopy(value: string): string {
   if (value.toLowerCase().includes("reduces monthly rmse by at least 15%")) {
-    return "H1 plantea reducir al menos 15 % el RMSE mensual.";
+    return "El contrato histórico planteaba reducir al menos 15 % el RMSE mensual.";
   }
   return value;
 }
@@ -243,7 +244,7 @@ export default function ReportsPage() {
     if (reportResult.status === "fulfilled") {
       setFinalReport(reportResult.value);
     } else {
-      setFinalReportError(reportResult.reason instanceof Error ? reportResult.reason.message : "No se pudo consultar el informe científico vigente.");
+      setFinalReportError(reportResult.reason instanceof Error ? reportResult.reason.message : "No se pudo consultar el informe científico histórico 2018–2020.");
     }
 
     setIsLoading(false);
@@ -303,7 +304,7 @@ export default function ReportsPage() {
             Informes y evidencia
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
-            Consulta el resultado científico vigente y exporta los datos de una corrida compatible.
+            Consulta el resultado científico actual y exporta los datos de una corrida compatible.
           </p>
         </div>
         <button
@@ -317,6 +318,8 @@ export default function ReportsPage() {
         </button>
       </header>
 
+      <SouthForkResearchPanel />
+      <h2 className="font-serif text-xl">Archivo del experimento 2018–2020 y exportación por corrida</h2>
       {pageMessage && (
         <div
           role={pageMessage.type === "error" ? "alert" : "status"}
@@ -339,7 +342,7 @@ export default function ReportsPage() {
         <div className="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
           <div>
             <h2 id="current-report-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Informe científico vigente
+              Informe científico histórico 2018–2020
             </h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               La versión actual se consulta desde el contrato publicado por el backend.
@@ -355,7 +358,7 @@ export default function ReportsPage() {
         {isLoading && !finalReport && (
           <div aria-live="polite" className="flex items-center gap-2 border border-slate-300 bg-white px-4 py-5 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
             <Loader2 aria-hidden="true" className="h-4 w-4 motion-safe:animate-spin text-emerald-700 dark:text-emerald-400" />
-            Consultando el contrato científico vigente…
+            Consultando el contrato histórico 2018–2020…
           </div>
         )}
 
@@ -565,7 +568,7 @@ export default function ReportsPage() {
 
             {finalReport?.archived_result && (
               <p className="border-t border-slate-300 px-5 py-3 text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-400 sm:px-6">
-                El informe {finalReport.archived_result.report_version} se conserva como evidencia histórica y no representa este contrato vigente.
+                El informe {finalReport.archived_result.report_version} se conserva como evidencia histórica y no representa este contrato histórico.
               </p>
             )}
           </div>
@@ -598,7 +601,7 @@ export default function ReportsPage() {
               Exportar una corrida
             </h2>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600 dark:text-slate-400">
-              Los archivos se construyen con el resumen y los registros guardados de una corrida; no son una copia del informe científico vigente.
+              Los archivos se construyen con el resumen y los registros guardados de una corrida; no son una copia del informe científico histórico 2018–2020.
             </p>
           </div>
           <div className="flex flex-col gap-1.5 sm:min-w-72">

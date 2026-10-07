@@ -1,0 +1,48 @@
+{
+  "schema_version": "south-fork-functional-delivery-5/v1",
+  "date": "2026-10-06",
+  "paper_dataset_id": "sf-paper-v1",
+  "official_experiment_id": "sf-test-v1",
+  "official_hypothesis_status": "H1_NOT_SUPPORTED",
+  "fit_on_test": false,
+  "profile_scope": {
+    "years": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "physical_arms": [
+      "A",
+      "B"
+    ],
+    "optional_monthly_ml": {
+      "A": "C",
+      "B": "D"
+    },
+    "purpose": "USER_REPRODUCTION_NOT_NEW_HYPOTHESIS_TEST"
+  },
+  "publication": {
+    "id": "b18f1d0d-e0fd-4a04-b8e7-49e1085a7f2e",
+    "status": "COMPLETED",
+    "year": 2021,
+    "arm": "B",
+    "physical_days": 365,
+    "frames": 365,
+    "monthly_predictions": 12,
+    "ml_status": "PREDICTED_FROZEN_MONTHLY_REPRODUCTION",
+    "model_checksum": "313930f9b3bc4247df56babe250566eb166942ecc69e309a5407e4678294f051",
+    "executable_sha256": "56963a6475aa9014a56a6825749d7fc513fce2dd40dcbb0c0b6a5976364a3c9d"
+  },
+  "software_checks": {
+    "python_compilation": "PASS",
+    "typescript_compilation": "PASS",
+    "publication_figures": "GENERATED_AND_VISUALLY_INSPECTED",
+    "browser_workflow": "NOT_PERFORMED",
+    "test_suites": "NOT_RUN"
+  },
+  "database": "existing pglocal digitaltwin",
+  "daily_ml_playback": false,
+  "paper_source": "research_domain/paper_v1/manuscript.md"
+}

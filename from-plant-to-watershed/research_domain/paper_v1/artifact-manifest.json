@@ -1,0 +1,19 @@
+{
+  "schema_version": "south-fork-paper/v1",
+  "test_report_sha256": "b53edee99fc991af54d914c092ff466e3f7ac45ba3db3169213d0a75d8f79691",
+  "hypothesis_status": "H1_NOT_SUPPORTED",
+  "sha256": {
+    "contrasts.csv": "9fb8a09f5290640b3375301bab3d160fd1e9695e4dd2fcf1ebe6c9d3564be6d6",
+    "figures/contrasts.pdf": "e1ebd09b56a0703a63775d61667fc83ca7be06d294c80a0b2e95166a439dad81",
+    "figures/contrasts.png": "ed88135d8405a11bbdc2f864008e02c6d31a15e920492b8f15eb7b0dd6bbdb03",
+    "figures/contrasts.svg": "85be9d4f19a4746ca7ed8211d5faff382cbd25430de7d3cf2ada9d7d059516ec",
+    "figures/monthly-test.pdf": "5f896bfac0b397024aca7ff27318fc46efeee16b80681d3ac1bdae7fdc98b38d",
+    "figures/monthly-test.png": "9b577ac88da5eb55f4af2e95d47432f8d8b800d864f52289065182d8ada88dec",
+    "figures/monthly-test.svg": "4a7cc1ac699eb49d2fd410f9c56353a35b608154e03189172d9fe26f7d9c6fb0",
+    "manuscript.md": "d106a80ba987399226d3b3958089bdc09f93d0ae44ae005e3f71b76a947ca9b6",
+    "metrics.csv": "c10c26babde345d940141d267d3a1096345f1f0abaf18d9668184735afc5b541",
+    "paper-package.zip": "2517a8de7b09d94c2d030bd7a178a824255cb5dfc8bc25e1bf2055a7d06fd6ba",
+    "reproduce.md": "ca1d38dd1032422746bd11b8d843c8d349d836fe9643297094ad7d5a07b31f2d",
+    "software.json": "718327f7e3d329ccafc52bc2bb17ebab7e35197d20eb495ce32f31ace9a67aa0"
+  }
+}

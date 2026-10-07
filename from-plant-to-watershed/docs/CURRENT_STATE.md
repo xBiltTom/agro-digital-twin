@@ -8,7 +8,8 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 
 | Componente | Estado y alcance |
 | --- | --- |
-| Plataforma | FastAPI, Next.js, autenticación/RBAC, catálogo y reportes multiformato. |
+| Plataforma | FastAPI, Next.js, autenticación/RBAC, catálogo, comparación TEST actual y reproducciones propias A/B con ML mensual opcional. |
+| Paquete del paper | `sf-paper-v1`: borrador, tablas, figuras, ZIP y SHA-256 registrados en pglocal; H1 no respaldada. |
 | Motor hidrológico | SWAT+ real 61.0.2.61; nueva receta de investigación desde fuente, con reproducción binaria local. |
 | Planta | `SIMPLIFIED_FSPM`: poblaciones deterministas con variabilidad paramétrica, no un FSPM botánico completo validado. |
 | Calendario | Siembra/cosecha por HRU desde `mgt_out.txt`; eventos modelados, no operaciones agrícolas observadas. |
@@ -33,7 +34,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `south-fork-final-v2` | `research_domain/final_report_v2.json`; `/reports/final-scientific` | Experimento anterior publicado, evaluación USGS 2018–2020; H1 no respaldada, mejora mensual 0 %. |
 | `phase1-sf-2019-v3` | Bundle de ejecución 2019 | Calendarios ejecutados y inputs compatibles, todavía con humedad FSPM constante asumida. |
 | `phase234-sf-2019-v1` | Bundle diario anterior | Anterior a la corrección de interpretación del almacenamiento SWAT+. |
-| `phase234-sf-2019-v2` | Bundle diario corregido y selección preferida del visor cuando es accesible | Gemelo planta–suelo–agua experimental, no calibración ni nueva prueba de H1. |
+| `phase234-sf-2019-v2` | Bundle diario corregido histórico | Gemelo planta–suelo–agua experimental, no calibración ni nueva prueba de H1. |
 | `sf19-diag-v1-reference` | Ejecución estándar diaria registrada en PostgreSQL | Referencia de desarrollo: RMSE mensual 9,533 m³/s; NSE −0,961. |
 | `sf19-diag-v1-tile-probe` | Activación experimental de drenaje en maíz | Genera drenaje, pero carece de conexión `til` en las unidades de ruteo. |
 | `sf19-diag-v2-tile-routed` | Misma activación y conexión `til` al canal | RMSE mensual 8,914 m³/s; NSE −0,715; referencia todavía insuficiente. |
@@ -53,9 +54,11 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `sf-ml-v1-c` / `sf-ml-v1-d` | Bundles residuales observacionales en PostgreSQL | RMSE de desarrollo VALIDATION 2,978 / 2,990 m³/s; no decisión de H1. |
 | `sf-test-v1` | A/B/C/D en TEST 2021–2025, dataset `sf-test-v1-monthly` | RMSE A/B/C/D 3,695 / 3,579 / 2,749 / 4,517 m³/s. Reducción D/A −22,239 %, IC95 absoluto [−3,286; +1,871] m³/s; H1 no respaldada. |
 
-Dashboard y reportes consultan el experimento final v2. El visor prioriza el
-gemelo diario corregido, salvo que se indique una corrida accesible mediante
-`?simId=`. Esa diferencia de linaje debe permanecer explícita.
+Inicio, Simulaciones e Informes muestran el experimento TEST `sf-test-v1`.
+El informe v2 2018–2020 permanece como archivo histórico. El visor prioriza
+reproducciones propias B completadas o B TEST 2025 cuando son accesibles,
+salvo selección explícita por `?simId=`. ML mensual y playback físico diario
+se mantienen separados. Véase [entrega 5](FUNCTIONAL_TWIN_DELIVERY_5.md).
 
 El [diagnóstico 2019](BASELINE_DIAGNOSTIC_2019.md) documenta las tres nuevas
 corridas, las intervenciones y el siguiente trabajo físico. Cada corrida tiene
@@ -202,9 +205,9 @@ tiene su propio linaje y no se registra automáticamente como reporte de H1.
   PBIAS +44,616 % e intervalo C/A que incluye cero.
   El pronóstico diario sobre playback aprende de simulación.
 
-## 5. Siguiente etapa de investigación
+## 5. Entregas y continuación editorial
 
-El trabajo se organiza en cinco entregas; las cuatro primeras están completadas:
+Las cinco entregas técnicas acordadas están completadas:
 
 1. **Referencia física — completada:** corrección controlada del warm-up,
    reproducción, ET, suelos, drenaje, acuíferos, pérdidas fluviales y área.
@@ -219,8 +222,9 @@ El trabajo se organiza en cinco entregas; las cuatro primeras están completadas
 4. **Evaluación de H1 — completada:** TEST 2021–2025, referencias TRAIN,
    bootstrap temporal pareado y sensibilidad a estimados. H1 no respaldada;
    no se retocaron pesos ni criterios. Véase [entrega 4](TEST_EVALUATION_DELIVERY_4.md).
-5. **Gemelo funcional y paper — siguiente:** creación/ejecución/consulta/descarga sobre
-   PostgreSQL, comparación/reportes/visor con el mismo linaje y paquete del artículo.
+5. **Gemelo funcional y paper — completada:** reproducción propia A/B y ML mensual
+   C/D, consulta/descarga en pglocal, comparación TEST actual y borrador con
+   tablas, figuras y ZIP registrado. Véase [entrega 5](FUNCTIONAL_TWIN_DELIVERY_5.md).
 
 El runner `run_final_south_fork.py` todavía calcula FSPM con humedad constante
 asumida. Ejecutarlo no evalúa por sí solo toda la ruta hídrica actual.
@@ -266,3 +270,7 @@ se generaron 2.000 réplicas por variante y se registraron 12 artefactos en
 `sf-test-v1-monthly`. El runner reutilizó los resultados congelados sin nuevas
 consultas de caudal, corridas o evaluación. Los módulos añadidos compilan;
 no se ejecutó una suite de tests ni se inspeccionó el navegador.
+
+En la entrega 5 se compiló Python y TypeScript, se completó una reproducción
+B 2021 propia con 365 frames y 12 predicciones D, y se generaron/inspeccionaron
+figuras y el paquete del paper. No se ejecutaron suites ni un recorrido en navegador.

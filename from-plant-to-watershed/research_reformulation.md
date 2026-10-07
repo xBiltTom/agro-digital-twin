@@ -1,12 +1,13 @@
 # Reformulación experimental — From Plant to Watershed
 
-**Versión:** 0.5 · **Fecha:** 2026-10-06.
+**Versión:** 0.6 · **Fecha:** 2026-10-06.
 **Estado:** protocolo multianual v1 congelado antes de calibrar; búsqueda física
 de 12 candidatos terminada y 96 meses pareados A/B publicados. La referencia seleccionada
 incumple el criterio de sesgo y permanece exploratoria. C/D seleccionados en
 VALIDATION mediante búsqueda ML comparable; pesos TRAIN y referencias simples
 congelados. TEST 2021–2025 evaluado sin reajuste; **H1 no respaldada** por el
-intervalo de reducción RMSE D/A. Queda la integración funcional y el paper.
+intervalo de reducción RMSE D/A. Flujo funcional de usuarios y paquete del
+paper integrados; las cinco entregas técnicas están completadas.
 
 ## 1. Relación con la ficha original
 
@@ -438,8 +439,9 @@ La [entrega 3](docs/ML_RESIDUAL_DELIVERY_3.md) completa la selección C/D en
 VALIDATION y congela modelos y referencias simples en pglocal.
 La [entrega 4](docs/TEST_EVALUATION_DELIVERY_4.md) completa TEST 2021–2025 y la
 decisión inferencial, con sensibilidad a estimados y resultados congelados.
-Las entregas 1–4 están completadas; queda **una entrega**:
-gemelo funcional/paquete del paper.
+Las **cinco entregas técnicas están completadas**, incluido el flujo de usuarios
+y el paquete del paper. La [entrega 5](docs/FUNCTIONAL_TWIN_DELIVERY_5.md)
+documenta ejecución propia A/B, ML mensual, comparación y descargas.
 La decisión de escalar a varias temporadas se apoya en una referencia
 diagnosticada y contratos correctos de unidades y fechas.
 TEST ya está evaluado y no se reutilizará para ajustar este experimento.
@@ -473,11 +475,11 @@ reduce el soporte a 36 meses y mantiene la misma decisión. C tiene menor
 RMSE puntual, pero su IC95 C/A incluye cero y PBIAS +44,616 %. No se cambia el
 contraste primario a C ni se ajustan pesos después de observar TEST.
 
-Para cerrar el paper y el gemelo funcional:
-
-- Integración del resultado físico y asistido mensual con el mismo linaje;
-  consultas, reportes y descargas que expongan la decisión y sus límites.
-- Referencias y novedad; disponibilidad de LAI y función en ajuste/evaluación.
+El flujo funcional y el [borrador del paper](research_domain/paper_v1/manuscript.md)
+exponen la decisión, el linaje y sus límites. No se usó LAI observado para
+ajuste o evaluación fisiológica. Las referencias verificadas delimitan los
+antecedentes; la revisión exhaustiva, autoría y preparación editorial son
+trabajo posterior del equipo.
 
 Los años ya examinados no se describen como una evaluación ciega intacta.
 TEST 2021–2025 ahora es conocido: futuras modificaciones de modelo requieren
@@ -525,11 +527,16 @@ aprendizaje automático en South Fork Iowa River*.
   estimados conserva la decisión sobre 36 meses. No se reoptimiza después
   de TEST ni se reemplaza el contraste primario por C.
 
+- **2026-10-06 · v0.6:** flujo funcional de reproducción histórica A/B con ML
+  mensual opcional, comparación TEST actual, descargas y paquete del paper
+  registrados en pglocal. B 2021 propio completado con 365 frames y 12
+  predicciones D. H1 sigue no respaldada; no se reentrenaron bundles.
+
 ## Referencias iniciales para continuar la revisión
 
 - [Alemayehu et al. (2017): crecimiento vegetal mejorado en SWAT](https://doi.org/10.5194/hess-21-4449-2017).
 - [Rane y Jayaraj: calibración multiobjetivo con ET y LAI](https://doi.org/10.1007/s13762-022-04293-7).
-- [Yang et al. (2026): SWAT+ con corrección ML de residuos en un framework de balance hídrico](https://doi.org/10.5194/hess-30-4271-2026).
+- [Yang et al. (2026): Disentangling the key drivers of water balance in Central Asia’s Lake Balkhash: A relative contribution assessment](https://doi.org/10.5194/hess-30-4271-2026).
 - [Green et al.: evaluación hidrológica de SWAT y drenaje artificial en South Fork Iowa](https://www.ars.usda.gov/ARSUserFiles/36627/Green%20ASABE%20413.pdf).
 - [Documentación SWAT+: dosel y altura](https://swatplus.gitbook.io/io-docs/theoretical-documentation/section-5-land-cover-plant/optimal-growth/potential-growth/canopy-cover-and-height).
 - [Catálogo MODIS MCD15A3H](https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MCD15A3H).

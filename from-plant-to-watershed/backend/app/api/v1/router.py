@@ -9,6 +9,7 @@ from app.api.v1.reports import router as reports_router
 from app.api.v1.observations import router as observations_router
 from app.api.v1.models import router as models_router
 from app.api.v1.system import router as system_router
+from app.api.v1.research import router as research_router
 
 api_router = APIRouter()
 
@@ -22,3 +23,4 @@ api_router.include_router(reports_router)
 api_router.include_router(observations_router)
 api_router.include_router(models_router)
 api_router.include_router(system_router)
+api_router.include_router(research_router)

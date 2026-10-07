@@ -118,3 +118,6 @@ yarn-error.log*
 # Backups
 *.bak
 .git.bak/
+
+# Owned South Fork reproductions and figure tool cache
+from-plant-to-watershed/backend/data/south-fork-user-v1/

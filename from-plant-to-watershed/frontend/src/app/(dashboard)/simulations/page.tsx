@@ -1,4 +1,5 @@
 "use client";
+import SouthForkResearchPanel from "../../../components/research/SouthForkResearchPanel";
 
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
@@ -190,7 +191,7 @@ const SIMULATION_PERIOD_PRESETS: PeriodPreset[] = [
     days: 1096,
     startDate: "2018-01-01",
     endDate: "2020-12-31",
-    shortDesc: "Ventana de evaluación del informe vigente; una corrida nueva no reproduce automáticamente ese informe.",
+    shortDesc: "Ventana de evaluación del informe histórico 2018–2020; una corrida nueva no reproduce automáticamente ese informe.",
   },
   {
     id: "CUSTOM",
@@ -411,7 +412,7 @@ export default function SimulationsPage() {
         .then((report) => ({ report, error: null as string | null }))
         .catch((error: unknown) => ({
           report: null,
-          error: error instanceof Error ? error.message : "No se pudo cargar el informe científico vigente.",
+          error: error instanceof Error ? error.message : "No se pudo cargar el informe científico histórico 2018–2020.",
         }));
       const [simsData, scenData, watersData, capabilityData, datasetsData, reportResult] = await Promise.all([
         api.getSimulations(),
@@ -445,7 +446,7 @@ export default function SimulationsPage() {
       }
     } catch (err: unknown) {
       setFeedbackMsg({ type: "error", text: err instanceof Error ? err.message : "Error al cargar datos de simulación" });
-      setFinalReportError("No se pudo cargar el informe científico vigente.");
+      setFinalReportError("No se pudo cargar el informe científico histórico 2018–2020.");
       setIsLoadingFinalReport(false);
     } finally {
       setIsLoading(false);
@@ -687,6 +688,7 @@ export default function SimulationsPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-6rem)] w-full max-w-full flex-col">
+      <SouthForkResearchPanel allowCreate />
       {/* 1. Barra de Navegación de Vistas y Acciones Principales */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div>
@@ -1810,14 +1812,14 @@ export default function SimulationsPage() {
       {activeTab !== "RUNS" && (
         <section className="mb-4 flex flex-col gap-2 border-l-2 border-l-emerald-700 bg-white px-4 py-3 dark:border-l-emerald-400 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Informe científico vigente del estudio</h2>
+            <h2 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Informe científico histórico 2018–2020 del estudio</h2>
             <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-600 dark:text-slate-400">
               Estas vistas resumen el contrato publicado por el backend; no cambian al seleccionar otra corrida en el catálogo.
             </p>
           </div>
           <div className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
             {finalReport ? (
-              <span>{finalReport.current_contract.contract_version} · {finalReport.current_contract.current_execution_status === "EXECUTED" ? "Ejecutado" : "Sin ejecución vigente"}</span>
+              <span>{finalReport.current_contract.contract_version} · {finalReport.current_contract.current_execution_status === "EXECUTED" ? "Ejecutado" : "Sin ejecución histórica"}</span>
             ) : (
               <span>{isLoadingFinalReport ? "Consultando informe…" : "Informe no disponible"}</span>
             )}
@@ -1829,8 +1831,8 @@ export default function SimulationsPage() {
         <div role={finalReportError ? "alert" : "status"} className="flex flex-col gap-3 border border-slate-300 bg-white p-5 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
           <p>
             {isLoadingFinalReport
-              ? "Consultando el informe científico vigente…"
-              : finalReportError ?? "El backend no tiene un informe científico vigente disponible."}
+              ? "Consultando el informe científico histórico 2018–2020…"
+              : finalReportError ?? "El backend no tiene un informe científico histórico 2018–2020 disponible."}
           </p>
           {!isLoadingFinalReport && (
             <button type="button" onClick={loadInitialData} className="w-fit border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 dark:border-slate-700 dark:hover:bg-slate-800">
@@ -1840,7 +1842,7 @@ export default function SimulationsPage() {
         </div>
       )}
 
-      {activeTab === "VALIDATION" && finalReport && <HypothesisValidationPanel report={finalReport} />}
+      {activeTab === "VALIDATION" && finalReport && <><p className="p-4 text-sm">Archivo histórico 2018–2020. La decisión actual de H1 figura en el experimento South Fork de arriba.</p><HypothesisValidationPanel report={finalReport} /></>}
       {activeTab === "SCENARIOS" && finalReport && <ClimateScenariosPanel report={finalReport} />}
       {activeTab === "STATISTICS" && finalReport && <StatisticalBatteryPanel report={finalReport} />}
 

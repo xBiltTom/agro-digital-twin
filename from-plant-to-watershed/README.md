@@ -27,10 +27,16 @@ pendientes se describen en [estado actual](docs/CURRENT_STATE.md); el
 - Catálogo de simulaciones, autenticación/RBAC, informes PDF/Word/Excel y
   diagnóstico interpretativo con LangChain o fallback heurístico.
 
-La corrida operativa de referencia es `phase234-sf-2019-v2` (2019 diario).
-El endpoint de reporte científico todavía publica `south-fork-final-v2`
-(evaluación 2018–2020), cuya mejora mensual fue **0 %**. Esa evaluación anterior
-no mide la ruta hídrica actual. Véase [reporte publicado](docs/FINAL_REPORT.md).
+El experimento actual es **`sf-test-v1`**, con TEST 2021–2025 y **H1 no respaldada**.
+Inicio, Simulaciones e Informes permiten consultar y descargar esta evidencia.
+El perfil South Fork permite reproducciones propias A/B, con ML mensual C/D
+opcional y visor físico diario; todo se persiste en pglocal. El experimento
+2018–2020 permanece identificado como archivo histórico.
+
+La [entrega 5](docs/FUNCTIONAL_TWIN_DELIVERY_5.md) documenta el flujo y el
+[manuscrito](research_domain/paper_v1/manuscript.md) reúne el primer borrador.
+El ZIP del paper se descarga desde la aplicación y se regenera con la receta
+de empaquetado; no incluye la base completa ni todos los inputs pesados de SWAT+.
 
 ## Instalación local
 
