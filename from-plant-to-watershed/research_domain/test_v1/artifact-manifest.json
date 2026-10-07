@@ -1,0 +1,16 @@
+{
+  "report_sha256": "b53edee99fc991af54d914c092ff466e3f7ac45ba3db3169213d0a75d8f79691",
+  "sha256": {
+    "bootstrap-exclude_estimated.csv": "69bdf6bc7ee3076b068ac3b807eef0024b6ac13d9fc8ec657e1e95e9003a379c",
+    "bootstrap-primary.csv": "77c09fe9aacad646fa6f3f68825795e85f97a0cfa30479a1114181c738fe989a",
+    "evaluation-contract.json": "f242c957a2133580a540fb7258e13547d840355154713572db16b2e3bb6c2d3f",
+    "freeze-receipt.json": "3a62d74f6a88a1da9da7e2b72d66bebd5ff809ab1625edb070273caf3e066708",
+    "lineage.json": "fab830996822cdcfcef014f4d973256daff0dd4b8ef27e63d37f81f2044ffc95",
+    "monthly-ab.csv": "43f34d79790917c15b569c358bc86485f498008a2882569e05632bf44ac52333",
+    "monthly-ab.parquet": "855e315047ca3c793da5ff0a287920f732fe319a5e19ca6347f2759364c1bb5b",
+    "monthly-predictions.csv": "c64f70ef7b95fe0c0791e76028cdb0a6f001483591fc8e066931c8a7f58779d1",
+    "observed-daily.csv": "57b2c885562f9485952841912bb8f6db10ceec35d7b32d57092535e764dca655",
+    "parallel-publication-receipt.json": "126f5f573e9b31c90563a42277d0da6ffda29a96da8fda39aa5b1006455105c9",
+    "schema.json": "ef3afd4244933ecef3dd86dc2a96d31a8fee50b33aac12c49aa61eb0cb0b813a"
+  }
+}

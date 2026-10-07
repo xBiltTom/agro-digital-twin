@@ -1,0 +1,30 @@
+{
+  "parent_protocol_sha256": "c0920e03e089d55117cb4c719230848c5769b82f46ed84a2580a7a04af45d695",
+  "ml_protocol_sha256": "a2768125bb9a1a3a109bffd6178b741886a6c90c5cad17d79cb12639991f9ce4",
+  "evaluation_contract_sha256": "f242c957a2133580a540fb7258e13547d840355154713572db16b2e3bb6c2d3f",
+  "executable_sha256": "56963a6475aa9014a56a6825749d7fc513fce2dd40dcbb0c0b6a5976364a3c9d",
+  "physical_parameter_manifest_sha256": "08b5294f63d5af5a1831928c017af2eb46fba1c477a67ed07273d3c3697c8a5f",
+  "plant_contract_sha256": "d495aca22502558f7ba19c5ecb4f5772498bcfcaf0abeb8f3334b27622abec49",
+  "ml_artifact_manifest_sha256": "2994297b4a61112225e63168bc5a40d80b15b71008823198831294d82f7ba4eb",
+  "model_checksums": {
+    "C": "20a8fbfdb3146a458dc537ed137a9d0358800a31f857ab5f7960be0ac7ff87e3",
+    "D": "313930f9b3bc4247df56babe250566eb166942ecc69e309a5407e4678294f051"
+  },
+  "implementation_sha256": {
+    "from-plant-to-watershed/backend/scripts/run_south_fork_test.py": "de6a67120450dd81979626dd4dff91347ce1b23f22b0e2187a0cf76afbcbcb7b",
+    "from-plant-to-watershed/backend/scientific_core/monthly_hypothesis.py": "4fa5817bdb3aa1d824d5d7d7bd955136ac1033bde83e511a9cff7b5d2977cb69",
+    "from-plant-to-watershed/backend/scientific_core/validation.py": "e5cf734a4128250b3cf43fb1e273dcb8656cf39f7e6408a47846d3a6f033cdfb"
+  },
+  "development_feature_replay": {
+    "C": {
+      "months": 96,
+      "max_absolute_error_m3s": 3.552713678800501e-15
+    },
+    "D": {
+      "months": 96,
+      "max_absolute_error_m3s": 3.552713678800501e-15
+    }
+  },
+  "frozen_at_utc": "2026-10-07T03:39:02.080004+00:00",
+  "stage": "BEFORE_TEST_RUNS_OR_OUTCOME_QUERIES"
+}

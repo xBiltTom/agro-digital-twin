@@ -1,11 +1,12 @@
 # Reformulación experimental — From Plant to Watershed
 
-**Versión:** 0.4 · **Fecha:** 2026-10-06.
+**Versión:** 0.5 · **Fecha:** 2026-10-06.
 **Estado:** protocolo multianual v1 congelado antes de calibrar; búsqueda física
 de 12 candidatos terminada y 96 meses pareados A/B publicados. La referencia seleccionada
 incumple el criterio de sesgo y permanece exploratoria. C/D seleccionados en
 VALIDATION mediante búsqueda ML comparable; pesos TRAIN y referencias simples
-congelados. TEST reservado; H1 no se ha evaluado.
+congelados. TEST 2021–2025 evaluado sin reajuste; **H1 no respaldada** por el
+intervalo de reducción RMSE D/A. Queda la integración funcional y el paper.
 
 ## 1. Relación con la ficha original
 
@@ -412,9 +413,10 @@ afirmar no inferioridad requiere margen y contraste definidos previamente.
 8. Integrar inferencia externa en SWAT+ real: hoy esa rama retorna antes del
    bloque ML de la ruta simplificada. Publicar resultado físico y asistido sin
    sobrescribir outputs originales ni fabricar playback diario desde meses.
-9. Versionar el evaluador de los cuatro brazos, referencias simples y contraste
-   primario con incertidumbre temporal. Retirar el umbral heredado de 15 % de la
-   nueva regla de decisión y conservar las interpretaciones históricas por versión.
+9. **Implementado en entrega 4:** evaluador de los cuatro brazos, referencias
+   TRAIN y contraste primario con bootstrap temporal pareado. La nueva regla
+   usa IC95 de reducción RMSE, sin umbral de 15 %; los resultados históricos
+   conservan su interpretación por versión. H1 no respaldada en TEST.
 
 El reporte publicado `south-fork-final-v2` y el bundle diario
 `phase234-sf-2019-v2` pertenecen a experimentos distintos. Sus resultados no
@@ -434,11 +436,13 @@ La entrega 1 de referencia física está completada. La
 preparación multianual, calibración acotada y exportación fechada A/B.
 La [entrega 3](docs/ML_RESIDUAL_DELIVERY_3.md) completa la selección C/D en
 VALIDATION y congela modelos y referencias simples en pglocal.
-Las entregas 1, 2 y 3 están completadas; quedan **dos entregas**:
-evaluación reservada de H1 y gemelo funcional/paquete del paper.
+La [entrega 4](docs/TEST_EVALUATION_DELIVERY_4.md) completa TEST 2021–2025 y la
+decisión inferencial, con sensibilidad a estimados y resultados congelados.
+Las entregas 1–4 están completadas; queda **una entrega**:
+gemelo funcional/paquete del paper.
 La decisión de escalar a varias temporadas se apoya en una referencia
 diagnosticada y contratos correctos de unidades y fechas.
-El acceso a TEST para desarrollo queda excluido de esta secuencia.
+TEST ya está evaluado y no se reutilizará para ajustar este experimento.
 
 El [protocolo v1](research_domain/south_fork_multiyear_protocol_v1.json) fija
 WARMUP 2000–2004, CALIBRATION 2005–2012, TRAIN 2013–2017, VALIDATION 2018–2020
@@ -462,16 +466,24 @@ congelaron junto con los bundles. Estos resultados no deciden H1 ni demuestran
 valor fisiológico adicional. La inferencia es retrospectiva con inputs del mes
 completo; el contraste D/C combina referencia física y features diferentes.
 
-Antes de evaluar TEST, completar y versionar:
+La entrega 4 evalúa 60 meses TEST con 1.826 días aprobados, incluidos 578
+estimados. RMSE A/B/C/D: 3,695/3,579/2,749/4,517 m³/s. Reducción D/A −22,239 %;
+IC95 absoluto [−3,286; +1,871] m³/s: **H1 no respaldada**. Excluir estimados
+reduce el soporte a 36 meses y mantiene la misma decisión. C tiene menor
+RMSE puntual, pero su IC95 C/A incluye cero y PBIAS +44,616 %. No se cambia el
+contraste primario a C ni se ajustan pesos después de observar TEST.
 
-- Implementación del diseño inferencial congelado y comparaciones secundarias,
-  incluida exclusión de valores USGS estimados sobre soporte común recalculado.
+Para cerrar el paper y el gemelo funcional:
+
+- Integración del resultado físico y asistido mensual con el mismo linaje;
+  consultas, reportes y descargas que expongan la decisión y sus límites.
 - Referencias y novedad; disponibilidad de LAI y función en ajuste/evaluación.
 
-Los años ya examinados para depuración o parametrización no se describen como
-una evaluación ciega intacta. Elegir un holdout no utilizado o declarar
-honestamente el carácter exploratorio; un preregistro nuevo no borra análisis
-anteriores. OSF puede registrar el protocolo antes de la evaluación final.
+Los años ya examinados no se describen como una evaluación ciega intacta.
+TEST 2021–2025 ahora es conocido: futuras modificaciones de modelo requieren
+otro holdout independiente o una declaración explícita de desarrollo.
+Un preregistro nuevo no borra análisis anteriores. Este experimento conserva
+sus recibos locales previos a la ejecución; no se afirma un preregistro OSF.
 
 El primer artículo no promete rendimiento espacial, generalización multicuenca,
 proyecciones CMIP6 ni recomendaciones de política operacional. Puede incluir
@@ -507,6 +519,11 @@ aprendizaje automático en South Fork Iowa River*.
   reconstrucción residual/alineación y selección exclusivamente en VALIDATION.
   C/D Ridge α = 10, referencias simples y pesos TRAIN congelados; registro en
   pglocal y paridad de inferencia. TEST y H1 continúan pendientes.
+- **2026-10-06 · v0.5:** diez publicaciones TEST A/B y 60 meses evaluados con
+  C/D y referencias TRAIN congelados. Bootstrap circular pareado de 12 meses,
+  2.000 réplicas, sin umbral de 15 %. H1 no respaldada; sensibilidad sin
+  estimados conserva la decisión sobre 36 meses. No se reoptimiza después
+  de TEST ni se reemplaza el contraste primario por C.
 
 ## Referencias iniciales para continuar la revisión
 

@@ -80,6 +80,7 @@ agro-digital-twin-st/artifacts/next_day_streamflow_m3s/
 
 # SWAT+ Simulation Outputs & Runtime Diagnostics
 from-plant-to-watershed/backend/data/baseline-diagnostic-*/
+from-plant-to-watershed/backend/data/south-fork-test-v1/
 *.out
 *.fin
 fort.*

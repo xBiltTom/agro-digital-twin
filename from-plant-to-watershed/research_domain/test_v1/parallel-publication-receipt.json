@@ -1,0 +1,11 @@
+{
+  "scheduled_at_utc": "2026-10-07T03:53:47.493115+00:00",
+  "years": [
+    2024,
+    2025
+  ],
+  "arm": "B",
+  "wrapper_sha256": "4b3b38b19bb95a5dc88c780455c404c4039a0ad8a75b15e76d335ea0e56565a1",
+  "frozen_runner_sha256": "de6a67120450dd81979626dd4dff91347ce1b23f22b0e2187a0cf76afbcbcb7b",
+  "scope": "Identical publish function, unique annual workspaces; no observations, fitting or evaluation"
+}

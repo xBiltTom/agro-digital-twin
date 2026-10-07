@@ -1,0 +1,20 @@
+{
+  "schema_version": "south-fork-test-evaluation-contract/v1",
+  "status": "FREEZE_BEFORE_TEST_OUTCOMES",
+  "experiment_id": "sf-test-v1",
+  "parent_protocol_sha256": "c0920e03e089d55117cb4c719230848c5769b82f46ed84a2580a7a04af45d695",
+  "ml_protocol_sha256": "a2768125bb9a1a3a109bffd6178b741886a6c90c5cad17d79cb12639991f9ce4",
+  "test_interval": ["2021-01-01", "2025-12-31"],
+  "models": ["sf-ml-v1-c", "sf-ml-v1-d"],
+  "fit_policy": "No fitting, model selection, calibration, plant-contract derivation or search expansion on TEST.",
+  "simulation_observation_role": "CONTEXT_ONLY until the dedicated paired monthly evaluator; legacy daily hypothesis labels are not used.",
+  "monthly_support": "Identical approved daily dates for observed/A/B Q. Require at least 0.9 of calendar days. Keep all 60 calendar keys and explicitly mark excluded months; never impute.",
+  "estimated_sensitivity": "Exclude A,e days, recompute paired observed/A/B Q and eligibility; apply frozen C/D with the recomputed physical baseline input. Weather/model-state features retain full-month support. No refitting. This sensitivity changes the monthly evaluation support, not the primary predictions.",
+  "features": "Apply the frozen ML protocol formulas, ordered schemas and TRAIN scalers; stress absence is 0 with availability fraction. First replay the 96 development feature rows through the backend and require agreement with the frozen development predictions.",
+  "bootstrap": "Paired circular moving blocks, 12 calendar months, 2000 replicates, seed 42, Python random.Random.randrange. Draw ceil(60/12) block starts per replicate, wrap around, concatenate and truncate to 60; apply the common eligibility mask after resampling so gaps are not closed.",
+  "confidence_interval": "Two-sided 95% percentile interval with linear interpolation at (n-1)*p. Primary delta is RMSE(A)-RMSE(D) in m3/s. Percentage reduction also reported using paired replicate denominators.",
+  "decision": "H1_SUPPORTED only if all 2000 primary replicates are defined and the primary absolute RMSE reduction interval lower bound is strictly positive. Otherwise H1_NOT_SUPPORTED, or INSUFFICIENT_EVIDENCE if fewer than two eligible months. No 15% threshold, no iid t-test.",
+  "secondary": "B-A, C-A, D-B, D-C intervals descriptive and unadjusted; simple-reference coefficients come unchanged from TRAIN.",
+  "interpretation": "One basin, fixed experimental management and an exploratory physical reference that failed calibration bias acceptance. Statistical improvement in held-out outlet Q does not validate physiology, water balance or FSPM feature attribution.",
+  "reuse": "After completion, verify and reuse frozen artifacts; no silent reruns, tuning or replacement of TEST results."
+}

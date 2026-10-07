@@ -25,21 +25,30 @@ Una corrección residual ML tampoco demuestra el efecto físico del acoplamiento
 `monthly_streamflow_m3s` en modo residual: `max(0, Q_físico + residual)`.
 El target usa caudal USGS observado; los predictores son meteorología y estados
 SWAT+/FSPM modelados. TRAIN 2013–2017 tiene 60 meses; VALIDATION 2018–2020,
-previamente explorada, tiene 36. TEST 2021–2025 permanece reservado.
+previamente explorada, tiene 36. TEST 2021–2025 se evaluó después de congelar
+pesos/scalers: sus 60 meses producen la decisión **H1 no respaldada**.
 
 La búsqueda congelada de seis candidatos por brazo seleccionó Ridge α = 10
 para ambos; pesos y StandardScaler permanecen ajustados solo en TRAIN.
 RMSE VALIDATION: C 2,978153 y D 2,989931 m³/s, frente a A 4,007009 y B 3,921403.
 D no supera C en desarrollo. El contraste cambia baseline y features; no aísla
 el aporte FSPM. La referencia física conserva el sesgo exploratorio de calibración.
+RMSE TEST: A 3,695249, B 3,579490, C 2,749353 y D 4,517045 m³/s.
+IC95 de reducción D/A [−3,286117; +1,871064] m³/s incluye cero. C tiene el
+menor RMSE puntual, pero PBIAS +44,616 % e intervalo C/A que incluye cero.
+La sensibilidad sin estimados mantiene H1 no respaldada sobre 36 meses.
+Véase [evaluación TEST](../from-plant-to-watershed/docs/TEST_EVALUATION_DELIVERY_4.md).
 
 C requiere 14 features y D 21, según el esquema de cada bundle. D representa
 estrés ausente mediante cero y fracción de disponibilidad; ese cero no es una
 observación de ausencia de estrés. No se usan observaciones ni flags QC como
 features. La inferencia consume el mes completo y es retrospectiva. No autoriza
 extrapolación climática, decisiones agronómicas ni conclusiones de H1.
-Clasificación `OBSERVATIONAL_DEVELOPMENT_ARTIFACT`, despliegue
-`development_only_pending_reserved_test`; IDs pglocal `sf-ml-v1-c` y `sf-ml-v1-d`.
+Los metadatos congelados antes de TEST conservan la clasificación
+`OBSERVATIONAL_DEVELOPMENT_ARTIFACT` y el estado inicial
+`development_only_pending_reserved_test`; no se alteran los bundles para
+actualizar etiquetas. La evaluación posterior vive en `sf-test-v1-monthly`.
+IDs pglocal de los modelos: `sf-ml-v1-c` y `sf-ml-v1-d`.
 Véase [protocolo y resultados](../from-plant-to-watershed/docs/ML_RESIDUAL_DELIVERY_3.md).
 
 ## Targets y contratos

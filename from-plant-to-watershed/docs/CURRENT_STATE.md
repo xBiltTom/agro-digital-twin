@@ -13,7 +13,8 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Planta | `SIMPLIFIED_FSPM`: poblaciones deterministas con variabilidad paramétrica, no un FSPM botánico completo validado. |
 | Calendario | Siembra/cosecha por HRU desde `mgt_out.txt`; eventos modelados, no operaciones agrícolas observadas. |
 | Experimento multianual | `sf-multi-v1`: particiones congeladas, búsqueda física 12/12 y 96 meses pareados A/B publicados; referencia exploratoria por PBIAS. |
-| ML observacional | `sf-ml-v1`: búsqueda igual de seis candidatos C/D; Ridge α = 10 seleccionado en VALIDATION, pesos/scalers TRAIN congelados y bundles registrados en pglocal. TEST reservado. |
+| ML observacional | `sf-ml-v1`: búsqueda igual de seis candidatos C/D; Ridge α = 10 seleccionado en VALIDATION, pesos/scalers TRAIN congelados y bundles registrados en pglocal. TEST evaluado sin reajuste. |
+| Evaluación reservada | `sf-test-v1`: 60 meses TEST, diez publicaciones y 3.652 frames; bootstrap pareado 12 meses/2.000 réplicas. H1 no respaldada, también al excluir estimados. |
 | Agua SWAT+ → FSPM | Estimación de humedad radicular desde `sw_ave` y `soils.sol`, bajo hipótesis de fracción de agua disponible uniforme en el perfil. |
 | Planta → SWAT+ | Diez parámetros del registro vegetal `corn` en `plants.plt`; SWAT+ mantiene sus propias ecuaciones de agua y cultivo. |
 | Persistencia | Frames JSONB PostgreSQL con clave temporal y SHA-256. |
@@ -50,6 +51,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `sf19-phys-fix-v1-reference` | Misma física y clima de warm-up corregido | RMSE mensual 8,079 m³/s; NSE −0,408; volumen 94,520 hm³; 365 frames. |
 | `sf-multi-v1-cal-10` | Mejor candidato en CALIBRATION 2005–2012 | RMSE mensual 4,718 m³/s; NSE 0,649; PBIAS −40,605 %. Falla el criterio de sesgo; exploratorio. |
 | `sf-ml-v1-c` / `sf-ml-v1-d` | Bundles residuales observacionales en PostgreSQL | RMSE de desarrollo VALIDATION 2,978 / 2,990 m³/s; no decisión de H1. |
+| `sf-test-v1` | A/B/C/D en TEST 2021–2025, dataset `sf-test-v1-monthly` | RMSE A/B/C/D 3,695 / 3,579 / 2,749 / 4,517 m³/s. Reducción D/A −22,239 %, IC95 absoluto [−3,286; +1,871] m³/s; H1 no respaldada. |
 
 Dashboard y reportes consultan el experimento final v2. El visor prioriza el
 gemelo diario corregido, salvo que se indique una corrida accesible mediante
@@ -195,12 +197,14 @@ tiene su propio linaje y no se registra automáticamente como reporte de H1.
   las 1.014 instancias del campo no son 1.014 trayectorias individuales.
 - **ML:** los bundles históricos de runoff son sintéticos. Los nuevos C/D aprenden
   residuos contra USGS con predictores modelados; la inferencia mensual es retrospectiva.
-  D queda ligeramente detrás de C en desarrollo; TEST y H1 siguen pendientes.
+  D queda ligeramente detrás de C en desarrollo y empeora su RMSE puntual
+  frente a A en TEST. H1 no respaldada; C tiene menor RMSE puntual pero
+  PBIAS +44,616 % e intervalo C/A que incluye cero.
   El pronóstico diario sobre playback aprende de simulación.
 
 ## 5. Siguiente etapa de investigación
 
-El trabajo se organiza en cinco entregas; las tres primeras están completadas:
+El trabajo se organiza en cinco entregas; las cuatro primeras están completadas:
 
 1. **Referencia física — completada:** corrección controlada del warm-up,
    reproducción, ET, suelos, drenaje, acuíferos, pérdidas fluviales y área.
@@ -212,9 +216,10 @@ El trabajo se organiza en cinco entregas; las tres primeras están completadas:
    seis candidatos iguales por brazo, selección C/D exclusivamente en VALIDATION.
    Pesos TRAIN, referencias simples y artefactos congelados en pglocal.
    Véase [entrega 3](ML_RESIDUAL_DELIVERY_3.md).
-4. **Evaluación de H1 — siguiente:** TEST reservado, referencias simples, incertidumbre
-   temporal y decisión según el protocolo congelado.
-5. **Gemelo funcional y paper:** creación/ejecución/consulta/descarga sobre
+4. **Evaluación de H1 — completada:** TEST 2021–2025, referencias TRAIN,
+   bootstrap temporal pareado y sensibilidad a estimados. H1 no respaldada;
+   no se retocaron pesos ni criterios. Véase [entrega 4](TEST_EVALUATION_DELIVERY_4.md).
+5. **Gemelo funcional y paper — siguiente:** creación/ejecución/consulta/descarga sobre
    PostgreSQL, comparación/reportes/visor con el mismo linaje y paquete del artículo.
 
 El runner `run_final_south_fork.py` todavía calcula FSPM con humedad constante
@@ -253,4 +258,11 @@ En la entrega 3 se ajustaron doce candidatos sobre TRAIN y se seleccionaron C/D
 por VALIDATION. Se cotejaron 96 inferencias por brazo entre entrenamiento,
 bundle del laboratorio y backend; se registraron dos modelos externos y 17
 artefactos en la misma base pglocal. No se ejecutó una suite de tests ni se
-inspeccionó el navegador. TEST permanece reservado.
+inspeccionó el navegador. En esa entrega TEST permaneció reservado.
+En la entrega 4 se publicaron diez corridas A/B TEST con 3.652 frames y diez
+auditorías nativas; las redes cierran numéricamente y el balance de cuenca
+sigue clasificado como parcial. Se exportaron pares/predicciones mensuales,
+se generaron 2.000 réplicas por variante y se registraron 12 artefactos en
+`sf-test-v1-monthly`. El runner reutilizó los resultados congelados sin nuevas
+consultas de caudal, corridas o evaluación. Los módulos añadidos compilan;
+no se ejecutó una suite de tests ni se inspeccionó el navegador.

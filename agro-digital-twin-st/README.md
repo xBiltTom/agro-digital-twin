@@ -11,7 +11,8 @@ la [plataforma FastAPI + Next.js](../from-plant-to-watershed/README.md).
 | Generador sintético | Desarrollo y demostración mensual de entrenamiento/inferencia. | `SYNTHETIC_DEVELOPMENT_ARTIFACT`. |
 | Bundle South Fork con manifiesto | Exploración de tablas y preparación de resultados SWAT+/FSPM. | Simulación experimental con procedencia por variable. |
 | Playback FastAPI diario | Experimento de pronóstico `next_day_streamflow_m3s`. | `EXPERIMENTAL_SIMULATION_ONLY`, no validación USGS. |
-| Pares mensuales USGS/SWAT+ 2013–2020 | Residuales C/D de `sf-ml-v1`. | Target observado y predictores modelados; desarrollo, TEST reservado. |
+| Pares mensuales USGS/SWAT+ 2013–2020 | Residuales C/D de `sf-ml-v1`. | Target observado y predictores modelados; selección de desarrollo. |
+| Pares TEST 2021–2025 | Evaluación de los C/D congelados. | 60 meses, bootstrap temporal; H1 no respaldada. |
 
 Los modelos mensuales presentes en `artifacts/monthly_runoff_mm/` fueron
 entrenados con datos sintéticos. Su campeón LSTM Autoencoder + Random Forest
@@ -25,6 +26,10 @@ TRAIN. Ambos se seleccionaron por VALIDATION y están registrados en pglocal.
 Su [entrega científica](../from-plant-to-watershed/docs/ML_RESIDUAL_DELIVERY_3.md)
 documenta features, búsqueda congelada, resultados y referencias simples.
 La inferencia utiliza inputs del mes completo; no es pronóstico anticipado.
+La [evaluación TEST](../from-plant-to-watershed/docs/TEST_EVALUATION_DELIVERY_4.md)
+mantiene los pesos TRAIN: RMSE C 2,749353 y D 4,517045 m³/s frente a A 3,695249.
+El intervalo de reducción D/A incluye cero; H1 no respaldada. Los resultados
+se conservan en el dataset pglocal `sf-test-v1-monthly` y en artefactos versionados.
 
 ## Ejecutar
 

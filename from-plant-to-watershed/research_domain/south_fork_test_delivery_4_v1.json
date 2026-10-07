@@ -1,0 +1,2450 @@
+{
+  "schema_version": "south-fork-test-delivery-4/v1",
+  "parent_protocol_sha256": "c0920e03e089d55117cb4c719230848c5769b82f46ed84a2580a7a04af45d695",
+  "ml_protocol_sha256": "a2768125bb9a1a3a109bffd6178b741886a6c90c5cad17d79cb12639991f9ce4",
+  "evaluation_contract_sha256": "f242c957a2133580a540fb7258e13547d840355154713572db16b2e3bb6c2d3f",
+  "executable_sha256": "56963a6475aa9014a56a6825749d7fc513fce2dd40dcbb0c0b6a5976364a3c9d",
+  "physical_parameter_manifest_sha256": "08b5294f63d5af5a1831928c017af2eb46fba1c477a67ed07273d3c3697c8a5f",
+  "plant_contract_sha256": "d495aca22502558f7ba19c5ecb4f5772498bcfcaf0abeb8f3334b27622abec49",
+  "ml_artifact_manifest_sha256": "2994297b4a61112225e63168bc5a40d80b15b71008823198831294d82f7ba4eb",
+  "model_checksums": {
+    "C": "20a8fbfdb3146a458dc537ed137a9d0358800a31f857ab5f7960be0ac7ff87e3",
+    "D": "313930f9b3bc4247df56babe250566eb166942ecc69e309a5407e4678294f051"
+  },
+  "implementation_sha256": {
+    "from-plant-to-watershed/backend/scripts/run_south_fork_test.py": "de6a67120450dd81979626dd4dff91347ce1b23f22b0e2187a0cf76afbcbcb7b",
+    "from-plant-to-watershed/backend/scientific_core/monthly_hypothesis.py": "4fa5817bdb3aa1d824d5d7d7bd955136ac1033bde83e511a9cff7b5d2977cb69",
+    "from-plant-to-watershed/backend/scientific_core/validation.py": "e5cf734a4128250b3cf43fb1e273dcb8656cf39f7e6408a47846d3a6f033cdfb"
+  },
+  "development_feature_replay": {
+    "C": {
+      "months": 96,
+      "max_absolute_error_m3s": 3.552713678800501e-15
+    },
+    "D": {
+      "months": 96,
+      "max_absolute_error_m3s": 3.552713678800501e-15
+    }
+  },
+  "experiment_id": "sf-test-v1",
+  "dataset_id": "sf-test-v1-monthly",
+  "observation_dataset_id": "17f4ce03-c3c9-443b-aad5-6179e0043202",
+  "test_interval": [
+    "2021-01-01",
+    "2025-12-31"
+  ],
+  "publications": [
+    {
+      "year": 2021,
+      "A": "sf-test-v1-a-2021",
+      "B": "sf-test-v1-b-2021"
+    },
+    {
+      "year": 2022,
+      "A": "sf-test-v1-a-2022",
+      "B": "sf-test-v1-b-2022"
+    },
+    {
+      "year": 2023,
+      "A": "sf-test-v1-a-2023",
+      "B": "sf-test-v1-b-2023"
+    },
+    {
+      "year": 2024,
+      "A": "sf-test-v1-a-2024",
+      "B": "sf-test-v1-b-2024"
+    },
+    {
+      "year": 2025,
+      "A": "sf-test-v1-a-2025",
+      "B": "sf-test-v1-b-2025"
+    }
+  ],
+  "native_audits": [
+    {
+      "simulation_id": "sf-test-v1-a-2021",
+      "frames": 365,
+      "water_audit_sha256": "1060f94901c16b4fa2a699ab3a0a7b7bdc291effdab49716a108e70a82795b4a",
+      "network": "CLOSED",
+      "network_residual_m3": 1.3155873902142048,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.0019407736099359258
+    },
+    {
+      "simulation_id": "sf-test-v1-b-2021",
+      "frames": 365,
+      "water_audit_sha256": "d9b18265a9528a12ea36ed7fa2b98228cde2cdf7e6d6fd15d6a060eec96bdad7",
+      "network": "CLOSED",
+      "network_residual_m3": 0.9585756380110979,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.003067495619129104
+    },
+    {
+      "simulation_id": "sf-test-v1-a-2022",
+      "frames": 365,
+      "water_audit_sha256": "275e4a4fcb0334c98f771d58b050fe5e3a24d3382b31170ba1d60ca9863c9537",
+      "network": "CLOSED",
+      "network_residual_m3": 1.7714167200028896,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.000497260290878027
+    },
+    {
+      "simulation_id": "sf-test-v1-b-2022",
+      "frames": 365,
+      "water_audit_sha256": "4cc04a665791c136bd9f80483d7c2181dec8401d7504e6526c2843bbcf6ea8fb",
+      "network": "CLOSED",
+      "network_residual_m3": 0.8660002909600735,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.001513742395690217
+    },
+    {
+      "simulation_id": "sf-test-v1-a-2023",
+      "frames": 365,
+      "water_audit_sha256": "d001dee23dbe0d65d6ef4f8c82fc00ccf2025d1d5d2dcdbb8cba1b4a75000bcc",
+      "network": "CLOSED",
+      "network_residual_m3": -0.26865474693477154,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.00174078941470563
+    },
+    {
+      "simulation_id": "sf-test-v1-b-2023",
+      "frames": 365,
+      "water_audit_sha256": "3cd6536e1e9909a12c359a663eab9a9a502b6680843d3b0cf07d62e88a606044",
+      "network": "CLOSED",
+      "network_residual_m3": 0.2147230375558138,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.001317007294788808
+    },
+    {
+      "simulation_id": "sf-test-v1-a-2024",
+      "frames": 366,
+      "water_audit_sha256": "c194c670f1a286987ce4b6752afcf4e8cf612b5c68ffed8ac305090c98e9f329",
+      "network": "CLOSED",
+      "network_residual_m3": 1.6782221719622612,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.0076385924101339455
+    },
+    {
+      "simulation_id": "sf-test-v1-b-2024",
+      "frames": 366,
+      "water_audit_sha256": "d2a5145687bee7e6e19c681ef18178159ecfe5f2be41a18776d63a049fb5fcd7",
+      "network": "CLOSED",
+      "network_residual_m3": 1.5688466280698776,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.0028305299475446135
+    },
+    {
+      "simulation_id": "sf-test-v1-a-2025",
+      "frames": 365,
+      "water_audit_sha256": "7803fc02a3c85f2cbfddbe975204270c038b29c1f1331f029061f1ec8f1b87bc",
+      "network": "CLOSED",
+      "network_residual_m3": 4.36022811383009,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.0018743530976197526
+    },
+    {
+      "simulation_id": "sf-test-v1-b-2025",
+      "frames": 365,
+      "water_audit_sha256": "daabca21efcbdb2b4a07a24698976e0163f7c9236001df3f67f52b50243bb12f",
+      "network": "CLOSED",
+      "network_residual_m3": 2.9478262960910797,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.0050285133693746455
+    }
+  ],
+  "freeze_receipt": {
+    "parent_protocol_sha256": "c0920e03e089d55117cb4c719230848c5769b82f46ed84a2580a7a04af45d695",
+    "ml_protocol_sha256": "a2768125bb9a1a3a109bffd6178b741886a6c90c5cad17d79cb12639991f9ce4",
+    "evaluation_contract_sha256": "f242c957a2133580a540fb7258e13547d840355154713572db16b2e3bb6c2d3f",
+    "executable_sha256": "56963a6475aa9014a56a6825749d7fc513fce2dd40dcbb0c0b6a5976364a3c9d",
+    "physical_parameter_manifest_sha256": "08b5294f63d5af5a1831928c017af2eb46fba1c477a67ed07273d3c3697c8a5f",
+    "plant_contract_sha256": "d495aca22502558f7ba19c5ecb4f5772498bcfcaf0abeb8f3334b27622abec49",
+    "ml_artifact_manifest_sha256": "2994297b4a61112225e63168bc5a40d80b15b71008823198831294d82f7ba4eb",
+    "model_checksums": {
+      "C": "20a8fbfdb3146a458dc537ed137a9d0358800a31f857ab5f7960be0ac7ff87e3",
+      "D": "313930f9b3bc4247df56babe250566eb166942ecc69e309a5407e4678294f051"
+    },
+    "implementation_sha256": {
+      "from-plant-to-watershed/backend/scripts/run_south_fork_test.py": "de6a67120450dd81979626dd4dff91347ce1b23f22b0e2187a0cf76afbcbcb7b",
+      "from-plant-to-watershed/backend/scientific_core/monthly_hypothesis.py": "4fa5817bdb3aa1d824d5d7d7bd955136ac1033bde83e511a9cff7b5d2977cb69",
+      "from-plant-to-watershed/backend/scientific_core/validation.py": "e5cf734a4128250b3cf43fb1e273dcb8656cf39f7e6408a47846d3a6f033cdfb"
+    },
+    "development_feature_replay": {
+      "C": {
+        "months": 96,
+        "max_absolute_error_m3s": 3.552713678800501e-15
+      },
+      "D": {
+        "months": 96,
+        "max_absolute_error_m3s": 3.552713678800501e-15
+      }
+    },
+    "frozen_at_utc": "2026-10-07T03:39:02.080004+00:00",
+    "stage": "BEFORE_TEST_RUNS_OR_OUTCOME_QUERIES"
+  },
+  "test_access_receipt": {
+    "first_access_utc": "2026-10-07T04:06:14.179371+00:00",
+    "evaluation_contract_sha256": "f242c957a2133580a540fb7258e13547d840355154713572db16b2e3bb6c2d3f",
+    "scope": [
+      "2021-01-01",
+      "2025-12-31"
+    ],
+    "purpose": "Frozen delivery 4 evaluation, no tuning"
+  },
+  "observation_qc": {
+    "rows": 1826,
+    "accepted_days": 1826,
+    "approved_estimated_days": 578,
+    "qualifier_counts": {
+      "A,e": 578,
+      "A": 1248
+    },
+    "missing_or_rejected_days": 0
+  },
+  "primary": {
+    "status": "EVALUATED",
+    "hypothesis_status": "H1_NOT_SUPPORTED",
+    "eligible_months": 60,
+    "calendar_months": 60,
+    "excluded_months": [],
+    "metrics": {
+      "A": {
+        "n_pairs": 60,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 3.6952489838255427,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 2.1538862461467208,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.26804626797662,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -32.08703019087715,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.3183734072057985,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.4338467496183104,
+          "reason": null
+        }
+      },
+      "B": {
+        "n_pairs": 60,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 3.5794903694530342,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 2.0872535707454816,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.31318683127555236,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -28.62635929300992,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.3532766399830715,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.47873751057433056,
+          "reason": null
+        }
+      },
+      "C": {
+        "n_pairs": 60,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 2.7493529483649217,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 1.9974624908127752,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.5948114083591927,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 44.61569154793228,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.7087543258655344,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.42375530661576033,
+          "reason": null
+        }
+      },
+      "D": {
+        "n_pairs": 60,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 4.517045027785873,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 2.588070250637355,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.09371723690341005,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 65.50142814186842,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.4376931688372175,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.21903964854398017,
+          "reason": null
+        }
+      },
+      "AFFINE_A": {
+        "n_pairs": 60,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 3.9462267540097358,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 3.1158652679214565,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.1652425759258157,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 50.02259804308701,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.3183734072057985,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.16512444043658558,
+          "reason": null
+        }
+      },
+      "AFFINE_B": {
+        "n_pairs": 60,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 3.878842290244484,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 3.085770394157178,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.19350726236561888,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 50.82153594659072,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.35327663998307157,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.18909523838203146,
+          "reason": null
+        }
+      },
+      "CLIMATOLOGY": {
+        "n_pairs": 60,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 4.493897125446064,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 3.7565300328325253,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.08253630351533081,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 90.52193304324439,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.34677711140359635,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": -0.1621789592518934,
+          "reason": null
+        }
+      }
+    },
+    "contrasts": {
+      "D_vs_A": {
+        "rmse_reduction_m3s": -0.82179604396033,
+        "rmse_reduction_percent": -22.239260400514542,
+        "ci95_reduction_m3s": [
+          -3.2861170724144353,
+          1.871063641377638
+        ],
+        "ci95_reduction_percent": [
+          -140.12399870784625,
+          39.74030073077159
+        ],
+        "valid_replicates": 2000,
+        "role": "PRIMARY"
+      },
+      "B_vs_A": {
+        "rmse_reduction_m3s": 0.11575861437250845,
+        "rmse_reduction_percent": 3.1326336839329354,
+        "ci95_reduction_m3s": [
+          0.011273555631279701,
+          0.22634307862963876
+        ],
+        "ci95_reduction_percent": [
+          0.38497973573605077,
+          7.350757419856369
+        ],
+        "valid_replicates": 2000,
+        "role": "SECONDARY_EXPLORATORY_UNADJUSTED"
+      },
+      "C_vs_A": {
+        "rmse_reduction_m3s": 0.945896035460621,
+        "rmse_reduction_percent": 25.597626563213957,
+        "ci95_reduction_m3s": [
+          -0.39726200272442524,
+          2.1989592892461722
+        ],
+        "ci95_reduction_percent": [
+          -15.864140454069172,
+          44.54461076757061
+        ],
+        "valid_replicates": 2000,
+        "role": "SECONDARY_EXPLORATORY_UNADJUSTED"
+      },
+      "D_vs_B": {
+        "rmse_reduction_m3s": -0.9375546583328385,
+        "rmse_reduction_percent": -26.192406224467703,
+        "ci95_reduction_m3s": [
+          -3.4086189623339047,
+          1.7436657951763765
+        ],
+        "ci95_reduction_percent": [
+          -149.30127420283054,
+          37.86911892925053
+        ],
+        "valid_replicates": 2000,
+        "role": "SECONDARY_EXPLORATORY_UNADJUSTED"
+      },
+      "D_vs_C": {
+        "rmse_reduction_m3s": -1.767692079420951,
+        "rmse_reduction_percent": -64.29484000852717,
+        "ci95_reduction_m3s": [
+          -3.393079075214894,
+          0.04298329066545545
+        ],
+        "ci95_reduction_percent": [
+          -128.50378676607747,
+          1.4150561782810094
+        ],
+        "valid_replicates": 2000,
+        "role": "SECONDARY_EXPLORATORY_UNADJUSTED"
+      }
+    },
+    "uncertainty": {
+      "method": "paired circular moving-block bootstrap on common monthly errors",
+      "block_months": 12,
+      "replicates": 2000,
+      "seed": 42,
+      "confidence": 0.95
+    },
+    "decision_rule": "D_vs_A absolute RMSE reduction CI95 strictly above zero; no 15% threshold",
+    "secondary_policy": "Unadjusted descriptive intervals; no separate confirmatory decisions"
+  },
+  "exclude_estimated_sensitivity": {
+    "status": "EVALUATED",
+    "hypothesis_status": "H1_NOT_SUPPORTED",
+    "eligible_months": 36,
+    "calendar_months": 60,
+    "excluded_months": [
+      "2021-01",
+      "2021-02",
+      "2021-03",
+      "2021-12",
+      "2022-01",
+      "2022-02",
+      "2022-03",
+      "2022-10",
+      "2022-11",
+      "2022-12",
+      "2023-01",
+      "2023-02",
+      "2023-03",
+      "2023-09",
+      "2023-10",
+      "2023-12",
+      "2024-01",
+      "2024-02",
+      "2024-10",
+      "2024-12",
+      "2025-01",
+      "2025-02",
+      "2025-03",
+      "2025-12"
+    ],
+    "metrics": {
+      "A": {
+        "n_pairs": 36,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 4.418512936170724,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 2.618147050206281,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.22656532925183992,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -49.72475618231819,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.4252715401530874,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.3930351274164746,
+          "reason": null
+        }
+      },
+      "B": {
+        "n_pairs": 36,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 4.250830360460979,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 2.4923790229666114,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.28415512150985,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -46.26976913084404,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.45219508144153736,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.4330140680744927,
+          "reason": null
+        }
+      },
+      "C": {
+        "n_pairs": 36,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 2.7819451727415125,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 2.078707233159527,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.6934025716799068,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 30.654295906936063,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.7597604753507995,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.5292229199322351,
+          "reason": null
+        }
+      },
+      "D": {
+        "n_pairs": 36,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 5.383759246196295,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 3.08031810179246,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.14826634451756204,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 56.51960174264233,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.37362548380046107,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.2657944025176099,
+          "reason": null
+        }
+      },
+      "AFFINE_A": {
+        "n_pairs": 36,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 3.830058639131684,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 2.8954732933453275,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.4188580571332866,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 9.524193860162113,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.4252715401530874,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.4560824040981242,
+          "reason": null
+        }
+      },
+      "AFFINE_B": {
+        "n_pairs": 36,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 3.752376669749926,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 2.880314773892197,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.44219265471180835,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 11.344400099401566,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.4521950814415373,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.49379516575372073,
+          "reason": null
+        }
+      },
+      "CLIMATOLOGY": {
+        "n_pairs": 36,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 5.119475012763813,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 4.172549986520369,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": -0.038298507866710185,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": 61.34147740450367,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.2730958169102117,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.051456339906691406,
+          "reason": null
+        }
+      }
+    },
+    "contrasts": {
+      "D_vs_A": {
+        "rmse_reduction_m3s": -0.965246310025571,
+        "rmse_reduction_percent": -21.845501506262323,
+        "ci95_reduction_m3s": [
+          -4.481810050917054,
+          2.8570581667387223
+        ],
+        "ci95_reduction_percent": [
+          -180.72477674331313,
+          50.19869341926119
+        ],
+        "valid_replicates": 2000,
+        "role": "PRIMARY"
+      },
+      "B_vs_A": {
+        "rmse_reduction_m3s": 0.16768257570974487,
+        "rmse_reduction_percent": 3.795000221388192,
+        "ci95_reduction_m3s": [
+          0.02644966371389457,
+          0.31681341917366707
+        ],
+        "ci95_reduction_percent": [
+          0.8380977262389269,
+          10.34623168430617
+        ],
+        "valid_replicates": 2000,
+        "role": "SECONDARY_EXPLORATORY_UNADJUSTED"
+      },
+      "C_vs_A": {
+        "rmse_reduction_m3s": 1.6365677634292113,
+        "rmse_reduction_percent": 37.03888134018981,
+        "ci95_reduction_m3s": [
+          -0.33325398304366116,
+          3.195643040695996
+        ],
+        "ci95_reduction_percent": [
+          -13.923349261660983,
+          51.60910441950932
+        ],
+        "valid_replicates": 2000,
+        "role": "SECONDARY_EXPLORATORY_UNADJUSTED"
+      },
+      "D_vs_B": {
+        "rmse_reduction_m3s": -1.132928885735316,
+        "rmse_reduction_percent": -26.651943024431965,
+        "ci95_reduction_m3s": [
+          -4.569591915079662,
+          2.6657300605311374
+        ],
+        "ci95_reduction_percent": [
+          -197.07161586068722,
+          48.49191482928954
+        ],
+        "valid_replicates": 2000,
+        "role": "SECONDARY_EXPLORATORY_UNADJUSTED"
+      },
+      "D_vs_C": {
+        "rmse_reduction_m3s": -2.6018140734547823,
+        "rmse_reduction_percent": -93.5249946313925,
+        "ci95_reduction_m3s": [
+          -4.569638859690665,
+          0.11282226738278318
+        ],
+        "ci95_reduction_percent": [
+          -173.67674206331253,
+          3.73459872266893
+        ],
+        "valid_replicates": 2000,
+        "role": "SECONDARY_EXPLORATORY_UNADJUSTED"
+      }
+    },
+    "uncertainty": {
+      "method": "paired circular moving-block bootstrap on common monthly errors",
+      "block_months": 12,
+      "replicates": 2000,
+      "seed": 42,
+      "confidence": 0.95
+    },
+    "decision_rule": "D_vs_A absolute RMSE reduction CI95 strictly above zero; no 15% threshold",
+    "secondary_policy": "Unadjusted descriptive intervals; no separate confirmatory decisions"
+  },
+  "reference_status": "BUDGET_EXHAUSTED_EXPLORATORY_REFERENCE",
+  "fit_on_test": false,
+  "test_accessed": true,
+  "monthly_ml_predictions": [
+    {
+      "station_id": "05451210",
+      "month": "2021-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.10267140506260646,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.1030179406460694
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.10267140506260646,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -0.9689074404669165
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 28,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.04723856801115429,
+      "predicted_streamflow_m3s": 0.7103432835949473,
+      "predicted_residual_m3s": -1.0824924306907673
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 28,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.04723856801115429,
+      "predicted_streamflow_m3s": 0.791425923314754,
+      "predicted_residual_m3s": -1.017231219542389
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 7,
+      "observed_streamflow_m3s": 2.2496821170679744,
+      "predicted_streamflow_m3s": 4.632215244368926,
+      "predicted_residual_m3s": 2.210953954046346
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 7,
+      "observed_streamflow_m3s": 2.2496821170679744,
+      "predicted_streamflow_m3s": 3.7153122247389803,
+      "predicted_residual_m3s": 1.2780219021583352
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.6684286027530241,
+      "predicted_streamflow_m3s": 1.5889087391883958,
+      "predicted_residual_m3s": 1.1598254058550626
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.6684286027530241,
+      "predicted_streamflow_m3s": 0.40897331975695905,
+      "predicted_residual_m3s": -0.03457334690970759
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.9825945767424,
+      "predicted_streamflow_m3s": 5.291646021827154,
+      "predicted_residual_m3s": 4.657581505698122
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.9825945767424,
+      "predicted_streamflow_m3s": 6.883841432237487,
+      "predicted_residual_m3s": 6.236312399979423
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.7716907033251841,
+      "predicted_streamflow_m3s": 3.9413692599743166,
+      "predicted_residual_m3s": 3.2385059266409835
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.7716907033251841,
+      "predicted_streamflow_m3s": 4.511443428635953,
+      "predicted_residual_m3s": 3.78712009530262
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.1628584057705703,
+      "predicted_streamflow_m3s": 1.4779326292609218,
+      "predicted_residual_m3s": 1.167281016357696
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.1628584057705703,
+      "predicted_streamflow_m3s": 3.6749646164028658,
+      "predicted_residual_m3s": 3.3335001002738336
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.4065751102612645,
+      "predicted_streamflow_m3s": 6.976480292550703,
+      "predicted_residual_m3s": 4.6560093248087675
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.4065751102612645,
+      "predicted_streamflow_m3s": 25.006471495929166,
+      "predicted_residual_m3s": 22.673790850767876
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.280346220209664,
+      "predicted_streamflow_m3s": 0.2433704018956916,
+      "predicted_residual_m3s": -0.6557972647709751
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.280346220209664,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.4016723581738093
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 1.430548820894555,
+      "predicted_streamflow_m3s": 4.319786002671903,
+      "predicted_residual_m3s": 2.663597292994484
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 1.430548820894555,
+      "predicted_streamflow_m3s": 3.96989841350569,
+      "predicted_residual_m3s": 2.313041961892787
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 2.7439968242534403,
+      "predicted_streamflow_m3s": 0.9668877241609553,
+      "predicted_residual_m3s": -0.039322275839044796
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 2.7439968242534403,
+      "predicted_streamflow_m3s": 0.9991326080188989,
+      "predicted_residual_m3s": -0.013864058647767852
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 18,
+      "observed_streamflow_m3s": 0.7060668680715562,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -0.695612577361242
+    },
+    {
+      "station_id": "05451210",
+      "month": "2021-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 18,
+      "observed_streamflow_m3s": 0.7060668680715562,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -0.5876591130120228
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.22085313448431484,
+      "predicted_streamflow_m3s": 0.08214634688172301,
+      "predicted_residual_m3s": -0.1689794595698899
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.22085313448431484,
+      "predicted_streamflow_m3s": 0.27254735611827197,
+      "predicted_residual_m3s": 0.005895743215046156
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 28,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.26297248640420573,
+      "predicted_streamflow_m3s": 1.4407494976889745,
+      "predicted_residual_m3s": 0.15971735483183158
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 28,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.26297248640420573,
+      "predicted_streamflow_m3s": 1.4275112526876301,
+      "predicted_residual_m3s": 0.13135410983048734
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 17,
+      "observed_streamflow_m3s": 2.6812034557301265,
+      "predicted_streamflow_m3s": 4.441337873514296,
+      "predicted_residual_m3s": 3.056973357385264
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 17,
+      "observed_streamflow_m3s": 2.6812034557301265,
+      "predicted_streamflow_m3s": 3.6596767841581648,
+      "predicted_residual_m3s": 2.2581283970613906
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 6.1032243354624,
+      "predicted_streamflow_m3s": 6.938984521069562,
+      "predicted_residual_m3s": 6.543084521069562
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 6.1032243354624,
+      "predicted_streamflow_m3s": 5.798616910887939,
+      "predicted_residual_m3s": 5.361810244221273
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 9.223070969013678,
+      "predicted_streamflow_m3s": 7.031130745208902,
+      "predicted_residual_m3s": 5.923343648434708
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 9.223070969013678,
+      "predicted_streamflow_m3s": 8.373701455174235,
+      "predicted_residual_m3s": 7.210311132593589
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 8.4676810258944,
+      "predicted_streamflow_m3s": 9.217583741113815,
+      "predicted_residual_m3s": 6.922917074447148
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 8.4676810258944,
+      "predicted_streamflow_m3s": 10.049536827974542,
+      "predicted_residual_m3s": 7.689636827974542
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 3.671872900984568,
+      "predicted_streamflow_m3s": 6.341642478013112,
+      "predicted_residual_m3s": 5.099416671561499
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 3.671872900984568,
+      "predicted_streamflow_m3s": 5.877700622440862,
+      "predicted_residual_m3s": 4.562732880505378
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.5997142729519896,
+      "predicted_streamflow_m3s": 4.7931569372379865,
+      "predicted_residual_m3s": 2.8980633888508893
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.5997142729519896,
+      "predicted_streamflow_m3s": 3.862565022329905,
+      "predicted_residual_m3s": 1.8894488932976472
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.264979611459072,
+      "predicted_streamflow_m3s": 0.3986690410525451,
+      "predicted_residual_m3s": -1.1681176256141215
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.264979611459072,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.912677149388771
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.10937610357826065,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.5575142400480857
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.10937610357826065,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.796456315358002
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 27,
+      "observed_streamflow_m3s": 0.227488106571264,
+      "predicted_streamflow_m3s": 0.7612900994523004,
+      "predicted_residual_m3s": 0.3517300994523005
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 27,
+      "observed_streamflow_m3s": 0.227488106571264,
+      "predicted_streamflow_m3s": 0.9264069619460764,
+      "predicted_residual_m3s": 0.4469769619460764
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.37460447701223226,
+      "predicted_streamflow_m3s": 4.43775455339645,
+      "predicted_residual_m3s": 1.3766158437190317
+    },
+    {
+      "station_id": "05451210",
+      "month": "2022-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.37460447701223226,
+      "predicted_streamflow_m3s": 4.984079925914354,
+      "predicted_residual_m3s": 1.856508958172418
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.9484316714991484,
+      "predicted_streamflow_m3s": 3.2257937733813753,
+      "predicted_residual_m3s": 0.5573034508007297
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.9484316714991484,
+      "predicted_streamflow_m3s": 3.600800569239305,
+      "predicted_residual_m3s": 0.8686070208522083
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 28,
+      "estimated_days": 27,
+      "observed_streamflow_m3s": 5.383234800329143,
+      "predicted_streamflow_m3s": 14.21565870601057,
+      "predicted_residual_m3s": 2.2468194202962857
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 28,
+      "estimated_days": 27,
+      "observed_streamflow_m3s": 5.383234800329143,
+      "predicted_streamflow_m3s": 14.542858347543675,
+      "predicted_residual_m3s": 2.5133119189722484
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 8,
+      "observed_streamflow_m3s": 7.076471308007226,
+      "predicted_streamflow_m3s": 3.8199547587042204,
+      "predicted_residual_m3s": 2.3306773393493816
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 8,
+      "observed_streamflow_m3s": 7.076471308007226,
+      "predicted_streamflow_m3s": 3.255810174202972,
+      "predicted_residual_m3s": 1.7085875935578105
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 3.72139997912064,
+      "predicted_streamflow_m3s": 4.815491916897353,
+      "predicted_residual_m3s": 4.2077552502306865
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 3.72139997912064,
+      "predicted_streamflow_m3s": 3.4995763755639757,
+      "predicted_residual_m3s": 2.836993042230642
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 4.87159374982111,
+      "predicted_streamflow_m3s": 4.392851719858795,
+      "predicted_residual_m3s": 3.833625913407182
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 4.87159374982111,
+      "predicted_streamflow_m3s": 5.716899532517295,
+      "predicted_residual_m3s": 5.105573726065682
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 2.7152080302182404,
+      "predicted_streamflow_m3s": 5.148522716887198,
+      "predicted_residual_m3s": 3.4163360502205316
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 2.7152080302182404,
+      "predicted_streamflow_m3s": 5.927535112478131,
+      "predicted_residual_m3s": 4.14172511247813
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 1.228476149827386,
+      "predicted_streamflow_m3s": 1.4058396782784355,
+      "predicted_residual_m3s": 0.7954009686010162
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 1.228476149827386,
+      "predicted_streamflow_m3s": 4.11878113637637,
+      "predicted_residual_m3s": 3.463397265408628
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.22996933219361032,
+      "predicted_streamflow_m3s": 1.6902359431389895,
+      "predicted_residual_m3s": 1.1829294915260862
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.22996933219361032,
+      "predicted_streamflow_m3s": 13.394996227471154,
+      "predicted_residual_m3s": 12.862915582309864
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 5,
+      "observed_streamflow_m3s": 0.170014346938368,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.403120606781501
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 5,
+      "observed_streamflow_m3s": 0.170014346938368,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.953714432119682
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 24,
+      "observed_streamflow_m3s": 0.22453432454127484,
+      "predicted_streamflow_m3s": 0.46307282736879374,
+      "predicted_residual_m3s": 0.28295476285266474
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 24,
+      "observed_streamflow_m3s": 0.22453432454127484,
+      "predicted_streamflow_m3s": 0.2634063593096242,
+      "predicted_residual_m3s": 0.07556764963220486
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.10347919639603201,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -2.736422651267981
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.10347919639603201,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -2.4219391109103006
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 24,
+      "observed_streamflow_m3s": 0.14799662854309162,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -2.1703501430640895
+    },
+    {
+      "station_id": "05451210",
+      "month": "2023-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 24,
+      "observed_streamflow_m3s": 0.14799662854309162,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.7875593695116052
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.06987866981574194,
+      "predicted_streamflow_m3s": 1.327616527219189,
+      "predicted_residual_m3s": -0.8588202469743593
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 0.06987866981574194,
+      "predicted_streamflow_m3s": 1.752929855297079,
+      "predicted_residual_m3s": -0.4397711124448569
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 29,
+      "estimated_days": 29,
+      "observed_streamflow_m3s": 0.7544974952289103,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.5757152754877808
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 29,
+      "estimated_days": 29,
+      "observed_streamflow_m3s": 0.7544974952289103,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.694078509217075
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 3,
+      "observed_streamflow_m3s": 1.084124173474684,
+      "predicted_streamflow_m3s": 3.025852950214638,
+      "predicted_residual_m3s": 2.7981003695694766
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 3,
+      "observed_streamflow_m3s": 1.084124173474684,
+      "predicted_streamflow_m3s": 2.3120249873475753,
+      "predicted_residual_m3s": 2.0787672454120916
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 3.0118741930137602,
+      "predicted_streamflow_m3s": 6.663083995610235,
+      "predicted_residual_m3s": 6.2891569956102344
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 3.0118741930137602,
+      "predicted_streamflow_m3s": 7.914808401943937,
+      "predicted_residual_m3s": 7.535571401943937
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 23.071835845830194,
+      "predicted_streamflow_m3s": 15.021541258191665,
+      "predicted_residual_m3s": 10.537447709804567
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 23.071835845830194,
+      "predicted_streamflow_m3s": 16.803975617698004,
+      "predicted_residual_m3s": 11.775362714472198
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 6.578947358208,
+      "predicted_streamflow_m3s": 9.050977837330421,
+      "predicted_residual_m3s": 6.972344503997088
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 6.578947358208,
+      "predicted_streamflow_m3s": 9.567798231139717,
+      "predicted_residual_m3s": 7.259898231139718
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 8.464910237679485,
+      "predicted_streamflow_m3s": 7.46622028293625,
+      "predicted_residual_m3s": 5.579091250678186
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 8.464910237679485,
+      "predicted_streamflow_m3s": 6.660861296488607,
+      "predicted_residual_m3s": 4.6652483932628
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.9497104968291097,
+      "predicted_streamflow_m3s": 2.2436966619118417,
+      "predicted_residual_m3s": 1.1308063393311965
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.9497104968291097,
+      "predicted_streamflow_m3s": 1.5128972172449724,
+      "predicted_residual_m3s": 0.3057036688578756
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.130559540686848,
+      "predicted_streamflow_m3s": 0.08937980532550271,
+      "predicted_residual_m3s": -0.8303835280078307
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 0.130559540686848,
+      "predicted_streamflow_m3s": 0.0,
+      "predicted_residual_m3s": -1.6898396046383652
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 25,
+      "observed_streamflow_m3s": 0.1209220694144826,
+      "predicted_streamflow_m3s": 1.137819891921367,
+      "predicted_residual_m3s": 0.2947876338568509
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 25,
+      "observed_streamflow_m3s": 0.1209220694144826,
+      "predicted_streamflow_m3s": 0.7124459281400762,
+      "predicted_residual_m3s": -0.21551858798895607
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 2,
+      "observed_streamflow_m3s": 0.486455107603968,
+      "predicted_streamflow_m3s": 3.3794533252648398,
+      "predicted_residual_m3s": 1.900796658598173
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 2,
+      "observed_streamflow_m3s": 0.486455107603968,
+      "predicted_streamflow_m3s": 3.471427773570435,
+      "predicted_residual_m3s": 1.9084744402371017
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 24,
+      "observed_streamflow_m3s": 0.2784550811324284,
+      "predicted_streamflow_m3s": 2.55962571599492,
+      "predicted_residual_m3s": 0.689880554704597
+    },
+    {
+      "station_id": "05451210",
+      "month": "2024-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 24,
+      "observed_streamflow_m3s": 0.2784550811324284,
+      "predicted_streamflow_m3s": 2.87952252979151,
+      "predicted_residual_m3s": 0.919070916888284
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.29826773928018585,
+      "predicted_streamflow_m3s": 4.061474434074492,
+      "predicted_residual_m3s": 1.1998292727841697
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-01",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.29826773928018585,
+      "predicted_streamflow_m3s": 4.146292799855147,
+      "predicted_residual_m3s": 1.1948411869519215
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 28,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.2283955940834743,
+      "predicted_streamflow_m3s": 3.1540780913264923,
+      "predicted_residual_m3s": 0.34694594846934956
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-02",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 28,
+      "estimated_days": 28,
+      "observed_streamflow_m3s": 0.2283955940834743,
+      "predicted_streamflow_m3s": 2.8963576746104365,
+      "predicted_residual_m3s": 0.002739817467579453
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 9,
+      "observed_streamflow_m3s": 3.6504982490409295,
+      "predicted_streamflow_m3s": 7.740557240821618,
+      "predicted_residual_m3s": 5.852589498886133
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-03",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 9,
+      "observed_streamflow_m3s": 3.6504982490409295,
+      "predicted_streamflow_m3s": 6.794940289344849,
+      "predicted_residual_m3s": 4.781327386119042
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 8.32062220259328,
+      "predicted_streamflow_m3s": 11.10221767090789,
+      "predicted_residual_m3s": 5.865651004241225
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-04",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 8.32062220259328,
+      "predicted_streamflow_m3s": 12.90222728484018,
+      "predicted_residual_m3s": 6.965693951506846
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 9.83051300074529,
+      "predicted_streamflow_m3s": 10.448924039911946,
+      "predicted_residual_m3s": 2.638827265718397
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-05",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 9.83051300074529,
+      "predicted_streamflow_m3s": 12.911106890324902,
+      "predicted_residual_m3s": 4.2246230193571614
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 13.242845256192,
+      "predicted_streamflow_m3s": 12.800519726358946,
+      "predicted_residual_m3s": 8.551253059692279
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-06",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 13.242845256192,
+      "predicted_streamflow_m3s": 14.02237298376707,
+      "predicted_residual_m3s": 8.808572983767071
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 14.574954974901678,
+      "predicted_streamflow_m3s": 19.58513092479792,
+      "predicted_residual_m3s": 7.0612599570559835
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-07",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 14.574954974901678,
+      "predicted_streamflow_m3s": 19.745489033788356,
+      "predicted_residual_m3s": 6.1693600015302925
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 7.736801901599381,
+      "predicted_streamflow_m3s": 8.862702342564944,
+      "predicted_residual_m3s": 2.2021216974036526
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-08",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 7.736801901599381,
+      "predicted_streamflow_m3s": 8.357130994848692,
+      "predicted_residual_m3s": 1.7472277690422409
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 1.2576455466393601,
+      "predicted_streamflow_m3s": 2.071166118259435,
+      "predicted_residual_m3s": 0.1487327849261013
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-09",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 1.2576455466393601,
+      "predicted_streamflow_m3s": 0.99586762334713,
+      "predicted_residual_m3s": -0.9151323766528701
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 2.2587709113773418,
+      "predicted_streamflow_m3s": 6.37404216854672,
+      "predicted_residual_m3s": 3.186558297578978
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-10",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 0,
+      "observed_streamflow_m3s": 2.2587709113773418,
+      "predicted_streamflow_m3s": 5.535719621179167,
+      "predicted_residual_m3s": 2.4687518792436838
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 3,
+      "observed_streamflow_m3s": 2.11498527195648,
+      "predicted_streamflow_m3s": 3.381946471995337,
+      "predicted_residual_m3s": 1.7190798053286707
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-11",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 30,
+      "estimated_days": 3,
+      "observed_streamflow_m3s": 2.11498527195648,
+      "predicted_streamflow_m3s": 3.074952518863461,
+      "predicted_residual_m3s": 1.4565191855301283
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "C",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 3.0826998025381163,
+      "predicted_streamflow_m3s": 5.255469110952618,
+      "predicted_residual_m3s": 0.8928239496622963
+    },
+    {
+      "station_id": "05451210",
+      "month": "2025-12",
+      "partition": "TEST",
+      "variant": "PRIMARY",
+      "series": "D",
+      "eligible": true,
+      "paired_days": 31,
+      "estimated_days": 31,
+      "observed_streamflow_m3s": 3.0826998025381163,
+      "predicted_streamflow_m3s": 5.369403039614772,
+      "predicted_residual_m3s": 1.0100482009050942
+    }
+  ],
+  "metric_convention": "Canonical ValidationEngine; PBIAS simulated minus observed; modified KGE CV ratio",
+  "limitations": [
+    "One basin and fixed experimental management, not historical rotation reconstruction or spatial generalization.",
+    "Derived FSPM moisture assumes uniform available-water fraction across soil layers.",
+    "2010 plant morphology is a prespecified model-derived contract, not observed or a representative year demonstrated empirically.",
+    "External ET/PET products remain process diagnostics, not measured ET targets.",
+    "ML can correct outlet errors without validating physiology or preserving water balance.",
+    "One basin, 60 TRAIN months and 36 previously explored development validation months.",
+    "FSPM parameters and states are model-derived, not independent physiological observations.",
+    "A/B retain substantial bias; ML improvement does not validate physical processes or conserve water balance.",
+    "D versus C combines a changed physical baseline and extra model features; it does not isolate FSPM feature value on the same physical arm."
+  ],
+  "interpretation": "Held-out monthly outlet-flow comparison under fixed experimental management and exploratory physical calibration. Does not validate FSPM physiology or water balance; D/C changes baseline and features.",
+  "artifact_directory": "from-plant-to-watershed/research_domain/test_v1"
+}

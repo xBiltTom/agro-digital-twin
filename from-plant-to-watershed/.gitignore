@@ -125,6 +125,7 @@ output_*.txt
 *.gpkg
 *.parquet
 !research_domain/multiyear_v1/monthly-ab.parquet
+!research_domain/test_v1/monthly-ab.parquet
 *.h5
 *.hdf5
 *.shp
