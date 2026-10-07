@@ -124,6 +124,7 @@ output_*.txt
 *.geotiff
 *.gpkg
 *.parquet
+!research_domain/multiyear_v1/monthly-ab.parquet
 *.h5
 *.hdf5
 *.shp

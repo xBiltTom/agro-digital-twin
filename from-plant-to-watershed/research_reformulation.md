@@ -1,9 +1,9 @@
 # Reformulación experimental — From Plant to Watershed
 
-**Versión:** 0.2 · **Fecha:** 2026-10-06.
-**Estado:** orientación acordada; protocolo pendiente de congelar antes de la
-evaluación final. Esta revisión incorpora lectura de código, artefactos locales
-y antecedentes bibliográficos; no declara nuevas corridas ni evaluación de H1.
+**Versión:** 0.3 · **Fecha:** 2026-10-06.
+**Estado:** protocolo multianual v1 congelado antes de calibrar; búsqueda física
+de 12 candidatos terminada y 96 meses pareados A/B publicados. La referencia seleccionada
+incumple el criterio de sesgo y permanece exploratoria. H1 no se ha evaluado.
 
 ## 1. Relación con la ficha original
 
@@ -429,24 +429,36 @@ reparación del pipeline residual y preparación multianual → calibración A y
 corridas/exportación A/B → entrenamiento/selección C/D y referencias simples →
 evaluación reservada → integración y redacción.
 
-La entrega 1 de referencia física está completada. La siguiente entrega reúne
-protocolo y particiones, preparación multianual, calibración acotada y exportación
-fechada A/B. Después siguen ML con selección en VALIDATION, evaluación reservada
-de H1, y gemelo funcional/paquete del paper: **cuatro entregas pendientes**.
+La entrega 1 de referencia física está completada. La
+[entrega 2](docs/MULTIYEAR_EXPERIMENT_DELIVERY_2.md) fija protocolo y particiones,
+preparación multianual, calibración acotada y exportación fechada A/B.
+Después siguen ML con selección en VALIDATION, evaluación reservada de H1,
+y gemelo funcional/paquete del paper.
+Las entregas 1 y 2 están completadas; quedan **tres entregas**.
 La decisión de escalar a varias temporadas se apoya en una referencia
 diagnosticada y contratos correctos de unidades y fechas.
 El acceso a TEST para desarrollo queda excluido de esta secuencia.
 
-Antes de evaluar, fijar y versionar:
+El [protocolo v1](research_domain/south_fork_multiyear_protocol_v1.json) fija
+WARMUP 2000–2004, CALIBRATION 2005–2012, TRAIN 2013–2017, VALIDATION 2018–2020
+y TEST 2021–2025. VALIDATION ya fue explorada y se declara de desarrollo.
+Fija escenario agrícola estático, QC/cobertura, cultivo inactivo/faltantes,
+presupuesto físico de 12 candidatos y regla inferencial con bloques de 12 meses,
+2.000 réplicas e intervalo del 95 %. La derivación vegetal usa 2010 y se congela
+antes de publicar TRAIN/VALIDATION; no se recalcula por año de evaluación.
 
-- Años exactos de warm-up, calibración, TRAIN, VALIDATION y TEST; presupuesto
-  de búsqueda, variables y tratamiento de temporadas.
-- Manejo anual reconstruido o escenario fijo, alcance del CDL y cuenca/outlet.
-- Regla de cobertura/QC, tratamiento de USGS estimado y métricas comunes.
-- Fórmulas de las referencias simples, manejo de cultivo inactivo/faltantes,
-  features C/D, política de caudales negativos y selección del campeón.
-- Diseño inferencial, contraste primario y análisis secundarios/ablaciones;
-  longitud de bloque, réplicas y regla de decisión de incertidumbre.
+La selección física alcanza NSE mensual 0,649 y RMSE 4,718 m³/s en CALIBRATION,
+pero PBIAS −40,605 % incumple |PBIAS| ≤ 30 %. Se conserva exploratoria sin
+ampliar el presupuesto. La futura mejora ML contra esta referencia no bastará
+para afirmar validación física o fisiológica.
+
+Antes de entrenar/evaluar, completar y versionar:
+
+- Familias de modelos, features C/D, preprocesamiento, presupuesto ML comparable
+  y selección del campeón exclusivamente en desarrollo.
+- Fórmulas e hiperparámetros de climatología TRAIN y corrección afín no negativa.
+- Implementación del diseño inferencial congelado y comparaciones secundarias,
+  incluida exclusión de valores USGS estimados sobre soporte común recalculado.
 - Referencias y novedad; disponibilidad de LAI y función en ajuste/evaluación.
 
 Los años ya examinados para depuración o parametrización no se describen como
@@ -480,6 +492,10 @@ aprendizaje automático en South Fork Iowa River*.
   SWAT+–ML. Motivo: contrastar la propuesta con código, artefactos y literatura
   antes de congelar el protocolo. Se conserva D vs A como contraste primario;
   los años, reglas de calidad y diseño inferencial siguen pendientes de fijar.
+- **2026-10-06 · v0.3:** protocolo multianual v1 y particiones congelados,
+  presupuesto de 12 candidatos, calendario por temporada y contrato vegetal
+  derivado en 2010. La referencia ganadora falla el criterio predefinido de
+  sesgo; se conserva exploratoria y TEST permanece reservado.
 
 ## Referencias iniciales para continuar la revisión
 

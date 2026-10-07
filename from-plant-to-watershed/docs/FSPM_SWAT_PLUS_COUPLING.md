@@ -50,6 +50,13 @@ outputs generados por el proceso, no archivos obsoletos.
 Las HRU se agrupan cuando comparten fechas de siembra/cosecha. El FSPM se
 ejecuta por grupo y no aplana los calendarios distintos.
 
+La ruta multianual conserva todas las parejas completas por HRU. Las firmas de
+convergencia incluyen cada temporada y los agregados FSPM usan los grupos del
+año correspondiente, con una temporada de maíz por HRU/año. Fuera de la
+ventana activa, el playback conserva el calendario anual conocido y marca el
+cultivo como inactivo. Las temporadas que cruzan años requieren otro contrato
+de agregación y se rechazan en esta ruta FSPM.
+
 - Los eventos son operaciones **simuladas por SWAT+**, no observadas en campo.
 - El clima usa `hru.con.wst → weather-sta.cli` y sus archivos diarios.
 - Los agregados usan área HRU × fracción CDL de maíz cuando está disponible;
@@ -64,6 +71,8 @@ ejecuta por grupo y no aplana los calendarios distintos.
 El forcing efectivo de la copia SWAT+ se compara con el usado por FSPM; una
 diferencia impide aceptar la corrida. El origen meteorológico del bundle
 South Fork reciente permanece `SOURCE_UNVERIFIED`.
+El experimento posterior `sf-multi-v1` usa la copia meteorológica auditada y
+corregida; conserva su procedencia propia sin cambiar las etiquetas históricas.
 
 ## 4. Agua SWAT+ → FSPM
 
@@ -102,6 +111,12 @@ en código, sin recalcular automáticamente resultados históricos.
 `CouplingPlantParameterSummary` separa el contrato estacional de los estados
 diarios. Los máximos de LAI, altura y raíz pueden tener fechas distintas;
 el resumen no sirve para reconstruir una escena fechada.
+
+El runner acepta un resumen vegetal congelado o un periodo exclusivo de
+derivación. En la [entrega 2](MULTIYEAR_EXPERIMENT_DELIVERY_2.md), B deriva su
+resumen en 2010 y lo reutiliza íntegro en 2013–2020. Los estados diarios siguen
+respondiendo al agua/clima de cada año; sus rasgos no se usan para reajustar el
+registro vegetal durante TRAIN/VALIDATION.
 
 | Variable/resumen FSPM | Campo SWAT+ | Unidad |
 | --- | --- | --- |

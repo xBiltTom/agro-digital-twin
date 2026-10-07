@@ -25,7 +25,7 @@ class SwatExecutedCropCalendar:
     start_date: str
     end_date: str
     groups: tuple[CropCalendarGroup, ...]
-    hru_calendar: dict[int, str]
+    hru_calendar: dict[int, str | tuple[str, ...]]
     event_count: int
 
     @staticmethod
@@ -96,25 +96,25 @@ class SwatExecutedCropCalendar:
                 continue
             by_hru.setdefault(hru_id, {"plant": [], "harvest": []})[target].append(event_date)
         grouped: dict[tuple[str, str], list[int]] = {}
-        hru_calendar: dict[int, str] = {}
+        hru_calendar: dict[int, str | tuple[str, ...]] = {}
         for hru_id, events_by_type in by_hru.items():
             plants = sorted(set(events_by_type["plant"]))
             harvests = sorted(set(events_by_type["harvest"]))
-            if len(plants) != 1 or len(harvests) != 1:
+            if not plants or len(plants) != len(harvests):
                 raise ValueError(
                     f"HRU {hru_id} has {len(plants)} maize plant and {len(harvests)} harvest/kill events; "
-                    "one complete crop season is required for the requested year"
+                    "each planting requires a complete harvest/kill pair"
                 )
-            planting, harvest = plants[0], harvests[0]
-            if planting > harvest:
-                raise ValueError(f"HRU {hru_id} harvest precedes planting")
             if hru_weights is None:
                 weight = 1.0
             else:
                 weight = float(hru_weights.get(hru_id, 0.0))
                 if not math.isfinite(weight) or weight <= 0:
                     raise ValueError(f"HRU {hru_id} has no positive finite spatial weight")
-            grouped.setdefault((planting, harvest), []).append(hru_id)
+            for index, (planting, harvest) in enumerate(zip(plants, harvests, strict=True)):
+                if planting > harvest or (index and harvests[index - 1] >= planting):
+                    raise ValueError(f"HRU {hru_id} has reversed or overlapping crop seasons")
+                grouped.setdefault((planting, harvest), []).append(hru_id)
 
         if hru_weights is not None and set(by_hru) - set(hru_weights):
             raise ValueError(f"SWAT+ crop event HRUs lack spatial weights: {sorted(set(by_hru) - set(hru_weights))}")
@@ -127,14 +127,20 @@ class SwatExecutedCropCalendar:
             group = CropCalendarGroup(calendar_id, crop, planting, harvest, ids, weight)
             groups.append(group)
             for hru_id in ids:
-                hru_calendar[hru_id] = calendar_id
+                existing = hru_calendar.get(hru_id)
+                hru_calendar[hru_id] = calendar_id if existing is None else (
+                    (existing, calendar_id) if isinstance(existing, str) else (*existing, calendar_id))
         if not groups:
             raise ValueError(f"SWAT+ emitted no PLANT and HARV/KILL pair for {crop!r}")
         return cls(crop, start_date.isoformat(), end_date.isoformat(), tuple(groups), hru_calendar, len(rows))
 
-    def group_for_hru(self, hru_id: int) -> CropCalendarGroup:
-        calendar_id = self.hru_calendar[hru_id]
-        return next(group for group in self.groups if group.calendar_id == calendar_id)
+    def group_for_hru(self, hru_id: int, on_date: date | None = None) -> CropCalendarGroup:
+        groups = [group for group in self.groups if hru_id in group.hru_ids]
+        if on_date is not None:
+            groups = [group for group in groups if group.planting_date <= on_date.isoformat() <= group.harvest_date]
+        if len(groups) != 1:
+            raise ValueError(f"HRU {hru_id} requires a date identifying one active crop season")
+        return groups[0]
 
     def as_dict(self) -> dict[str, Any]:
         return {

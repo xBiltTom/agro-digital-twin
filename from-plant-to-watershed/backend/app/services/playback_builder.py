@@ -181,7 +181,7 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
                 channel_results: list[dict] | None = None,
                 soil_profiles: dict[int, SoilProfile] | None = None,
                 hru_gis_ids: dict[int, str] | None = None,
-                hru_calendar: dict[int, dict] | None = None,
+                hru_calendar: dict[int, dict | list[dict]] | None = None,
                 forcing: list[dict] | None, forcing_source: str,
                 watershed_code: str | None = None, outlet_unit: str | None = None,
                 fspm_days: dict[str, dict] | None = None,
@@ -276,6 +276,13 @@ def swat_frames(*, simulation_id: str, watershed_id: str, run_type: str,
                     for name, unit in plant_units.items()
                 })
             calendar = (hru_calendar or {}).get(int(identifier))
+            if isinstance(calendar, list):
+                matches = [item for item in calendar if item["planting_date"] <= day <= item["harvest_date"]]
+                if len(matches) > 1:
+                    raise ValueError(f"Overlapping crop calendars for HRU {identifier} on {day}")
+                # Retain the known annual season outside its active window.
+                annual = [item for item in calendar if item["planting_date"][:4] == day[:4]]
+                calendar = matches[0] if matches else (annual[0] if len(annual) == 1 else None)
             hru_crop = None
             if calendar is not None:
                 active = calendar["planting_date"] <= day <= calendar["harvest_date"]

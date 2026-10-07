@@ -29,13 +29,6 @@ class ExecutedCalendarFspmRun:
     provenance: dict[str, Any]
 
 
-def _calendar_signature(calendar: SwatExecutedCropCalendar) -> dict[int, tuple[str, str]]:
-    return {
-        hru_id: (group.planting_date, group.harvest_date)
-        for group in calendar.groups for hru_id in group.hru_ids
-    }
-
-
 def _combine_daily_fields(
     groups: tuple[CropCalendarGroup, ...],
     active_rows: dict[str, dict[str, Any]],
@@ -82,7 +75,7 @@ def _combine_daily_fields(
     result["active_calendar_group_count"] = len(active_groups)
     result["calendar_group_count"] = len(groups)
     result["soil_moisture_source"] = sample.get("soil_moisture_source", "ASSUMED_CONSTANT_NOT_SWAT_OUTPUT")
-    result["calendar_aggregation"] = "SWAT_HRU_AREA_X_2019_CDL_CORN_FRACTION_WEIGHTED; inactive calendar groups contribute zero living-crop structure"
+    result["calendar_aggregation"] = "SWAT_HRU_CROP_AREA_WEIGHTED; optional crop fractions are documented in forcing provenance; inactive groups contribute zero living-crop structure"
     result["summary_semantics"] = "DATED_FSPM_MAIZE_AREA_STATE_ACROSS_EXECUTED_SWAT_CALENDARS"
     return result
 
@@ -98,6 +91,7 @@ def run_fspm_on_executed_calendar(
     crop_fraction_by_hru: dict[int, float] | None = None,
     crop: str = "maize",
     hru_water_results: list[dict[str, Any]] | None = None,
+    parameter_period: tuple[date, date] | None = None,
 ) -> ExecutedCalendarFspmRun:
     """Create dated group and field FSPM states using the assigned SWAT weather."""
     root = Path(project)
@@ -105,6 +99,15 @@ def run_fspm_on_executed_calendar(
         root = root / "TxtInOut"
     reader = SwatClimateForcingReader(root)
     target_hrus = sorted(calendar.hru_calendar)
+    annual_hru_seasons = set()
+    for group in calendar.groups:
+        if group.planting_date[:4] != group.harvest_date[:4]:
+            raise ValueError("FSPM annual aggregation requires seasons within one calendar year")
+        for hru in group.hru_ids:
+            key = hru, group.planting_date[:4]
+            if key in annual_hru_seasons:
+                raise ValueError("FSPM annual aggregation supports one maize season per HRU/year")
+            annual_hru_seasons.add(key)
     field_climate, field_climate_provenance = reader.for_hrus(
         start_date, end_date, target_hrus,
         crop_fraction_by_hru=crop_fraction_by_hru,
@@ -140,17 +143,16 @@ def run_fspm_on_executed_calendar(
     group_contract_weights: list[float] = []
     trait_dated_fields: list[tuple[str, dict[str, Any]]] = []
     group_daily: list[dict[str, Any]] = []
-    day_count = (end_date - start_date).days + 1
     for group in calendar.groups:
+        plant_date, harvest_date = date.fromisoformat(group.planting_date), date.fromisoformat(group.harvest_date)
         group_forcing, forcing_provenance = reader.for_hrus(
-            start_date, end_date, list(group.hru_ids),
+            plant_date, harvest_date, list(group.hru_ids),
             crop_fraction_by_hru=crop_fraction_by_hru,
         )
         forcing_by_date = {row["date"]: row for row in group_forcing}
-        if len(forcing_by_date) != day_count:
+        if len(forcing_by_date) != (harvest_date - plant_date).days + 1:
             raise ValueError(f"calendar group {group.calendar_id} does not have complete dated forcing")
         population = PlantPopulation(count=plant_count, seed=seed, crop=crop)
-        plant_date, harvest_date = date.fromisoformat(group.planting_date), date.fromisoformat(group.harvest_date)
         if plant_date < start_date or harvest_date > end_date:
             raise ValueError(f"calendar group {group.calendar_id} falls outside the requested FSPM interval")
         cursor = plant_date
@@ -217,12 +219,14 @@ def run_fspm_on_executed_calendar(
             }
             rows_by_date[day] = row
             group_daily.append(row)
-            trait_dated_fields.append((day, deepcopy(field)))
+            if parameter_period is None or parameter_period[0].isoformat() <= day <= parameter_period[1].isoformat():
+                trait_dated_fields.append((day, deepcopy(field)))
             absorbed_par += max(0.0, float(weather["solar_rad_mj"])) * .48 * field["canopy_cover"]
             cursor += timedelta(days=1)
         group_rows[group.calendar_id] = rows_by_date
         group_climate_provenance[group.calendar_id] = forcing_provenance
-        if len(rows_by_date) >= 3:
+        in_parameter_period = parameter_period is None or (parameter_period[0] <= plant_date and harvest_date <= parameter_period[1])
+        if len(rows_by_date) >= 3 and in_parameter_period:
             group_contracts.append(PlantToFieldAggregator.seasonal_lai_contract(
                 row["field"] for row in rows_by_date.values()
             ))
@@ -238,7 +242,10 @@ def run_fspm_on_executed_calendar(
         active_rows = {group.calendar_id: group_rows[group.calendar_id][day]
                        for group in calendar.groups if day in group_rows[group.calendar_id]}
         if active_rows:
-            field = _combine_daily_fields(calendar.groups, active_rows)
+            # Each HRU contributes once to the area denominator in a season.
+            # Prior/future years' groups must not dilute the current year's LAI.
+            annual_groups = tuple(group for group in calendar.groups if group.planting_date[:4] == day[:4])
+            field = _combine_daily_fields(annual_groups, active_rows)
             group_summaries = []
             plant_samples = []
             stage_weights: dict[str, float] = {}
@@ -302,6 +309,7 @@ def run_fspm_on_executed_calendar(
         group_daily=group_daily,
         provenance={
             "calendar": calendar.as_dict(),
+            "parameter_period": [d.isoformat() for d in parameter_period] if parameter_period else None,
             "growth_temperature_base_c": growth_base_c,
             "growth_temperature_base_source": "plants.plt.corn.tmp_base",
             "climate_source": "SWAT+ weather-sta.cli assigned station files, selected by hru.con.wst",

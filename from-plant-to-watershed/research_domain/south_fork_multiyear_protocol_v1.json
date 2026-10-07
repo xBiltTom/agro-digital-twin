@@ -1,0 +1,84 @@
+{
+  "schema_version": "south-fork-multiyear-protocol/v1",
+  "experiment_id": "sf-multi-v1",
+  "status": "FROZEN_BEFORE_CALIBRATION",
+  "station_id": "05451210",
+  "outlet_gis_id": "153",
+  "partitions": {
+    "WARMUP": ["2000-01-01", "2004-12-31"],
+    "CALIBRATION": ["2005-01-01", "2012-12-31"],
+    "TRAIN": ["2013-01-01", "2017-12-31"],
+    "VALIDATION": ["2018-01-01", "2020-12-31"],
+    "TEST": ["2021-01-01", "2025-12-31"]
+  },
+  "prior_exposure": {
+    "2015-2017": "Historical physical warm-up and parameter derivation; not a blind interval.",
+    "2018-2020": "Historical observations and model performance already explored; development validation only.",
+    "2000-2025": "Raw USGS coverage/QC and meteorological archives inspected; not proof of untouched data.",
+    "2021-2025": "No outcome evaluation found in repository experiment reports or pglocal simulations; reserve until delivery 4."
+  },
+  "engine_commit": "77b722bac716c32f2fba6b4e3f9dd6ea4b008e3d",
+  "executable_sha256": "56963a6475aa9014a56a6825749d7fc513fce2dd40dcbb0c0b6a5976364a3c9d",
+  "management": "FIXED_2019_CDL_CORN_LANDUSE_AND_EXPERIMENTAL_TILE_MASK",
+  "simulation": {
+    "output_frequency": "DAILY",
+    "coordination": "Annual publication runs replay continuously from 2000 with identical arm-specific frozen inputs; no annual storage reset at publication start.",
+    "seed": 42,
+    "plant_count_per_calendar_group": 1000,
+    "parameter_derivation_year": 2010,
+    "plant_contract": "Derive B on the prespecified calibration year 2010, freeze before TRAIN/VALIDATION, do not regenerate morphology per evaluation year.",
+    "coupling_max_iterations": 5,
+    "soil_water_convergence_tolerance_mm": 0.1
+  },
+  "calibration": {
+    "objective": "minimum monthly outlet RMSE in CALIBRATION only",
+    "max_candidates": 12,
+    "first_stage": {"esco": [0.05, 0.5, 0.95], "shallow_flo_min_m": [3.0, 5.0, 8.0], "tile_t_fc_h": 24.0},
+    "second_stage": {"policy": "Use the first-stage winner's ESCO/flo_min; vary tile t_fc only", "tile_t_fc_h": [6.0, 12.0, 48.0]},
+    "tie_breaker": "candidate_id ascending",
+    "candidate_outputs": "MONTHLY native SWAT+ outputs and metrics persisted in existing PostgreSQL; playback only for final daily arms",
+    "acceptance": {"monthly_nse_minimum": 0.0, "monthly_absolute_pbias_maximum_percent": 30.0, "finite_nonnegative_streamflow": true},
+    "acceptance_policy": "Record failure without extending the budget or claiming a validated baseline; retained winner remains exploratory.",
+    "shared_A_B": "All hydrological parameters, soils, weather, drainage, geometry, outlet, engine and publication years",
+    "fixed": ["perco", "pet_co", "petco_pmpt", "lapse", "soil profiles", "channel geometry", "tile coverage"],
+    "parameter_scope": "Exploratory bounded settings, not observed local hydraulic estimates or a global sensitivity analysis. perco is overridden/excluded for tiled HRUs in this engine."
+  },
+  "observations": {
+    "dataset_id": "17f4ce03-c3c9-443b-aad5-6179e0043202",
+    "variable": "USGS 00060/00003 daily mean outlet streamflow",
+    "unit": "m3/s",
+    "minimum_monthly_paired_fraction": 0.9,
+    "accepted_qualifiers": ["A", "A,e"],
+    "estimated_policy": "Include approved estimated values in primary comparisons; publish exclusion as secondary with recomputed common support.",
+    "missing_policy": "Never impute observations; simulated and observed monthly means use identical approved paired dates.",
+    "test_access": "No TEST observation query, export, tuning or metric in deliveries 2 and 3."
+  },
+  "monthly_exports": {
+    "key": ["station_id", "month", "arm"],
+    "target": "observed_streamflow_m3s",
+    "baseline": "physical_streamflow_m3s",
+    "residual": "observed_streamflow_m3s - physical_streamflow_m3s",
+    "fluxes": "sum daily mm over full month; named percolation_mm, never infiltration_mm",
+    "states": "mean dated states over full month",
+    "crop_inactive": "zero living-crop LAI/root-depth/biomass/transpiration; stress null outside active season, export active_days and stress_available_days",
+    "unknown": "null plus availability information; never substitute a biological zero for unknown",
+    "support": "Common paired days across A/B for observed/physical monthly Q; full calendar months for model weather/state features. Retrospective monthly inference, not advance forecasting."
+  },
+  "evaluation": {
+    "primary_contrast": "D versus A",
+    "primary_metric": "monthly RMSE, m3/s",
+    "secondary": ["B versus A", "C versus A", "D versus B", "D versus C", "MAE", "NSE", "modified KGE", "PBIAS"],
+    "simple_references": ["TRAIN calendar-month observed climatology", "nonnegative affine physical-Q correction fitted on TRAIN"],
+    "negative_flow_policy": "max(0, physical_Q + predicted_residual), same rule for validation and test",
+    "uncertainty": {"method": "paired circular moving-block bootstrap on common monthly errors", "block_months": 12, "replicates": 2000, "seed": 42, "confidence": 0.95},
+    "decision": "H1 supported only if the paired TEST RMSE reduction D versus A has a 95% interval strictly above zero; no obligatory 15% threshold.",
+    "ml_selection": "TRAIN/VALIDATION only; delivery 3 fixes model families and equal search budgets before model training; TEST evaluated once after freezing."
+  },
+  "limitations": [
+    "One basin and fixed experimental management, not historical rotation reconstruction or spatial generalization.",
+    "Derived FSPM moisture assumes uniform available-water fraction across soil layers.",
+    "2010 plant morphology is a prespecified model-derived contract, not observed or a representative year demonstrated empirically.",
+    "External ET/PET products remain process diagnostics, not measured ET targets.",
+    "ML can correct outlet errors without validating physiology or preserving water balance."
+  ]
+}

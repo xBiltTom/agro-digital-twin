@@ -75,10 +75,10 @@ def _calendar_from_result(
     )
 
 
-def _signature(calendar: SwatExecutedCropCalendar) -> dict[int, tuple[str, str]]:
+def _signature(calendar: SwatExecutedCropCalendar) -> dict[int, tuple[tuple[str, str], ...]]:
     return {
-        hru_id: (group.planting_date, group.harvest_date)
-        for group in calendar.groups for hru_id in group.hru_ids
+        hru_id: tuple((group.planting_date, group.harvest_date) for group in calendar.groups if hru_id in group.hru_ids)
+        for hru_id in calendar.hru_calendar
     }
 
 
@@ -128,6 +128,8 @@ def run_coupled_swat_with_executed_calendar(
     plant_count: int = 100,
     seed: int = 42,
     max_iterations: int = 5,
+    parameter_period: tuple | None = None,
+    frozen_parameter_summary: CouplingPlantParameterSummary | None = None,
 ) -> CoupledSwatRun:
     """Converge FSPM and real SWAT+ management calendars with copied workspaces.
 
@@ -141,6 +143,8 @@ def run_coupled_swat_with_executed_calendar(
         raise ValueError("run_coupled_swat_with_executed_calendar requires SWAT_MULTISCALE_COUPLED config")
     if max_iterations < 1:
         raise ValueError("max_iterations must be positive")
+    if frozen_parameter_summary is not None and parameter_period is not None:
+        raise ValueError("Choose a frozen plant contract or a derivation period")
     source_project = config.project_path
     cdl_fractions, cdl_provenance = _cdl_fractions(source_project)
     base_hru_weights = SwatExecutedCropCalendar.hru_spatial_weights(source_project, cdl_fractions)
@@ -175,9 +179,10 @@ def run_coupled_swat_with_executed_calendar(
             crop_fraction_by_hru=cdl_fractions,
             crop=fspm_crop,
             hru_water_results=water_source.hru_results if config.output_frequency == "DAILY" else None,
+            parameter_period=parameter_period,
         )
-        summary = _build_coupling_field_summary(
-            fspm.dated_fields,
+        summary = frozen_parameter_summary or _build_coupling_field_summary(
+            fspm.trait_dated_fields if parameter_period else fspm.dated_fields,
             fspm.seasonal_contracts,
             fspm.seasonal_weights,
         )
@@ -248,6 +253,8 @@ def run_coupled_swat_with_executed_calendar(
         "calendar_baseline_run_id": baseline.run_id,
         "calendar_baseline_workspace": baseline.workspace,
         "max_iterations": max_iterations,
+        "parameter_period": [d.isoformat() for d in parameter_period] if parameter_period else None,
+        "plant_contract_policy": "FROZEN_DEVELOPMENT_CONTRACT" if frozen_parameter_summary else "DERIVED_FROM_PARAMETER_PERIOD" if parameter_period else "DERIVED_FROM_REQUESTED_PERIOD",
         "iterations": iterations,
         "cdl_weights": cdl_provenance,
         "calendar_source": "SWAT+ mgt_out.txt from current executable run",

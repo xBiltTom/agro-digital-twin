@@ -307,11 +307,14 @@ class TwinCouplingEngine:
         coupled = run_coupled_swat_with_executed_calendar(
             adapter, config, target_crop=target_crop, plant_count=sim_run.plant_count,
             seed=sim_run.seed,
+            parameter_period=tuple(date.fromisoformat(value) for value in requested_swat["parameter_period"]) if requested_swat.get("parameter_period") else None,
+            frozen_parameter_summary=CouplingPlantParameterSummary.model_validate(requested_swat["frozen_parameter_summary"]) if requested_swat.get("frozen_parameter_summary") else None,
         )
         result, fspm, parameter_summary = coupled.result, coupled.fspm, coupled.parameter_summary
-        calendar_by_hru = {hru: {"calendar_id": group.calendar_id,
+        calendar_by_hru = {hru: [{"calendar_id": group.calendar_id,
                                  "planting_date": group.planting_date, "harvest_date": group.harvest_date}
-                           for group in coupled.calendar.groups for hru in group.hru_ids}
+                                for group in coupled.calendar.groups if hru in group.hru_ids]
+                           for hru in coupled.calendar.hru_calendar}
         soil_profiles = read_hru_soils(config.project_path)
         manifest = result.provenance["workspace_modifications"]
         if manifest.get("status") != "APPLIED" or not manifest.get("parameter_updates"):
@@ -336,6 +339,8 @@ class TwinCouplingEngine:
             "same_source_project": str(config.project_path.resolve()),
             "fspm_version": PlantPopulation.VERSION, "plant_count_per_calendar_group": sim_run.plant_count,
             "seed": sim_run.seed, "calendar_convergence": "CONVERGED",
+            "outlet_unit": config.outlet_unit,
+            "parameter_period": requested_swat.get("parameter_period"),
         }
         sim_run.provenance = {
             **result.provenance,

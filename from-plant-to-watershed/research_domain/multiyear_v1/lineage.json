@@ -1,0 +1,274 @@
+{
+  "protocol_sha256": "c0920e03e089d55117cb4c719230848c5769b82f46ed84a2580a7a04af45d695",
+  "publications": [
+    {
+      "year": 2013,
+      "A": "sf-multi-v1-a-2013",
+      "B": "sf-multi-v1-b-2013"
+    },
+    {
+      "year": 2014,
+      "A": "sf-multi-v1-a-2014",
+      "B": "sf-multi-v1-b-2014"
+    },
+    {
+      "year": 2015,
+      "A": "sf-multi-v1-a-2015",
+      "B": "sf-multi-v1-b-2015"
+    },
+    {
+      "year": 2016,
+      "A": "sf-multi-v1-a-2016",
+      "B": "sf-multi-v1-b-2016"
+    },
+    {
+      "year": 2017,
+      "A": "sf-multi-v1-a-2017",
+      "B": "sf-multi-v1-b-2017"
+    },
+    {
+      "year": 2018,
+      "A": "sf-multi-v1-a-2018",
+      "B": "sf-multi-v1-b-2018"
+    },
+    {
+      "year": 2019,
+      "A": "sf-multi-v1-a-2019",
+      "B": "sf-multi-v1-b-2019"
+    },
+    {
+      "year": 2020,
+      "A": "sf-multi-v1-a-2020",
+      "B": "sf-multi-v1-b-2020"
+    }
+  ],
+  "audits": [
+    {
+      "simulation_id": "sf-multi-v1-a-2013",
+      "network": "CLOSED",
+      "network_residual_m3": 0.7978992853313684,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.001561487526591805,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "632febc140e6bb0559d5a36bbdc6051376719525cd4e6cef2957f624f4a5bcb5"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2013",
+      "network": "CLOSED",
+      "network_residual_m3": 1.1202898658812046,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.0018229163723063498,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "633b539fe5aad9cedc7f017ef32099b05a60484e80c8793342e95f6d068f01fe"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2014",
+      "network": "CLOSED",
+      "network_residual_m3": 1.4348829984664917,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.0052296703167831115,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "7c19d4d1380733573d52cff34bc3e0ee77c54d3577adc8fe9888333b17c9b388"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2014",
+      "network": "CLOSED",
+      "network_residual_m3": 1.9737890399992466,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.008090519826400551,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "5b362410baf86b76952adb81dbd6a7453518be8d3e5522a5100522880137797f"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2015",
+      "network": "CLOSED",
+      "network_residual_m3": 2.058886207640171,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.32698033005863575,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "06d0c0f709eb3a9572990d432e85a66d6b2596f7076cf3c6ac9d8e5d10850d87"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2015",
+      "network": "CLOSED",
+      "network_residual_m3": 2.1519779823720455,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.40462579510634217,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "47eb5d647179056e22aad28ae22392a77522d0a44e9397c8fd0db2f26f5c4ea8"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2016",
+      "network": "CLOSED",
+      "network_residual_m3": 2.472255952656269,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.261048245360406,
+      "weather_files": 126,
+      "daily_records": 366,
+      "trace_sha256": "2e94714c36e37c8c86f9fd85e87d559032a530a828f09f4f74e2ca6ee43b04de"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2016",
+      "network": "CLOSED",
+      "network_residual_m3": 2.8000244572758675,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.33092559970121216,
+      "weather_files": 126,
+      "daily_records": 366,
+      "trace_sha256": "a2fc41e03dd3fc05aa8dd6cd9c1f83bdd2f6ca923e3b06ef71aa1e9b9df749fe"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2017",
+      "network": "CLOSED",
+      "network_residual_m3": 3.6105198189616203,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.009313544288797198,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "7f2d2d111257e05eeca93674c406d40bb078504c3e2b23739d18652e86560d1a"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2017",
+      "network": "CLOSED",
+      "network_residual_m3": 3.83387853205204,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.009444291090308293,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "11acbeb1c38784ff7cdb6b018d575b1f7ff23e645fbd03e2ff0dcfab8de2c015"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2018",
+      "network": "CLOSED",
+      "network_residual_m3": 10.03052707016468,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.004399759162172675,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "3c3c8999d42c8c630f9b87c346ffb0982d4662fac0c4f349247c2bc3baa13963"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2018",
+      "network": "CLOSED",
+      "network_residual_m3": 6.122641533613205,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.004051496340054257,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "62bbaa54c1e0eddbdb7159a8da92484a93b4c5f82bb7be47d98d1ff95b5e45f8"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2019",
+      "network": "CLOSED",
+      "network_residual_m3": 7.866979956626892,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.19643907603152622,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "bbe02d7123e213d9c1acdf99ca15e7b96ae9ae09ebf911347b14cd66d535209d"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2019",
+      "network": "CLOSED",
+      "network_residual_m3": 6.757540047168732,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.15359998987712106,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "f1fe1da9eef111ce67f1a50c9ec2842f128a5a74a459dc9871487e98ebee390b"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2020",
+      "network": "CLOSED",
+      "network_residual_m3": 1.2984298635274172,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.15465472454827842,
+      "weather_files": 126,
+      "daily_records": 366,
+      "trace_sha256": "e5086f6e76d9b014f41fdaf0bcb04c287b54ca728e9eb0b8073edd1ecae74a10"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2020",
+      "network": "CLOSED",
+      "network_residual_m3": 3.525230884552002,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.12186174919598046,
+      "weather_files": 126,
+      "daily_records": 366,
+      "trace_sha256": "c28d721f1aedf1247402092b39c93ab2067cdbaf8799a1ae064fca04d61eeb22"
+    }
+  ],
+  "inactive_annotation_receipts": [
+    {
+      "simulation_id": "sf-multi-v1-b-2013",
+      "changed_frames": 268,
+      "scope": "Only crop/calendar_id on previously null inactive maize HRUs; numerical payloads unchanged.",
+      "calendar_source": "Persisted native executed calendar",
+      "script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2014",
+      "changed_frames": 260,
+      "scope": "Only crop/calendar_id on previously null inactive maize HRUs; numerical payloads unchanged.",
+      "calendar_source": "Persisted native executed calendar",
+      "script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2015",
+      "changed_frames": 249,
+      "scope": "Only crop/calendar_id on previously null inactive maize HRUs; numerical payloads unchanged.",
+      "calendar_source": "Persisted native executed calendar",
+      "script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2016",
+      "changed_frames": 260,
+      "scope": "Only crop/calendar_id on previously null inactive maize HRUs; numerical payloads unchanged.",
+      "calendar_source": "Persisted native executed calendar",
+      "script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2017",
+      "changed_frames": 256,
+      "scope": "Only crop/calendar_id on previously null inactive maize HRUs; numerical payloads unchanged.",
+      "calendar_source": "Persisted native executed calendar",
+      "script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2018",
+      "changed_frames": 275,
+      "scope": "Only crop/calendar_id on previously null inactive maize HRUs; numerical payloads unchanged.",
+      "calendar_source": "Persisted native executed calendar",
+      "script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2019",
+      "changed_frames": 261,
+      "scope": "Only crop/calendar_id on previously null inactive maize HRUs; numerical payloads unchanged.",
+      "calendar_source": "Persisted native executed calendar",
+      "script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2020",
+      "changed_frames": 269,
+      "scope": "Only crop/calendar_id on previously null inactive maize HRUs; numerical payloads unchanged.",
+      "calendar_source": "Persisted native executed calendar",
+      "script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-parameters-2010",
+      "changed_frames": 262,
+      "scope": "Only crop/calendar_id on previously null inactive maize HRUs; numerical payloads unchanged.",
+      "calendar_source": "Persisted native executed calendar",
+      "script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897"
+    }
+  ],
+  "test_accessed": false,
+  "source_outputs_preserved": true
+}

@@ -1,0 +1,1005 @@
+{
+  "schema_version": "south-fork-multiyear-delivery/v1",
+  "protocol_sha256": "c0920e03e089d55117cb4c719230848c5769b82f46ed84a2580a7a04af45d695",
+  "recipe_sha256": "81f1f296b5f9eeb823dc5630568f9444c7e3611f4a18798e8eaaf57f44460cef",
+  "calibration": {
+    "protocol_sha256": "c0920e03e089d55117cb4c719230848c5769b82f46ed84a2580a7a04af45d695",
+    "budget_used": 12,
+    "budget_limit": 12,
+    "candidates": [
+      {
+        "run_id": "sf-multi-v1-cal-01",
+        "settings": {
+          "esco": 0.05,
+          "shallow_flo_min_m": 3.0,
+          "tile_t_fc_h": 24.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 4.996392434836667,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 3.340355339284003,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": 0.6063174318485691,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -47.49300834377527,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.7935524028467115,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.4090615860462109,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-02",
+        "settings": {
+          "esco": 0.05,
+          "shallow_flo_min_m": 5.0,
+          "tile_t_fc_h": 24.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 4.98154128216587,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 3.32516012384172,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": 0.6086542982160541,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -47.04195791777912,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.7936461249925107,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.42070429888042726,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-03",
+        "settings": {
+          "esco": 0.05,
+          "shallow_flo_min_m": 8.0,
+          "tile_t_fc_h": 24.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 4.729194874910077,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 3.120202298767177,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": 0.6472983256017744,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -40.647469107762504,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.7949268235729005,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.5431480392941855,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-04",
+        "settings": {
+          "esco": 0.5,
+          "shallow_flo_min_m": 3.0,
+          "tile_t_fc_h": 24.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 7.8864738115685995,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 5.067023837572376,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": 0.019158502081920936,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -76.89045664096533,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.5316207829650731,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": -0.060154238238961266,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-05",
+        "settings": {
+          "esco": 0.5,
+          "shallow_flo_min_m": 5.0,
+          "tile_t_fc_h": 24.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 7.733989642592355,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 4.909042694526163,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": 0.056720767164374464,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -74.05055977934533,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.5349535594009975,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.0480724403420153,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-06",
+        "settings": {
+          "esco": 0.5,
+          "shallow_flo_min_m": 8.0,
+          "tile_t_fc_h": 24.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 7.601966811318391,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 4.7607900291400895,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": 0.08865033274060763,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -70.84368580381553,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.5349918419200967,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.15693320032366287,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-07",
+        "settings": {
+          "esco": 0.95,
+          "shallow_flo_min_m": 3.0,
+          "tile_t_fc_h": 24.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 8.389261755010466,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 5.2798365459057095,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.10989166795934624,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -80.22132252669951,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.4383649019704629,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": -0.06629107647771337,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-08",
+        "settings": {
+          "esco": 0.95,
+          "shallow_flo_min_m": 5.0,
+          "tile_t_fc_h": 24.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 8.247472568308655,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 5.135777330722845,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.0726915520039515,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -77.71106741227283,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.44809699703913686,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.03220698616332063,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-09",
+        "settings": {
+          "esco": 0.95,
+          "shallow_flo_min_m": 8.0,
+          "tile_t_fc_h": 24.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 8.135620611622516,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 5.0022553724014545,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": -0.043793232520179304,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -75.02449076934958,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.4504706058498308,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.12210021583144326,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-10",
+        "settings": {
+          "esco": 0.05,
+          "shallow_flo_min_m": 8.0,
+          "tile_t_fc_h": 6.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 4.7182850208379445,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 3.1102472440578866,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": 0.6489237546578248,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -40.60475147611473,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.7949695548487241,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.5414959687190413,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-11",
+        "settings": {
+          "esco": 0.05,
+          "shallow_flo_min_m": 8.0,
+          "tile_t_fc_h": 12.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 4.720654209155698,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 3.111657090433844,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": 0.6485710949255994,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -40.6246004763082,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.7950354082837092,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.5416975970141996,
+            "reason": null
+          }
+        }
+      },
+      {
+        "run_id": "sf-multi-v1-cal-12",
+        "settings": {
+          "esco": 0.05,
+          "shallow_flo_min_m": 8.0,
+          "tile_t_fc_h": 48.0
+        },
+        "metrics": {
+          "n_pairs": 96,
+          "rmse": {
+            "status": "DEFINED",
+            "value": 4.74784827125964,
+            "reason": null
+          },
+          "mae": {
+            "status": "DEFINED",
+            "value": 3.135067298767177,
+            "reason": null
+          },
+          "nse": {
+            "status": "DEFINED",
+            "value": 0.6445105110736002,
+            "reason": null
+          },
+          "pbias": {
+            "status": "DEFINED",
+            "value": -40.72076829878062,
+            "reason": null
+          },
+          "r2": {
+            "status": "DEFINED",
+            "value": 0.7945704101497011,
+            "reason": null
+          },
+          "kge": {
+            "status": "DEFINED",
+            "value": 0.545380979190065,
+            "reason": null
+          }
+        }
+      }
+    ],
+    "winner": {
+      "run_id": "sf-multi-v1-cal-10",
+      "settings": {
+        "esco": 0.05,
+        "shallow_flo_min_m": 8.0,
+        "tile_t_fc_h": 6.0
+      },
+      "metrics": {
+        "n_pairs": 96,
+        "rmse": {
+          "status": "DEFINED",
+          "value": 4.7182850208379445,
+          "reason": null
+        },
+        "mae": {
+          "status": "DEFINED",
+          "value": 3.1102472440578866,
+          "reason": null
+        },
+        "nse": {
+          "status": "DEFINED",
+          "value": 0.6489237546578248,
+          "reason": null
+        },
+        "pbias": {
+          "status": "DEFINED",
+          "value": -40.60475147611473,
+          "reason": null
+        },
+        "r2": {
+          "status": "DEFINED",
+          "value": 0.7949695548487241,
+          "reason": null
+        },
+        "kge": {
+          "status": "DEFINED",
+          "value": 0.5414959687190413,
+          "reason": null
+        }
+      }
+    },
+    "acceptance_passed": false,
+    "reference_status": "BUDGET_EXHAUSTED_EXPLORATORY_REFERENCE",
+    "selected_project": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/backend/data/baseline-diagnostic-multiyear-v1/selected-project",
+    "test_accessed": false,
+    "hypothesis_status": "NOT_EVALUATED"
+  },
+  "frozen_plant_contract": {
+    "source_simulation_id": "sf-multi-v1-b-parameters-2010",
+    "derivation_year": 2010,
+    "summary": {
+      "summary_semantics": "SEASONAL_MAXIMA_FOR_COUPLING_NOT_A_DATED_FSPM_STATE",
+      "swat_lai_contract": {
+        "lai_pot": 5.028221347513036,
+        "frac_hu1": 0.15992484650481334,
+        "lai_max1": 0.16322249206523384,
+        "frac_hu2": 0.443420443382958,
+        "lai_max2": 0.8634539152551217,
+        "hu_lai_decl": 0.7278728714442473,
+        "season_count": 4,
+        "derivation": "SWAT HRU area and CDL-corn-fraction weighted mean of separately dated SWAT-executed-calendar SIMPLIFIED_FSPM seasonal LAI contracts"
+      },
+      "plant_height_mean_m": 2.630661833005216,
+      "root_depth_mean_m": 1.200218821515496,
+      "canopy_extinction_coefficient": 0.49913898455120664,
+      "biomass_energy_ratio_kg_ha_per_mj_m2": 40.10657730611137,
+      "peak_dates": {
+        "date_of_peak_LAI": "2010-07-23",
+        "date_of_peak_height": "2010-08-17",
+        "date_of_peak_root_depth": "2010-07-28"
+      },
+      "coupling_parameter_provenance": {
+        "ext_co": {
+          "source_type": "MODEL_BASE_PARAMETER",
+          "source_value": 0.5,
+          "population_mean": 0.4991389845512067,
+          "population_std": 0.023981698140073986,
+          "assumption_status": "ASSUMED_PARAMETER_NOT_CALIBRATED",
+          "calibrated": false,
+          "intra_population_variation": "seeded truncated normal; sigma=0.025",
+          "model_clamp": {
+            "minimum": 0.05,
+            "maximum": 2.0
+          },
+          "swat_documented_range": {
+            "minimum": 0.0,
+            "maximum": 2.0
+          }
+        },
+        "bm_e": {
+          "source_type": "MODEL_BASE_PARAMETER",
+          "source_value": 40.0,
+          "population_mean": 40.10657730611137,
+          "population_std": 1.982589383884093,
+          "assumption_status": "ASSUMED_PARAMETER_NOT_CALIBRATED",
+          "calibrated": false,
+          "intra_population_variation": "seeded truncated normal; sigma=2.0 kg/ha/(MJ/m2)",
+          "model_clamp": {
+            "minimum": 10.0,
+            "maximum": 90.0
+          },
+          "swat_documented_range": {
+            "minimum": 10.0,
+            "maximum": 90.0
+          }
+        }
+      }
+    },
+    "protocol_sha256": "c0920e03e089d55117cb4c719230848c5769b82f46ed84a2580a7a04af45d695"
+  },
+  "publications": [
+    {
+      "year": 2013,
+      "A": "sf-multi-v1-a-2013",
+      "B": "sf-multi-v1-b-2013"
+    },
+    {
+      "year": 2014,
+      "A": "sf-multi-v1-a-2014",
+      "B": "sf-multi-v1-b-2014"
+    },
+    {
+      "year": 2015,
+      "A": "sf-multi-v1-a-2015",
+      "B": "sf-multi-v1-b-2015"
+    },
+    {
+      "year": 2016,
+      "A": "sf-multi-v1-a-2016",
+      "B": "sf-multi-v1-b-2016"
+    },
+    {
+      "year": 2017,
+      "A": "sf-multi-v1-a-2017",
+      "B": "sf-multi-v1-b-2017"
+    },
+    {
+      "year": 2018,
+      "A": "sf-multi-v1-a-2018",
+      "B": "sf-multi-v1-b-2018"
+    },
+    {
+      "year": 2019,
+      "A": "sf-multi-v1-a-2019",
+      "B": "sf-multi-v1-b-2019"
+    },
+    {
+      "year": 2020,
+      "A": "sf-multi-v1-a-2020",
+      "B": "sf-multi-v1-b-2020"
+    }
+  ],
+  "monthly_row_count": 192,
+  "paired_months": 96,
+  "development_metrics": {
+    "TRAIN_A": {
+      "n_pairs": 60,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 5.746605707788718,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 3.2495535090933076,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.13416980076085627,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -48.08802588732015,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.3543781195745389,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.35965981582299955,
+        "reason": null
+      }
+    },
+    "TRAIN_B": {
+      "n_pairs": 60,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 5.643901620166664,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 3.186287724456056,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.16484170406280285,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -46.44704159086463,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.37132293137504224,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.381086387831964,
+        "reason": null
+      }
+    },
+    "VALIDATION_A": {
+      "n_pairs": 36,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 4.007008956283825,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 2.978739135092353,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.6987393028585733,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -29.336180873291024,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.8012811147440501,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.6236272340702649,
+        "reason": null
+      }
+    },
+    "VALIDATION_B": {
+      "n_pairs": 36,
+      "rmse": {
+        "status": "DEFINED",
+        "value": 3.921403104641037,
+        "reason": null
+      },
+      "mae": {
+        "status": "DEFINED",
+        "value": 2.912079891764092,
+        "reason": null
+      },
+      "nse": {
+        "status": "DEFINED",
+        "value": 0.711474084894769,
+        "reason": null
+      },
+      "pbias": {
+        "status": "DEFINED",
+        "value": -28.02678388554235,
+        "reason": null
+      },
+      "r2": {
+        "status": "DEFINED",
+        "value": 0.8042897519656905,
+        "reason": null
+      },
+      "kge": {
+        "status": "DEFINED",
+        "value": 0.6342407793182108,
+        "reason": null
+      }
+    }
+  },
+  "test_observations_accessed": false,
+  "hypothesis_status": "NOT_EVALUATED",
+  "artifacts_sha256": {
+    "monthly-ab.csv": "bccb27b4e290d65d0bcd6361ab4f3ffe735d4138748134d2174f7a73144de4d5",
+    "monthly-ab.parquet": "33000722c0f4e7b9482d93230ec3a17459f5165b2be93e359472a38480cfd452",
+    "paired-2013-lineage.json": "577be2d0d3d3cfd033c56b15b52a75581f9c549e061f8fb51d19f9b910010101",
+    "paired-2013.csv": "a88c240b10f5332445385a1cfb27e0cad52876a356eafde03bdfad61685bf0a4",
+    "paired-2014-lineage.json": "c64d069a0944f60827f7b937fc98cf791fe487db84610dfe850d235b5e45d3d3",
+    "paired-2014.csv": "9571b29caa808345cc742922c7b2f8bebf5c791c3c11a37b9d5a1d92f1498775",
+    "paired-2015-lineage.json": "8940195ec003cb1c3bd1fa0ba0030151929a2c4cf18013b4f5abce5e1b0efb51",
+    "paired-2015.csv": "fc8076718d9ddb2326be14216969993358459d423c95aae3d3fed44d2c447b9c",
+    "paired-2016-lineage.json": "77ab7b3200ac3d4c3df901ad607c8cc68e869b5b8616cc5e91132557d8222c04",
+    "paired-2016.csv": "235c41d276207dcb027677c2d21cfb43c8035da16971abd7a4145e595e170e38",
+    "paired-2017-lineage.json": "5f28dffe77998a36c3b79cf0d6d0e34ce619e66ba07ce6c8710fae76ee16f702",
+    "paired-2017.csv": "82bd40c00358b54f8db320ba5add990721b1b33de75c0d2b93a8e83689d9dbbc",
+    "paired-2018-lineage.json": "f45242229fe7b62ede7e7adafdb483787a62f91bab435b998a63cdc644461bb0",
+    "paired-2018.csv": "4c7cd005d2964ed732b3e1d686aad64bb826662f011cf535121da88c0e0ca384",
+    "paired-2019-lineage.json": "1b423d28688d1a9ec6f190d214bc9a6d1d548201a106258a0990d5ff4c4c1ee5",
+    "paired-2019.csv": "e02820f8fddb370435351650c571dab02586e090880b2d2de6b48773972b3f06",
+    "paired-2020-lineage.json": "a2b9a397a9991980e65524da5bcc3447def159e6d33619ca59ec1482b5aa4027",
+    "paired-2020.csv": "cc5585945c9ccd2cea1909533355bfc635bdd858e56a7bbdf2b7734809b41827",
+    "schema.json": "6f528d483abd736d85d65c4679bc0c14d6a2d5a866caf26e9e7719010c72725e"
+  },
+  "forcing_manifest_sha256": "a869e866b772477a276293cf43ac1604c070b4f68481737154c04ad0322378d1",
+  "dataset_id": "sf-multi-v1-monthly-ab",
+  "native_audits": [
+    {
+      "simulation_id": "sf-multi-v1-a-2013",
+      "network": "CLOSED",
+      "network_residual_m3": 0.7978992853313684,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.001561487526591805,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "632febc140e6bb0559d5a36bbdc6051376719525cd4e6cef2957f624f4a5bcb5"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2013",
+      "network": "CLOSED",
+      "network_residual_m3": 1.1202898658812046,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.0018229163723063498,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "633b539fe5aad9cedc7f017ef32099b05a60484e80c8793342e95f6d068f01fe"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2014",
+      "network": "CLOSED",
+      "network_residual_m3": 1.4348829984664917,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.0052296703167831115,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "7c19d4d1380733573d52cff34bc3e0ee77c54d3577adc8fe9888333b17c9b388"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2014",
+      "network": "CLOSED",
+      "network_residual_m3": 1.9737890399992466,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.008090519826400551,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "5b362410baf86b76952adb81dbd6a7453518be8d3e5522a5100522880137797f"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2015",
+      "network": "CLOSED",
+      "network_residual_m3": 2.058886207640171,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.32698033005863575,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "06d0c0f709eb3a9572990d432e85a66d6b2596f7076cf3c6ac9d8e5d10850d87"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2015",
+      "network": "CLOSED",
+      "network_residual_m3": 2.1519779823720455,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.40462579510634217,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "47eb5d647179056e22aad28ae22392a77522d0a44e9397c8fd0db2f26f5c4ea8"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2016",
+      "network": "CLOSED",
+      "network_residual_m3": 2.472255952656269,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.261048245360406,
+      "weather_files": 126,
+      "daily_records": 366,
+      "trace_sha256": "2e94714c36e37c8c86f9fd85e87d559032a530a828f09f4f74e2ca6ee43b04de"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2016",
+      "network": "CLOSED",
+      "network_residual_m3": 2.8000244572758675,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.33092559970121216,
+      "weather_files": 126,
+      "daily_records": 366,
+      "trace_sha256": "a2fc41e03dd3fc05aa8dd6cd9c1f83bdd2f6ca923e3b06ef71aa1e9b9df749fe"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2017",
+      "network": "CLOSED",
+      "network_residual_m3": 3.6105198189616203,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.009313544288797198,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "7f2d2d111257e05eeca93674c406d40bb078504c3e2b23739d18652e86560d1a"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2017",
+      "network": "CLOSED",
+      "network_residual_m3": 3.83387853205204,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.009444291090308293,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "11acbeb1c38784ff7cdb6b018d575b1f7ff23e645fbd03e2ff0dcfab8de2c015"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2018",
+      "network": "CLOSED",
+      "network_residual_m3": 10.03052707016468,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.004399759162172675,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "3c3c8999d42c8c630f9b87c346ffb0982d4662fac0c4f349247c2bc3baa13963"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2018",
+      "network": "CLOSED",
+      "network_residual_m3": 6.122641533613205,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.004051496340054257,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "62bbaa54c1e0eddbdb7159a8da92484a93b4c5f82bb7be47d98d1ff95b5e45f8"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2019",
+      "network": "CLOSED",
+      "network_residual_m3": 7.866979956626892,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.19643907603152622,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "bbe02d7123e213d9c1acdf99ca15e7b96ae9ae09ebf911347b14cd66d535209d"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2019",
+      "network": "CLOSED",
+      "network_residual_m3": 6.757540047168732,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": 0.15359998987712106,
+      "weather_files": 126,
+      "daily_records": 365,
+      "trace_sha256": "f1fe1da9eef111ce67f1a50c9ec2842f128a5a74a459dc9871487e98ebee390b"
+    },
+    {
+      "simulation_id": "sf-multi-v1-a-2020",
+      "network": "CLOSED",
+      "network_residual_m3": 1.2984298635274172,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.15465472454827842,
+      "weather_files": 126,
+      "daily_records": 366,
+      "trace_sha256": "e5086f6e76d9b014f41fdaf0bcb04c287b54ca728e9eb0b8073edd1ecae74a10"
+    },
+    {
+      "simulation_id": "sf-multi-v1-b-2020",
+      "network": "CLOSED",
+      "network_residual_m3": 3.525230884552002,
+      "catchment": "PARTIAL_ACCOUNTING",
+      "catchment_residual_mm": -0.12186174919598046,
+      "weather_files": 126,
+      "daily_records": 366,
+      "trace_sha256": "c28d721f1aedf1247402092b39c93ab2067cdbaf8799a1ae064fca04d61eeb22"
+    }
+  ],
+  "package_script_sha256": "4ea5a021ec837f171d579cd3c7de1a3e315f3bf4d39345a9159e86b38314e897",
+  "bundle": "research_domain/multiyear_v1",
+  "implementation_sha256_at_packaging": {
+    "swat_executed_calendar.py": "d7e1d104a4293b265e3eb902e13c5db667bbe10eb1ab488076264c23225f05ae",
+    "executed_calendar_fspm.py": "ab7959e7ddb34992839752cb353a39007596f8e8df21c2d8a06c7cc51453366c",
+    "swat_coupled_runner.py": "e6df855a7e653a3c956eb329e2d09724657f4bd775c42a366bd3c7c98c3a4e91",
+    "twin_coupling_engine.py": "989593a86e5da40e56f3aa445dfbcc735178276650686db7f3bd8c17317ab191",
+    "playback_builder.py": "bb1f33f55164bc4e237f55083996b7de05df0c55886e4edcc18fd970d1061c0f"
+  },
+  "bundle_sha256": {
+    "lineage.json": "08bc941a6821c640d9d08f52ab93c8a6ae419e9a1c3047d7b61a5c6b4f577650",
+    "monthly-ab.csv": "bccb27b4e290d65d0bcd6361ab4f3ffe735d4138748134d2174f7a73144de4d5",
+    "monthly-ab.parquet": "33000722c0f4e7b9482d93230ec3a17459f5165b2be93e359472a38480cfd452",
+    "schema.json": "6f528d483abd736d85d65c4679bc0c14d6a2d5a866caf26e9e7719010c72725e"
+  },
+  "software_checks": {
+    "python_compilation": "PASSED",
+    "pure_existing_cases": "3 PASSED via direct invocation; SQLite fixture not loaded",
+    "full_suite_run": false,
+    "cases": [
+      "test_executed_calendar_retains_distinct_hru_dates_and_area_weights",
+      "test_dated_fspm_field_retains_static_traits_required_by_swat_mapper",
+      "test_playback_exposes_swat_hru_plant_variables_without_inventing_height_or_soil_percent"
+    ],
+    "launcher_sha256_after_finalization": "dc6c1674d265a83da1c7bf6c44f23e767921bc8a074276c9608eda8e5dd3a638",
+    "launcher_finalization": "Failure error now stored as structured JSON with finish timestamp; schema written before report hash inventory. Executed recipe remains identified separately."
+  }
+}

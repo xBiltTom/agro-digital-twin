@@ -1,0 +1,1073 @@
+{
+  "schema_version": "south-fork-executed-multiyear-calendar/v1",
+  "source_run_id": "sf-multi-v1-cal-10",
+  "source_event_sha256": "8d45981c592c948cd364188a4e82fcf6f412cb41e8e94c1ad788f1fcbf9823c5",
+  "calendar_code_sha256": "d7e1d104a4293b265e3eb902e13c5db667bbe10eb1ab488076264c23225f05ae",
+  "calendar": {
+    "status": "EXECUTED_SWAT_MANAGEMENT_EVENTS",
+    "source_file": "mgt_out.txt",
+    "crop": "corn",
+    "requested_period": [
+      "2005-01-01",
+      "2012-12-31"
+    ],
+    "event_count": 512,
+    "calendar_group_count": 44,
+    "hru_count": 32,
+    "hru_calendar": {
+      "1": [
+        "corn-2005-05-09-to-2005-08-23-06",
+        "corn-2006-05-08-to-2006-08-20-13",
+        "corn-2007-05-06-to-2007-08-14-17",
+        "corn-2008-05-20-to-2008-09-08-25",
+        "corn-2009-05-12-to-2009-09-12-31",
+        "corn-2010-05-04-to-2010-08-16-34",
+        "corn-2011-05-13-to-2011-08-16-40",
+        "corn-2012-04-14-to-2012-07-24-44"
+      ],
+      "2": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-14-16",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-12-to-2009-09-11-30",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-24-43"
+      ],
+      "5": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-11-to-2009-09-11-29",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "6": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-11-to-2009-09-11-29",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "7": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-14-16",
+        "corn-2008-05-20-to-2008-09-08-25",
+        "corn-2009-05-12-to-2009-09-11-30",
+        "corn-2010-05-05-to-2010-08-16-35",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-24-43"
+      ],
+      "8": [
+        "corn-2005-05-09-to-2005-08-24-07",
+        "corn-2006-05-08-to-2006-08-20-13",
+        "corn-2007-05-06-to-2007-08-15-18",
+        "corn-2008-05-20-to-2008-09-08-25",
+        "corn-2009-05-12-to-2009-09-12-31",
+        "corn-2010-05-05-to-2010-08-17-36",
+        "corn-2011-05-13-to-2011-08-16-40",
+        "corn-2012-04-14-to-2012-07-24-44"
+      ],
+      "9": [
+        "corn-2005-05-09-to-2005-08-21-04",
+        "corn-2006-05-08-to-2006-08-18-11",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-05-22",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "10": [
+        "corn-2005-05-09-to-2005-08-21-04",
+        "corn-2006-05-08-to-2006-08-18-11",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-05-22",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "11": [
+        "corn-2005-05-09-to-2005-08-23-06",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-06-to-2007-08-15-18",
+        "corn-2008-05-20-to-2008-09-10-26",
+        "corn-2009-05-13-to-2009-09-13-32",
+        "corn-2010-05-05-to-2010-08-17-36",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-14-to-2012-07-24-44"
+      ],
+      "12": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-18-11",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-16-34",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "13": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-14-16",
+        "corn-2008-05-20-to-2008-09-07-24",
+        "corn-2009-05-12-to-2009-09-12-31",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "14": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-18-11",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-16-34",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "15": [
+        "corn-2005-05-08-to-2005-08-21-03",
+        "corn-2006-05-07-to-2006-08-18-10",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-19-to-2008-09-04-21",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "16": [
+        "corn-2005-05-08-to-2005-08-20-02",
+        "corn-2006-05-07-to-2006-08-17-09",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-19-to-2008-09-04-21",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "17": [
+        "corn-2005-05-08-to-2005-08-20-02",
+        "corn-2006-05-07-to-2006-08-17-09",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-19-to-2008-09-03-20",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-13-38",
+        "corn-2012-04-12-to-2012-07-23-41"
+      ],
+      "18": [
+        "corn-2005-05-08-to-2005-08-20-02",
+        "corn-2006-05-07-to-2006-08-17-09",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-19-to-2008-09-04-21",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "19": [
+        "corn-2005-05-08-to-2005-08-20-02",
+        "corn-2006-05-07-to-2006-08-17-09",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-19-to-2008-09-03-20",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-13-38",
+        "corn-2012-04-12-to-2012-07-23-41"
+      ],
+      "20": [
+        "corn-2005-05-08-to-2005-08-19-01",
+        "corn-2006-05-07-to-2006-08-16-08",
+        "corn-2007-05-04-to-2007-08-12-14",
+        "corn-2008-05-18-to-2008-09-02-19",
+        "corn-2009-05-10-to-2009-09-09-27",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-11-to-2011-08-12-37",
+        "corn-2012-04-12-to-2012-07-23-41"
+      ],
+      "21": [
+        "corn-2005-05-08-to-2005-08-21-03",
+        "corn-2006-05-07-to-2006-08-18-10",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-19-to-2008-09-04-21",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "22": [
+        "corn-2005-05-08-to-2005-08-20-02",
+        "corn-2006-05-07-to-2006-08-17-09",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-19-to-2008-09-04-21",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "23": [
+        "corn-2005-05-08-to-2005-08-20-02",
+        "corn-2006-05-07-to-2006-08-17-09",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-19-to-2008-09-04-21",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "24": [
+        "corn-2005-05-09-to-2005-08-21-04",
+        "corn-2006-05-08-to-2006-08-18-11",
+        "corn-2007-05-05-to-2007-08-14-16",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-12-to-2009-09-11-30",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-24-43"
+      ],
+      "26": [
+        "corn-2005-05-08-to-2005-08-20-02",
+        "corn-2006-05-07-to-2006-08-17-09",
+        "corn-2007-05-04-to-2007-08-12-14",
+        "corn-2008-05-19-to-2008-09-03-20",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-13-38",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "27": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-14-16",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-12-to-2009-09-11-30",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "29": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-05-22",
+        "corn-2009-05-11-to-2009-09-10-28",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "30": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-14-16",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-12-to-2009-09-11-30",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-24-43"
+      ],
+      "31": [
+        "corn-2005-05-09-to-2005-08-23-06",
+        "corn-2006-05-08-to-2006-08-20-13",
+        "corn-2007-05-06-to-2007-08-14-17",
+        "corn-2008-05-20-to-2008-09-08-25",
+        "corn-2009-05-12-to-2009-09-12-31",
+        "corn-2010-05-04-to-2010-08-16-34",
+        "corn-2011-05-13-to-2011-08-16-40",
+        "corn-2012-04-14-to-2012-07-24-44"
+      ],
+      "32": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-14-16",
+        "corn-2008-05-20-to-2008-09-07-24",
+        "corn-2009-05-12-to-2009-09-12-31",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "33": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-11-to-2009-09-11-29",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "34": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-11-to-2009-09-11-29",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ],
+      "35": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-14-16",
+        "corn-2008-05-20-to-2008-09-07-24",
+        "corn-2009-05-12-to-2009-09-12-31",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-13-to-2011-08-16-40",
+        "corn-2012-04-14-to-2012-07-24-44"
+      ],
+      "36": [
+        "corn-2005-05-09-to-2005-08-22-05",
+        "corn-2006-05-08-to-2006-08-19-12",
+        "corn-2007-05-05-to-2007-08-13-15",
+        "corn-2008-05-20-to-2008-09-06-23",
+        "corn-2009-05-11-to-2009-09-11-29",
+        "corn-2010-05-04-to-2010-08-15-33",
+        "corn-2011-05-12-to-2011-08-14-39",
+        "corn-2012-04-13-to-2012-07-23-42"
+      ]
+    },
+    "groups": [
+      {
+        "calendar_id": "corn-2005-05-08-to-2005-08-19-01",
+        "crop": "corn",
+        "planting_date": "2005-05-08",
+        "harvest_date": "2005-08-19",
+        "hru_ids": [
+          20
+        ],
+        "spatial_weight": 5184.58303,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2005-05-08-to-2005-08-20-02",
+        "crop": "corn",
+        "planting_date": "2005-05-08",
+        "harvest_date": "2005-08-20",
+        "hru_ids": [
+          16,
+          17,
+          18,
+          19,
+          22,
+          23,
+          26
+        ],
+        "spatial_weight": 14930.45858,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2005-05-08-to-2005-08-21-03",
+        "crop": "corn",
+        "planting_date": "2005-05-08",
+        "harvest_date": "2005-08-21",
+        "hru_ids": [
+          15,
+          21
+        ],
+        "spatial_weight": 2674.23642,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2005-05-09-to-2005-08-21-04",
+        "crop": "corn",
+        "planting_date": "2005-05-09",
+        "harvest_date": "2005-08-21",
+        "hru_ids": [
+          9,
+          10,
+          24
+        ],
+        "spatial_weight": 3862.00805,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2005-05-09-to-2005-08-22-05",
+        "crop": "corn",
+        "planting_date": "2005-05-09",
+        "harvest_date": "2005-08-22",
+        "hru_ids": [
+          2,
+          5,
+          6,
+          7,
+          12,
+          13,
+          14,
+          27,
+          29,
+          30,
+          32,
+          33,
+          34,
+          35,
+          36
+        ],
+        "spatial_weight": 18727.99269,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2005-05-09-to-2005-08-23-06",
+        "crop": "corn",
+        "planting_date": "2005-05-09",
+        "harvest_date": "2005-08-23",
+        "hru_ids": [
+          1,
+          11,
+          31
+        ],
+        "spatial_weight": 3182.64494,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2005-05-09-to-2005-08-24-07",
+        "crop": "corn",
+        "planting_date": "2005-05-09",
+        "harvest_date": "2005-08-24",
+        "hru_ids": [
+          8
+        ],
+        "spatial_weight": 2048.20912,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2006-05-07-to-2006-08-16-08",
+        "crop": "corn",
+        "planting_date": "2006-05-07",
+        "harvest_date": "2006-08-16",
+        "hru_ids": [
+          20
+        ],
+        "spatial_weight": 5184.58303,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2006-05-07-to-2006-08-17-09",
+        "crop": "corn",
+        "planting_date": "2006-05-07",
+        "harvest_date": "2006-08-17",
+        "hru_ids": [
+          16,
+          17,
+          18,
+          19,
+          22,
+          23,
+          26
+        ],
+        "spatial_weight": 14930.45858,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2006-05-07-to-2006-08-18-10",
+        "crop": "corn",
+        "planting_date": "2006-05-07",
+        "harvest_date": "2006-08-18",
+        "hru_ids": [
+          15,
+          21
+        ],
+        "spatial_weight": 2674.23642,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2006-05-08-to-2006-08-18-11",
+        "crop": "corn",
+        "planting_date": "2006-05-08",
+        "harvest_date": "2006-08-18",
+        "hru_ids": [
+          9,
+          10,
+          12,
+          14,
+          24
+        ],
+        "spatial_weight": 9479.06928,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2006-05-08-to-2006-08-19-12",
+        "crop": "corn",
+        "planting_date": "2006-05-08",
+        "harvest_date": "2006-08-19",
+        "hru_ids": [
+          2,
+          5,
+          6,
+          7,
+          11,
+          13,
+          27,
+          29,
+          30,
+          32,
+          33,
+          34,
+          35,
+          36
+        ],
+        "spatial_weight": 14622.53665,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2006-05-08-to-2006-08-20-13",
+        "crop": "corn",
+        "planting_date": "2006-05-08",
+        "harvest_date": "2006-08-20",
+        "hru_ids": [
+          1,
+          8,
+          31
+        ],
+        "spatial_weight": 3719.24887,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2007-05-04-to-2007-08-12-14",
+        "crop": "corn",
+        "planting_date": "2007-05-04",
+        "harvest_date": "2007-08-12",
+        "hru_ids": [
+          20,
+          26
+        ],
+        "spatial_weight": 13187.4346,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2007-05-05-to-2007-08-13-15",
+        "crop": "corn",
+        "planting_date": "2007-05-05",
+        "harvest_date": "2007-08-13",
+        "hru_ids": [
+          5,
+          6,
+          9,
+          10,
+          12,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          21,
+          22,
+          23,
+          29,
+          33,
+          34,
+          36
+        ],
+        "spatial_weight": 23167.1475,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2007-05-05-to-2007-08-14-16",
+        "crop": "corn",
+        "planting_date": "2007-05-05",
+        "harvest_date": "2007-08-14",
+        "hru_ids": [
+          2,
+          7,
+          13,
+          24,
+          27,
+          30,
+          32,
+          35
+        ],
+        "spatial_weight": 9024.69667,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2007-05-06-to-2007-08-14-17",
+        "crop": "corn",
+        "planting_date": "2007-05-06",
+        "harvest_date": "2007-08-14",
+        "hru_ids": [
+          1,
+          31
+        ],
+        "spatial_weight": 1671.03975,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2007-05-06-to-2007-08-15-18",
+        "crop": "corn",
+        "planting_date": "2007-05-06",
+        "harvest_date": "2007-08-15",
+        "hru_ids": [
+          8,
+          11
+        ],
+        "spatial_weight": 3559.8143099999998,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2008-05-18-to-2008-09-02-19",
+        "crop": "corn",
+        "planting_date": "2008-05-18",
+        "harvest_date": "2008-09-02",
+        "hru_ids": [
+          20
+        ],
+        "spatial_weight": 5184.58303,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2008-05-19-to-2008-09-03-20",
+        "crop": "corn",
+        "planting_date": "2008-05-19",
+        "harvest_date": "2008-09-03",
+        "hru_ids": [
+          17,
+          19,
+          26
+        ],
+        "spatial_weight": 10601.85779,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2008-05-19-to-2008-09-04-21",
+        "crop": "corn",
+        "planting_date": "2008-05-19",
+        "harvest_date": "2008-09-04",
+        "hru_ids": [
+          15,
+          16,
+          18,
+          21,
+          22,
+          23
+        ],
+        "spatial_weight": 7002.83721,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2008-05-20-to-2008-09-05-22",
+        "crop": "corn",
+        "planting_date": "2008-05-20",
+        "harvest_date": "2008-09-05",
+        "hru_ids": [
+          9,
+          10,
+          29
+        ],
+        "spatial_weight": 3552.5586000000003,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2008-05-20-to-2008-09-06-23",
+        "crop": "corn",
+        "planting_date": "2008-05-20",
+        "harvest_date": "2008-09-06",
+        "hru_ids": [
+          2,
+          5,
+          6,
+          12,
+          14,
+          24,
+          27,
+          30,
+          33,
+          34,
+          36
+        ],
+        "spatial_weight": 13692.21526,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2008-05-20-to-2008-09-07-24",
+        "crop": "corn",
+        "planting_date": "2008-05-20",
+        "harvest_date": "2008-09-07",
+        "hru_ids": [
+          13,
+          32,
+          35
+        ],
+        "spatial_weight": 3194.73778,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2008-05-20-to-2008-09-08-25",
+        "crop": "corn",
+        "planting_date": "2008-05-20",
+        "harvest_date": "2008-09-08",
+        "hru_ids": [
+          1,
+          7,
+          8,
+          31
+        ],
+        "spatial_weight": 5869.73797,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2008-05-20-to-2008-09-10-26",
+        "crop": "corn",
+        "planting_date": "2008-05-20",
+        "harvest_date": "2008-09-10",
+        "hru_ids": [
+          11
+        ],
+        "spatial_weight": 1511.60519,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2009-05-10-to-2009-09-09-27",
+        "crop": "corn",
+        "planting_date": "2009-05-10",
+        "harvest_date": "2009-09-09",
+        "hru_ids": [
+          20
+        ],
+        "spatial_weight": 5184.58303,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2009-05-11-to-2009-09-10-28",
+        "crop": "corn",
+        "planting_date": "2009-05-11",
+        "harvest_date": "2009-09-10",
+        "hru_ids": [
+          9,
+          10,
+          12,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          21,
+          22,
+          23,
+          26,
+          29
+        ],
+        "spatial_weight": 26774.31483,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2009-05-11-to-2009-09-11-29",
+        "crop": "corn",
+        "planting_date": "2009-05-11",
+        "harvest_date": "2009-09-11",
+        "hru_ids": [
+          5,
+          6,
+          33,
+          34,
+          36
+        ],
+        "spatial_weight": 4395.68424,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2009-05-12-to-2009-09-11-30",
+        "crop": "corn",
+        "planting_date": "2009-05-12",
+        "harvest_date": "2009-09-11",
+        "hru_ids": [
+          2,
+          7,
+          24,
+          27,
+          30
+        ],
+        "spatial_weight": 5829.95889,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2009-05-12-to-2009-09-12-31",
+        "crop": "corn",
+        "planting_date": "2009-05-12",
+        "harvest_date": "2009-09-12",
+        "hru_ids": [
+          1,
+          8,
+          13,
+          31,
+          32,
+          35
+        ],
+        "spatial_weight": 6913.98665,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2009-05-13-to-2009-09-13-32",
+        "crop": "corn",
+        "planting_date": "2009-05-13",
+        "harvest_date": "2009-09-13",
+        "hru_ids": [
+          11
+        ],
+        "spatial_weight": 1511.60519,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2010-05-04-to-2010-08-15-33",
+        "crop": "corn",
+        "planting_date": "2010-05-04",
+        "harvest_date": "2010-08-15",
+        "hru_ids": [
+          2,
+          5,
+          6,
+          9,
+          10,
+          13,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          26,
+          27,
+          29,
+          30,
+          32,
+          33,
+          34,
+          35,
+          36
+        ],
+        "spatial_weight": 37611.72844,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2010-05-04-to-2010-08-16-34",
+        "crop": "corn",
+        "planting_date": "2010-05-04",
+        "harvest_date": "2010-08-16",
+        "hru_ids": [
+          1,
+          12,
+          14,
+          31
+        ],
+        "spatial_weight": 7288.10098,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2010-05-05-to-2010-08-16-35",
+        "crop": "corn",
+        "planting_date": "2010-05-05",
+        "harvest_date": "2010-08-16",
+        "hru_ids": [
+          7
+        ],
+        "spatial_weight": 2150.4891,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2010-05-05-to-2010-08-17-36",
+        "crop": "corn",
+        "planting_date": "2010-05-05",
+        "harvest_date": "2010-08-17",
+        "hru_ids": [
+          8,
+          11
+        ],
+        "spatial_weight": 3559.8143099999998,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2011-05-11-to-2011-08-12-37",
+        "crop": "corn",
+        "planting_date": "2011-05-11",
+        "harvest_date": "2011-08-12",
+        "hru_ids": [
+          20
+        ],
+        "spatial_weight": 5184.58303,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2011-05-12-to-2011-08-13-38",
+        "crop": "corn",
+        "planting_date": "2011-05-12",
+        "harvest_date": "2011-08-13",
+        "hru_ids": [
+          17,
+          19,
+          26
+        ],
+        "spatial_weight": 10601.85779,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2011-05-12-to-2011-08-14-39",
+        "crop": "corn",
+        "planting_date": "2011-05-12",
+        "harvest_date": "2011-08-14",
+        "hru_ids": [
+          2,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          18,
+          21,
+          22,
+          23,
+          24,
+          27,
+          29,
+          30,
+          32,
+          33,
+          34,
+          36
+        ],
+        "spatial_weight": 30428.32601,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2011-05-13-to-2011-08-16-40",
+        "crop": "corn",
+        "planting_date": "2011-05-13",
+        "harvest_date": "2011-08-16",
+        "hru_ids": [
+          1,
+          8,
+          31,
+          35
+        ],
+        "spatial_weight": 4395.366,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2012-04-12-to-2012-07-23-41",
+        "crop": "corn",
+        "planting_date": "2012-04-12",
+        "harvest_date": "2012-07-23",
+        "hru_ids": [
+          17,
+          19,
+          20
+        ],
+        "spatial_weight": 7783.58925,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2012-04-13-to-2012-07-23-42",
+        "crop": "corn",
+        "planting_date": "2012-04-13",
+        "harvest_date": "2012-07-23",
+        "hru_ids": [
+          5,
+          6,
+          9,
+          10,
+          12,
+          13,
+          14,
+          15,
+          16,
+          18,
+          21,
+          22,
+          23,
+          26,
+          27,
+          29,
+          32,
+          33,
+          34,
+          36
+        ],
+        "spatial_weight": 32299.02494,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2012-04-13-to-2012-07-24-43",
+        "crop": "corn",
+        "planting_date": "2012-04-13",
+        "harvest_date": "2012-07-24",
+        "hru_ids": [
+          2,
+          7,
+          24,
+          30
+        ],
+        "spatial_weight": 4620.54745,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      },
+      {
+        "calendar_id": "corn-2012-04-14-to-2012-07-24-44",
+        "crop": "corn",
+        "planting_date": "2012-04-14",
+        "harvest_date": "2012-07-24",
+        "hru_ids": [
+          1,
+          8,
+          11,
+          31,
+          35
+        ],
+        "spatial_weight": 5906.97119,
+        "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+      }
+    ],
+    "limitation": "Management dates are SWAT+ simulated execution events at daily resolution, not observed field operation dates. FSPM applies the date to the complete day because subdaily operation timing is unavailable."
+  },
+  "hru_season_count": {
+    "20": 8,
+    "16": 8,
+    "17": 8,
+    "18": 8,
+    "19": 8,
+    "22": 8,
+    "23": 8,
+    "26": 8,
+    "15": 8,
+    "21": 8,
+    "9": 8,
+    "10": 8,
+    "24": 8,
+    "2": 8,
+    "5": 8,
+    "6": 8,
+    "7": 8,
+    "12": 8,
+    "13": 8,
+    "14": 8,
+    "27": 8,
+    "29": 8,
+    "30": 8,
+    "32": 8,
+    "33": 8,
+    "34": 8,
+    "35": 8,
+    "36": 8,
+    "1": 8,
+    "11": 8,
+    "31": 8,
+    "8": 8
+  }
+}

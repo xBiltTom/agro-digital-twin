@@ -12,6 +12,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | Motor hidrológico | SWAT+ real 61.0.2.61; nueva receta de investigación desde fuente, con reproducción binaria local. |
 | Planta | `SIMPLIFIED_FSPM`: poblaciones deterministas con variabilidad paramétrica, no un FSPM botánico completo validado. |
 | Calendario | Siembra/cosecha por HRU desde `mgt_out.txt`; eventos modelados, no operaciones agrícolas observadas. |
+| Experimento multianual | `sf-multi-v1`: particiones congeladas, búsqueda física 12/12 y 96 meses pareados A/B publicados; referencia exploratoria por PBIAS. |
 | Agua SWAT+ → FSPM | Estimación de humedad radicular desde `sw_ave` y `soils.sol`, bajo hipótesis de fracción de agua disponible uniforme en el perfil. |
 | Planta → SWAT+ | Diez parámetros del registro vegetal `corn` en `plants.plt`; SWAT+ mantiene sus propias ecuaciones de agua y cultivo. |
 | Persistencia | Frames JSONB PostgreSQL con clave temporal y SHA-256. |
@@ -46,6 +47,7 @@ La [ficha técnica](../project_framework.md) conserva el alcance de investigaci�
 | `sf19-src-v2-geom-routed` | Longitudes delineadas y receta reproducible | Reproduce caudales anteriores; residuo de red 0,315 m³, cuenca parcial −0,01215 mm; 365 frames. |
 | `sf19-phys-ctrl-v1-reference` | Control con código actual sobre inputs físicos preparados | Reproduce exactamente los 365 caudales de la referencia; 365 frames. |
 | `sf19-phys-fix-v1-reference` | Misma física y clima de warm-up corregido | RMSE mensual 8,079 m³/s; NSE −0,408; volumen 94,520 hm³; 365 frames. |
+| `sf-multi-v1-cal-10` | Mejor candidato en CALIBRATION 2005–2012 | RMSE mensual 4,718 m³/s; NSE 0,649; PBIAS −40,605 %. Falla el criterio de sesgo; exploratorio. |
 
 Dashboard y reportes consultan el experimento final v2. El visor prioriza el
 gemelo diario corregido, salvo que se indique una corrida accesible mediante
@@ -96,6 +98,18 @@ máscara de drenaje fijos; todavía no está calibrada ni validada. La mayor par
 de `esoil` ocurre con LAI bajo; el aporte acuífero es pequeño. El motor fija
 `perco=0,1` en HRU drenadas y excluye esas HRU del ajuste de `perco` por calibración.
 La red corregida cierra con residuo 1,686 m³; el balance de cuenca sigue parcial.
+
+La [entrega 2](MULTIYEAR_EXPERIMENT_DELIVERY_2.md) fija después 12 candidatos
+y separa CALIBRATION 2005–2012, TRAIN 2013–2017, VALIDATION de desarrollo
+2018–2020 y TEST reservado 2021–2025. El ganador mejora el ajuste, pero falla
+|PBIAS| ≤ 30 %: no es una referencia validada. B utiliza el contrato vegetal
+derivado en 2010 y congelado antes de TRAIN/VALIDATION. La nueva copia corrige
+también los cierres climáticos de 2020/2024; no se consultan resultados TEST.
+Las 16 publicaciones A/B y la derivación vegetal 2010 tienen 6.209 frames
+diarios en pglocal. CSV/Parquet, esquema y linaje están versionados y registrados
+como dataset `sf-multi-v1-monthly-ab`: 192 filas, 96 meses pareados. Las 16
+auditorías nativas cierran numéricamente la red; la contabilidad de cuenca sigue
+parcial. En VALIDATION, RMSE A/B es 4,007/3,921 m³/s; son métricas de desarrollo.
 
 ## 3. Gemelo South Fork 2019 corregido
 
@@ -182,15 +196,15 @@ tiene su propio linaje y no se registra automáticamente como reporte de H1.
 
 ## 5. Siguiente etapa de investigación
 
-Las tareas restantes se organizan en cinco entregas; la primera está completada:
+El trabajo se organiza en cinco entregas; las dos primeras están completadas:
 
 1. **Referencia física — completada:** corrección controlada del warm-up,
    reproducción, ET, suelos, drenaje, acuíferos, pérdidas fluviales y área.
-2. **Experimento multianual — siguiente:** fijar protocolo/particiones y escenario
-   agrícola; preparar calendarios, calibración acotada y exportaciones A/B
-   fechadas. Comprobar parámetros efectivos y corregir cierres de los años
-   adicionales que se utilicen. Mantener 2019 como desarrollo.
-3. **ML:** reparar residual y alineación temporal, features y selección C/D
+2. **Experimento multianual — completado:** protocolo/particiones y escenario
+   agrícola fijos; calibración acotada 12/12, calendarios por temporada y contrato
+   vegetal 2010 congelado. Publicación A/B anual y exportaciones fechadas.
+   Referencia exploratoria por incumplimiento de sesgo.
+3. **ML — siguiente:** reparar residual y alineación temporal, features y selección C/D
    exclusivamente en VALIDATION.
 4. **Evaluación de H1:** TEST reservado, referencias simples, incertidumbre
    temporal y decisión según el protocolo congelado.
@@ -223,3 +237,9 @@ suites de tests ni inspección visual en navegador.
 En la entrega 1 se ejecutaron dos corridas científicas en pglocal, con 365 frames
 cada una, y se cotejaron reproducción diaria, corrección climática y balances.
 La revisión de procesos lee los outputs y el código fuente del motor fijado.
+En la entrega 2 se completaron 29 corridas científicas en pglocal: 12 candidatos,
+una derivación vegetal y 16 publicaciones A/B. Se revisaron cobertura, soporte
+USGS pareado, hashes, contrato vegetal congelado y 16 balances nativos.
+Tres casos puros existentes de calendario/agregación/playback pasaron por
+invocación directa, sin cargar el fixture SQLite temporal. Los módulos Python
+modificados compilan; no se ejecutó la suite completa ni inspección del navegador.
