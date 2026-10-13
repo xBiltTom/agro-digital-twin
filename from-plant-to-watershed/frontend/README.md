@@ -28,6 +28,10 @@ permite cambiar la base completa, por defecto `http://localhost:8000/api/v1`.
 Las páginas viven en `src/app/`; componentes en `src/components/`; hooks de
 playback en `src/hooks/`. La representación recibe datos desde
 `adaptPlaybackVisual()` y `sceneFromRecord()`, no calcula procesos científicos.
+El visor abre `phase234-sf-2019-v2` por defecto cuando está registrada y es
+accesible para la sesión. Simulación, fecha y frame se obtienen desde FastAPI;
+la geometría estática local de South Fork se usa como contexto y no asigna
+resultados de HRU o canal a polígonos GIS.
 
 ## Contratos
 

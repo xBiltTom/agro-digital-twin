@@ -13,15 +13,19 @@ services:
       timeout: 3s
       retries: 20
   backend:
-    build: ./backend
+    build:
+      context: ..
+      dockerfile: from-plant-to-watershed/backend/Dockerfile
+      target: development
     environment:
       APP_ENV: development
       SECRET_KEY: local-mvp-only-change-in-production
       DATABASE_URL: postgresql+asyncpg://digitaltwin:digitaltwin_local@postgres:5432/digitaltwin
-      ENABLE_DEMO_SEED: "true"
-      ENABLE_MVP_BOOTSTRAP: "true"
+      ENABLE_DEMO_SEED: "false"
+      ENABLE_MVP_BOOTSTRAP: "false"
       MVP_USGS_SNAPSHOT: /data/raw/usgs/05451210_2000-01-01_2025-12-31.json
       MVP_EXTERNAL_MODEL: /models/external/monthly_runoff_mm/random_forest
+      EXTERNAL_MODELS_DIR: /models/external
     volumes:
       - ./data:/data
       - ../agro-digital-twin-st/artifacts:/models/external:ro

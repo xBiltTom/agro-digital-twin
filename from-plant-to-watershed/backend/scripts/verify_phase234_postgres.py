@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 import sys
+import tempfile
 
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.engine import make_url
@@ -22,7 +24,10 @@ from app.models.simulation import SimulationRun
 from app.services.playback_artifact import PlaybackArtifactStore
 
 RUN_ID = "phase234-sf-2019-v2"
-EXAMPLE = BACKEND / "data/phase1-south-fork-2019/results" / RUN_ID / "playback_api_example_2019-07-15.json"
+EXAMPLE = Path(os.environ.get(
+    "PHASE234_VERIFICATION_OUTPUT",
+    str(Path(tempfile.gettempdir()) / "phase234-playback-api-example-2019-07-15.json"),
+))
 
 
 async def verify_once(*, save_example: bool) -> dict:
@@ -89,7 +94,7 @@ async def main() -> None:
     assert first == second
     print(json.dumps({"database": "digitaltwin/PostgreSQL", "restart_verified": True,
                       "sqlite_sidecar_reads": 0, "dates": second,
-                      "example": str(EXAMPLE.relative_to(BACKEND.parent))}, ensure_ascii=False))
+                      "example": str(EXAMPLE)}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

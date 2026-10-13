@@ -412,6 +412,12 @@ def test_adapter_records_only_the_coupled_input_checksum_delta(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_engine_persists_a_real_swat_adapter_result(tmp_path: Path):
     project = _project(tmp_path)
+    (project / "hru.con").write_text(
+        "hru.con\n"
+        "id name gis_id area lat lon elev hru wst cst ovfl rule out_tot\n"
+        "1 hru01 1 1.0 0 0 0 hru01 wsta01 cst01 0 0 0\n",
+        encoding="utf-8",
+    )
     executable = _executable(tmp_path, "printf 'yr mon day surq et perc sw\\nyyyy mm dd mm mm mm mm\\n2020 1 1 1 2 3 150\\n2020 1 2 2 3 4 151\\n' > output_wb_day\nprintf 'yr mon day unit gis_id flo_out\\nyyyy mm dd --- --- m3/s\\n2020 1 1 25 153 4\\n2020 1 2 25 153 5\\n' > output_channel_day")
     async with AsyncSessionLocal() as db:
         user_id = await db.scalar(select(User.id).limit(1))
