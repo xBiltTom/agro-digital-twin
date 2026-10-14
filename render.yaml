@@ -5,7 +5,7 @@ services:
     runtime: docker
     plan: free
     region: oregon
-    dockerfilePath: ./from-plant-to-watershed/backend/Dockerfile
+    dockerfilePath: ./Dockerfile
     dockerContext: .
     dockerCommand: sh deployment/start.sh
     healthCheckPath: /health/ready
@@ -14,7 +14,7 @@ services:
         value: production
       - key: DATABASE_URL
         fromDatabase:
-          name: agro-digital-twin-db
+          name: agro-twin-db
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
@@ -55,9 +55,9 @@ services:
       - key: SWAT_RUNTIME_BUNDLE_SHA256
         sync: false
 databases:
-  - name: agro-digital-twin-db
+  - name: agro-twin-db
     plan: free
     region: oregon
-    databaseName: digitaltwin
-    user: digitaltwin
+    databaseName: agrotwindb
+    user: agrotwindb_user
     ipAllowList: [] # Add the operator's IP temporarily for local initialization.
