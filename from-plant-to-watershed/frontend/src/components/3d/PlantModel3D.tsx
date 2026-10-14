@@ -5,6 +5,7 @@ import { Html } from "@react-three/drei";
 import type { SceneState } from "../../lib/playback-scene";
 import { maizeFromScene, maizeReproductive, REFERENCE_MAIZE } from "../../lib/visual-state";
 import {
+  useMaizeLeafTexture,
   MicroRainSystem,
   PhysiologicalFlowDynamics,
   RealisticBraceRoots,
@@ -50,6 +51,7 @@ export default function PlantModel3D({
   const height = activePlant.heightM === null ? null : Math.max(0.05, Math.min(3.4, activePlant.heightM));
   const lai = activePlant.lai;
   const stress = activePlant.stress;
+  const leafTexture = useMaizeLeafTexture(stress ?? 0);
   const soilMoistureState = scene?.record.field.soil_moisture_vol_percent;
 
   // Utilizar el número de hojas simulado por FSPM cuando esté disponible; de lo contrario, estimar según LAI
@@ -119,7 +121,7 @@ export default function PlantModel3D({
 
           {/* Hojas phyllotáxicas curvas con nervadura central, textura cuticular y física de viento */}
           {leaves.map((leaf, i) => (
-            <RealisticMaizeLeaf key={i} {...leaf} stress={stress ?? 0} />
+            <RealisticMaizeLeaf key={i} {...leaf} stress={stress ?? 0} leafTexture={leafTexture} />
           ))}
 
           {/* Raíces adventicias de anclaje (brace roots) y red radicular subterránea */}

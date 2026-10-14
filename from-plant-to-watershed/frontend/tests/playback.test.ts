@@ -789,3 +789,39 @@ test("Fase 5.1 - Optional variables safety & Macro Entity Explorer dynamic count
   );
   assert.equal(calendarSet.size, 7);
 });
+
+
+test("render quality only sets bounded graphics budgets", async () => {
+  const { RENDER_QUALITY } = await import("../src/lib/render-quality.ts");
+  assert.deepEqual(Object.keys(RENDER_QUALITY), ["FAST", "BALANCED", "DETAIL"]);
+  assert.equal(RENDER_QUALITY.FAST.maxDpr, 1);
+  assert.equal(RENDER_QUALITY.BALANCED.effects, false);
+  assert.equal(RENDER_QUALITY.DETAIL.effects, true);
+  for (const budget of Object.values(RENDER_QUALITY)) {
+    assert.ok(budget.maxDpr >= 1 && budget.maxDpr <= 2);
+    assert.ok(budget.shadowSize <= 2048);
+    assert.deepEqual(Object.keys(budget).sort(), ["contactShadows", "effects", "label", "maxDpr", "shadowSize"]);
+  }
+});
+
+test("harvest mask stays aligned in initialization and wind, including reverse playback", async () => {
+  const { canopyInstanceActive } = await import("../src/lib/render-quality.ts");
+  for (const fraction of [1, 0.4, 0, 0.4, 1]) {
+    const count = Array.from({ length: 1014 }, (_, rank) => canopyInstanceActive(rank, 1014, fraction)).filter(Boolean).length;
+    assert.equal(count, Math.round(1014 * fraction));
+  }
+  assert.equal(canopyInstanceActive(0, 1014, NaN), false);
+  assert.equal(canopyInstanceActive(0, 1014, -1), false);
+  assert.equal(canopyInstanceActive(1013, 1014, 2), true);
+});
+
+test("batched visual rain is deterministic, finite and bounded", async () => {
+  const { rainStreakPositions } = await import("../src/lib/render-quality.ts");
+  assert.equal(rainStreakPositions(0).length, 0);
+  assert.equal(rainStreakPositions(NaN).length, 0);
+  assert.equal(rainStreakPositions(-1).length, 0);
+  assert.equal(rainStreakPositions(1).length, 700 * 6);
+  assert.deepEqual(rainStreakPositions(1), rainStreakPositions(10));
+  assert.deepEqual(rainStreakPositions(0.25), rainStreakPositions(0.25));
+  assert.ok(rainStreakPositions(1).every(Number.isFinite));
+});

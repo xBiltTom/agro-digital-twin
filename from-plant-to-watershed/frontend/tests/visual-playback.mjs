@@ -56,15 +56,31 @@ try {
   if (await p.getByLabel('Simulación').inputValue() !== 'fixture-coupled') throw Error('simId did not select the requested run');
   if (await p.getByLabel('Detalle temporal').inputValue() !== 'DAILY') throw Error('Daily FSPM playback was not selected automatically');
   await p.getByText('Geometría espacial no disponible para esta corrida.').waitFor({timeout:30000});
+  await p.getByLabel('Mostrar rendimiento').check();
+  await p.getByTestId('render-stats').filter({hasText:'FPS'}).waitFor({timeout:30000});
+  const originalDate = await p.getByText('2020-05-10',{exact:false}).first().textContent();
+  for (const quality of ['FAST','DETAIL','BALANCED']) {
+    await p.getByLabel('Calidad 3D').selectOption(quality);
+    if (await p.getByLabel('Simulación').inputValue() !== 'fixture-coupled') throw Error('Graphics quality changed simulation');
+    if (await p.getByText('2020-05-10',{exact:false}).first().textContent() !== originalDate) throw Error('Graphics quality changed date');
+  }
+  console.log('Render macro:', await p.getByTestId('render-stats').textContent());
   await shot(p,'scientific-macro');
   await p.getByRole('button',{name:'Campo',exact:true}).first().click({timeout:120000});
   await p.getByText('Campo FSPM · 2020-05-10').waitFor();
+  console.log('Render meso:', await p.getByTestId('render-stats').textContent());
   await shot(p,'scientific-meso');
   await p.getByRole('button',{name:'Planta',exact:true}).first().click({timeout:120000});
   await p.getByText('Muestra FSPM test-plant-1').waitFor();
   await shot(p,'scientific-micro-early');
   await p.getByRole('button',{name:'Avanzar'}).dispatchEvent('click');
   await p.getByText('2020-08-10',{exact:false}).first().waitFor();
+  await p.getByRole('button',{name:'Retroceder'}).dispatchEvent('click');
+  await p.getByText('2020-05-10',{exact:false}).first().waitFor();
+  await p.getByText('Muestra FSPM test-plant-1').waitFor();
+  await p.getByRole('button',{name:'Avanzar'}).dispatchEvent('click');
+  await p.getByText('2020-08-10',{exact:false}).first().waitFor();
+  console.log('Render micro:', await p.getByTestId('render-stats').textContent());
   await shot(p,'scientific-micro-mature');
   await p.getByRole('button',{name:'Avanzar'}).dispatchEvent('click');
   await p.getByText('2020-11-10',{exact:false}).first().waitFor();

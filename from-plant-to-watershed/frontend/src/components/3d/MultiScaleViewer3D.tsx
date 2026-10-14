@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Sky, Stars, ContactShadows, Environment, Lightformer, Html } from "@react-three/drei";
+import { OrbitControls, Sky, ContactShadows, Environment, Lightformer, Html } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
 
@@ -28,6 +28,8 @@ interface MultiScaleViewer3DProps {
   onOpenExplorer?: () => void;
   selectedPlantId?: string | null;
 }
+
+import { RENDER_QUALITY, rainStreakPositions, type RenderQuality } from "../../lib/render-quality";
 
 import { maizeFromScene } from "../../lib/visual-state";
 
@@ -124,17 +126,39 @@ function CameraController({
 
 function GenericRain({ intensity }: { intensity: number }) {
   const group = useRef<THREE.Group>(null);
-  const count = Math.max(8, Math.floor(intensity * 700));
+  const positions = useMemo(() => rainStreakPositions(intensity), [intensity]);
   useFrame((_, delta) => { if (group.current) group.current.position.y = (group.current.position.y - delta * 10 + 20) % 20; });
-  return <group ref={group}>{Array.from({ length: count }, (_, i) =>
-    <mesh key={i} position={[
-      (((i * 73) % 701) / 701 - 0.5) * 42,
-      ((i * 47) % 211) / 211 * 20,
-      (((i * 137) % 709) / 709 - 0.5) * 32,
-    ]}>
-      <boxGeometry args={[0.025, 0.4, 0.025]} />
-      <meshBasicMaterial color="#9bdaf6" transparent opacity={0.5} />
-    </mesh>)}</group>;
+  return <group ref={group}><lineSegments>
+    <bufferGeometry><bufferAttribute attach="attributes-position" args={[positions, 3]} /></bufferGeometry>
+    <lineBasicMaterial color="#9bdaf6" transparent opacity={0.5} depthWrite={false} />
+  </lineSegments></group>;
+}
+
+type RenderStats = { fps: number; calls: number; triangles: number; geometries: number; textures: number; dpr: number };
+
+function collectAllRenderPasses(gl: THREE.WebGLRenderer) {
+  const previous = gl.info.autoReset;
+  gl.info.autoReset = false;
+  return () => { gl.info.autoReset = previous; gl.info.reset(); };
+}
+
+/** Count all passes, including shadows/effects, without updating React every frame. */
+function RendererDiagnostics({ onSample }: { onSample: (stats: RenderStats) => void }) {
+  const { gl } = useThree();
+  const sample = useRef({ elapsed: 0, frames: 0 });
+  useEffect(() => collectAllRenderPasses(gl), [gl]);
+  useFrame((_, delta) => {
+    sample.current.elapsed += delta;
+    sample.current.frames++;
+    if (sample.current.elapsed >= 1) {
+      onSample({ fps: Math.round(10 * sample.current.frames / sample.current.elapsed) / 10,
+        calls: gl.info.render.calls, triangles: gl.info.render.triangles,
+        geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, dpr: gl.getPixelRatio() });
+      sample.current = { elapsed: 0, frames: 0 };
+    }
+    gl.info.reset();
+  }, -100);
+  return null;
 }
 
 export default function MultiScaleViewer3D({
@@ -152,6 +176,10 @@ export default function MultiScaleViewer3D({
   selectedPlantId,
 }: MultiScaleViewer3DProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
+  const [quality, setQuality] = useState<RenderQuality>("BALANCED");
+  const [showStats, setShowStats] = useState(false);
+  const [stats, setStats] = useState<RenderStats | null>(null);
+  const budget = RENDER_QUALITY[quality];
   const southForkContext = scene ? hasSouthForkContext(scene.record, stationId) : stationId === "05451210";
   const plant = maizeFromScene(scene);
   const targetPlantHeight = plant.heightM ?? (plant.reference ? 2.1 : undefined);
@@ -166,19 +194,22 @@ export default function MultiScaleViewer3D({
 
   // Distancias de zoom adaptadas para evitar que el usuario se pierda
   const minDistance = scaleMode === "MICRO" ? 0.35 : scaleMode === "MESO" ? 2.5 : 8;
+  const shadowExtent = scaleMode === "MICRO" ? 5 : scaleMode === "MESO" ? 18 : 34;
   const maxDistance = scaleMode === "MICRO" ? 14 : scaleMode === "MESO" ? 45 : 95;
 
   return (
     <div className="w-full h-full relative bg-gradient-to-b from-zinc-950 via-slate-950 to-zinc-950 overflow-hidden rounded-2xl">
       <Canvas
-        shadows
+        shadows="percentage"
+        dpr={[1, budget.maxDpr]}
+        fallback={<div className="p-6 text-slate-100">WebGL no está disponible. Activa la aceleración gráfica del navegador para abrir el visor 3D.</div>}
         camera={{ position: [0, 36, 42], fov: 44 }}
         gl={{
           antialias: true,
           alpha: false,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.22,
+          toneMappingExposure: 1.05,
         }}
       >
         {/* Cielo con atmósfera física */}
@@ -193,19 +224,8 @@ export default function MultiScaleViewer3D({
           mieDirectionalG={0.84}
         />
 
-        {/* Estrellas lejanas sutiles */}
-        <Stars
-          radius={120}
-          depth={40}
-          count={scaleMode === "MACRO" ? 1200 : 400}
-          factor={3}
-          saturation={0}
-          fade
-          speed={0.5}
-        />
-
         {/* Entorno PBR de Iluminación Global IBL (reflejos físicos en hojas, suelo, agua y metales) */}
-        <Environment background={false}>
+        <Environment key={scaleMode} background={false} frames={1} resolution={128}>
           <mesh scale={100}>
             <sphereGeometry args={[1, 32, 32]} />
             <meshBasicMaterial side={THREE.BackSide} color="#0c192c" />
@@ -243,23 +263,24 @@ export default function MultiScaleViewer3D({
         {/* Iluminación solar física con sombras suaves de alta resolución */}
         <ambientLight intensity={0.55} />
         <hemisphereLight
-          args={["#a7f3d0", "#1e293b", 0.6]}
+          args={["#c4dceb", "#4b3826", 0.7]}
           position={[0, 50, 0]}
         />
         <directionalLight
+          key={quality}
           position={sunPosition}
-          intensity={2.3}
+          intensity={1.8}
           color="#fffdf5"
           castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
+          shadow-mapSize-width={budget.shadowSize}
+          shadow-mapSize-height={budget.shadowSize}
           shadow-bias={-0.00012}
           shadow-camera-near={1}
           shadow-camera-far={130}
-          shadow-camera-left={-34}
-          shadow-camera-right={34}
-          shadow-camera-top={34}
-          shadow-camera-bottom={-34}
+          shadow-camera-left={-shadowExtent}
+          shadow-camera-right={shadowExtent}
+          shadow-camera-top={shadowExtent}
+          shadow-camera-bottom={-shadowExtent}
         />
 
         {/* Luces de rebote y relleno para evitar partes negras artificiales */}
@@ -292,12 +313,14 @@ export default function MultiScaleViewer3D({
           maxPolarAngle={Math.PI / 2.02}
         />
 
-        {/* Sombras de contacto suaves para Meso y Micro */}
-        {(scaleMode === "MESO" || scaleMode === "MICRO") && (
+        {/* Contacto estático en Micro; Meso usa la sombra direccional. */}
+        {budget.contactShadows && scaleMode === "MICRO" && (
           <ContactShadows
-            position={[0, scaleMode === "MICRO" ? -0.22 : -0.12, 0]}
+            key={`${scaleMode}-${scene?.record.simulation_id}-${scene?.record.date}-${selectedPlantId ?? "field"}`}
+            frames={1}
+            position={[0, -0.22, 0]}
             opacity={0.75}
-            scale={scaleMode === "MICRO" ? 9 : 36}
+            scale={9}
             blur={2.2}
             far={9}
             resolution={512}
@@ -364,16 +387,33 @@ export default function MultiScaleViewer3D({
         )}
 
         {/* Post-procesado cinemático: Bloom para reflejos especulares, agua y savia, con viñeteado óptico */}
-        <EffectComposer multisampling={2}>
+        {budget.effects && <EffectComposer multisampling={0}>
           <Bloom
             luminanceThreshold={0.82}
             luminanceSmoothing={0.25}
-            intensity={0.45}
+            intensity={0.2}
             mipmapBlur
           />
-          <Vignette eskil={false} offset={0.28} darkness={0.42} />
-        </EffectComposer>
+          <Vignette eskil={false} offset={0.28} darkness={0.2} />
+        </EffectComposer>}
+        {showStats && <RendererDiagnostics onSample={setStats} />}
       </Canvas>
+      <div className="absolute left-3 top-28 md:top-20 z-30 max-w-[210px] rounded-lg border border-slate-600/70 bg-slate-950/90 p-2 text-xs text-slate-100 shadow-lg">
+        <label className="flex items-center gap-2">Calidad 3D
+          <select aria-label="Calidad 3D" value={quality}
+            onChange={(event) => setQuality(event.target.value as RenderQuality)}
+            className="min-w-0 rounded border border-slate-500 bg-slate-900 px-1 py-1 focus-visible:outline-2 focus-visible:outline-sky-300">
+            {Object.entries(RENDER_QUALITY).map(([value, option]) => <option key={value} value={value}>{option.label}</option>)}
+          </select>
+        </label>
+        <label className="mt-2 flex items-center gap-2 text-slate-300">
+          <input type="checkbox" checked={showStats} onChange={(event) => { setShowStats(event.target.checked); setStats(null); }} />
+          Mostrar rendimiento
+        </label>
+        {showStats && <output data-testid="render-stats" className="mt-2 block tabular-nums text-slate-200" aria-live="off">
+          {stats ? <>{stats.fps} FPS · {stats.calls} dibujos/frame<br />{stats.triangles.toLocaleString()} triángulos<br />{stats.geometries} geometrías · {stats.textures} texturas<br />Resolución ×{stats.dpr.toFixed(1)}</> : "Midiendo…"}
+        </output>}
+      </div>
     </div>
   );
 }

@@ -234,6 +234,36 @@ autocontenidos. El backend permite registrar bundles dentro de
 Los bundles mensuales versionados son de desarrollo sintético; su desempeño
 no es evidencia para H1.
 
+## Calidad y rendimiento del visor 3D
+
+El selector **Calidad 3D** cambia únicamente el renderizado. La simulación,
+fecha, HRU, muestras FSPM y variables almacenadas mantienen su identidad.
+No hace falta repetir una corrida ni reimportar PostgreSQL para usarlo.
+
+| Perfil | Resolución máxima (DPR) | Mapa de sombras | Efectos |
+| --- | --- | --- | --- |
+| Fluida | 1 | 512 × 512 | Sin bloom ni sombras de contacto |
+| Equilibrada (predeterminada) | 1.5 | 1024 × 1024 | Sin bloom; contacto estático en planta |
+| Detallada | 2 | 2048 × 2048 | Bloom suave y contacto estático en planta |
+
+**Mostrar rendimiento** activa un contador por segundo de FPS, dibujos por
+frame (incluidos los pases de sombras/efectos), triángulos, geometrías,
+texturas y DPR. Comparar perfiles en el mismo equipo, tamaño de ventana,
+escala y fecha, después de completar la transición de cámara. Los FPS de
+Chromium headless con SwiftShader corresponden a renderizado por software;
+no son una medición de la GPU del usuario ni una garantía de aceleración.
+
+La lluvia contextual se agrupa en una sola geometría; las hojas de una
+planta comparten textura y el viento reutiliza objetos. La máscara de
+cosecha se respeta también durante la animación y al retroceder de fecha.
+La iluminación y el color de las texturas son presentación: la anatomía y
+el terreno siguen siendo ilustrativos, con las limitaciones científicas
+indicadas arriba.
+
+Se consultaron las guías públicas de [Game Studio](https://github.com/openai/plugins/tree/main/plugins/game-studio)
+y [Build Web Data Visualization](https://github.com/openai/plugins/tree/main/plugins/build-web-data-visualization).
+No se requiere instalar plugins, motores o servicios adicionales para ejecutar el visor.
+
 ## Verificación
 
 ```bash
@@ -246,10 +276,23 @@ Desde `frontend/`:
 
 ```bash
 pnpm test
+pnpm test:visual # frontend iniciado; fixtures de API, sin modificar la DB
 pnpm lint
 pnpm exec tsc --noEmit
 pnpm build
 ```
+
+La prueba visual cubre las tres escalas, selección por `simId`, cambio de
+calidad sin cambiar fecha/corrida, navegación hacia adelante y atrás y
+fallback histórico. Para guardar capturas:
+
+```bash
+VISUAL_SCREENSHOTS=1 VISUAL_OUTPUT_DIR=/tmp/twin-visual pnpm test:visual
+```
+
+Usa `VISUAL_BASE_URL` si el frontend no está en `http://localhost:3000` y
+`CHROMIUM_PATH` para un Chromium ya instalado. Si falta el navegador de
+Playwright, instalarlo con `pnpm exec playwright install chromium`.
 
 La suite backend configura una SQLite temporal propia. Las pruebas de motor
 real requieren recursos SWAT+ explícitos; las comprobaciones específicas de

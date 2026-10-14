@@ -78,9 +78,24 @@ function createMaizeLeafTexture(stress: number, isSenescent: boolean): THREE.Can
   }
 
   const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
   return texture;
+}
+
+/** One texture per plant, shared by its leaves and released on palette change/unmount. */
+export function useMaizeLeafTexture(stress: number, isSenescent = false) {
+  // Texture has two green palettes; exact stress still drives geometry and wind.
+  const stressedPalette = stress > 0.45;
+  const leafTexture = useMemo(
+    () => createMaizeLeafTexture(stressedPalette ? 1 : 0, isSenescent),
+    [stressedPalette, isSenescent]
+  );
+
+  useEffect(() => () => leafTexture.dispose(), [leafTexture]);
+
+  return leafTexture;
 }
 
 /**
@@ -94,6 +109,7 @@ export function RealisticMaizeLeaf({
   rise,
   droop,
   stress,
+  leafTexture,
   isSenescent = false,
 }: {
   angle: number;
@@ -103,17 +119,11 @@ export function RealisticMaizeLeaf({
   rise: number;
   droop: number;
   stress: number;
+  leafTexture: THREE.CanvasTexture;
   isSenescent?: boolean;
 }) {
   const leafGroupRef = useRef<THREE.Group>(null);
   const rollFactor = Math.min(1, Math.max(0, (stress - 0.28) * 1.7));
-
-  const leafTexture = useMemo(
-    () => createMaizeLeafTexture(stress, isSenescent),
-    [stress, isSenescent]
-  );
-
-  useEffect(() => () => leafTexture.dispose(), [leafTexture]);
 
   const { geometry, midribPoints } = useMemo(() => {
     const segments = 24;

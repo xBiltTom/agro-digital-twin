@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html, Line } from "@react-three/drei";
 import { numeric, type SceneState } from "../../lib/playback-scene";
+import { canopyInstanceActive } from "../../lib/render-quality";
 import { fieldCanopyAvailable, maizeReproductive } from "../../lib/visual-state";
 import {
   createCurvedMaizeLeafGeometry,
@@ -70,7 +71,10 @@ function RichCanopy({
   const count = rows * columns;
 
   const ranks = useMemo(() => computeDeterministicRanks(rows, columns), [rows, columns]);
-  const visibleCount = Math.round(Math.max(0, Math.min(1, activeFraction)) * count);
+  const scratch = useMemo(() => ({
+    matrix: new THREE.Matrix4(), pos: new THREE.Vector3(), rot: new THREE.Euler(),
+    scl: new THREE.Vector3(), q: new THREE.Quaternion(),
+  }), []);
 
   const leafGeoA = useMemo(() => createCurvedMaizeLeafGeometry(0.88, 0.17, 0.35), []);
   const leafGeoB = useMemo(() => createCurvedMaizeLeafGeometry(0.82, 0.15, 0.28), []);
@@ -109,7 +113,7 @@ function RichCanopy({
     baseData.current.scales = [];
 
     for (let i = 0; i < count; i++) {
-      const isPlantActive = ranks[i] < visibleCount;
+      const isPlantActive = canopyInstanceActive(ranks[i], count, activeFraction);
       if (!isPlantActive) {
         // Planta cosechada: matriz escala cero
         matrix.makeScale(0, 0, 0);
@@ -165,11 +169,13 @@ function RichCanopy({
 
     [stems, lower, middle, upper, tassels].forEach((ref) => {
       if (ref.current) {
+        ref.current.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         ref.current.instanceMatrix.needsUpdate = true;
+        ref.current.computeBoundingSphere();
         if (ref.current.instanceColor) ref.current.instanceColor.needsUpdate = true;
       }
     });
-  }, [heightM, lai, cover, stress, stage, count, columns, rows, activeFraction, visibleCount, ranks]);
+  }, [heightM, lai, cover, stress, stage, count, columns, rows, activeFraction, ranks]);
 
   // Animación continua de ola de viento travelling sobre el dosel vegetal
   useFrame(({ clock }) => {
@@ -178,11 +184,7 @@ function RichCanopy({
     const windSpeed = 2.4;
     const windStrength = 0.055 * (1 + (stress ?? 0) * 0.45);
 
-    const matrix = new THREE.Matrix4();
-    const pos = new THREE.Vector3();
-    const rot = new THREE.Euler();
-    const scl = new THREE.Vector3();
-    const q = new THREE.Quaternion();
+    const { matrix, pos, rot, scl, q } = scratch;
 
     const height = Math.max(0.05, Math.min(3.4, heightM));
     const leafScale = Math.max(0.08, Math.min(1.2, lai / 3.8)) *
@@ -191,7 +193,7 @@ function RichCanopy({
     for (let i = 0; i < count; i++) {
       const bPos = baseData.current.positions[i];
       const bRot = baseData.current.rotations[i];
-      if (!bPos || !bRot) continue;
+      if (!bPos || !bRot || !canopyInstanceActive(ranks[i], count, activeFraction)) continue;
 
       const wave = Math.sin(time * windSpeed + bPos.x * 0.42 + bPos.z * 0.32) * windStrength;
 
