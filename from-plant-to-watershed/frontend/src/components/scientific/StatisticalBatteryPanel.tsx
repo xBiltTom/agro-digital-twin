@@ -66,7 +66,7 @@ export default function StatisticalBatteryPanel({ report: envelope }: Props) {
             </h2>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-            Protocolo de contrastes de hipótesis cuantitativas para verificar la validez distribucional del modelo, comparar errores emparejados frente a datos de la estación USGS 05451210 y cuantificar sensibilidad biológica.
+            Diagnósticos estadísticos para verificar la validez distribucional del modelo, comparar errores emparejados frente a datos de la estación USGS 05451210 y cuantificar sensibilidad biológica.
           </p>
         </div>
 

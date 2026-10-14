@@ -98,7 +98,7 @@ def _scope_note(sim_run: SimulationRun, result_count: int) -> str:
     return (
         f"Esta exportación describe la corrida seleccionada ({_evidence_label(sim_run)}; "
         f"{_climate_source_label(sim_run.climate_source)}). {records} "
-        "No sustituye el informe del contrato científico vigente ni constituye por sí sola una prueba de hipótesis."
+        "La calidad del modelo requiere validación frente a observaciones; esta exportación resume sus resultados guardados."
     )
 
 class ReportGeneratorService:

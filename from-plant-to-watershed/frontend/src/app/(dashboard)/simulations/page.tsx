@@ -653,7 +653,7 @@ export default function SimulationsPage() {
   const selectedEvidence = selectedSim ? classifySimulationEvidence(selectedSim) : null;
   const requestedParameters = (selectedSim?.requested_config?.parameters as Record<string, unknown> | undefined) ?? {};
   const curveNumber = typeof requestedParameters.curve_number === "number" ? requestedParameters.curve_number : null;
-  const criterionMet = selectedSim?.validation?.criterion_met;
+  // El criterio H1 del artículo no se presenta en la interfaz pública.
   const meanLai = selectedSim?.field_aggregates?.mean_lai ?? selectedSim?.field_aggregates?.mean_LAI ?? null;
   const meanRootDepth = selectedSim?.field_aggregates?.mean_root_depth_cm != null
     ? `${Number(selectedSim.field_aggregates.mean_root_depth_cm).toFixed(1)} cm`
@@ -755,7 +755,7 @@ export default function SimulationsPage() {
               : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
           }`}
         >
-          Validación de hipótesis (H0 / H1)
+          Validación del modelo
         </button>
         <button
           type="button"
@@ -1849,7 +1849,7 @@ export default function SimulationsPage() {
         </div>
       )}
 
-      {activeTab === "VALIDATION" && finalReport && <><p className="p-4 text-sm">Archivo histórico 2018–2020. La decisión actual de H1 figura en el experimento South Fork de arriba.</p><HypothesisValidationPanel report={finalReport} /></>}
+      {activeTab === "VALIDATION" && finalReport && <><p className="p-4 text-sm">Archivo histórico 2018–2020. Consulta la evaluación actual de South Fork en el panel superior.</p><HypothesisValidationPanel report={finalReport} /></>}
       {activeTab === "SCENARIOS" && finalReport && <ClimateScenariosPanel report={finalReport} />}
       {activeTab === "STATISTICS" && finalReport && <StatisticalBatteryPanel report={finalReport} />}
 
@@ -1955,7 +1955,7 @@ export default function SimulationsPage() {
                   <>
                     <div><span className="text-slate-400 block text-[10px]">Meses evaluados:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.aligned_months != null ? `${selectedSim.validation.aligned_months} meses` : "No disponible"}</strong></div>
                     <div><span className="text-slate-400 block text-[10px]">Reducción RMSE:</span><strong className="text-slate-800 dark:text-slate-200">{selectedSim.validation?.improvement_percent?.value != null ? `${selectedSim.validation.improvement_percent.value.toFixed(2)}%` : "No disponible"}</strong></div>
-                    <div><span className="text-slate-400 block text-[10px]">Criterio H1:</span><strong className="text-slate-800 dark:text-slate-200">{typeof criterionMet === "boolean" ? criterionMet ? "Cumple" : "No cumple" : "No evaluado"}</strong></div>
+                    {/* Criterio H1 del artículo omitido; se conservan las métricas mensuales. */}
                     <div><span className="text-slate-400 block text-[10px]">Estación:</span><strong className="text-slate-800 dark:text-slate-200">{selectedGauge ? `USGS ${selectedGauge}` : "No registrada"}</strong></div>
                   </>
                 ) : expandedChartModal === "STREAMFLOW" ? (

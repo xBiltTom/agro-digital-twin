@@ -118,7 +118,7 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
               ? `Los ${waterPath.geometry?.channel_count ?? "—"} cauces suman ${number(waterPath.geometry?.total_length_km, 2)} km e incluyen tránsito, almacenamiento y pérdidas fluviales. ${hasFloodplainStorage ? "Se midió el almacenamiento de cauces y llanura de inundación; su cierre numérico requiere evaluación física adicional." : "El almacenamiento de la llanura de inundación no está disponible en estas salidas."}`
               : "El caudal conserva los aportes transportados por el motor. Los canales de esta corrida actúan como conexiones sin transformación."}
             {waterPath.catchment_accounting && ` El balance parcial de la cuenca tiene un residuo de ${number(waterPath.catchment_accounting.residual_mm, 3)} mm (${waterPath.catchment_accounting.evaluation.join(" a ")}).`}
-            {" "}Este diagnóstico de conservación requiere evaluación física adicional antes de usar la referencia en el artículo.
+            {" "}Este diagnóstico de conservación requiere evaluación física adicional para interpretar la consistencia física del modelo.
           </p>
           {physicalRouting && (
             <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -137,7 +137,7 @@ export default function SwatBaselineDiagnosticPanel({ simulation }: { simulation
         </ul>
       )}
       {isProbe && <p className="text-xs text-slate-600 dark:text-slate-400">La máscara de drenaje es una intervención experimental; su correspondencia con el manejo histórico requiere evidencia adicional.</p>}
-      {diagnostic?.monthly && <p className="text-xs text-slate-500">Esta comparación evalúa la referencia física en desarrollo. La prueba de hipótesis del artículo requiere su experimento independiente.</p>}
+      {diagnostic?.monthly && <p className="text-xs text-slate-500">Esta comparación evalúa el caudal simulado frente a observaciones. La calibración hidrológica sigue en desarrollo.</p>}
     </div>
   );
 }

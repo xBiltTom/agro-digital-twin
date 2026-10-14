@@ -145,25 +145,30 @@ function runMetrics(run: SimulationRun) {
   ];
 }
 
+/* Uso interno del artículo:
 function conclusionLabel(value?: string): string {
   if (value === "H1_NOT_SUPPORTED") return "La hipótesis H1 no está respaldada";
   if (value === "H1_SUPPORTED") return "La hipótesis H1 está respaldada";
   if (value === "INSUFFICIENT_EVIDENCE") return "La evidencia todavía es insuficiente";
   return value?.replaceAll("_", " ") ?? "Conclusión no disponible";
 }
+*/
 
+/* Uso interno del artículo:
 function hypothesisCopy(value: string): string {
   if (value.toLowerCase().includes("reduces monthly rmse by at least 15%")) {
     return "El contrato histórico planteaba reducir al menos 15 % el RMSE mensual.";
   }
   return value;
 }
+*/
 
 function couplingEffectLabel(value: string): string {
   if (value === "ZERO_WITH_CURRENT_PARAMETERIZATION") return "sin cambio con la parametrización actual";
   return value.replaceAll("_", " ").toLowerCase();
 }
 
+/* Uso interno del artículo:
 function hypothesisTone(value?: string): string {
   if (value === "H1_SUPPORTED") return "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200";
   if (value === "H1_NOT_SUPPORTED" || value === "INSUFFICIENT_EVIDENCE") {
@@ -171,6 +176,7 @@ function hypothesisTone(value?: string): string {
   }
   return "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
 }
+*/
 
 function imputationLabel(value?: string): string {
   if (value === "NONE") return "sin imputación";
@@ -398,14 +404,12 @@ export default function ReportsPage() {
 
             <div className="grid md:grid-cols-[minmax(0,1.2fr)_minmax(15rem,0.8fr)]">
               <div className="p-5 sm:p-6">
-                <span className={`inline-flex border px-2.5 py-1 text-xs font-semibold ${hypothesisTone(currentResult.hypothesis.conclusion)}`}>
-                  {conclusionLabel(currentResult.hypothesis.conclusion)}
-                </span>
+                {/* Dictamen H1 del artículo omitido de la interfaz pública. */}
                 <h4 className="mt-4 max-w-2xl font-serif text-xl leading-snug tracking-tight text-slate-900 sm:text-2xl dark:text-slate-100">
-                  Resultado frente a la hipótesis H1
+                  Comparación de resultados
                 </h4>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  {hypothesisCopy(currentResult.hypothesis.h1)} Efecto registrado: {couplingEffectLabel(currentResult.coupling_effect)}.
+                  Efecto registrado: {couplingEffectLabel(currentResult.coupling_effect)}.
                 </p>
 
                 <div className="mt-6 overflow-x-auto">

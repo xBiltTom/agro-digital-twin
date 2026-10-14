@@ -5,7 +5,7 @@ from docx import Document
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from openpyxl import load_workbook
-from app.services.report_service import ReportGeneratorService, _metric_text
+from app.services.report_service import ReportGeneratorService, _metric_text, _scope_note
 from app.models.simulation import SimulationRun, SimulationResult, ClimateScenario
 from app.models.user import User
 from app.models.watershed import Watershed
@@ -215,3 +215,12 @@ async def test_api_download_reports():
         assert history_res.status_code == 200
         history = history_res.json()
         assert len(history) >= 3
+
+
+def test_public_export_scope_describes_run_without_internal_article():
+    simulation, results = create_mock_simulation_and_results()
+    note = _scope_note(simulation, len(results))
+    assert "10 registros diarios guardados" in note
+    assert "validación frente a observaciones" in note
+    for internal_term in ("hipótesis", "artículo", "contrato científico", "H1"):
+        assert internal_term not in note

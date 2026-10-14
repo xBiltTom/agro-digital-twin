@@ -29,9 +29,12 @@ export default function SouthForkResearchPanel({ allowCreate = false }: { allowC
   const [refreshRun, setRefreshRun] = useState(0);
 
   const load = () => { setError(null); setRefreshRun(n => n + 1); api.getSouthForkResearch().then(setReport).catch((e: Error) => setError(e.message)); };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { const timer = window.setTimeout(load, 0); return () => window.clearTimeout(timer); }, []);
   useEffect(() => {
-    if (allowCreate && user) { setRun(null); setRunId(localStorage.getItem(`south-fork-user-run-${user.id}`)); }
+    if (!allowCreate || !user) return;
+    const savedRunId = localStorage.getItem(`south-fork-user-run-${user.id}`);
+    const timer = window.setTimeout(() => { setRun(null); setRunId(savedRunId); }, 0);
+    return () => window.clearTimeout(timer);
   }, [allowCreate, user]);
   useEffect(() => {
     if (!runId) return;
@@ -84,7 +87,8 @@ export default function SouthForkResearchPanel({ allowCreate = false }: { allowC
     {!report && !error && <p role="status">Cargando evidencia…</p>}
     {report && <>
       <div className="border-l-4 border-amber-600 pl-4">
-        <h3 className="font-semibold">H1 no respaldada en el contraste principal D frente a A</h3>
+        {/* Dictamen H1 del artículo omitido de la interfaz pública. */}
+        <h3 className="font-semibold">Comparación de caudal mensual</h3>
         <p className="mt-1 text-sm">Reducción de RMSE: {number(contrast?.rmse_reduction_m3s)} m³/s · IC 95% [{number(contrast?.ci95_reduction_m3s[0])}, {number(contrast?.ci95_reduction_m3s[1])}]. Un valor positivo favorece D. El intervalo incluye cero.</p>
         <p className="mt-1 text-xs text-slate-500">Referencia física exploratoria: no superó el criterio de sesgo de calibración. No se ha validado la fisiología ni la conservación del balance por ML.</p>
       </div>
@@ -97,7 +101,7 @@ export default function SouthForkResearchPanel({ allowCreate = false }: { allowC
       <div className="flex flex-wrap items-center gap-3 text-sm"><span>Corridas físicas disponibles:</span>{report.publications.map(pair => <span key={pair.year} className="flex gap-2">{pair.year}{(["A", "B"] as const).map(key => pair[key] && <Link className="underline underline-offset-4" key={key} href={`/twin-3d?simId=${encodeURIComponent(pair[key]!)}`}>Visor {key}</Link>)}</span>)}{report.publications.every(x => !x.A && !x.B) && <span className="text-slate-500">La evidencia agregada está disponible. Inicia una corrida propia para acceder a su visor.</span>}</div>
     </>}
     {allowCreate && hasAnyRole(["SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO"]) && <div className="space-y-3 border-t border-slate-300 pt-5 dark:border-slate-700">
-      <h3 className="font-serif text-xl">Ejecutar una reproducción propia</h3><p className="text-sm text-slate-500">South Fork con parámetros congelados, clima histórico y calentamiento desde 2000. Puede tardar varios minutos; puedes salir y volver a esta página. Esta ejecución no cambia la decisión de H1.</p>
+      <h3 className="font-serif text-xl">Ejecutar una reproducción propia</h3><p className="text-sm text-slate-500">South Fork con parámetros congelados, clima histórico y calentamiento desde 2000. Puede tardar varios minutos; puedes salir y volver a esta página.</p>
       <div className="flex flex-wrap items-end gap-4"><label className="grid gap-1 text-sm">Año<select className={control} value={year} onChange={e => setYear(Number(e.target.value))}>{[2021, 2022, 2023, 2024, 2025].map(x => <option key={x}>{x}</option>)}</select></label><label className="grid gap-1 text-sm">Sistema<select className={control} value={arm} onChange={e => setArm(e.target.value as "A" | "B")}><option value="A">A · SWAT+</option><option value="B">B · SWAT+ y FSPM</option></select></label><label className="flex items-center gap-2 py-2 text-sm"><input type="checkbox" checked={monthlyML} onChange={e => setMonthlyML(e.target.checked)} />Añadir ML mensual {arm === "A" ? "C" : "D"}</label><button className={`${control} bg-emerald-700 text-white dark:bg-emerald-700`} disabled={busy || running} onClick={() => void create()}>{busy ? "Iniciando…" : "Ejecutar"}</button></div>
       {run && <div aria-live="polite" className="space-y-2 text-sm"><p>{run.name} · {running ? "En proceso" : run.status === "COMPLETED" ? "Física completada" : run.status === "FAILED" ? "Ejecución fallida" : run.status}</p>{run.status === "FAILED" && <p role="alert">{JSON.stringify(run.error ?? "Consulta la ejecución para ver el detalle")}</p>}{ml?.status === "FAILED" && <p role="alert">La física está disponible; falló el cálculo mensual: {ml.message}</p>}{run.status === "COMPLETED" && <div className="flex flex-wrap gap-3"><Link className="underline" href={`/twin-3d?simId=${run.id}`}>Abrir visor diario</Link><button className={control} disabled={download} onClick={() => void save(() => api.downloadSwatResults(run.id, "csv"))}>Física diaria CSV</button>{!!ml?.predictions?.length && <button className={control} disabled={download} onClick={() => void save(() => api.downloadMonthlyResearch(run.id))}>ML mensual CSV</button>}</div>}{ml?.predictions && <div className="overflow-x-auto"><table className="w-full text-left text-sm"><caption className="py-2 text-left">Caudal mensual de la reproducción (m³/s)</caption><thead><tr><th>Mes</th><th>Observado</th><th>Físico</th><th>ML</th></tr></thead><tbody>{ml.predictions.map(row => <tr key={row.month} className="border-t border-slate-200 dark:border-slate-800"><th className="py-1 font-normal">{row.month}</th><td>{number(row.observed_streamflow_m3s)}</td><td>{number(row.physical_streamflow_m3s)}</td><td>{number(row.predicted_streamflow_m3s)}</td></tr>)}</tbody></table></div>}</div>}
     </div>}

@@ -3,8 +3,6 @@
 import React, { useState } from "react";
 import {
   Shield,
-  CheckCircle2,
-  AlertTriangle,
   Scale,
   Activity,
   Calendar,
@@ -51,7 +49,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
   const daily = report.validation.daily;
   const scope = report.scope;
   const exp = report.experiment;
-  const h1Supported = report.hypothesis.conclusion === "H1_SUPPORTED";
+  // El dictamen del artículo se conserva en los datos, sin presentarlo aquí.
 
   const renderMetricDiff = (baselineVal: number | null | undefined, coupledVal: number | null | undefined, lowerIsBetter = true, unit = "") => {
     if (baselineVal == null || coupledVal == null) return { diffText: "N/D", isImprovement: false };
@@ -81,13 +79,13 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
           </div>
 
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-            Evaluación Experimental de Hipótesis Científica: Planta → Cuenca
+            Evaluación del modelo: Planta → Cuenca
           </h2>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
             {scope.statement}
           </p>
 
-          {/* Formulación Formal de Hipótesis */}
+          {/* Formulación H0/H1 reservada al artículo.
           <div className="mt-2 flex flex-col gap-2.5 border border-slate-200 bg-slate-50 p-4 text-xs dark:border-slate-800 dark:bg-slate-950/70">
             <div className="flex items-start gap-2.5">
               <span className="font-mono font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-[10px] shrink-0">
@@ -106,17 +104,15 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
               </span>
             </div>
           </div>
+          */}
         </div>
 
         {/* Verdict Badge Card */}
         <div className="flex min-w-[260px] shrink-0 flex-col gap-2.5 border border-amber-300 bg-white p-4 dark:border-amber-800/80 dark:bg-slate-950">
           <span className="text-[10px] uppercase font-mono text-zinc-500 dark:text-zinc-400 font-semibold tracking-wider">
-            Dictamen del Experimento
+            Resultados del modelo
           </span>
-          <div className={`text-lg font-bold font-mono flex items-center gap-1.5 ${h1Supported ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
-            {h1Supported ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertTriangle className="w-5 h-5 text-amber-600" />}
-            {report.hypothesis.conclusion}
-          </div>
+          {/* Dictamen H1 omitido; se mantienen el efecto y las métricas del modelo. */}
           <div className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
             Efecto del acoplamiento biofísico: <br />
             <b className="font-mono text-zinc-800 dark:text-zinc-200">{report.coupling_effect}</b>
@@ -127,9 +123,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
               {monthly.improvement_percent != null ? `${monthly.improvement_percent.toFixed(1)}%` : "N/D"}
             </span>
           </div>
-          <div className="text-[10px] text-zinc-400">
-            Criterio de aceptación formal: <b>≥ 15.0%</b> de reducción de error cuadrático.
-          </div>
+          {/* Umbral de aceptación de la hipótesis reservado al artículo. */}
         </div>
       </div>
 
@@ -211,9 +205,7 @@ export default function HypothesisValidationPanel({ report: envelope }: Props) {
                 <Activity className="w-3.5 h-3.5" />
                 1. Validación Primaria Mensual ({monthly.matched_count} meses)
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-bold">
-                {monthly.hypothesis_status}
-              </span>
+              {/* Estado de hipótesis del artículo omitido de esta tabla. */}
             </div>
 
             <div className="overflow-x-auto">
