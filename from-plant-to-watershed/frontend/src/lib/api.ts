@@ -153,9 +153,9 @@ class ApiService {
     return this.request<Watershed[]>("/simulations/watersheds/all");
   }
 
-  async getSimulations(): Promise<SimulationRun[]> {
+  async getSimulations(view: "detail" | "summary" = "detail"): Promise<SimulationRun[]> {
     return collectSimulationPages((skip, limit) =>
-      this.request<SimulationRun[]>(`/simulations?skip=${skip}&limit=${limit}`));
+      this.request<SimulationRun[]>(`/simulations?skip=${skip}&limit=${limit}&view=${view}`));
   }
 
   async getSimulation(id: string): Promise<SimulationRun> {

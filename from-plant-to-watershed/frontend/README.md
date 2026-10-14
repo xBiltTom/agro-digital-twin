@@ -54,3 +54,11 @@ pnpm build
 `pnpm test` ejecuta `tests/playback.test.ts`. `pnpm lint:playback` revisa el
 conjunto de archivos del visor. `tests/visual-playback.mjs` contiene el recorrido
 Playwright con fixtures; requisitos en el contrato temporal.
+
+## Regresión de carga del catálogo
+
+Con Next.js iniciado y Chromium disponible para Playwright, `pnpm test:catalog`
+comprueba los estados de carga y error, la aparición del catálogo mientras el
+informe y la configuración siguen pendientes, y la protección frente a respuestas
+tardías al cambiar de simulación. Usa respuestas API de prueba y no escribe en la
+base real. Se puede configurar `CHROMIUM_PATH` y `VISUAL_BASE_URL`.

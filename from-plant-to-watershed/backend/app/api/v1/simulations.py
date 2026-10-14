@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal
 from datetime import date
 from pathlib import Path
 import copy
@@ -32,6 +32,7 @@ from app.schemas.simulation import (
 from app.api.deps import get_current_active_user, require_roles
 from app.services.twin_coupling_engine import TwinCouplingEngine
 from app.services.playback_database import PlaybackDatabaseStore
+from app.services.simulation_catalog import catalog_query, catalog_entry
 from app.services.ai_insights import AICopilotService
 from app.schemas.playback import PlaybackPage, Resolution
 from app.schemas.playback_diagnostic import SimulationAvailability
@@ -94,18 +95,22 @@ async def list_watersheds(
     res = await db.execute(stmt)
     return res.scalars().all()
 
-@router.get("", response_model=List[SimulationRunResponse])
+@router.get("", response_model=List[SimulationRunResponse], response_model_exclude_unset=True)
 async def list_simulations(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    view: Literal["detail", "summary"] = Query("detail", description="summary: lightweight catalogue without result arrays or process logs; detail: legacy full response"),
     db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_active_user)
 ):
-    stmt = select(SimulationRun)
+    """List visible runs; summary projects catalogue fields directly in SQL."""
+    stmt = catalog_query(db.get_bind().dialect.name) if view == "summary" else select(SimulationRun)
     if "SUPERADMIN" not in {role.name for role in _user.roles}:
         stmt = stmt.where(SimulationRun.user_id == _user.id)
     stmt = stmt.order_by(desc(SimulationRun.created_at), desc(SimulationRun.id)).offset(skip).limit(limit)
     res = await db.execute(stmt)
+    if view == "summary":
+        return [catalog_entry(row) for row in res.mappings()]
     return res.scalars().all()
 
 
