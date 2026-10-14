@@ -22,12 +22,19 @@ planta, campo e hidrología de cuenca.
 
 ## Estado resumido
 
-El gemelo diario experimental South Fork 2019 usa SWAT+ real y un FSPM
-simplificado, con calendarios ejecutados y retroalimentación hídrica aproximada.
-El reporte de hipótesis publicado sigue siendo el experimento anterior
-`south-fork-final-v2`, con `H1_NOT_SUPPORTED`. Son resultados de versiones
-distintas; la nueva ruta todavía necesita su propia comparación contra USGS.
+El MVP operativo usa `phase234-sf-2019-v2`: 365 fechas, 36 HRUs, 37 canales,
+estados FSPM y playback persistido en PostgreSQL. FastAPI es el origen de los
+datos temporales que consume el visor Next.js. El inicio integrado y la
+importación están documentados en la [plataforma](from-plant-to-watershed/README.md).
+
+La evaluación observacional `sf-test-v1` es un experimento distinto (2021–2025)
+y conserva `H1_NOT_SUPPORTED`. No es una validación científica del bundle 2019.
+La geometría 3D es contextual, el FSPM es simplificado y la calibración
+hidrológica sigue pendiente.
 
 La prioridad de investigación es evaluar observacionalmente el acoplamiento
 actual. Los contratos documentan por separado estados simulados, observaciones,
 estimaciones y supuestos.
+
+Para probar el bundle sin ejecutar de nuevo SWAT+, comenzar por
+[Inicio integrado con Docker Compose](from-plant-to-watershed/README.md#inicio-integrado-con-docker-compose).

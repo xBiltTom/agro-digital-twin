@@ -11,16 +11,20 @@ from pathlib import Path
 import sys
 
 BACKEND = Path(__file__).resolve().parents[1]
+DEFAULT_RESULTS = BACKEND / "data/phase1-south-fork-2019/results/phase234-sf-2019-v2"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-from app.core.database import AsyncSessionLocal, engine
+from sqlalchemy import select
+
+from app.core.database import AsyncSessionLocal, Base, engine
 from app.core.migrations import apply_pending_migrations
 from app.models.simulation import ClimateScenario, SimulationRun
 from app.models.user import User
 from app.models.watershed import Watershed
 from app.services.playback_artifact import PlaybackArtifactStore
 from app.services.playback_database import PlaybackDatabaseStore
+from scripts.validate_phase234_bundle import validate_bundle
 
 
 def _hash(path: Path) -> str:
@@ -32,6 +36,7 @@ def _hash(path: Path) -> str:
 
 
 async def register(result_dir: Path, owner_id: str, watershed_id: str, scenario_id: str) -> str:
+    validate_bundle(result_dir)
     manifest_path = result_dir / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("status") != "COMPLETED" or manifest.get("run", {}).get("frequency") != "DAILY":
@@ -132,11 +137,60 @@ async def register(result_dir: Path, owner_id: str, watershed_id: str, scenario_
     return run_id
 
 
+async def resolve_reference_ids(
+    *, owner_email: str, watershed_code: str, scenario_code: str,
+) -> tuple[str, str, str]:
+    """Resolve stable demo catalog keys instead of requiring database UUIDs."""
+    async with AsyncSessionLocal() as db:
+        owner = await db.scalar(select(User).where(User.email == owner_email))
+        watershed = await db.scalar(select(Watershed).where(Watershed.code == watershed_code))
+        scenario = await db.scalar(select(ClimateScenario).where(ClimateScenario.code == scenario_code))
+        if owner is None or watershed is None or scenario is None:
+            raise ValueError(
+                "Demo references are missing; run `python -m app.cli bootstrap-mvp` first "
+                "or provide existing --owner-id/--watershed-id/--scenario-id values"
+            )
+        return owner.id, watershed.id, scenario.id
+
+
+async def register_from_args(args: argparse.Namespace) -> str:
+    """Prepare the schema, resolve references, import and close DB connections."""
+    try:
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+        await apply_pending_migrations(engine)
+
+        identifiers = (args.owner_id, args.watershed_id, args.scenario_id)
+        if any(identifiers) and not all(identifiers):
+            raise ValueError("Supply all three ID options together")
+        if all(identifiers):
+            owner_id, watershed_id, scenario_id = identifiers
+        else:
+            owner_id, watershed_id, scenario_id = await resolve_reference_ids(
+                owner_email=args.owner_email,
+                watershed_code=args.watershed_code,
+                scenario_code=args.scenario_code,
+            )
+        return await register(args.result_dir, owner_id, watershed_id, scenario_id)
+    finally:
+        await engine.dispose()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("result_dir", type=Path)
-    parser.add_argument("--owner-id", required=True)
-    parser.add_argument("--watershed-id", required=True)
-    parser.add_argument("--scenario-id", required=True)
+    parser.add_argument("result_dir", type=Path, nargs="?", default=DEFAULT_RESULTS)
+    parser.add_argument("--owner-id", help="existing user ID; defaults to the local MVP researcher")
+    parser.add_argument("--watershed-id", help="existing watershed ID")
+    parser.add_argument("--scenario-id", help="existing neutral scenario ID")
+    parser.add_argument("--owner-email", default="investigador@digitaltwin.org")
+    parser.add_argument("--watershed-code", default="USGS-05451210-PARTIAL")
+    parser.add_argument("--scenario-code", default="MVP_CONTROL")
     args = parser.parse_args()
-    print(asyncio.run(register(args.result_dir, args.owner_id, args.watershed_id, args.scenario_id)))
+    if any((args.owner_id, args.watershed_id, args.scenario_id)) and not all(
+        (args.owner_id, args.watershed_id, args.scenario_id)
+    ):
+        parser.error("--owner-id, --watershed-id and --scenario-id must be supplied together")
+    try:
+        print(asyncio.run(register_from_args(args)))
+    except (OSError, ValueError, KeyError) as exc:
+        parser.error(str(exc))

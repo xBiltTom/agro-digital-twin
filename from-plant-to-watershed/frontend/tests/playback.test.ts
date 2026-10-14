@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { rainIntensity, sceneFromRecord, periodLabel, variableText, chartPointFromRecord, hasSouthForkContext, activePlantSample, numeric } from "../src/lib/playback-scene.ts";
 import { PlaybackClient } from "../src/lib/playback-client.ts";
 import { historicalFallbackEligible, simplifiedHistoricalPoints, swatHistoricalPoints } from "../src/lib/historical-charts.ts";
-import { accessibleSimulations, collectSimulationPages } from "../src/lib/simulation-access.ts";
+import { accessibleSimulations, collectSimulationPages, preferredTwinSimulation } from "../src/lib/simulation-access.ts";
 import { fieldCanopyAvailable, maizeFromScene, maizeReproductive } from "../src/lib/visual-state.ts";
 import type { PlaybackPage, PlaybackRecord, VariableState } from "../src/types/playback.ts";
 import type { SimulationResult, SimulationRun } from "../src/types/simulation.ts";
@@ -237,6 +237,15 @@ test("playback selector excludes runs the current user cannot open", () => {
   const admin = { id: "admin", roles: [{ id: "a", name: "SUPERADMIN" }] } as User;
   assert.deepEqual(accessibleSimulations(runs, researcher).map((run) => run.id), ["own"]);
   assert.deepEqual(accessibleSimulations(runs, admin).map((run) => run.id), ["own", "other"]);
+});
+
+test("twin defaults to the phase234 2019 demo when it is registered", () => {
+  const runs = [
+    { id: "sf-test-v1-b-2025", name: "South Fork · reproducción B", status: "COMPLETED" },
+    { id: "phase234-sf-2019-v2", name: "South Fork 2019 dynamic twin", status: "COMPLETED" },
+  ] as SimulationRun[];
+  assert.equal(preferredTwinSimulation(runs)?.id, "phase234-sf-2019-v2");
+  assert.equal(preferredTwinSimulation([runs[0]])?.id, "sf-test-v1-b-2025");
 });
 
 test("simulation selector follows server pagination past the former 50-run window", async () => {

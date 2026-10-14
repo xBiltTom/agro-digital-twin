@@ -15,7 +15,7 @@ import HistoricalTwinCharts from "../../../components/3d/HistoricalTwinCharts";
 import HistoricalContext3D from "../../../components/3d/HistoricalContext3D";
 import MacroEntityExplorer from "../../../components/3d/MacroEntityExplorer";
 import { useAuth } from "../../../context/AuthContext";
-import { accessibleSimulations } from "../../../lib/simulation-access";
+import { accessibleSimulations, preferredTwinSimulation } from "../../../lib/simulation-access";
 import { historicalFallbackEligible } from "../../../lib/historical-charts";
 import { firstCropNavigation, preferredPlaybackResolution } from "../../../lib/playback-navigation";
 
@@ -95,9 +95,7 @@ export default function Twin3DPage() {
       const requestedId = new URLSearchParams(window.location.search).get("simId");
       const requestedRun = requestedId ? accessible.find((run) => run.id === requestedId) : null;
       setSelectionError(requestedId && !requestedRun ? "La corrida del enlace no está disponible para este usuario." : null);
-      // Prefer the latest accessible completed coupled research run.
-      const currentRun = accessible.find((run) => run.status === "COMPLETED" && run.name.startsWith("South Fork · reproducción B")) ?? accessible.find((run) => run.id === "sf-test-v1-b-2025");
-      const initialRun = requestedRun ?? (requestedId ? null : currentRun ?? accessible[0] ?? null);
+      const initialRun = requestedRun ?? (requestedId ? null : preferredTwinSimulation(accessible));
       setSimulationId(initialRun?.id ?? null);
       setSimulationsLoaded(true);
     }).catch((cause: unknown) => {

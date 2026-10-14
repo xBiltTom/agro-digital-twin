@@ -27,11 +27,35 @@ pendientes se describen en [estado actual](docs/CURRENT_STATE.md); el
 - Catálogo de simulaciones, autenticación/RBAC, informes PDF/Word/Excel y
   diagnóstico interpretativo con LangChain o fallback heurístico.
 
-El experimento actual es **`sf-test-v1`**, con TEST 2021–2025 y **H1 no respaldada**.
-Inicio, Simulaciones e Informes permiten consultar y descargar esta evidencia.
-El perfil South Fork permite reproducciones propias A/B, con ML mensual C/D
-opcional y visor físico diario; todo se persiste en pglocal. El experimento
-2018–2020 permanece identificado como archivo histórico.
+## MVP demostrable
+
+La corrida predeterminada del visor es **`phase234-sf-2019-v2`**, bundle diario
+con checksums versionados para South Fork Iowa River. Contiene 365 fechas, 36
+HRUs, 37 canales, 32 HRUs con calendario de maíz y estados de plantas FSPM
+representativas durante 112 días. El acoplamiento registrado converge en dos
+iteraciones; el cambio máximo final de `sw_ave` es 0,001 mm frente a una
+tolerancia de 0,1 mm. `scripts/validate_phase234_bundle.py` comprueba estos
+contratos antes de importar el bundle.
+
+```mermaid
+flowchart LR
+  F[FSPM simplificado] -->|estado vegetal y parámetros| C[Acoplamiento hídrico]
+  C -->|forzamiento y estado de agua| S[SWAT+ real]
+  S -->|estados diarios versionados| P[(PostgreSQL JSONB)]
+  P --> A[FastAPI]
+  A --> U[Next.js: cuenca / HRU / planta]
+```
+
+La interfaz consulta FastAPI para simulaciones, fechas y estados. La geometría
+3D de cuenca es contextual; no existe una unión GIS validada que vincule cada
+polígono visible con una HRU o canal concreto. Los resultados por HRU y canal
+se seleccionan en el explorador del frame fechado.
+
+La evaluación científica publicada más reciente es **`sf-test-v1`**, un
+experimento separado de 2021–2025 con H1 no respaldada. No se deben presentar
+sus métricas como una evaluación observacional de `phase234-sf-2019-v2`.
+El bundle 2019 es una corrida operativa demostrativa, no una calibración ni una
+prueba A/B contra observaciones.
 
 La [entrega 5](docs/FUNCTIONAL_TWIN_DELIVERY_5.md) documenta el flujo y el
 [manuscrito](research_domain/paper_v1/manuscript.md) reúne el primer borrador.
@@ -43,6 +67,38 @@ de empaquetado; no incluye la base completa ni todos los inputs pesados de SWAT+
 Requisitos: Python 3.12+, PostgreSQL, Node.js compatible con Next.js 16 y pnpm.
 El frontend declara su versión de pnpm en `package.json` y usa `pnpm-lock.yaml`.
 Los comandos siguientes parten de `from-plant-to-watershed/`.
+
+### Inicio integrado con Docker Compose
+
+Docker Compose levanta PostgreSQL, FastAPI y Next.js. La primera inicialización
+debe preparar el catálogo de referencia e importar el bundle versionado:
+
+```bash
+cd from-plant-to-watershed
+docker compose up --build --wait
+docker compose exec -T backend python -m app.cli bootstrap-mvp
+docker compose exec -T backend python scripts/validate_phase234_bundle.py
+docker compose exec -T backend python scripts/register_phase234_south_fork_2019.py
+docker compose exec -T backend python scripts/verify_phase234_postgres.py
+```
+
+El registro es idempotente y escribe los frames de playback en PostgreSQL. La
+verificación consulta la API autenticada después de reiniciarla y falla si
+detecta una lectura SQLite del playback. Escribe su ejemplo de respuesta en
+`/tmp`, no dentro del bundle científico.
+
+Abrir `http://localhost:3000/login` y entrar con `investigador@digitaltwin.org`
+(`Investiga123!`, únicamente para desarrollo local). El visor abre
+`/twin-3d?simId=phase234-sf-2019-v2`; también puede abrirse sin `simId` y elegirá
+esa corrida si está disponible para el usuario. Cambiar la fecha, reproducir,
+pausar, avanzar y retroceder conserva el mismo frame para cuenca, HRUs, canales
+y estados FSPM.
+
+La documentación OpenAPI está en `http://localhost:8000/api/v1/docs`. Para
+detener los servicios conservando la base local, ejecutar `docker compose down`.
+El Compose local deja desactivadas las fixtures simplificadas antiguas; el
+comando `bootstrap-mvp` crea solo el catálogo local requerido para importar el
+gemelo.
 
 ### Backend
 
@@ -78,6 +134,15 @@ uvicorn app.main:app --reload --port 8000
 `ENABLE_DEMO_SEED=true` habilita explícitamente fixtures legacy de desarrollo.
 `python -m app.cli bootstrap-mvp` prepara datos demostrativos, pero no ejecuta
 una validación científica ni sustituye la configuración de SWAT+.
+
+Para habilitar el demo en una instalación local ya conectada a PostgreSQL:
+
+```bash
+python -m app.cli bootstrap-mvp
+python scripts/validate_phase234_bundle.py
+python scripts/register_phase234_south_fork_2019.py
+uvicorn app.main:app --reload --port 8000
+```
 
 ### Frontend
 
@@ -129,10 +194,29 @@ pruebas aisladas, no como runtime normal.
 
 Los resultados versionados de South Fork 2019 están en
 `backend/data/phase1-south-fork-2019/results/`. El script
-`backend/scripts/register_phase234_south_fork_2019.py` verifica checksums e
-importa un bundle completado con propietario, cuenca y escenario existentes.
-El registro es idempotente para contenido coincidente. Véase
+`backend/scripts/register_phase234_south_fork_2019.py` valida checksums e
+importa el bundle a PostgreSQL. Por defecto resuelve el usuario local
+`investigador@digitaltwin.org`, la cuenca `USGS-05451210-PARTIAL` y el escenario
+neutral `MVP_CONTROL`; no hace falta copiar UUID de PostgreSQL. Se pueden pasar
+IDs explícitos para otro catálogo. El registro es idempotente para contenido
+coincidente. Véase
 [estado actual](docs/CURRENT_STATE.md).
+
+Endpoints de playback principales (todos requieren autenticación):
+
+| Ruta | Uso |
+| --- | --- |
+| `GET /api/v1/simulations` | Simulaciones accesibles para el usuario |
+| `GET /api/v1/simulations/{id}` | Metadatos, configuración y procedencia |
+| `GET /api/v1/simulations/{id}/availability?date=2019-07-15` | Rango, resolución y estado disponible para una fecha |
+| `GET /api/v1/simulations/{id}/playback?resolution=DAILY&offset=0&limit=100` | Frames paginados desde PostgreSQL |
+| `GET /api/v1/simulations/{id}/playback?date=2019-07-15` | Frame de una fecha |
+| `GET /api/v1/simulations/{id}/playback?start=2019-07-01&end=2019-07-31` | Frames de un intervalo |
+
+Cada frame incluye variables de cuenca y clima, estados por HRU, estados de
+canal y muestras de planta con unidad, procedencia y disponibilidad. No hay un
+endpoint de detalle separado por HRU: el cliente selecciona una HRU dentro del
+frame que ya corresponde a la fecha elegida.
 
 ## Laboratorio ML externo
 
@@ -163,3 +247,25 @@ La suite backend configura una SQLite temporal propia. Las pruebas de motor
 real requieren recursos SWAT+ explícitos; las comprobaciones específicas de
 PostgreSQL usan scripts separados. Aprobar pruebas de software no equivale a
 validar los resultados frente a observaciones.
+
+### Métricas científicas reproducibles
+
+El bundle 2019 no contiene observaciones emparejadas para calcular métricas
+contra USGS. Para reproducir las métricas del experimento observacional
+versionado `sf-test-v1` (TEST 2021–2025), ejecutar desde `backend/`:
+
+```bash
+python scripts/report_frozen_test_metrics.py
+```
+
+El comando verifica los SHA-256 publicados para observaciones, predicciones y
+reporte; vuelve a calcular NSE, KGE, RMSE, MAE, PBIAS y R²; imprime periodo,
+número de pares, dataset, corridas físicas de referencia y fecha UTC de la
+reproducción. No vuelve a entrenar ni ejecuta SWAT+. Conserva el resultado
+publicado `H1_NOT_SUPPORTED`; estas métricas no se transfieren a la corrida
+`phase234-sf-2019-v2`.
+
+```bash
+docker compose exec -T backend pytest -q tests
+docker compose exec -T backend python scripts/report_frozen_test_metrics.py
+```
