@@ -207,6 +207,7 @@ Endpoints de playback principales (todos requieren autenticación):
 | Ruta | Uso |
 | --- | --- |
 | `GET /api/v1/simulations` | Simulaciones accesibles para el usuario |
+| `GET /api/v1/simulations?view=summary` | Catálogo liviano: metadatos y métricas breves, sin arrays científicos ni logs de procesos |
 | `GET /api/v1/simulations/{id}` | Metadatos, configuración y procedencia |
 | `GET /api/v1/simulations/{id}/availability?date=2019-07-15` | Rango, resolución y estado disponible para una fecha |
 | `GET /api/v1/simulations/{id}/playback?resolution=DAILY&offset=0&limit=100` | Frames paginados desde PostgreSQL |
@@ -217,6 +218,13 @@ Cada frame incluye variables de cuenca y clima, estados por HRU, estados de
 canal y muestras de planta con unidad, procedencia y disponibilidad. No hay un
 endpoint de detalle separado por HRU: el cliente selecciona una HRU dentro del
 frame que ya corresponde a la fecha elegida.
+
+Las vistas Simulaciones y Gemelo 3D cargan el catálogo con `view=summary`.
+Simulaciones consulta `GET /api/v1/simulations/{id}` al seleccionar una corrida
+para recuperar el detalle completo. El listado sin `view` conserva la respuesta
+detallada anterior para otros clientes; puede incluir grandes volúmenes de
+resultados y no se recomienda para selectores. La carga del catálogo es
+independiente del informe científico y de los datos del formulario.
 
 ## Laboratorio ML externo
 

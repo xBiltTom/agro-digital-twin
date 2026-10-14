@@ -300,6 +300,8 @@ export default function SimulationsPage() {
 
   // Estados de carga y modal
   const [isLoading, setIsLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const selectionRequest = useRef(0);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
   const [resultsError, setResultsError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -374,6 +376,7 @@ export default function SimulationsPage() {
   };
 
   const selectSimulation = useCallback(async (sim: SimulationRun) => {
+    const request = ++selectionRequest.current;
     setSelectedSim(sim);
     setIsLoadingResults(true);
     setResultsError(null);
@@ -386,50 +389,57 @@ export default function SimulationsPage() {
     }
 
     try {
-      if (sim.status !== "COMPLETED") {
-        setResultsError(sim.error?.message ?? `La corrida está ${sim.status.toLowerCase()}; aún no hay resultados para mostrar.`);
-      } else if (isSwatBackend(sim)) {
-        const normalizedSwat = await api.getSwatResults(sim.id);
+      const detail = await api.getSimulation(sim.id);
+      if (request !== selectionRequest.current) return;
+      setSelectedSim(detail);
+      if (detail.status !== "COMPLETED") {
+        setResultsError(detail.error?.message ?? `La corrida está ${detail.status.toLowerCase()}; aún no hay resultados para mostrar.`);
+      } else if (isSwatBackend(detail)) {
+        const normalizedSwat = await api.getSwatResults(detail.id);
+        if (request !== selectionRequest.current) return;
         setSwatResults(normalizedSwat);
       } else {
-        const dailyResults = await api.getSimulationResults(sim.id, sim.duration_days);
+        const dailyResults = await api.getSimulationResults(detail.id, detail.duration_days);
+        if (request !== selectionRequest.current) return;
         setResults(dailyResults);
       }
     } catch (err: unknown) {
+      if (request !== selectionRequest.current) return;
       setResultsError(err instanceof Error ? err.message : "No se pudieron cargar los resultados de esta corrida.");
     } finally {
-      setIsLoadingResults(false);
+      if (request === selectionRequest.current) setIsLoadingResults(false);
     }
   }, []);
 
   const loadInitialData = useCallback(async () => {
     setIsLoading(true);
+    setCatalogError(null);
     setIsLoadingFinalReport(true);
     setFinalReport(null);
     setFinalReportError(null);
-    try {
-      const reportRequest = api.getFinalScientificReport()
-        .then((report) => ({ report, error: null as string | null }))
-        .catch((error: unknown) => ({
-          report: null,
-          error: error instanceof Error ? error.message : "No se pudo cargar el informe científico histórico 2018–2020.",
-        }));
-      const [simsData, scenData, watersData, capabilityData, datasetsData, reportResult] = await Promise.all([
-        api.getSimulations(),
-        api.getClimateScenarios(),
-        api.getWatersheds(),
-        api.getCapabilities(),
-        api.getDatasets(),
-        reportRequest,
-      ]);
+    const catalogRequest = api.getSimulations("summary").then((simsData) => {
       setSimulations(simsData);
+      if (simsData.length > 0) void selectSimulation(simsData[0]);
+    }).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : "No se pudo cargar el catálogo de simulaciones.";
+      setCatalogError(message);
+      setFeedbackMsg({ type: "error", text: message });
+    }).finally(() => setIsLoading(false));
+
+    const reportRequest = api.getFinalScientificReport().then(setFinalReport)
+      .catch((err: unknown) => setFinalReportError(err instanceof Error ? err.message : "No se pudo cargar el informe científico histórico 2018–2020."))
+      .finally(() => setIsLoadingFinalReport(false));
+
+    const configurationRequest = Promise.all([
+      api.getClimateScenarios(),
+      api.getWatersheds(),
+      api.getCapabilities(),
+      api.getDatasets(),
+    ]).then(([scenData, watersData, capabilityData, datasetsData]) => {
       setScenarios(scenData);
       setWatersheds(watersData);
       setCapabilities(capabilityData);
       setDatasets(datasetsData);
-      setFinalReport(reportResult.report);
-      setFinalReportError(reportResult.error);
-      setIsLoadingFinalReport(false);
 
       if (watersData.length > 0) {
         setFormWatershedId(watersData[0].id);
@@ -440,17 +450,8 @@ export default function SimulationsPage() {
         const neutralScenario = scenData.find((scenario) => scenario.temp_anomaly_c === 0 && scenario.precip_factor === 1);
         setFormScenarioId((neutralScenario ?? scenData[0]).id);
       }
-
-      if (simsData.length > 0) {
-        selectSimulation(simsData[0]);
-      }
-    } catch (err: unknown) {
-      setFeedbackMsg({ type: "error", text: err instanceof Error ? err.message : "Error al cargar datos de simulación" });
-      setFinalReportError("No se pudo cargar el informe científico histórico 2018–2020.");
-      setIsLoadingFinalReport(false);
-    } finally {
-      setIsLoading(false);
-    }
+    }).catch((err: unknown) => setFeedbackMsg({ type: "error", text: err instanceof Error ? err.message : "Error al cargar la configuración de simulación" }));
+    await Promise.all([catalogRequest, reportRequest, configurationRequest]);
   }, [selectSimulation]);
 
   useEffect(() => {
@@ -915,7 +916,13 @@ export default function SimulationsPage() {
 
               {/* Lista de Experimentos */}
               <div className="p-2.5 space-y-1.5">
-                {filteredSimulations.length === 0 ? (
+                {isLoading && simulations.length === 0 ? (
+                  <div role="status" className="flex items-center justify-center gap-2 p-6 text-xs text-slate-500">
+                    <Loader2 size={16} className="animate-spin" /> Cargando simulaciones…
+                  </div>
+                ) : catalogError && simulations.length === 0 ? (
+                  <div role="alert" className="p-6 text-center text-xs text-rose-600">{catalogError}</div>
+                ) : filteredSimulations.length === 0 ? (
                   <div className="p-6 text-center rounded-none border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400">
                     No se encontraron simulaciones que coincidan con la búsqueda.
                   </div>

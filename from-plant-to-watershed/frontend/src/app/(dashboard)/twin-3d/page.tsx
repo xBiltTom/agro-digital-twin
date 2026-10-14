@@ -88,7 +88,7 @@ export default function Twin3DPage() {
   useEffect(() => {
     if (!user) return;
     const controller = new AbortController();
-    api.getSimulations().then((runs) => {
+    api.getSimulations("summary").then((runs) => {
       if (controller.signal.aborted) return;
       const accessible = accessibleSimulations(runs, user);
       setSimulations(accessible);
