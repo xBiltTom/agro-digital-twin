@@ -238,9 +238,10 @@ no es evidencia para H1.
 
 Ver [Render Free + Vercel](docs/render-vercel.md) y el `render.yaml` de la raíz.
 Incluye consultas acotadas, un worker, conexiones DB limitadas, instalación
-portable SWAT+ y bootstrap de una base vacía sin usuarios/corridas demo.
-Streamlit no se despliega. Las mediciones locales y límites del plan gratuito
-están documentados; instalar los inputs/ejecutable reales es necesario para SWAT+.
+portable SWAT+ desde un paquete versionado con checksum y bootstrap de una base
+vacía sin usuarios/corridas demo. Streamlit no se despliega. Las mediciones
+locales y límites del plan gratuito están documentados; el build SWAT+ incluido
+es de investigación, no un release oficial ni una validación científica.
 
 ## Calidad y rendimiento del visor 3D
 

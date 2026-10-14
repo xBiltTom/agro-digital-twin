@@ -50,14 +50,10 @@ services:
         value: data/swat-runtime/project
       - key: SWAT_PLUS_WORKING_DIRECTORY
         value: data/swat-runs
-      - key: SWAT_RUNTIME_BUNDLE_URL
-        sync: false
-      - key: SWAT_RUNTIME_BUNDLE_SHA256
-        sync: false
 databases:
   - name: agro-twin-db
     plan: free
     region: oregon
     databaseName: agrotwindb
     user: agrotwindb_user
-    ipAllowList: [] # Add the operator's IP temporarily for local initialization.
+    ipAllowList: [] # Keep private; temporarily allowlist the operator IP for admin bootstrap.

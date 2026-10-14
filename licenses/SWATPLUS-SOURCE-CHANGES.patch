@@ -1,0 +1,52 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -47,7 +47,7 @@
+         set(frelease        "-O")
+         set(FFC             "ifx")
+     elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+-        set(fdialect        "-cpp -fcheck=all -ffpe-trap=invalid,zero,overflow,underflow -fimplicit-none -ffree-line-length-none -fbacktrace -finit-local-zero -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans")
++        set(fdialect        "-cpp -fcheck=all -ffpe-trap=invalid,zero,overflow -fimplicit-none -ffree-line-length-none -fbacktrace -finit-local-zero -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans")
+         set(fdebug          "-Wall")
+         set(frelease        "-O")
+         set(FFC             "gnu")
+@@ -77,7 +77,7 @@
+         set(frelease        "/O")
+         set(FFC             "ifx")
+     elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+-        set(fdialect        "-cpp -fcheck=all -ffpe-trap=invalid,zero,overflow,underflow -fimplicit-none -ffree-line-length-none -fbacktrace -finit-local-zero -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans")
++        set(fdialect        "-cpp -fcheck=all -ffpe-trap=invalid,zero,overflow -fimplicit-none -ffree-line-length-none -fbacktrace -finit-local-zero -fno-unsafe-math-optimizations -frounding-math -fsignaling-nans")
+         set(fdebug          "-Wall ")
+         set(FFC             "gnu")
+         set(frelease        "-O")
+--- a/src/sd_channel_output.f90
++++ b/src/sd_channel_output.f90
+@@ -12,6 +12,8 @@
+       integer :: iob = 0                    !             |
+       integer :: ii = 0                     !             
+       real :: const = 0.                    !             |
++
++      integer, save :: storage_unit = 0
+ 
+       iob = sp_ob1%chandeg + ichan - 1
+ 
+@@ -30,6 +32,20 @@
+ !!!!! daily print
+        if (pco%day_print == "y" .and. pco%int_day_cur == pco%int_day) then
+         if (pco%sd_chan%d == "y") then
++          ! Research diagnostic: read existing states/fluxes without changing them.
++          if (storage_unit == 0) then
++            open (newunit=storage_unit, file="channel_storage_day.txt", status="replace", action="write")
++            write (storage_unit,'(a)') "SWAT+ Rev 2026.61.0.2.61 channel-storage/v1"
++            write (storage_unit,'(a)') "jday mon day yr unit gis_id name ch_stor fp_stor tot_stor wet_stor inflow outflow precip evap seep ch_initial_routing fp_initial_routing"
++            write (storage_unit,'(a)') "- - - - - - - m3 m3 m3 m3 m3 m3 m3 m3 m3 m3 m3"
++          end if
++          write (storage_unit,'(6(i0,1x),a,11(1x,es25.16e3))') &
++            time%day, time%mo, time%day_mo, time%yrc, ichan, ob(iob)%gis_id, trim(ob(iob)%name), &
++            real(ch_stor(ichan)%flo,8), real(fp_stor(ichan)%flo,8), real(tot_stor(ichan)%flo,8), &
++            real(wet_stor(ichan)%flo,8), real(ob(iob)%hin%flo,8), real(ob(iob)%hd(1)%flo,8), &
++            real(ch_wat_d(ichan)%precip,8), real(ch_wat_d(ichan)%evap,8), real(ch_wat_d(ichan)%seep,8), &
++            real(ch_fp_wb(ichan)%ch_stor_init,8), real(ch_fp_wb(ichan)%fp_stor_init,8)
++
+           write (2500,100) time%day, time%mo, time%day_mo, time%yrc, ichan, ob(iob)%gis_id, ob(iob)%name,       &
+             ch_wat_d(ichan)%area_ha, ch_wat_d(ichan)%precip, ch_wat_d(ichan)%evap, ch_wat_d(ichan)%seep,        &                
+             ch_stor(ichan), ch_in_d(ichan), ch_out_d(ichan), wtemp

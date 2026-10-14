@@ -51,77 +51,54 @@ plantas, HRUs, outputs, warmup y modelos ML elegidos.
 
 ## SWAT+ portable
 
-El código en Git no contiene tu instalación local de SWAT+. Para ejecutar
-SWAT+ en Render es obligatorio suministrar su ejecutable Linux x86_64 y el
-proyecto real. No se reemplaza por hidrología sintética si falta alguno.
+La imagen del backend incluye `deploy/swat-runtime.tar.gz`, un paquete Linux
+x86_64 con el ejecutable, el cargador ELF, sus bibliotecas verificadas por hash
+y los inputs South Fork. `deploy/swat-runtime.sha256` fija el paquete; el build
+Docker valida el checksum y lo extrae de forma segura a `data/swat-runtime`.
+No hace falta publicar el archivo en otro host ni configurar variables de URL
+para que Render instale el motor.
 
-Desde `backend/`, crear un paquete a partir de los recursos existentes:
+El ejecutable es un build de investigación SWAT+ 61.0.2.61, con instrumentación
+de almacenamiento diario de canales para el acoplamiento. No es un release
+oficial ni reproduce automáticamente una corrida precalculada. Su procedencia,
+parche y licencia LGPL-2.1 están descritos en
+[`deploy/SWATPLUS-NOTICE.md`](../../deploy/SWATPLUS-NOTICE.md) y `licenses/`.
+La imagen conserva los inputs en `data/swat-runtime` y crea workspaces
+independientes en `data/swat-runs`; los resultados de playback se persisten en
+PostgreSQL. El modelo congelado 2019 y las observaciones no se precargan.
 
-```bash
-python deployment/swat_runtime.py export \
-  --executable data/baseline-diagnostic-source-build-v1/compile-v4/swatplus-research \
-  --project data/baseline-diagnostic-multiyear-v1/selected-project \
-  --output /tmp/agro-render-swat-runtime.tar.gz \
-  --bundle-system-runtime
-```
-
-El comando imprime el SHA256. Empaqueta el mismo binario, su cargador ELF
-y sus bibliotecas originales verificadas por SHA256, evitando depender de la
-glibc del contenedor. Incluye inputs y los manifiestos científicos
-adyacentes; omite los outputs reconocidos por el adapter. No altera la fuente
-ni contiene la DB o credenciales. Subir ese archivo a almacenamiento HTTPS
-accesible para el servicio y configurar en Render:
-
-- `SWAT_RUNTIME_BUNDLE_URL`: URL del archivo, fuera de Git.
-- `SWAT_RUNTIME_BUNDLE_SHA256`: SHA256 exacto impreso por el exportador.
-
-El arranque descarga a disco, verifica el hash y extrae de forma segura a
-`data/swat-runtime`. El Dockerfile instala `libgfortran5`. Los inputs permanecen
-separados de `data/swat-runs`, donde el adapter crea cada workspace. Se verificaron el cargador, el binario y las bibliotecas originales dentro de
-la imagen Debian con un límite de 512 MB; el binario local por sí solo requería
-GLIBC_2.43, ausente en la imagen. El runtime portable resuelve esa incompatibilidad
-sin recompilar el modelo ni modificar sus bibliotecas originales.
-
-Sin URL, la API puede iniciar y ejecutar el motor simplificado; SWAT+ informa
-que los recursos no están instalados. No utilizar el paquete de un proyecto
-distinto para afirmar que se reprodujo el experimento congelado.
-El perfil científico congelado además necesita sus catálogos/observaciones y,
-si se solicita ML mensual, los ModelBundles originales registrados; no los
-crea `bootstrap-reference`. El entrenamiento sigue fuera del despliegue.
+Para actualizar el paquete, exportarlo con `deployment/swat_runtime.py`, revisar
+su procedencia y los notices, reemplazar el archivo y actualizar el SHA exacto.
+No usar un proyecto distinto para afirmar que se reprodujo el experimento
+congelado. Los catálogos/observaciones y los ModelBundles ML mensuales siguen
+siendo recursos separados; no los crea `bootstrap-reference`.
 
 ## Render
 
 1. Crear un Blueprint desde `render.yaml` en la raíz del repositorio.
 2. Configurar `CORS_ORIGINS` como JSON, por ejemplo
    `["https://tu-proyecto.vercel.app"]`. Usar los dominios concretos permitidos.
-3. Configurar el paquete SWAT+ y su hash si se ejecutarán corridas reales.
-4. Conservar `APP_ENV=production`, el secreto generado y ambos seeds en false.
-5. Verificar `/health/ready`: comprueba conexión DB y devuelve 503 si falla.
+3. Conservar `APP_ENV=production`, el secreto generado y ambos seeds en false.
+4. Verificar `/health/ready`: comprueba conexión DB y devuelve 503 si falla.
 
-No se crea un usuario con contraseña conocida ni se importan las simulaciones
-locales. Para inicializar la base vacía, Render Free no proporciona shell:
-usar la máquina del operador con el código/dependencias instalados y la URL
-**externa** de PostgreSQL. Autorizar temporalmente la IP del operador en Render.
-La API usa la URL interna del Blueprint.
+La DB queda sin usuarios ni corridas precargadas; la API crea tablas, roles,
+permisos, cuenca y escenarios estructurales al arrancar. Render Free no ofrece
+shell/SSH para web services. Para el primer admin, autorizar temporalmente sólo
+la IP pública del operador en la lista de acceso de PostgreSQL y ejecutar desde
+`backend/` con las dependencias instaladas:
 
-Desde `backend/`, configurar temporalmente en esa terminal:
-
-```bash
+```sh
 export APP_ENV=production
-export DATABASE_URL='postgresql://USUARIO:CLAVE@HOST:5432/digitaltwin?sslmode=require'
-export SECRET_KEY='MISMO_SECRETO_CONFIGURADO_EN_RENDER'
-export ENABLE_DEMO_SEED=false
-export ENABLE_MVP_BOOTSTRAP=false
+export DATABASE_URL='postgresql://USUARIO:CLAVE@HOST:5432/agrotwindb?sslmode=require'
+export SECRET_KEY='EL_SECRETO_CONFIGURADO_EN_RENDER'
 python -m app.cli create-admin --email TU_CORREO --full-name 'Administrador'
-python -m app.cli bootstrap-reference
 ```
 
-La contraseña del administrador se pide sin imprimirla. `bootstrap-reference`
-es idempotente: prepara cuenca de referencia y escenarios, sin cuentas demo,
-observaciones, modelos ni corridas. Después cerrar el acceso externo DB del
-operador. Crear usuarios desde la aplicación y asignar permisos de investigador
-para quienes deban ejecutar corridas; el registro público sólo asigna operador.
-No introducir secretos de PostgreSQL o JWT en Vercel ni en Git.
+La contraseña se pide sin mostrarla. Después, retirar la IP de la lista para
+mantener PostgreSQL privado; el API continúa conectándose con su URL interna.
+El registro público asigna el rol de operador; para ejecutar corridas se
+necesita un rol científico/admin. No introducir secretos de PostgreSQL o JWT
+en Vercel ni en Git.
 
 ## Vercel
 

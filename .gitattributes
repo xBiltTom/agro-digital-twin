@@ -1,0 +1,2 @@
+# Preserve exact whitespace in the source diff used to identify the audited SWAT+ build.
+licenses/SWATPLUS-SOURCE-CHANGES.patch whitespace=-trailing-space

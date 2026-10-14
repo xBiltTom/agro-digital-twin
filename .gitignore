@@ -121,3 +121,6 @@ yarn-error.log*
 
 # Owned South Fork reproductions and figure tool cache
 from-plant-to-watershed/backend/data/south-fork-user-v1/
+
+# Versioned deployment artifact: checksummed SWAT+ runtime and project inputs
+!deploy/swat-runtime.tar.gz

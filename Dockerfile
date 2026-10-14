@@ -13,7 +13,16 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
+FROM base AS swat-runtime-bundle
+COPY deploy/swat-runtime.tar.gz /tmp/swat-runtime.tar.gz
+COPY deploy/swat-runtime.sha256 /tmp/swat-runtime.sha256
+RUN python deployment/swat_runtime.py install \
+    --archive /tmp/swat-runtime.tar.gz \
+    --sha256 "$(cat /tmp/swat-runtime.sha256)" \
+    && rm -f /tmp/swat-runtime.tar.gz /tmp/swat-runtime.sha256
+
 FROM base AS runtime
+COPY --from=swat-runtime-bundle /app/from-plant-to-watershed/backend/data/swat-runtime ./data/swat-runtime
 RUN apt-get update && apt-get install -y --no-install-recommends libgfortran5 && rm -rf /var/lib/apt/lists/*
 EXPOSE 8000
 CMD ["sh", "deployment/start.sh"]

@@ -81,13 +81,19 @@ def export_bundle(executable, project, output, bundle_system_runtime=False):
     return digest(output)
 
 
-def install_bundle():
+def install_bundle(archive_source=None, expected_checksum=None):
     url = os.environ.get('SWAT_RUNTIME_BUNDLE_URL', '')
-    if not url:
+    checksum = expected_checksum or os.environ.get('SWAT_RUNTIME_BUNDLE_SHA256', '')
+    if archive_source is None and not url:
+        if checksum:
+            raise ValueError('SWAT runtime checksum was supplied without a bundle source')
         return  # Existing local installations continue to use their configured paths.
-    checksum = os.environ.get('SWAT_RUNTIME_BUNDLE_SHA256', '')
-    if not url.startswith('https://') or len(checksum) != 64 or any(c not in '0123456789abcdef' for c in checksum):
-        raise ValueError('SWAT runtime requires HTTPS and its exact SHA256')
+    if archive_source is not None and url:
+        raise ValueError('Choose either a local SWAT runtime archive or an HTTPS bundle URL')
+    if len(checksum) != 64 or any(c not in '0123456789abcdef' for c in checksum):
+        raise ValueError('SWAT runtime requires its exact SHA256')
+    if url and not url.startswith('https://'):
+        raise ValueError('SWAT runtime bundle URL must use HTTPS')
     target = Path(os.environ.get('SWAT_RUNTIME_DIR', 'data/swat-runtime'))
     marker = target / '.bundle-sha256'
     if marker.is_file() and marker.read_text().strip() == checksum:
@@ -96,9 +102,12 @@ def install_bundle():
         raise ValueError('Runtime directory already exists with a different or incomplete bundle')
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=target.parent) as scratch:
-        archive = Path(scratch) / 'runtime.tar.gz'
-        with urlopen(url, timeout=120) as response, archive.open('wb') as output:
-            shutil.copyfileobj(response, output, length=1024 * 1024)
+        archive = Path(archive_source) if archive_source is not None else Path(scratch) / 'runtime.tar.gz'
+        if archive_source is None:
+            with urlopen(url, timeout=120) as response, archive.open('wb') as output:
+                shutil.copyfileobj(response, output, length=1024 * 1024)
+        elif not archive.is_file():
+            raise ValueError('SWAT runtime archive does not exist')
         if digest(archive) != checksum:
             raise ValueError('SWAT runtime checksum mismatch')
         staging = Path(scratch) / 'unpacked'
@@ -110,7 +119,9 @@ def install_bundle():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('install')
+    install = commands.add_parser('install')
+    install.add_argument('--archive', type=Path, help='Install and verify a local portable bundle')
+    install.add_argument('--sha256', help='Exact SHA256 for --archive')
     export = commands.add_parser('export')
     export.add_argument('--executable', required=True)
     export.add_argument('--project', required=True)
@@ -118,6 +129,6 @@ if __name__ == '__main__':
     export.add_argument('--bundle-system-runtime', action='store_true')
     args = parser.parse_args()
     if args.command == 'install':
-        install_bundle()
+        install_bundle(args.archive, args.sha256)
     else:
         print(export_bundle(args.executable, args.project, args.output, args.bundle_system_runtime))
