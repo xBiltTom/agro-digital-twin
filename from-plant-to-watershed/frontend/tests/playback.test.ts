@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { rainIntensity, sceneFromRecord, periodLabel, variableText, chartPointFromRecord, hasSouthForkContext, activePlantSample, numeric } from "../src/lib/playback-scene.ts";
-import { PlaybackClient } from "../src/lib/playback-client.ts";
+import { PlaybackClient, PLAYBACK_PAGE_SIZE } from "../src/lib/playback-client.ts";
 import { historicalFallbackEligible, simplifiedHistoricalPoints, swatHistoricalPoints } from "../src/lib/historical-charts.ts";
 import { accessibleSimulations, collectSimulationPages, preferredTwinSimulation } from "../src/lib/simulation-access.ts";
 import { fieldCanopyAvailable, maizeFromScene, maizeReproductive } from "../src/lib/visual-state.ts";
@@ -153,11 +153,11 @@ test("South Fork contextual geometry is not assigned to unrelated basins", () =>
   assert.equal(hasSouthForkContext({ ...record("2020-06-20"), watershed_code: "USGS-05451210-PARTIAL" }), true);
 });
 
-function page(simulationId: string, offset: number, count = 100): PlaybackPage {
+function page(simulationId: string, offset: number, count = PLAYBACK_PAGE_SIZE): PlaybackPage {
   const dates = Array.from({ length: count }, (_, i) => new Date(Date.UTC(2020, 0, offset + i + 1)).toISOString().slice(0, 10));
   return { schema_version: "twin-playback-v1", simulation_id: simulationId, simulation_status: "COMPLETED",
     artifact_status: "AVAILABLE", resolution: "DAILY", available_resolutions: ["DAILY"], total: 205,
-    offset, limit: 100, records: dates.map((date) => ({ ...record(date), simulation_id: simulationId })),
+    offset, limit: PLAYBACK_PAGE_SIZE, records: dates.map((date) => ({ ...record(date), simulation_id: simulationId })),
     variables: {}, provenance: {}, limitations: [] };
 }
 

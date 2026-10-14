@@ -14,6 +14,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+from typing import Iterator
 
 from app.services.swat_baseline_diagnostic import read_table, routing_rows
 
@@ -24,10 +25,24 @@ CON_TYPES = {"hru.con": "hru", "rout_unit.con": "ru", "aquifer.con": "aqu",
 TYPE_ALIASES = {"sdc": "chandeg", "cha": "chan", "exc": "exco", "out": "outlet"}
 
 
-def table(path: Path) -> list[dict[str, str]]:
+def file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def iter_table(path: Path) -> Iterator[dict[str, str]]:
     from app.services.swat_plus_parser import SwatOutputParser
     headers, _, rows = SwatOutputParser._table(path)
-    return [dict(zip(headers, row)) for row in rows]
+    for row in rows:
+        yield dict(zip(headers, row))
+
+
+def table(path: Path) -> list[dict[str, str]]:
+    """Compatibility reader for analyses that require multiple passes or len()."""
+    return list(iter_table(path))
 
 
 def period(row: dict[str, str]) -> str:
@@ -100,10 +115,11 @@ def bypass_flow_series(project: Path) -> tuple[dict[tuple[str, str], float], dic
     by_name = {value["name"]: identifier for identifier, value in channels.items()}
     grouped = defaultdict(list)
     days = set()
-    for row in table(path):
+    for row in iter_table(path):
         days.add(period(row))
         if row["type"] == "chandeg" and row["name"] in by_name:
-            grouped[(period(row), by_name[row["name"]])].append(row)
+            grouped[(period(row), by_name[row["name"]])].append(
+                {key: row[key] for key in ("objtyp", "typ_no", "hyd_typ", "fraction", "flo")})
     flows = {}
     for key, rows in grouped.items():
         actual = [(TYPE_ALIASES.get(row["objtyp"], row["objtyp"]), row["typ_no"],
@@ -125,7 +141,7 @@ def bypass_flow_series(project: Path) -> tuple[dict[tuple[str, str], float], dic
                    "channels": channels, "native_unit": "m3 per daily connection",
                    "printed_unit": "m^3/s (incorrect in this release)",
                    "normalization": "sum(fraction-applied incoming volumes) / 86400 for verified bypass channels",
-                   "source": path.name, "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                   "source": path.name, "source_sha256": file_digest(path),
                    "reference": f"https://github.com/swat-model/swatplus/blob/{ENGINE_VERSION}/src/command.f90"}
 
 
@@ -206,7 +222,7 @@ def diagnose_water_path(project: Path, *, outlet_gis_id: str, start: date, end: 
     if end <= start:
         return {"status": "NOT_AVAILABLE", "reason": "Storage accounting requires at least two days"}
     lo, hi = start.isoformat(), end.isoformat()
-    tables = {name: [row for row in table(project / name) if lo <= period(row) <= hi] for name in names}
+    tables = {name: [row for row in iter_table(project / name) if lo <= period(row) <= hi] for name in names}
     days = {period(row) for row in tables["basin_wb_day.txt"]}
     if len(tables["basin_wb_day.txt"]) != len(days):
         raise ValueError("Duplicate daily basin states")
@@ -235,12 +251,14 @@ def diagnose_water_path(project: Path, *, outlet_gis_id: str, start: date, end: 
         if not manifest_path.is_file():
             raise ValueError("Instrumented storage output requires its engine manifest")
         storage_manifest = json.loads(manifest_path.read_text())
+        with storage_path.open() as storage_stream:
+            storage_title = storage_stream.readline().rstrip("\n")
         if (storage_manifest.get("schema_version") != "swat-research-build/v1" or
                 storage_manifest.get("source", {}).get("commit") != SOURCE_COMMIT or
                 storage_manifest.get("storage_output", {}).get("marker") != "channel-storage/v1" or
-                storage_path.read_text().splitlines()[0] != "SWAT+ Rev 2026.61.0.2.61 channel-storage/v1"):
+                storage_title != "SWAT+ Rev 2026.61.0.2.61 channel-storage/v1"):
             raise ValueError("Unsupported storage output instrumentation")
-        for row in table(storage_path):
+        for row in iter_table(storage_path):
             if not lo <= period(row) <= hi:
                 continue
             key = (period(row), row["unit"])
@@ -442,8 +460,8 @@ def diagnose_water_path(project: Path, *, outlet_gis_id: str, start: date, end: 
             "storage_instrumentation": {"manifest_sha256": storage_manifest.get("manifest_sha256"),
                 "executable_sha256": storage_manifest["executable_sha256"], "rows": len(storage_rows),
                 "source_commit": storage_manifest["source"]["commit"], "precision": storage_manifest["storage_output"]["precision"]} if storage_manifest else None,
-            "input_checksums": {name: hashlib.sha256((project/name).read_bytes()).hexdigest()
+            "input_checksums": {name: file_digest(project/name)
                 for name in (*CON_TYPES, "hyd-sed-lte.cha", "channel-lte.cha", "nutrients.cha", "codes.bsn", "parameters.bsn", "object.cnt") if (project/name).is_file()},
-            "output_checksums": {name: hashlib.sha256((project/name).read_bytes()).hexdigest() for name in names},
+            "output_checksums": {name: file_digest(project/name) for name in names},
             "limitations": [limitation if physical else "All channels are artificial bypass objects; this does not validate physical channel routing.",
                 "Calibration and research H1 are not evaluated by a closed connection-flow balance."]}

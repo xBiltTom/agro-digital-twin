@@ -110,6 +110,18 @@ class PlaybackDatabaseStore:
                                          .where(PlaybackFrame.simulation_id == simulation_id,
                                                 PlaybackFrame.resolution == resolution)) or 0
 
+    async def iter_records(self, simulation_id: str, resolution: str):
+        """Server-side cursor: never materialize an entire scientific year in RAM."""
+        statement = (select(PlaybackFrame.payload, PlaybackFrame.sha256)
+                     .where(PlaybackFrame.simulation_id == simulation_id, PlaybackFrame.resolution == resolution)
+                     .order_by(PlaybackFrame.date).execution_options(yield_per=1))
+        rows = await self.session.stream(statement)
+        try:
+            async for payload, digest in rows:
+                yield self._validate(payload, digest, simulation_id, resolution)
+        finally:
+            await rows.close()
+
     async def records(self, simulation_id: str, resolution: str) -> list[PlaybackRecord]:
         rows = (await self.session.execute(select(PlaybackFrame.payload, PlaybackFrame.sha256)
                                            .where(PlaybackFrame.simulation_id == simulation_id,

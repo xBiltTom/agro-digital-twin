@@ -1,5 +1,6 @@
 """Application adapter between SQLAlchemy persistence and the pure scientific core."""
 
+import asyncio
 from collections import Counter
 import copy
 from datetime import date, datetime, timedelta, timezone
@@ -184,7 +185,7 @@ class TwinCouplingEngine:
             requested_swat, simulation_start=sim_run.start_date, simulation_end=sim_run.end_date,
             watershed_id=watershed.code, run_id=sim_run.id,
         )
-        result = SwatPlusAdapter().run(config)
+        result = await asyncio.to_thread(SwatPlusAdapter().run, config)
         climate, climate_provenance = TwinCouplingEngine._baseline_forcing(Path(result.workspace), sim_run.start_date, sim_run.end_date)
         # These normalized rows are persisted exactly as parsed. They are not put in
         # SimulationResult because that legacy entity has required FSPM/proxy fields
@@ -304,7 +305,7 @@ class TwinCouplingEngine:
         adapter = SwatPlusAdapter(config.executable_path, config.project_path, config.working_directory)
         initial_preflight = adapter.preflight(config, target_crop=target_crop)
         require_coupled_preflight_ready(initial_preflight)
-        coupled = run_coupled_swat_with_executed_calendar(
+        coupled = await asyncio.to_thread(run_coupled_swat_with_executed_calendar,
             adapter, config, target_crop=target_crop, plant_count=sim_run.plant_count,
             seed=sim_run.seed,
             parameter_period=tuple(date.fromisoformat(value) for value in requested_swat["parameter_period"]) if requested_swat.get("parameter_period") else None,
@@ -504,7 +505,7 @@ class TwinCouplingEngine:
             datasets = list((await db.execute(select(Dataset).where(Dataset.id.in_(sim_run.dataset_ids or [])))).scalars().all()) if sim_run.dataset_ids else []
             artifacts = list((await db.execute(select(DatasetArtifact).where(DatasetArtifact.dataset_id.in_([item.id for item in datasets])))).scalars().all()) if datasets else []
             weather, climate_artifact_provenance = TwinCouplingEngine._resolve_climate_forcing(sim_run, datasets, artifacts)
-            core_run = MultiscaleSimulationOrchestrator().execute(
+            core_run = await asyncio.to_thread(MultiscaleSimulationOrchestrator().execute,
                 config, sim_run.plant_count, weather=weather, climate_provenance=climate_artifact_provenance
             )
             db.add_all([

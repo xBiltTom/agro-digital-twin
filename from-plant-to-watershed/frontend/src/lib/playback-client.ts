@@ -1,7 +1,7 @@
 import type { PlaybackPage, PlaybackQuery, PlaybackRecord, PlaybackResolution } from "../types/playback";
 
 export type PlaybackFetcher = (id: string, query: PlaybackQuery, signal: AbortSignal) => Promise<PlaybackPage>;
-export const PLAYBACK_PAGE_SIZE = 100;
+export const PLAYBACK_PAGE_SIZE = 7;
 
 /** Keeps only requested pages; generation and abort both prevent cross-run stale updates. */
 export class PlaybackClient {

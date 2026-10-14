@@ -219,7 +219,7 @@ export default function ReportsPage() {
     setFinalReportError(null);
 
     const [simulationsResult, historyResult, reportResult] = await Promise.allSettled([
-      api.getSimulations(),
+      api.getSimulations("summary"),
       api.getReportsHistory(),
       api.getFinalScientificReport(),
     ]);

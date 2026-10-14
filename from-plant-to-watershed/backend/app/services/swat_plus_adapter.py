@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, replace
 from datetime import date
 import hashlib
+import fnmatch
 import json
 import os
 from pathlib import Path
@@ -164,6 +165,7 @@ def _sha256(path: Path) -> str:
 
 
 _RECOGNIZED_OUTPUT_PATTERNS = (
+    "sd_chanbud*",
     "output_wb*", "basin_wb*", "output_channel*", "channel_sd*", "channel_sdmorph*",
     "channel_day*", "channel_mon*", "channel_yr*", "channel_aa*", "output_hru*", "hru_wb*",
     "hru_pw*", "mgt_out*", "crop_yld*", "basin_crop_yld*", "success.fin",
@@ -397,7 +399,9 @@ class SwatPlusAdapter:
         workspace_project_copies = estimated_executions
         source_bytes = 0
         if config.project_path.is_dir():
-            source_bytes = sum(path.stat().st_size for path in config.project_path.rglob("*") if path.is_file())
+            source_bytes = sum(path.stat().st_size for path in config.project_path.rglob("*")
+                               if path.is_file() and not any(fnmatch.fnmatch(path.name, pattern)
+                                                             for pattern in _RECOGNIZED_OUTPUT_PATTERNS))
         free_bytes = shutil.disk_usage(probe).free if probe.is_dir() else None
         minimum_workspace_bytes = source_bytes * workspace_project_copies
         if free_bytes is not None and free_bytes < minimum_workspace_bytes:
@@ -542,9 +546,15 @@ class SwatPlusAdapter:
         if workspace.exists():
             raise SwatProjectInvalidError("SWAT+ workspace already exists for this run_id", details={"workspace": str(workspace)})
 
+        skipped_outputs = []
+        ignore_outputs = shutil.ignore_patterns(*_RECOGNIZED_OUTPUT_PATTERNS)
+        def skip_generated_outputs(directory, names):
+            ignored = ignore_outputs(directory, names)
+            skipped_outputs.extend(str((Path(directory) / name).relative_to(source_root)) for name in ignored)
+            return ignored
         started = time.monotonic()
         try:
-            shutil.copytree(source_root, workspace)
+            shutil.copytree(source_root, workspace, ignore=skip_generated_outputs)
         except OSError as exc:
             raise SwatProjectInvalidError("Unable to create isolated SWAT+ workspace", details={"workspace": str(workspace)}) from exc
         run_directory = workspace / input_directory.relative_to(source_root)
@@ -609,7 +619,8 @@ class SwatPlusAdapter:
                                      if input_checksums_after_mutator.get(name) != before)
         created_input_files = sorted(name for name in input_checksums_after_mutator
                                      if name not in input_checksums_before_mutator)
-        command = [str(config.executable_path.resolve())]
+        from app.services.swat_research_engine import runtime_command
+        command = runtime_command(config.executable_path)
         execution_started_ns = time.time_ns()
         try:
             completed = subprocess.run(command, cwd=run_directory, capture_output=True, text=True,
@@ -705,7 +716,8 @@ class SwatPlusAdapter:
                 "source_build": source_build,
                 "source_file_cio_sha256": _sha256(input_directory / "file.cio"), "workspace": str(workspace),
                 "output_checksums": {str(path.relative_to(workspace)): _sha256(path) for path in parsed.source_files},
-                "stale_workspace_outputs_removed": stale_outputs, "configured_control_files": control_files,
+                "stale_workspace_outputs_removed": stale_outputs,
+                "stale_source_outputs_skipped": sorted(set(skipped_outputs)), "configured_control_files": control_files,
                 "input_compatibility": compatibility_log,
                 "workspace_modifications": workspace_modifications,
                 "input_checksums_before_mutator": input_checksums_before_mutator,

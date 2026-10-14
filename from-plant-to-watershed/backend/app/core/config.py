@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import List
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 INSECURE_SECRET_VALUES = {"", "CHANGE_ME", "ap3-plant-to-watershed-super-secret-key-2026-production"}
@@ -40,6 +41,22 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://digitaltwin@/digitaltwin?host=/run/postgresql&port=5432"
     )
     
+    SIMULATION_MAX_DAYS: int = Field(default=3650, ge=1, le=3650)
+    SIMULATION_MAX_PLANTS: int = Field(default=10000, ge=1, le=10000)
+    SERIALIZE_SIMULATIONS: bool = False
+    DB_POOL_SIZE: int = Field(default=5, ge=1, le=20)
+    DB_MAX_OVERFLOW: int = Field(default=10, ge=0, le=20)
+    DB_POOL_TIMEOUT: int = Field(default=30, ge=1, le=120)
+    PLAYBACK_MAX_PAGE_SIZE: int = Field(default=500, ge=1, le=500)
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def async_postgres_url(cls, value):
+        for prefix in ("postgres://", "postgresql://"):
+            if isinstance(value, str) and value.startswith(prefix):
+                return "postgresql+asyncpg://" + value[len(prefix):]
+        return value
+
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",

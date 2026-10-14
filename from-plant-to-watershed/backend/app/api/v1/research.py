@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.deps import get_current_active_user, require_roles
+from app.api.deps import get_current_active_user, require_roles, single_simulation_slot
 from app.core.database import get_db
 from app.models.user import User
 from app.models.simulation import SimulationRun
@@ -74,7 +74,8 @@ async def download_artifact(name: str, _user: User = Depends(get_current_active_
     return FileResponse(path,filename=path.name,media_type={".zip":"application/zip",".csv":"text/csv",".json":"application/json",".md":"text/markdown"}[path.suffix])
 
 
-@router.post("/runs",response_model=SimulationRunResponse,status_code=201)
+@router.post("/runs",response_model=SimulationRunResponse,status_code=201,
+             dependencies=[Depends(single_simulation_slot)])
 async def start_profile(payload: ProfileRequest,db: AsyncSession = Depends(get_db),
     user: User = Depends(require_roles("SUPERADMIN","ADMIN_CIENTIFICO","INVESTIGADOR_HIDROLOGO"))):
     # Serialize submissions from one user, including simultaneous requests.

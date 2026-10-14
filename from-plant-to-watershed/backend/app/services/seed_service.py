@@ -330,28 +330,29 @@ async def seed_legacy_demo_data(db: AsyncSession) -> None:
     logger.info("Seed DEMO completo: catálogo y forzamientos sintéticos listos.")
 
 
-async def bootstrap_mvp_data(db: AsyncSession) -> None:
+async def bootstrap_mvp_data(db: AsyncSession, *, create_demo_user: bool = True, include_external_artifacts: bool = True) -> None:
     """Idempotent reference domain, scenarios, observed snapshot, and discovered ML bundle."""
-    researcher_role = await db.scalar(select(Role).where(Role.name == "INVESTIGADOR_HIDROLOGO"))
-    researcher = await db.scalar(select(User).where(User.email == "investigador@digitaltwin.org"))
-    if not researcher:
-        researcher = User(
-            email="investigador@digitaltwin.org",
-            hashed_password=hash_password("Investiga123!"),
-            full_name="Dra. Elena Ramos · Investigación hidrológica",
-            is_active=True,
-            is_verified=True,
-            roles=[researcher_role] if researcher_role else [],
-        )
-        db.add(researcher)
-        await db.flush()
-        db.add(UserProfile(user_id=researcher.id, institution="Laboratorio de Gemelos Hidrológicos",
-                           scientific_specialty="Modelación planta-cuenca", preferred_theme="scientific"))
-    else:
-        # Upgrade the old demo identity without changing its login or password.
-        researcher.full_name = "Dra. Elena Ramos · Investigación hidrológica"
-        if researcher_role and researcher_role not in researcher.roles:
-            researcher.roles.append(researcher_role)
+    if create_demo_user:
+        researcher_role = await db.scalar(select(Role).where(Role.name == "INVESTIGADOR_HIDROLOGO"))
+        researcher = await db.scalar(select(User).where(User.email == "investigador@digitaltwin.org"))
+        if not researcher:
+            researcher = User(
+                email="investigador@digitaltwin.org",
+                hashed_password=hash_password("Investiga123!"),
+                full_name="Dra. Elena Ramos · Investigación hidrológica",
+                is_active=True,
+                is_verified=True,
+                roles=[researcher_role] if researcher_role else [],
+            )
+            db.add(researcher)
+            await db.flush()
+            db.add(UserProfile(user_id=researcher.id, institution="Laboratorio de Gemelos Hidrológicos",
+                               scientific_specialty="Modelación planta-cuenca", preferred_theme="scientific"))
+        else:
+            # Upgrade the old demo identity without changing its login or password.
+            researcher.full_name = "Dra. Elena Ramos · Investigación hidrológica"
+            if researcher_role and researcher_role not in researcher.roles:
+                researcher.roles.append(researcher_role)
     crop = await db.scalar(select(PlantSpecies).where(PlantSpecies.name == "Maíz simplificado MVP"))
     if not crop:
         crop = PlantSpecies(name="Maíz simplificado MVP", scientific_name="Zea mays L.", crop_type="Cereal",
@@ -392,6 +393,9 @@ async def bootstrap_mvp_data(db: AsyncSession) -> None:
             db.add(ClimateScenario(code=code, name=name, pathway="MVP synthetic perturbation", description="Synthetic forcing control; not CMIP6.",
                                    temp_anomaly_c=temperature, precip_factor=precipitation, co2_ppm=415, source_type="SYNTHETIC"))
     await db.commit()
+
+    if not include_external_artifacts:
+        return
 
     snapshot = Path(settings.MVP_USGS_SNAPSHOT or "/data/raw/usgs/05451210_2000-01-01_2025-12-31.json")
     if snapshot.is_file() and not await db.scalar(select(Dataset.id).where(Dataset.provider == "USGS")):

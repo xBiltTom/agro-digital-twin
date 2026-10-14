@@ -48,12 +48,14 @@ def main() -> None:
     create_admin_parser.add_argument("--email", required=True)
     create_admin_parser.add_argument("--full-name", required=True)
     subcommands.add_parser("bootstrap-mvp", help="Idempotently prepare the demonstrable MVP")
+    subcommands.add_parser("bootstrap-reference", help="Initialize reference basin/scenarios without users or runs")
     export_parser = subcommands.add_parser("export-training-dataset", help="Export selected runs for the independent training lab")
     export_parser.add_argument("--run-id", action="append", required=True, dest="run_ids")
     export_parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
 
-    if args.command == "bootstrap-mvp":
+    if args.command in {"bootstrap-mvp", "bootstrap-reference"}:
+        settings.validate_runtime_security()
         async def bootstrap() -> None:
             try:
                 async with engine.begin() as connection:
@@ -61,14 +63,15 @@ def main() -> None:
                 await apply_pending_migrations(engine)
                 async with AsyncSessionLocal() as session:
                     await bootstrap_system_reference_data(session)
-                    await bootstrap_mvp_data(session)
+                    await bootstrap_mvp_data(session, create_demo_user=args.command == "bootstrap-mvp",
+                                             include_external_artifacts=args.command == "bootstrap-mvp")
             finally:
                 await engine.dispose()
         try:
             asyncio.run(bootstrap())
         finally:
             pass
-        print("MVP bootstrap complete")
+        print("Reference bootstrap complete" if args.command == "bootstrap-reference" else "MVP bootstrap complete")
     elif args.command == "export-training-dataset":
         async def export() -> tuple[Path, Path, int]:
             try:
@@ -85,10 +88,12 @@ def main() -> None:
             parser.error("The administrator password cannot be empty")
         if password != confirmation:
             parser.error("Passwords do not match")
-        try:
-            asyncio.run(create_admin(args.email, args.full_name, password))
-        finally:
-            asyncio.run(engine.dispose())
+        async def initialize_admin():
+            try:
+                await create_admin(args.email, args.full_name, password)
+            finally:
+                await engine.dispose()
+        asyncio.run(initialize_admin())
         print(f"Administrator created for {args.email}")
 
 

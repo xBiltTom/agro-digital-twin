@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-14",
+  "scope": "local benchmark, not deployed Render",
+  "availability": {
+    "before_stopped_rss_mib": 453.1,
+    "after_peak_rss_mib": 166.4,
+    "record_count": 365,
+    "http_status": 200
+  },
+  "api_import": {
+    "before_peak_rss_mib": 173.5,
+    "after_peak_rss_mib": 76.1
+  },
+  "real_coupled_run": {
+    "days": 365,
+    "plant_count_per_calendar_group": 1000,
+    "warmup_years": 19,
+    "seed": 42,
+    "hru_count": 36,
+    "channel_count": 37,
+    "before_peak_rss_mib": 595.3,
+    "after_peak_rss_mib": 293.5,
+    "before_seconds": 274.933,
+    "after_seconds": 267.864,
+    "source_project_unchanged": true,
+    "scientific_tables": {
+      "basin_daily.csv": {
+        "rows": 365,
+        "identical_cells": true
+      },
+      "channel_daily.csv": {
+        "rows": 13505,
+        "identical_cells": true
+      },
+      "climate_daily.csv": {
+        "rows": 365,
+        "identical_cells": true
+      },
+      "executed_hru_calendar.csv": {
+        "rows": 32,
+        "identical_cells": true
+      },
+      "fspm_calendar_group_daily.csv": {
+        "rows": 754,
+        "identical_cells": true
+      },
+      "fspm_field_daily.csv": {
+        "rows": 365,
+        "identical_cells": true
+      },
+      "fspm_plant_samples_daily.csv": {
+        "rows": 7540,
+        "identical_cells": true
+      },
+      "hru_daily.csv": {
+        "rows": 13140,
+        "identical_cells": true
+      },
+      "management_events.csv": {
+        "rows": 72,
+        "identical_cells": true
+      },
+      "plant_hru_daily.csv": {
+        "rows": 13140,
+        "identical_cells": true
+      }
+    }
+  },
+  "portable_runtime": {
+    "archive_sha256": "6341d908e0fdd05bfe808f0a4ece6174bc0487755313270ad70cb7030b66d745",
+    "executable_sha256": "56963a6475aa9014a56a6825749d7fc513fce2dd40dcbb0c0b6a5976364a3c9d",
+    "elf_loader_verified_in_debian_docker": true
+  },
+  "docker_coupled_run": {
+    "memory_limit_mib": 512,
+    "cpu_limit": 1,
+    "network": "none",
+    "project": "baseline-diagnostic-multiyear-v1/selected-project portable bundle",
+    "days": 365,
+    "plant_count_per_calendar_group": 1000,
+    "warmup_years": 19,
+    "seed": 42,
+    "status": "COMPLETED",
+    "iterations": 2,
+    "max_hru_daily_average_soil_water_delta_mm": 0.0,
+    "python_peak_rss_mib": 261.6,
+    "seconds": 238.08
+  }
+}

@@ -12,6 +12,7 @@ import hashlib
 import math
 from pathlib import Path
 from statistics import fmean
+from itertools import islice
 from typing import Any
 
 from scientific_core.units import validate_soil_moisture_vol_percent
@@ -57,22 +58,27 @@ class SwatClimateForcingReader:
         return stations
 
     @staticmethod
-    def _numeric_rows(path: Path, minimum: int) -> dict[tuple[int, int], list[float]]:
+    def _numeric_rows(path: Path, minimum: int, *, start: date | None = None, end: date | None = None) -> dict[tuple[int, int], list[float]]:
         output: dict[tuple[int, int], list[float]] = {}
-        for line_number, raw in enumerate(path.read_text(encoding="utf-8", errors="strict").splitlines()[3:], 4):
-            pieces = raw.split()
-            if len(pieces) < minimum:
-                continue
-            try:
-                year, day = int(pieces[0]), int(pieces[1])
-                values = [float(value) for value in pieces[2:minimum]]
-            except ValueError:
-                raise SwatPlantMappingError(f"Invalid weather record in {path.name}:{line_number}") from None
-            if not 1 <= day <= 366 or (date(year, 1, 1) + timedelta(days=day - 1)).year != year:
-                raise SwatPlantMappingError(f"Invalid day of year in {path.name}:{line_number}")
-            if (year, day) in output:
-                raise SwatPlantMappingError(f"Duplicate weather date in {path.name}:{line_number}")
-            output[(year, day)] = values
+        seen = set()
+        with path.open(encoding="utf-8", errors="strict") as source:
+            for line_number, raw in enumerate(islice(source, 3, None), 4):
+                pieces = raw.split()
+                if len(pieces) < minimum:
+                    continue
+                try:
+                    year, day = int(pieces[0]), int(pieces[1])
+                    values = [float(value) for value in pieces[2:minimum]]
+                except ValueError:
+                    raise SwatPlantMappingError(f"Invalid weather record in {path.name}:{line_number}") from None
+                if not 1 <= day <= 366 or (date(year, 1, 1) + timedelta(days=day - 1)).year != year:
+                    raise SwatPlantMappingError(f"Invalid day of year in {path.name}:{line_number}")
+                if (year, day) in seen:
+                    raise SwatPlantMappingError(f"Duplicate weather date in {path.name}:{line_number}")
+                seen.add((year, day))
+                current = date(year, 1, 1) + timedelta(days=day - 1)
+                if (start is None or current >= start) and (end is None or current <= end):
+                    output[(year, day)] = values
         return output
 
     def for_period(self, start: date, end: date, *, require_fspm: bool = True,
@@ -95,12 +101,12 @@ class SwatClimateForcingReader:
         station_data = [
             {
                 "name": files["name"].name,
-                "pcp": self._numeric_rows(files["pcp"], 3),
-                "tmp": self._numeric_rows(files["tmp"], 4),
-                "slr": self._numeric_rows(files["slr"], 3) if files["slr"] else {},
-                "hmd": self._numeric_rows(files["hmd"], 3) if files["hmd"] else {},
-                "wnd": self._numeric_rows(files["wnd"], 3) if files.get("wnd") else {},
-                "pet": self._numeric_rows(files["pet"], 3) if files.get("pet") else {},
+                "pcp": self._numeric_rows(files["pcp"], 3, start=start, end=end),
+                "tmp": self._numeric_rows(files["tmp"], 4, start=start, end=end),
+                "slr": self._numeric_rows(files["slr"], 3, start=start, end=end) if files["slr"] else {},
+                "hmd": self._numeric_rows(files["hmd"], 3, start=start, end=end) if files["hmd"] else {},
+                "wnd": self._numeric_rows(files["wnd"], 3, start=start, end=end) if files.get("wnd") else {},
+                "pet": self._numeric_rows(files["pet"], 3, start=start, end=end) if files.get("pet") else {},
             }
             for files in stations
         ]

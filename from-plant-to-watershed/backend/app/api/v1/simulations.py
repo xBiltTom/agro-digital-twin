@@ -1,5 +1,5 @@
 from typing import List, Literal
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 import copy
 import csv
@@ -9,7 +9,8 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, update
+from sqlalchemy.orm import defer
 from app.core.database import get_db
 from app.models.user import User
 from app.models.watershed import Watershed
@@ -29,14 +30,14 @@ from app.schemas.simulation import (
     WatershedResponse,
     AIInsightsResponse,
 )
-from app.api.deps import get_current_active_user, require_roles
+from app.api.deps import get_current_active_user, require_roles, single_simulation_slot
 from app.services.twin_coupling_engine import TwinCouplingEngine
 from app.services.playback_database import PlaybackDatabaseStore
 from app.services.simulation_catalog import catalog_query, catalog_entry
 from app.services.ai_insights import AICopilotService
 from app.schemas.playback import PlaybackPage, Resolution
 from app.schemas.playback_diagnostic import SimulationAvailability
-from app.services.playback_diagnostic import diagnose_simulation
+from app.services.playback_diagnostic import diagnose_simulation, ResolutionAccumulator
 from app.services.simulation_provenance import (
     SimulationProvenanceClass,
     classify_simulation_provenance,
@@ -44,6 +45,11 @@ from app.services.simulation_provenance import (
 from scientific_core import RunConfig
 
 router = APIRouter(prefix="/simulations", tags=["Simulaciones simplificadas"])
+
+
+def _validate_runtime_budget(request: SimulationRunCreate) -> None:
+    if request.duration_days > settings.SIMULATION_MAX_DAYS or request.plant_count > settings.SIMULATION_MAX_PLANTS:
+        raise HTTPException(422, f"La configuración supera el presupuesto de este servidor: máximo {settings.SIMULATION_MAX_DAYS} días y {settings.SIMULATION_MAX_PLANTS} plantas. No se recortó la corrida.")
 
 
 def _preflight_block_detail(preflight: dict) -> dict:
@@ -66,8 +72,10 @@ def _is_coupled_swat_request(simulation_request: SimulationRunCreate) -> bool:
     )
 
 
-async def _visible_simulation(db: AsyncSession, sim_id: str, user: User) -> SimulationRun:
+async def _visible_simulation(db: AsyncSession, sim_id: str, user: User, *, lightweight: bool = False) -> SimulationRun:
     stmt = select(SimulationRun).where(SimulationRun.id == sim_id)
+    if lightweight:
+        stmt = stmt.options(defer(SimulationRun.hru_aggregates), defer(SimulationRun.ml_result), defer(SimulationRun.validation))
     if "SUPERADMIN" not in {role.name for role in user.roles}:
         stmt = stmt.where(SimulationRun.user_id == user.id)
     sim = await db.scalar(stmt)
@@ -125,6 +133,7 @@ async def preflight_simulation(
     This is deliberately a read-only gate for a UI or client before it starts
     a potentially long real-SWAT+ experiment.
     """
+    _validate_runtime_budget(sim_in)
     watershed = await db.scalar(select(Watershed).where(Watershed.id == sim_in.watershed_id))
     scenario = await db.scalar(select(ClimateScenario).where(ClimateScenario.id == sim_in.scenario_id))
     if not watershed or not scenario:
@@ -193,12 +202,14 @@ async def preflight_simulation(
         "scenario": {"id": scenario.id, "code": scenario.code, "application": "APPLIED only when climate_source=SYNTHETIC"},
     }
 
-@router.post("", response_model=SimulationRunResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=SimulationRunResponse, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(single_simulation_slot)])
 async def create_and_run_simulation(
     sim_in: SimulationRunCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_roles("SUPERADMIN", "ADMIN_CIENTIFICO", "INVESTIGADOR_HIDROLOGO"))
 ):
+    _validate_runtime_budget(sim_in)
     # Validar cuenca
     w_stmt = select(Watershed).where(Watershed.id == sim_in.watershed_id)
     w_res = await db.execute(w_stmt)
@@ -293,6 +304,7 @@ async def create_and_run_simulation(
     db.add(new_sim)
     await db.flush()
 
+    created_ids = [new_sim.id]
     try:
         if is_coupled:
             # A coupled request always materializes its experimental control first.
@@ -314,6 +326,7 @@ async def create_and_run_simulation(
             )
             db.add(baseline)
             await db.flush()
+            created_ids.append(baseline.id)
             coupled_config["swat_plus"].update({"baseline_run_id": baseline.id, "coupled_run_id": new_sim.id})
             baseline_config["swat_plus"].update({"baseline_run_id": baseline.id, "coupled_run_id": new_sim.id})
             new_sim.requested_config, baseline.requested_config = coupled_config, baseline_config
@@ -336,6 +349,12 @@ async def create_and_run_simulation(
             completed_sim = await TwinCouplingEngine.execute_simulation_run(db, new_sim.id)
     except Exception as exc:
         await db.rollback()
+        # A failed control must not leave its paired run permanently PENDING.
+        await db.execute(update(SimulationRun).where(SimulationRun.id.in_(created_ids),
+            SimulationRun.status.in_(["PENDING", "RUNNING"])).values(status="FAILED",
+            finished_at=datetime.now(timezone.utc),
+            error={"type": type(exc).__name__, "message": str(exc)}))
+        await db.commit()
         error_status = (status.HTTP_422_UNPROCESSABLE_ENTITY
                         if isinstance(exc, SwatCoupledPreflightBlockedError)
                         else status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -466,19 +485,24 @@ async def get_simulation_availability(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    sim = await _visible_simulation(db, sim_id, current_user)
+    sim = await _visible_simulation(db, sim_id, current_user, lightweight=True)
     manifests = [(sim.provenance or {}).get(key) for key in ("playback", "playback_daily_fspm")]
     store = PlaybackDatabaseStore(db)
-    records = {}
+    summaries = {}
     for manifest in manifests:
         if manifest and manifest.get("resolution") in {"DAILY", "MONTHLY", "ANNUAL"}:
             resolution = manifest["resolution"]
             try:
-                records[resolution] = await store.records(sim.id, resolution)
+                accumulator = ResolutionAccumulator(resolution, on)
+                async for record in store.iter_records(sim.id, resolution):
+                    accumulator.add(record)
+                summaries[resolution] = accumulator.finish(manifest.get("record_count"))
             except ValueError:
                 # The diagnostic reports INVALID without exposing partial dates.
-                records[resolution] = []
-    return diagnose_simulation(sim, on=on, records_by_resolution=records)
+                invalid = ResolutionAccumulator(resolution, on).summary
+                invalid.artifact_status = "INVALID"
+                summaries[resolution] = (invalid, False)
+    return diagnose_simulation(sim, on=on, summaries_by_resolution=summaries)
 
 
 @router.get("/{sim_id}/playback", response_model=PlaybackPage)
@@ -489,12 +513,12 @@ async def get_simulation_playback(
     start: date | None = None,
     end: date | None = None,
     offset: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(min(100, settings.PLAYBACK_MAX_PAGE_SIZE), ge=1, le=settings.PLAYBACK_MAX_PAGE_SIZE),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Indexed, owner-scoped read of versioned dated scientific states."""
-    sim = await _visible_simulation(db, sim_id, current_user)
+    sim = await _visible_simulation(db, sim_id, current_user, lightweight=True)
     if (on is not None and (start is not None or end is not None)) or (start and end and start > end):
         raise HTTPException(status_code=422, detail="Use either date or a valid start/end interval")
     manifest = (sim.provenance or {}).get("playback")

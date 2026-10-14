@@ -1,7 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from sqlalchemy import text, select
+from sqlalchemy.orm import load_only
+from datetime import datetime, timezone
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base, AsyncSessionLocal
 from app.core.migrations import apply_pending_migrations
@@ -34,6 +38,18 @@ async def lifespan(app: FastAPI):
                 "================================================================================\n"
             )
         raise exc
+
+    # Render's single-process profile cannot resume an interrupted scientific engine.
+    if settings.SERIALIZE_SIMULATIONS:
+        from app.models.simulation import SimulationRun
+        async with AsyncSessionLocal() as session:
+            interrupted = (await session.scalars(select(SimulationRun).options(load_only(SimulationRun.id, SimulationRun.status)).where(
+                SimulationRun.status.in_(["PENDING", "RUNNING"])))).all()
+            for run in interrupted:
+                run.status = "FAILED"
+                run.finished_at = datetime.now(timezone.utc)
+                run.error = {"type": "SERVER_RESTARTED", "message": "El servidor reinició antes de completar la corrida; vuelve a ejecutarla."}
+            await session.commit()
 
     # 2. RBAC is structural data; only legacy fixtures are opt-in.
     async with AsyncSessionLocal() as session:
@@ -74,6 +90,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=4)
+
 # Registro de enrutador v1
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
@@ -85,6 +103,15 @@ async def health_check():
         "version": settings.VERSION,
         "api_docs": f"{settings.API_V1_STR}/docs"
     }
+
+@app.get("/health/ready", tags=["Salud del Sistema"])
+async def database_readiness():
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("SELECT 1"))
+    except Exception as exc:
+        raise HTTPException(503, "Database unavailable") from exc
+    return {"status": "ready"}
 
 @app.get("/", tags=["Root"])
 async def root():

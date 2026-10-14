@@ -28,9 +28,13 @@ JSON_PATHS = {
     "effective_config": (("run_type",), ("experiment_id",), ("backend",)),
     "summary_metrics": tuple((key,) for key in (
         "total_precip_mm", "total_precipitation_mm", "total_discharge_hm3",
-        "total_actual_et_mm", "peak_streamflow_m3s", "mean_cwsi",
+        "total_actual_et_mm", "total_evapotranspiration_mm", "total_surface_runoff_mm",
+        "total_runoff_mm", "mean_streamflow_m3s", "peak_streamflow_m3s", "mean_cwsi",
         "seasonal_crop_yield_proxy_t_ha", "evidence_type", "experiment_id",
-    )),
+    )) + (("water_balance", "mean_streamflow_m3s"),
+          ("water_balance", "totals_mm", "precip_mm"),
+          ("water_balance", "totals_mm", "evapotranspiration_mm"),
+          ("water_balance", "totals_mm", "runoff_mm")),
     "error": (("message",), ("type",), ("code",)),
 }
 

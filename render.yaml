@@ -1,0 +1,63 @@
+# Backend + empty PostgreSQL only. Deploy Next.js separately on Vercel.
+services:
+  - type: web
+    name: agro-digital-twin-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./from-plant-to-watershed/backend/Dockerfile
+    dockerContext: .
+    dockerCommand: sh deployment/start.sh
+    healthCheckPath: /health/ready
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agro-digital-twin-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ENABLE_DEMO_SEED
+        value: "false"
+      - key: ENABLE_MVP_BOOTSTRAP
+        value: "false"
+      - key: SIMULATION_MAX_DAYS
+        value: "366"
+      - key: SIMULATION_MAX_PLANTS
+        value: "1000"
+      - key: SERIALIZE_SIMULATIONS
+        value: "true"
+      - key: DB_POOL_SIZE
+        value: "2"
+      - key: DB_MAX_OVERFLOW
+        value: "0"
+      - key: PLAYBACK_MAX_PAGE_SIZE
+        value: "7"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+      - key: NUMEXPR_NUM_THREADS
+        value: "1"
+      - key: SWAT_PLUS_EXECUTABLE
+        value: data/swat-runtime/engine/swatplus
+      - key: SWAT_PLUS_PROJECT_DIR
+        value: data/swat-runtime/project
+      - key: SWAT_PLUS_WORKING_DIRECTORY
+        value: data/swat-runs
+      - key: SWAT_RUNTIME_BUNDLE_URL
+        sync: false
+      - key: SWAT_RUNTIME_BUNDLE_SHA256
+        sync: false
+databases:
+  - name: agro-digital-twin-db
+    plan: free
+    region: oregon
+    databaseName: digitaltwin
+    user: digitaltwin
+    ipAllowList: [] # Add the operator's IP temporarily for local initialization.

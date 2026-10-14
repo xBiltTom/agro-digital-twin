@@ -11,7 +11,7 @@ from datetime import date, timedelta
 import math
 from pathlib import Path
 import re
-from typing import Any, Sequence
+from typing import Iterable, Any, Sequence
 
 
 _TOKEN = re.compile(r"[^a-z0-9]+")
@@ -176,18 +176,23 @@ class SwatOutputParser:
         return preferred or files
 
     @staticmethod
-    def _table(path: Path) -> tuple[list[str], list[str], list[list[str]]]:
-        lines = [line for line in path.read_text(encoding="utf-8", errors="replace").splitlines() if line.strip()]
-        header_index = next((index for index, line in enumerate(lines)
-                             if len(line.split()) >= 2 and any(_normalise(token) in _DATE_KEYS for token in line.split())), None)
-        if header_index is None:
-            raise ValueError(f"{path.name} does not contain a recognizable table header")
-        header_matches = list(re.finditer(r"\S+", lines[header_index]))
+    def _table(path: Path) -> tuple[list[str], list[str], Iterable[list[str]]]:
+        with path.open(encoding="utf-8", errors="replace") as source:
+            while True:
+                header_line = source.readline()
+                if not header_line:
+                    raise ValueError(f"{path.name} does not contain a recognizable table header")
+                if len(header_line.split()) >= 2 and any(_normalise(token) in _DATE_KEYS for token in header_line.split()):
+                    break
+            units_line = source.readline()
+            while units_line and not units_line.strip():
+                units_line = source.readline()
+            row_offset = source.tell()
+        header_matches = list(re.finditer(r"\S+", header_line))
         headers = [match.group() for match in header_matches]
         # SWAT+ aligns unit cells below the fixed-width header. Splitting the
         # units line would drop empty cells and shift later units (notably
         # ``flo_out``) onto sediment columns.
-        units_line = lines[header_index + 1] if header_index + 1 < len(lines) else ""
         split_units = units_line.split()
         if len(split_units) == len(headers):
             units = split_units
@@ -207,10 +212,18 @@ class SwatOutputParser:
         # example ``mgt_ops``). Numeric columns are addressed defensively by
         # index below, so requiring the complete display-width would discard
         # otherwise valid daily records.
-        rows = [line.split() for line in lines[header_index + 2:] if len(line.split()) >= 4]
-        if not rows:
-            raise ValueError(f"{path.name} has no output rows")
-        return headers, units, rows
+        def rows():
+            seen = False
+            with path.open(encoding="utf-8", errors="replace") as source:
+                source.seek(row_offset)
+                for line in source:
+                    values = line.split()
+                    if len(values) >= 4:
+                        seen = True
+                        yield values
+            if not seen:
+                raise ValueError(f"{path.name} has no output rows")
+        return headers, units, rows()
 
     def _read(self, path: Path, wanted: set[str]) -> list[dict[str, Any]]:
         headers, units, rows = self._table(path)

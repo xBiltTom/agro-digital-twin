@@ -89,3 +89,22 @@ def require_permissions(*required_permissions: str) -> Callable:
             )
         return current_user
     return permission_checker
+
+
+# One process in the Render profile; do not let a double click launch two engines.
+import asyncio
+_simulation_slot = asyncio.Lock()
+
+async def single_simulation_slot(db: AsyncSession = Depends(get_db),
+                                 _user: User = Depends(get_current_active_user)):
+    if not settings.SERIALIZE_SIMULATIONS:
+        yield
+        return
+    if _simulation_slot.locked():
+        raise HTTPException(409, "Ya hay una corrida en ejecución; espera a que termine.")
+    async with _simulation_slot:
+        from app.models.simulation import SimulationRun
+        active = await db.scalar(select(SimulationRun.id).where(SimulationRun.status.in_(["PENDING", "RUNNING"])).limit(1))
+        if active:
+            raise HTTPException(409, "Ya hay una corrida pendiente o en ejecución; consulta su estado.")
+        yield

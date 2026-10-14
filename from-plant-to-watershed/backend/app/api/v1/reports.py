@@ -11,7 +11,6 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.simulation import SimulationRun, SimulationResult
 from app.models.report import GeneratedReport
-from app.services.report_service import ReportGeneratorService
 from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/reports", tags=["Reportes Multiformato"])
@@ -167,6 +166,9 @@ async def download_report(
 
     clean_name = _safe_filename_fragment(sim_run.name)
     filename = f"reporte_ap3_{clean_name}.{fmt}"
+
+    # Import document engines only when a user actually exports a report.
+    from app.services.report_service import ReportGeneratorService
 
     # Generar en memoria según formato
     if fmt == "pdf":

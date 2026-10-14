@@ -383,7 +383,8 @@ def test_adapter_uses_isolated_workspace_and_parses_real_process_output(tmp_path
     assert not (project / "output_wb_day").exists()
     assert (project / "basin_wb_day.txt").read_text(encoding="utf-8") == "stale source result\n"
     assert (Path(result.workspace) / "output_wb_day").is_file()
-    assert "basin_wb_day.txt" in result.provenance["stale_workspace_outputs_removed"]
+    assert "basin_wb_day.txt" in result.provenance["stale_source_outputs_skipped"]
+    assert "basin_wb_day.txt" not in result.provenance["stale_workspace_outputs_removed"]
     assert result.provenance["configured_control_files"]["time_sim"]["yrc_start"] == 2020
     assert result.provenance["configured_control_files"]["print_prt"]["frequency"] == "DAILY"
 

@@ -150,8 +150,61 @@ def diagnose_record(record: PlaybackRecord) -> DateAvailability:
                             sample_representable=bool(sample_ok), missing_variables=missing)
 
 
+class ResolutionAccumulator:
+    """Retain only temporal metadata while validating one complete frame at a time."""
+
+    def __init__(self, resolution, on=None):
+        self.summary = ResolutionAvailability(resolution=resolution, artifact_status="AVAILABLE")
+        self.on = on
+        self.previous_active = None
+        self.current_interval = None
+        self.sample_representable_seen = False
+
+    def add(self, record: PlaybackRecord):
+        summary, on, resolution = self.summary, self.on, self.summary.resolution
+        summary.record_count += 1
+        summary.first_record = summary.first_record or record.date
+        summary.last_record = record.date
+        state = diagnose_record(record)
+        if on == record.date or (on is not None and resolution == "MONTHLY" and on.year == record.date.year and on.month == record.date.month) or (on is not None and resolution == "ANNUAL" and on.year == record.date.year):
+            summary.selected_date = state
+        summary.hydrology_available |= any(_present(record.hydrology, name) for name in record.hydrology)
+        usable_samples = _has_dated_sample_data(record)
+        has_dated_fspm = (record.crop is not None and record.crop.active and
+            (any(_present(record.field, name) for name in _DATED_FSPM_VARIABLES) or usable_samples))
+        summary.fspm_trajectory_available |= has_dated_fspm
+        summary.plant_samples_available |= usable_samples
+        self.sample_representable_seen |= state.sample_representable
+        summary.hru_ids = sorted(set(summary.hru_ids) | {h.hru_id for h in record.hru_results})
+        if record.crop and record.crop.active:
+            summary.first_active_crop = summary.first_active_crop or record.date
+            if state.field_representable:
+                summary.first_representable_field = summary.first_representable_field or record.date
+            if usable_samples:
+                summary.first_plant_samples = summary.first_plant_samples or record.date
+            season_id = record.crop.season_id
+            approximate = record.crop.window_status == "APPROXIMATE_PLANTING_WINDOW"
+            if (self.current_interval is not None and self.previous_active is not None
+                    and record.date == self.previous_active + timedelta(days=1)
+                    and self.current_interval.season_id == season_id):
+                self.current_interval.end = record.date
+            else:
+                self.current_interval = DateInterval(start=record.date, end=record.date,
+                                                season_id=season_id, approximate=approximate)
+                summary.crop_intervals.append(self.current_interval)
+            self.previous_active = record.date
+        else:
+            self.current_interval = None
+
+    def finish(self, expected_count):
+        if self.summary.record_count != expected_count:
+            raise ValueError("Playback record count differs from manifest")
+        return self.summary, self.sample_representable_seen
+
+
 def diagnose_simulation(sim, *, on: date | None = None,
-                        records_by_resolution: dict[str, list[PlaybackRecord]] | None = None) -> SimulationAvailability:
+                        records_by_resolution: dict[str, list[PlaybackRecord]] | None = None,
+                        summaries_by_resolution: dict | None = None) -> SimulationAvailability:
     provenance = sim.provenance or {}
     requested = sim.requested_config or {}
     run_type = (requested.get("swat_plus") or {}).get("run_type") or (sim.effective_config or {}).get("run_type") or "RESEARCH_MULTISCALE"
@@ -178,47 +231,17 @@ def diagnose_simulation(sim, *, on: date | None = None,
             continue
         summary = ResolutionAvailability(resolution=resolution, artifact_status="AVAILABLE")
         try:
-            previous_active: date | None = None
-            current_interval: DateInterval | None = None
-            sample_representable_seen = False
-            records = (records_by_resolution.get(resolution, []) if records_by_resolution is not None
-                       else store.iter_records(sim.id, manifest))
-            for record in records:
-                summary.record_count += 1
-                summary.first_record = summary.first_record or record.date
-                summary.last_record = record.date
-                state = diagnose_record(record)
-                if on == record.date or (on is not None and resolution == "MONTHLY" and on.year == record.date.year and on.month == record.date.month) or (on is not None and resolution == "ANNUAL" and on.year == record.date.year):
-                    summary.selected_date = state
-                summary.hydrology_available |= any(_present(record.hydrology, name) for name in record.hydrology)
-                usable_samples = _has_dated_sample_data(record)
-                has_dated_fspm = (record.crop is not None and record.crop.active and
-                    (any(_present(record.field, name) for name in _DATED_FSPM_VARIABLES) or usable_samples))
-                summary.fspm_trajectory_available |= has_dated_fspm
-                summary.plant_samples_available |= usable_samples
-                sample_representable_seen |= state.sample_representable
-                summary.hru_ids = sorted(set(summary.hru_ids) | {h.hru_id for h in record.hru_results})
-                if record.crop and record.crop.active:
-                    summary.first_active_crop = summary.first_active_crop or record.date
-                    if state.field_representable:
-                        summary.first_representable_field = summary.first_representable_field or record.date
-                    if usable_samples:
-                        summary.first_plant_samples = summary.first_plant_samples or record.date
-                    season_id = record.crop.season_id
-                    approximate = record.crop.window_status == "APPROXIMATE_PLANTING_WINDOW"
-                    if (current_interval is not None and previous_active is not None
-                            and record.date == previous_active + timedelta(days=1)
-                            and current_interval.season_id == season_id):
-                        current_interval.end = record.date
-                    else:
-                        current_interval = DateInterval(start=record.date, end=record.date,
-                                                        season_id=season_id, approximate=approximate)
-                        summary.crop_intervals.append(current_interval)
-                    previous_active = record.date
-                else:
-                    current_interval = None
-            if summary.record_count != manifest.get("record_count"):
-                raise ValueError("Playback record count differs from manifest")
+            if summaries_by_resolution is not None:
+                summary, sample_representable_seen = summaries_by_resolution[resolution]
+                if summary.artifact_status != "AVAILABLE":
+                    raise ValueError("Invalid database playback")
+            else:
+                accumulator = ResolutionAccumulator(resolution, on)
+                records = (records_by_resolution.get(resolution, []) if records_by_resolution is not None
+                           else store.iter_records(sim.id, manifest))
+                for record in records:
+                    accumulator.add(record)
+                summary, sample_representable_seen = accumulator.finish(manifest.get("record_count"))
             if resolution not in result.available_resolutions:
                 result.available_resolutions.append(resolution)
             if run_type == "SWAT_STANDARD_BASELINE":

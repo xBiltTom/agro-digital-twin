@@ -6,9 +6,8 @@ import math
 from pathlib import Path
 from statistics import fmean
 from uuid import uuid4
-import numpy as np
-import pandas as pd
 from sqlalchemy import select
+from app.core.config import settings
 from app.models.simulation import SimulationRun, PlaybackFrame
 from app.models.external_model import ExternalModel
 from app.models.observation import StreamflowObservation
@@ -19,9 +18,9 @@ from app.services.twin_coupling_engine import TwinCouplingEngine
 BACKEND = Path(__file__).resolve().parents[2]
 ROOT = BACKEND.parent
 DOMAIN = ROOT / "research_domain"
-PROJECT = BACKEND / "data/baseline-diagnostic-multiyear-v1/selected-project"
-RUNTIME = BACKEND / "data/south-fork-user-v1"
-EXECUTABLE = BACKEND / "data/baseline-diagnostic-source-build-v1/compile-v4/swatplus-research"
+PROJECT = Path(settings.SWAT_PLUS_PROJECT_DIR).resolve() if settings.SWAT_PLUS_PROJECT_DIR else BACKEND / "data/baseline-diagnostic-multiyear-v1/selected-project"
+RUNTIME = Path(settings.SWAT_PLUS_WORKING_DIRECTORY).resolve() if settings.APP_ENV == "production" else BACKEND / "data/south-fork-user-v1"
+EXECUTABLE = Path(settings.SWAT_PLUS_EXECUTABLE).resolve() if settings.SWAT_PLUS_EXECUTABLE else BACKEND / "data/baseline-diagnostic-source-build-v1/compile-v4/swatplus-research"
 ML = ROOT.parent / "agro-digital-twin-st/artifacts/south_fork_monthly_residual_v1"
 REPORT = DOMAIN / "south_fork_test_delivery_4_v1.json"
 
@@ -48,8 +47,8 @@ def profile_inputs():
         raise ValueError("El proyecto SWAT+ y el ejecutable congelados no están instalados.")
     if sha256(EXECUTABLE) != report["executable_sha256"]:
         raise ValueError("Frozen executable changed")
-    contract = BACKEND / "data/baseline-diagnostic-multiyear-v1/frozen-plant-contract.json"
-    parameters = BACKEND / "data/baseline-diagnostic-multiyear-v1/parameter-manifest.json"
+    contract = PROJECT.parent / "frozen-plant-contract.json"
+    parameters = PROJECT.parent / "parameter-manifest.json"
     if sha256(contract) != report["plant_contract_sha256"] or sha256(parameters) != report["physical_parameter_manifest_sha256"]:
         raise ValueError("Frozen physical parameters changed")
     manifest = json.loads(parameters.read_text())
@@ -94,6 +93,7 @@ def field_value(frame, key):
 
 
 async def monthly_rows(db, sim):
+    import pandas as pd
     protocol = json.loads((DOMAIN / "south_fork_multiyear_protocol_v1.json").read_text())
     year = sim.start_date.year
     arm = sim.requested_config["research_profile"]["arm"]
@@ -160,6 +160,8 @@ async def monthly_rows(db, sim):
 
 def features(row, arm, ml_protocol):
     """Apply the frozen recipe to any dated monthly row, without fitting."""
+    import numpy as np
+    import pandas as pd
     month = int(row["month"][-2:])
     result = {name: row[name] for name in ml_protocol["common_features"] if name not in {
         ml_protocol["baseline_feature"], "month_sin", "month_cos"}}
