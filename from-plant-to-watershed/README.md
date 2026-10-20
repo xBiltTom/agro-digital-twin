@@ -157,6 +157,35 @@ pnpm dev
 Abrir `http://localhost:3000`. Las rutas principales son `/simulations`,
 `/twin-3d`, `/datasets` y `/reports`.
 
+### Reportes de simulaciones
+
+En `/reports`, seleccionar una corrida completada y descargar **PDF**, **Word
+(.docx)** o **Excel (.xlsx)**. Se admiten el motor simplificado y SWAT+,
+incluidas las corridas acopladas y las importaciones históricas, conservando
+la procedencia registrada. `?simId=ID` permite preseleccionar una corrida.
+
+PDF y Word presentan identificación, periodo, configuración, indicadores
+hídricos, cobertura y una muestra temporal. En SWAT+ la muestra toma el primer
+registro disponible de cada mes y resolución, hasta 12 registros; no calcula
+promedios mensuales. Excel conserva todas las fechas y variables persistidas
+de hidrología, clima, campo, HRU, canales y muestras de plantas, con unidades,
+evidencia, fuente y disponibilidad. Incluye configuración, procedencia,
+validación e indicadores originales en hojas separadas. Las hojas de datos
+continúan en otra pestaña al alcanzar el límite de filas de Excel.
+
+La exportación lee el playback de PostgreSQL en secuencia y verifica sus
+checksums. Para corridas anteriores sin playback, utiliza las salidas
+normalizadas únicamente cuando su frecuencia está registrada. Los datos
+ausentes se mantienen vacíos en Excel y se indican como «No disponible» en los
+informes; nunca se convierten en cero. No se vuelve a ejecutar SWAT+.
+El historial permite regenerar una descarga y respeta el acceso por usuario.
+Los informes científicos de otros experimentos se consultan en una sección
+desplegable independiente.
+
+Verificación específica: `pytest -q tests/test_reports.py tests/test_swat_reports.py`
+desde `backend/`, y `pnpm test:reports` desde `frontend/` con el servidor iniciado.
+La prueba del navegador usa fixtures y no modifica la base de datos real.
+
 ## Ejecutar SWAT+ real
 
 El ejecutable y el proyecto de entrada deben estar disponibles localmente.

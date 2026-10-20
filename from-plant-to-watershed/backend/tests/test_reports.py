@@ -176,8 +176,8 @@ async def test_api_download_reports():
         headers = {"Authorization": f"Bearer {token}"}
 
         swat_download_res = await ac.get(f"/api/v1/reports/download/{swat_simulation_id}/pdf", headers=headers)
-        assert swat_download_res.status_code == 409
-        assert "solo representa corridas del motor simplificado" in swat_download_res.json()["detail"]
+        assert swat_download_res.status_code == 200
+        assert swat_download_res.content.startswith(b"%PDF-")
 
         pending_download_res = await ac.get(f"/api/v1/reports/download/{pending_simulation_id}/pdf", headers=headers)
         assert pending_download_res.status_code == 409

@@ -33,19 +33,19 @@ const EXPORTS: Array<{
   {
     format: "pdf",
     label: "PDF",
-    description: "Informe técnico para consulta",
+    description: "Resumen, indicadores y muestra temporal",
     icon: FileText,
   },
   {
     format: "docx",
     label: "Word",
-    description: "Documento editable",
+    description: "Informe editable para documentar resultados",
     icon: FileText,
   },
   {
     format: "xlsx",
     label: "Excel",
-    description: "Indicadores y registros guardados",
+    description: "Todas las fechas, variables y procedencia",
     icon: FileSpreadsheet,
   },
 ];
@@ -235,7 +235,9 @@ export default function ReportsPage() {
       setSelectedSimId((current) =>
         simulationsResult.value.some((run) => run.id === current)
           ? current
-          : simulationsResult.value[0]?.id ?? "",
+          : simulationsResult.value.find((run) => run.id === new URLSearchParams(window.location.search).get("simId"))?.id
+            ?? simulationsResult.value.find((run) => run.status === "COMPLETED")?.id
+            ?? simulationsResult.value[0]?.id ?? "",
       );
     } else {
       setSimulationsError(simulationsResult.reason instanceof Error ? simulationsResult.reason.message : "No se pudieron cargar las corridas.");
@@ -268,15 +270,15 @@ export default function ReportsPage() {
   const currentResult = finalReport?.current_result ?? null;
   const contractWasExecuted =
     finalReport?.current_contract.current_execution_status === "EXECUTED" && currentResult !== null;
-  const canExport = selectedSim?.status === "COMPLETED" && selectedSim.hydrology_backend === "SIMPLIFIED";
+  const canExport = selectedSim?.status === "COMPLETED" && ["SIMPLIFIED", "SWAT_PLUS"].includes(selectedSim.hydrology_backend);
 
-  const handleDownload = async (format: ExportFormat) => {
-    if (!selectedSim || !canExport) return;
+  const handleDownload = async (format: ExportFormat, simulationId = selectedSim?.id) => {
+    if (!simulationId || downloadingFormat !== null) return;
     setDownloadingFormat(format);
     setPageMessage(null);
 
     try {
-      await api.downloadReport(selectedSim.id, format);
+      await api.downloadReport(simulationId, format);
       setPageMessage({ type: "success", text: `El archivo ${format.toUpperCase()} se descargó.` });
       try {
         setHistory(await api.getReportsHistory());
@@ -298,19 +300,17 @@ export default function ReportsPage() {
     ? "Selecciona una corrida completada para revisar sus opciones de exportación."
     : selectedSim.status !== "COMPLETED"
       ? `La corrida está ${runStatusLabel(selectedSim.status).toLowerCase()}; los archivos estarán disponibles al completarse.`
-      : selectedSim.hydrology_backend !== "SIMPLIFIED"
-        ? "Descarga los datos CSV y el informe JSON de SWAT+ en el panel de esta corrida."
-        : "El exportador incluye los indicadores y los registros diarios guardados para esta corrida.";
+      : "PDF y Word incluyen indicadores y una muestra temporal. Excel reúne todos los registros guardados, con unidades, evidencia y disponibilidad.";
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 pb-12">
       <header className="flex flex-col justify-between gap-4 border-b border-slate-300 pb-5 sm:flex-row sm:items-end dark:border-slate-800">
         <div>
           <h1 className="font-serif text-2xl tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
-            Informes y evidencia
+            Reportes de simulación
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
-            Consulta el resultado científico actual y exporta los datos de una corrida compatible.
+            Documenta los resultados de tus simulaciones y descárgalos en PDF, Word o Excel.
           </p>
         </div>
         <button
@@ -324,8 +324,6 @@ export default function ReportsPage() {
         </button>
       </header>
 
-      <SouthForkResearchPanel />
-      <h2 className="font-serif text-xl">Archivo del experimento 2018–2020 y exportación por corrida</h2>
       {pageMessage && (
         <div
           role={pageMessage.type === "error" ? "alert" : "status"}
@@ -344,6 +342,142 @@ export default function ReportsPage() {
         </div>
       )}
 
+      <section aria-labelledby="exports-heading" className="border-t border-slate-300 pt-6 dark:border-slate-800">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <h2 id="exports-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Exportar una corrida
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600 dark:text-slate-400">
+              Reporta el balance hídrico, los caudales y la evolución del cultivo con la configuración y procedencia de la corrida seleccionada.
+            </p>
+          </div>
+          <div className="flex min-w-0 max-w-full flex-col gap-1.5 sm:min-w-72">
+            <label htmlFor="report-simulation" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Corrida
+            </label>
+            <select
+              id="report-simulation"
+              value={selectedSimId}
+              onChange={(event) => {
+                setSelectedSimId(event.target.value);
+                setPageMessage(null);
+              }}
+              disabled={simulations.length === 0}
+              className="w-full min-w-0 max-w-full border border-slate-300 bg-white px-3 py-2.5 text-xs text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus-visible:ring-emerald-400"
+            >
+              {simulations.length === 0 && <option value="">No hay corridas disponibles</option>}
+              {simulations.map((run) => (
+                <option key={run.id} value={run.id}>
+                  {run.name} · {runStatusLabel(run.status)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {simulationsError && (
+          <p role="alert" className="mt-3 border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+            No se pudo cargar la lista de corridas: {simulationsError}
+          </p>
+        )}
+
+        {selectedSim && (
+          <div className="mt-4 border-y border-slate-300 py-4 dark:border-slate-800">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedSim.name}</h3>
+                  <span className={`border px-2 py-0.5 text-[11px] font-medium ${runStatusTone(selectedSim.status)}`}>
+                    {runStatusLabel(selectedSim.status)}
+                  </span>
+                  <span className="border border-slate-300 px-2 py-0.5 text-[11px] text-slate-700 dark:border-slate-700 dark:text-slate-300">
+                    {simulationEvidenceLabel(classifySimulationEvidence(selectedSim))}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                  {selectedSim.hydrology_backend === "SWAT_PLUS" ? "SWAT+" : "Motor simplificado"}
+                  {selectedSim.scenario ? ` · ${selectedSim.scenario.name}` : " · escenario no registrado"}
+                  {` · ${climateSourceLabel(selectedSim.climate_source)}`}
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Periodo: {formatRunPeriod(selectedSim)} · {selectedSim.duration_days} días
+                </p>
+              </div>
+              {selectedSim.status === "COMPLETED" && selectedSim.hydrology_backend === "SWAT_PLUS" && (
+                <Link
+                  href={`/simulations?simId=${encodeURIComponent(selectedSim.id)}`}
+                  className="w-fit text-xs font-medium text-emerald-800 underline decoration-emerald-600 underline-offset-4 hover:text-emerald-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200 dark:focus-visible:ring-emerald-400"
+                >
+                  Ver resultados SWAT+ en Simulaciones
+                </Link>
+              )}
+            </div>
+
+            <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-4">
+              {runMetrics(selectedSim).map((metric) => (
+                <div key={metric.label}>
+                  <dt className="text-[11px] text-slate-500 dark:text-slate-400">{metric.label}</dt>
+                  <dd className="mt-0.5 font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {formatNumber(metric.value)} <span className="text-[11px] font-sans font-normal text-slate-500">{metric.unit}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
+            <p className="mt-4 text-xs leading-5 text-slate-600 dark:text-slate-400">{exportAvailability}</p>
+            {selectedSim.status === "COMPLETED" && selectedSim.hydrology_backend === "SWAT_PLUS" && (
+              <div className="mt-4"><SwatBaselineDiagnosticPanel simulation={selectedSim} /></div>
+            )}
+          </div>
+        )}
+
+        {!isLoading && !simulationsError && simulations.length === 0 && (
+          <p className="mt-4 border border-slate-300 bg-white p-4 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+            Aún no hay corridas disponibles para exportar. Las descargas aparecerán aquí cuando el backend registre una corrida.
+          </p>
+        )}
+
+        <div className="mt-3 grid grid-cols-1 divide-y divide-slate-300 border-y border-slate-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0 dark:divide-slate-800 dark:border-slate-800">
+          {EXPORTS.map((item) => {
+            const Icon = item.icon;
+            const isDownloading = downloadingFormat === item.format;
+            return (
+              <button
+                key={item.format}
+                type="button"
+                onClick={() => void handleDownload(item.format)}
+                disabled={!canExport || downloadingFormat !== null}
+                className="group flex min-w-0 items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-900/70 dark:focus-visible:ring-emerald-400"
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-emerald-800 dark:text-emerald-300" />
+                  <span className="min-w-0">
+                    <span className="block text-xs font-semibold text-slate-900 dark:text-slate-100">{item.label}</span>
+                    <span className="mt-0.5 block text-[11px] text-slate-500 dark:text-slate-400">{item.description}</span>
+                  </span>
+                </span>
+                {isDownloading ? (
+                  <Loader2 aria-label={`Generando ${item.label}`} className="h-4 w-4 shrink-0 motion-safe:animate-spin text-emerald-700 dark:text-emerald-300" />
+                ) : (
+                  <Download aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {downloadingFormat && (
+          <p role="status" className="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-400">
+            Generando {reportFormatLabel(downloadingFormat)} con los resultados guardados.
+            {downloadingFormat === "xlsx" && " Las corridas con muchas fechas y entidades pueden tardar varios minutos."}
+          </p>
+        )}
+      </section>
+
+      <details className="border-t border-slate-300 pt-5 dark:border-slate-800">
+        <summary className="cursor-pointer text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">Evaluaciones científicas y archivo histórico</summary>
+        <div className="mt-5 space-y-6">
+          <SouthForkResearchPanel />
       <section aria-labelledby="current-report-heading">
         <div className="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
           <div>
@@ -598,131 +732,8 @@ export default function ReportsPage() {
         )}
       </section>
 
-      <section aria-labelledby="exports-heading" className="border-t border-slate-300 pt-6 dark:border-slate-800">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <h2 id="exports-heading" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Exportar una corrida
-            </h2>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600 dark:text-slate-400">
-              Los archivos se construyen con el resumen y los registros guardados de una corrida; no son una copia del informe científico histórico 2018–2020.
-            </p>
-          </div>
-          <div className="flex flex-col gap-1.5 sm:min-w-72">
-            <label htmlFor="report-simulation" className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              Corrida
-            </label>
-            <select
-              id="report-simulation"
-              value={selectedSimId}
-              onChange={(event) => {
-                setSelectedSimId(event.target.value);
-                setPageMessage(null);
-              }}
-              disabled={simulations.length === 0}
-              className="min-w-0 border border-slate-300 bg-white px-3 py-2.5 text-xs text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus-visible:ring-emerald-400"
-            >
-              {simulations.length === 0 && <option value="">No hay corridas disponibles</option>}
-              {simulations.map((run) => (
-                <option key={run.id} value={run.id}>
-                  {run.name} · {runStatusLabel(run.status)}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
-
-        {simulationsError && (
-          <p role="alert" className="mt-3 border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
-            No se pudo cargar la lista de corridas: {simulationsError}
-          </p>
-        )}
-
-        {selectedSim && (
-          <div className="mt-4 border-y border-slate-300 py-4 dark:border-slate-800">
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedSim.name}</h3>
-                  <span className={`border px-2 py-0.5 text-[11px] font-medium ${runStatusTone(selectedSim.status)}`}>
-                    {runStatusLabel(selectedSim.status)}
-                  </span>
-                  <span className="border border-slate-300 px-2 py-0.5 text-[11px] text-slate-700 dark:border-slate-700 dark:text-slate-300">
-                    {simulationEvidenceLabel(classifySimulationEvidence(selectedSim))}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                  {selectedSim.hydrology_backend === "SWAT_PLUS" ? "SWAT+" : "Motor simplificado"}
-                  {selectedSim.scenario ? ` · ${selectedSim.scenario.name}` : " · escenario no registrado"}
-                  {` · ${climateSourceLabel(selectedSim.climate_source)}`}
-                </p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Periodo: {formatRunPeriod(selectedSim)} · {selectedSim.duration_days} días
-                </p>
-              </div>
-              {selectedSim.status === "COMPLETED" && selectedSim.hydrology_backend === "SWAT_PLUS" && (
-                <Link
-                  href="/simulations"
-                  className="w-fit text-xs font-medium text-emerald-800 underline decoration-emerald-600 underline-offset-4 hover:text-emerald-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200 dark:focus-visible:ring-emerald-400"
-                >
-                  Ver resultados SWAT+ en Simulaciones
-                </Link>
-              )}
-            </div>
-
-            <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-4">
-              {runMetrics(selectedSim).map((metric) => (
-                <div key={metric.label}>
-                  <dt className="text-[11px] text-slate-500 dark:text-slate-400">{metric.label}</dt>
-                  <dd className="mt-0.5 font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {formatNumber(metric.value)} <span className="text-[11px] font-sans font-normal text-slate-500">{metric.unit}</span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
-
-            <p className="mt-4 text-xs leading-5 text-slate-600 dark:text-slate-400">{exportAvailability}</p>
-            {selectedSim.status === "COMPLETED" && selectedSim.hydrology_backend === "SWAT_PLUS" && (
-              <div className="mt-4"><SwatBaselineDiagnosticPanel simulation={selectedSim} /></div>
-            )}
-          </div>
-        )}
-
-        {!isLoading && !simulationsError && simulations.length === 0 && (
-          <p className="mt-4 border border-slate-300 bg-white p-4 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-            Aún no hay corridas disponibles para exportar. Las descargas aparecerán aquí cuando el backend registre una corrida.
-          </p>
-        )}
-
-        {selectedSim?.hydrology_backend !== "SWAT_PLUS" && <div className="mt-3 grid grid-cols-1 divide-y divide-slate-300 border-y border-slate-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0 dark:divide-slate-800 dark:border-slate-800">
-          {EXPORTS.map((item) => {
-            const Icon = item.icon;
-            const isDownloading = downloadingFormat === item.format;
-            return (
-              <button
-                key={item.format}
-                type="button"
-                onClick={() => void handleDownload(item.format)}
-                disabled={!canExport || downloadingFormat !== null}
-                className="group flex min-w-0 items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-900/70 dark:focus-visible:ring-emerald-400"
-              >
-                <span className="flex min-w-0 items-center gap-3">
-                  <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-emerald-800 dark:text-emerald-300" />
-                  <span className="min-w-0">
-                    <span className="block text-xs font-semibold text-slate-900 dark:text-slate-100">{item.label}</span>
-                    <span className="mt-0.5 block text-[11px] text-slate-500 dark:text-slate-400">{item.description}</span>
-                  </span>
-                </span>
-                {isDownloading ? (
-                  <Loader2 aria-label={`Generando ${item.label}`} className="h-4 w-4 shrink-0 motion-safe:animate-spin text-emerald-700 dark:text-emerald-300" />
-                ) : (
-                  <Download aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300" />
-                )}
-              </button>
-            );
-          })}
-        </div>}
-      </section>
+      </details>
 
       <section aria-labelledby="history-heading" className="border-t border-slate-300 pt-6 dark:border-slate-800">
         <div className="flex items-end justify-between gap-4">
@@ -743,7 +754,7 @@ export default function ReportsPage() {
 
         {!historyError && history.length === 0 ? (
           <p className="mt-4 border border-slate-300 bg-white px-4 py-6 text-center text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-            Todavía no hay exportaciones registradas. Elige una corrida compatible y genera un archivo.
+            Todavía no hay exportaciones registradas. Elige una corrida completada y genera un archivo.
           </p>
         ) : history.length > 0 ? (
           <div className="mt-4 overflow-x-auto border-y border-slate-300 dark:border-slate-800">
@@ -755,6 +766,7 @@ export default function ReportsPage() {
                   <th scope="col" className="px-3 py-2.5 font-medium">Archivo</th>
                   <th scope="col" className="px-3 py-2.5 text-right font-medium">Tamaño</th>
                   <th scope="col" className="px-3 py-2.5 text-right font-medium">Generado</th>
+                  <th scope="col" className="px-3 py-2.5 font-medium">Descarga</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-slate-700 dark:divide-slate-800 dark:text-slate-300">
@@ -765,6 +777,15 @@ export default function ReportsPage() {
                     <td className="max-w-56 truncate px-3 py-3 font-mono text-[11px] text-slate-500 dark:text-slate-400" title={entry.filename}>{entry.filename}</td>
                     <td className="px-3 py-3 text-right font-mono">{formatNumber(entry.file_size_bytes / 1024, 1)} KB</td>
                     <td className="px-3 py-3 text-right text-slate-500 dark:text-slate-400">{entry.created_at.replace("T", " ")}</td>
+                    <td className="px-3 py-3">
+                      <button type="button"
+                        onClick={() => void handleDownload((entry.format || entry.report_format) as ExportFormat, entry.simulation_id)}
+                        disabled={downloadingFormat !== null}
+                        aria-label={`Volver a descargar ${entry.filename}`}
+                        className="inline-flex items-center gap-2 text-emerald-800 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 disabled:opacity-50 dark:text-emerald-300">
+                        <Download aria-hidden="true" className="h-3.5 w-3.5" /> Descargar
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
