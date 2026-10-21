@@ -69,6 +69,9 @@ try {
   await page.getByText('Cargando simulaciones…', { exact: true }).waitFor({ timeout: 60000 });
   assert.equal(await page.getByText(emptyMessage, { exact: true }).count(), 0);
   fixture.catalog.release();
+  const catalogBtn = page.getByRole('button', { name: /Catálogo/i });
+  await catalogBtn.waitFor({ timeout: 15000 });
+  await catalogBtn.click();
   const cardB = page.getByRole('button', { name: /Catalogue B/ });
   await cardB.waitFor({ timeout: 15000 });
   assert.equal(fixture.reportFinished(), false, 'Catalogue must appear while the report is still pending');
@@ -85,7 +88,7 @@ try {
   const reportResponse = page.waitForResponse((response) => response.url().endsWith('/reports/final-scientific'));
   fixture.report.release(); fixture.configuration.release();
   await reportResponse;
-  await cardB.waitFor();
+  await page.getByRole('heading', { name: 'Catalogue B', exact: true }).waitFor();
   assert.deepEqual(fixture.pageErrors, []);
   await fixture.context.close();
 

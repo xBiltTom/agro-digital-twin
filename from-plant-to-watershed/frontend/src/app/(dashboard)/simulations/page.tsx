@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "../../../context/AuthContext";
 import { api } from "../../../lib/api";
+import ScientificExportsPanel from "../../../components/research/ScientificExportsPanel";
 import {
   SimulationRun,
   SimulationResult,
@@ -47,6 +48,8 @@ import {
   Maximize2,
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -276,7 +279,7 @@ export default function SimulationsPage() {
   const [chartViewMode, setChartViewMode] = useState<"ALL" | "STREAMFLOW" | "PLANT" | "SOIL" | "MONTHLY">("STREAMFLOW");
   const [chartLayout, setChartLayout] = useState<"GRID" | "SPOTLIGHT" | "STACK">("GRID");
   const [expandedChartModal, setExpandedChartModal] = useState<"MONTHLY" | "STREAMFLOW" | "PLANT" | "SOIL" | null>(null);
-  const [isCatalogCollapsed, setIsCatalogCollapsed] = useState(false);
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
 
   // Listener para cerrar modales con tecla Escape
   useEffect(() => {
@@ -284,6 +287,7 @@ export default function SimulationsPage() {
       if (e.key === "Escape") {
         setActiveModalTab(null);
         setExpandedChartModal(null);
+        setIsCatalogModalOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -686,6 +690,24 @@ export default function SimulationsPage() {
     return matchesSearch && matchesModel;
   });
 
+  const currentSimIndex = selectedSim
+    ? filteredSimulations.findIndex((s) => s.id === selectedSim.id)
+    : -1;
+  const hasPrevSim = currentSimIndex > 0;
+  const hasNextSim = currentSimIndex >= 0 && currentSimIndex < filteredSimulations.length - 1;
+
+  const handlePrevSim = () => {
+    if (hasPrevSim) {
+      void selectSimulation(filteredSimulations[currentSimIndex - 1]);
+    }
+  };
+
+  const handleNextSim = () => {
+    if (hasNextSim) {
+      void selectSimulation(filteredSimulations[currentSimIndex + 1]);
+    }
+  };
+
   return (
     <div className="flex min-h-[calc(100vh-6rem)] w-full max-w-full flex-col">
       {/* 1. Barra de Navegación de Vistas y Acciones Principales */}
@@ -720,6 +742,7 @@ export default function SimulationsPage() {
 
       {feedbackMsg && (
         <div
+          role={feedbackMsg.type === "error" ? "alert" : "status"}
           className={`p-3 rounded-none border text-xs flex items-center gap-2 ${
             feedbackMsg.type === "success"
               ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200"
@@ -825,187 +848,96 @@ export default function SimulationsPage() {
             </div>
           )}
 
-          {/* 3. Área de Trabajo Principal: Catálogo (Izquierda) + Consola de Análisis (Derecha) */}
-          <div className="flex-1 min-h-0 flex flex-col lg:flex-row items-stretch border-t border-slate-300 dark:border-slate-800">
-            {/* Panel Izquierdo: Catálogo de Corridas Registradas (Colapsable) */}
-            {!isCatalogCollapsed ? (
-              <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
-                <div className="flex items-center justify-between p-3 border-b border-slate-300 dark:border-slate-800">
-                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Experimentos ({filteredSimulations.length})
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={loadInitialData}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-none transition cursor-pointer"
-                      title="Refrescar catálogo"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsCatalogCollapsed(true)}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-none transition cursor-pointer"
-                      title="Ocultar catálogo para ganar espacio"
-                    >
-                      <PanelLeftClose className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+          {/* 3. Área de Trabajo Principal: Consola en Ancho Completo con Navegación Híbrida */}
+          <div className="flex-1 min-h-0 flex flex-col items-stretch border-t border-slate-300 dark:border-slate-800">
+            {/* Barra de Navegación Rápida de Simulaciones */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-2.5 bg-slate-100/80 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
+              {/* Botones de Navegación Lateral [◀] [▶] y Selector Compacto */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                  Corrida activa:
+                </span>
 
-              {/* Buscador */}
-              <div className="relative p-2.5 border-b border-slate-200 dark:border-slate-800 shrink-0">
-                <Search className="w-3.5 h-3.5 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={simSearchTerm}
-                  onChange={(e) => setSimSearchTerm(e.target.value)}
-                  placeholder="Filtrar por nombre o escenario..."
-                  className="w-full pl-8 pr-7 py-1.5 text-xs rounded-none bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
-                />
-                {simSearchTerm && (
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => setSimSearchTerm("")}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                    onClick={handlePrevSim}
+                    disabled={!hasPrevSim}
+                    className="p-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
+                    title="Simulación anterior"
+                    aria-label="Simulación anterior"
                   >
-                    <X className="w-3 h-3" />
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
-                )}
-              </div>
 
-              {/* Filtro por Modelo */}
-              <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-xs shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setSimFilterModel("ALL")}
-                  className={`flex-1 py-1 text-[11px] font-mono rounded-none text-center transition cursor-pointer ${
-                    simFilterModel === "ALL"
-                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
-                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                  }`}
-                >
-                  Todos ({simulations.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSimFilterModel("SIMPLIFIED")}
-                  className={`flex-1 py-1 text-[11px] font-mono rounded-none text-center transition cursor-pointer ${
-                    simFilterModel === "SIMPLIFIED"
-                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
-                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                  }`}
-                >
-                  Simplificado ({simulations.filter((s) => !isSwatBackend(s)).length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSimFilterModel("SWAT")}
-                  className={`flex-1 py-1 text-[11px] font-mono rounded-none text-center transition cursor-pointer ${
-                    simFilterModel === "SWAT"
-                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
-                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                  }`}
-                >
-                  SWAT+ ({simulations.filter((s) => isSwatBackend(s)).length})
-                </button>
-              </div>
+                  <span className="text-xs font-mono px-2 text-slate-700 dark:text-slate-300 min-w-[55px] text-center font-medium">
+                    {currentSimIndex >= 0 ? `${currentSimIndex + 1} / ${filteredSimulations.length}` : `0 / ${filteredSimulations.length}`}
+                  </span>
 
-              {/* Lista de Experimentos */}
-              <div className="p-2.5 space-y-1.5">
-                {isLoading && simulations.length === 0 ? (
-                  <div role="status" className="flex items-center justify-center gap-2 p-6 text-xs text-slate-500">
-                    <Loader2 size={16} className="animate-spin" /> Cargando simulaciones…
-                  </div>
-                ) : catalogError && simulations.length === 0 ? (
-                  <div role="alert" className="p-6 text-center text-xs text-rose-600">{catalogError}</div>
-                ) : filteredSimulations.length === 0 ? (
-                  <div className="p-6 text-center rounded-none border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400">
-                    No se encontraron simulaciones que coincidan con la búsqueda.
-                  </div>
-                ) : (
-                  filteredSimulations.map((sim) => {
-                    const isSelected = selectedSim?.id === sim.id;
-                    const evidence = classifySimulationEvidence(sim);
-                    const includesPlantPopulation = runIncludesPlantPopulation(sim);
-                    const statusLabel = sim.status === "COMPLETED" ? "Completada" : sim.status === "FAILED" ? "Fallida" : sim.status === "RUNNING" ? "En ejecución" : "Pendiente";
-                    const statusTone = sim.status === "COMPLETED"
-                      ? "text-emerald-700 dark:text-emerald-300"
-                      : sim.status === "FAILED"
-                        ? "text-rose-700 dark:text-rose-300"
-                        : "text-slate-500 dark:text-slate-400";
+                  <button
+                    type="button"
+                    onClick={handleNextSim}
+                    disabled={!hasNextSim}
+                    className="p-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
+                    title="Siguiente simulación"
+                    aria-label="Siguiente simulación"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
 
-                    const precipVal = sim.summary_metrics?.total_precip_mm ?? sim.summary_metrics?.total_precipitation_mm;
-                    const precipStr = precipVal != null ? `${Number(precipVal).toFixed(0)} mm` : "No disponible";
-                    const dischargeVal = sim.summary_metrics?.total_discharge_hm3;
-                    const dischargeStr = dischargeVal != null ? `${Number(dischargeVal).toFixed(1)} hm³` : "No disponible";
-                    const cwsiVal = sim.summary_metrics?.mean_cwsi;
-                    const cwsiStr = cwsiVal != null ? Number(cwsiVal).toFixed(3) : "No disponible";
-
-                    return (
-                      <button
-                        type="button"
-                        key={sim.id}
-                        onClick={() => selectSimulation(sim)}
-                        aria-pressed={isSelected}
-                        className={`w-full p-3 rounded-none border text-left cursor-pointer transition flex flex-col gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600 ${
-                          isSelected
-                            ? "bg-slate-50 dark:bg-slate-800/60 border-slate-400 dark:border-slate-600 shadow-none"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
-                            {sim.name}
-                          </span>
-                          <span className={`shrink-0 text-[10px] font-medium ${statusTone}`} title={sim.error?.message}>
-                            {statusLabel}
-                          </span>
-                        </div>
-
-                        <span className="w-fit border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                          {simulationEvidenceLabel(evidence)}
-                        </span>
-
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                          <span>{sim.duration_days} días</span>
-                          <span className="border-l border-slate-300 pl-2 dark:border-slate-700">
-                            {includesPlantPopulation ? `${sim.plant_count?.toLocaleString() ?? "No disponible"} plantas` : "Sin modelo de planta"}
-                          </span>
-                          <span className="border-l border-slate-300 pl-2 dark:border-slate-700">{climateSourceLabel(sim.climate_source)}</span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                          <span className="text-slate-500 dark:text-slate-400">Lluvia<strong className="mt-0.5 block font-mono font-medium text-slate-800 dark:text-slate-200">{precipStr}</strong></span>
-                          <span className="text-slate-500 dark:text-slate-400">Descarga<strong className="mt-0.5 block font-mono font-medium text-slate-800 dark:text-slate-200">{dischargeStr}</strong></span>
-                          <span className="text-slate-500 dark:text-slate-400">CWSI<strong className="mt-0.5 block font-mono font-medium text-slate-800 dark:text-slate-200">{cwsiStr}</strong></span>
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-            ) : (
-              <div className="w-full lg:w-10 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-row lg:flex-col items-center justify-between lg:justify-start p-2 lg:py-3">
-                <button
-                  type="button"
-                  onClick={() => setIsCatalogCollapsed(false)}
-                  className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                  title="Expandir catálogo de experimentos"
-                >
-                  <PanelLeftOpen className="w-4 h-4" />
-                </button>
-                <div className="lg:mt-8 [writing-mode:horizontal-tb] lg:[writing-mode:vertical-rl] text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-                  Catálogo ({filteredSimulations.length})
+                {/* Buscador / Selector desplegable rápido */}
+                <div className="relative min-w-[240px] max-w-sm">
+                  <select
+                    value={selectedSim?.id ?? ""}
+                    onChange={(e) => {
+                      const found = simulations.find((s) => s.id === e.target.value);
+                      if (found) void selectSimulation(found);
+                    }}
+                    aria-label="Seleccionar simulación activa"
+                    className="w-full text-xs py-1.5 px-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium truncate"
+                  >
+                    {filteredSimulations.map((sim, idx) => (
+                      <option key={sim.id} value={sim.id}>
+                        #{idx + 1} · {sim.name} ({isSwatBackend(sim) ? "SWAT+" : "Simplificado"})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            )}
 
-            {/* Panel Derecho: Consola de Trabajo del Experimento */}
+              {/* Botón que abre el Modal de Catálogo Completo y Refresco */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCatalogModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 text-xs font-medium transition cursor-pointer shadow-none"
+                  title="Abrir catálogo completo de simulaciones"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Catálogo ({filteredSimulations.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={loadInitialData}
+                  className="p-1.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition cursor-pointer"
+                  title="Refrescar catálogo"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Consola de Trabajo del Experimento en Ancho Completo */}
             <div className="flex-1 min-w-0 flex flex-col bg-slate-50 dark:bg-slate-950">
-              {selectedSim ? (
+              {isLoading && simulations.length === 0 ? (
+                <div role="status" className="flex items-center justify-center gap-2 p-12 text-xs text-slate-500">
+                  <Loader2 size={16} className="animate-spin" /> Cargando simulaciones…
+                </div>
+              ) : catalogError && simulations.length === 0 ? (
+                <div role="alert" className="p-12 text-center text-xs text-rose-600">{catalogError}</div>
+              ) : selectedSim ? (
                 <>
                   {/* Encabezado del Experimento Activo */}
                   <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-2.5">
@@ -1851,6 +1783,11 @@ export default function SimulationsPage() {
       {activeTab === "SCENARIOS" && finalReport && <ClimateScenariosPanel report={finalReport} />}
       {activeTab === "STATISTICS" && finalReport && <StatisticalBatteryPanel report={finalReport} />}
 
+      {/* Panel colapsable de exportaciones científicas para el artículo (al final de la página) */}
+      <div className="mt-8 border-t border-slate-300 dark:border-slate-800 pt-4 px-4 pb-6">
+        <ScientificExportsPanel scope="simulation" />
+      </div>
+
       {/* Modal Interactivo de Telemetría e Inspección Detallada */}
       {expandedChartModal && selectedSim && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden">
@@ -2456,6 +2393,199 @@ export default function SimulationsPage() {
                   {isPreflighting ? "Comprobando…" : isSubmitting ? "Ejecutando corrida…" : preflightReady ? "Ejecutar corrida" : "Revisar antes de ejecutar"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL DEL CATÁLOGO COMPLETO DE SIMULACIONES */}
+      {isCatalogModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+          <div className="w-full max-w-5xl max-h-[92vh] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-2xl flex flex-col text-slate-900 dark:text-slate-100 overflow-hidden">
+            {/* Cabecera del modal */}
+            <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-[10px] px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 font-semibold uppercase">
+                  Catálogo
+                </span>
+                <div>
+                  <h3 className="font-serif font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                    Catálogo de simulaciones ecohidrológicas
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-mono">
+                    {filteredSimulations.length} de {simulations.length} corridas disponibles · Selecciona una para inspeccionarla en la consola
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">[Esc para cerrar]</span>
+                <button
+                  type="button"
+                  onClick={() => setIsCatalogModalOpen(false)}
+                  className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition cursor-pointer"
+                  title="Cerrar modal (Esc)"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filtros y búsqueda dentro del modal */}
+            <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={simSearchTerm}
+                  onChange={(e) => setSimSearchTerm(e.target.value)}
+                  placeholder="Filtrar por nombre, escenario o estación..."
+                  className="w-full pl-8 pr-7 py-1.5 text-xs rounded-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
+                  autoFocus
+                />
+                {simSearchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSimSearchTerm("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSimFilterModel("ALL")}
+                  className={`px-2.5 py-1 text-[11px] font-mono rounded-none transition cursor-pointer ${
+                    simFilterModel === "ALL"
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
+                      : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
+                  }`}
+                >
+                  Todos ({simulations.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSimFilterModel("SIMPLIFIED")}
+                  className={`px-2.5 py-1 text-[11px] font-mono rounded-none transition cursor-pointer ${
+                    simFilterModel === "SIMPLIFIED"
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
+                      : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
+                  }`}
+                >
+                  Simplificado ({simulations.filter((s) => !isSwatBackend(s)).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSimFilterModel("SWAT")}
+                  className={`px-2.5 py-1 text-[11px] font-mono rounded-none transition cursor-pointer ${
+                    simFilterModel === "SWAT"
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold"
+                      : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
+                  }`}
+                >
+                  SWAT+ ({simulations.filter((s) => isSwatBackend(s)).length})
+                </button>
+              </div>
+            </div>
+
+            {/* Contenido en cuadrícula con scroll interno */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {isLoading && simulations.length === 0 ? (
+                <div role="status" className="flex items-center justify-center gap-2 p-12 text-xs text-slate-500">
+                  <Loader2 size={16} className="animate-spin" /> Cargando catálogo de simulaciones…
+                </div>
+              ) : catalogError && simulations.length === 0 ? (
+                <div role="alert" className="p-12 text-center text-xs text-rose-600">{catalogError}</div>
+              ) : filteredSimulations.length === 0 ? (
+                <div className="p-12 text-center rounded-none border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400">
+                  No se encontraron simulaciones que coincidan con la búsqueda.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredSimulations.map((sim) => {
+                    const isSelected = selectedSim?.id === sim.id;
+                    const evidence = classifySimulationEvidence(sim);
+                    const includesPlantPopulation = runIncludesPlantPopulation(sim);
+                    const statusLabel = sim.status === "COMPLETED" ? "Completada" : sim.status === "FAILED" ? "Fallida" : sim.status === "RUNNING" ? "En ejecución" : "Pendiente";
+                    const statusTone = sim.status === "COMPLETED"
+                      ? "text-emerald-700 dark:text-emerald-300"
+                      : sim.status === "FAILED"
+                        ? "text-rose-700 dark:text-rose-300"
+                        : "text-slate-500 dark:text-slate-400";
+
+                    const precipVal = sim.summary_metrics?.total_precip_mm ?? sim.summary_metrics?.total_precipitation_mm;
+                    const precipStr = precipVal != null ? `${Number(precipVal).toFixed(0)} mm` : "—";
+                    const dischargeVal = sim.summary_metrics?.total_discharge_hm3;
+                    const dischargeStr = dischargeVal != null ? `${Number(dischargeVal).toFixed(1)} hm³` : "—";
+                    const cwsiVal = sim.summary_metrics?.mean_cwsi;
+                    const cwsiStr = cwsiVal != null ? Number(cwsiVal).toFixed(3) : "—";
+
+                    return (
+                      <button
+                        type="button"
+                        key={sim.id}
+                        onClick={() => {
+                          void selectSimulation(sim);
+                          setIsCatalogModalOpen(false);
+                        }}
+                        aria-pressed={isSelected}
+                        className={`p-3.5 text-left cursor-pointer transition flex flex-col justify-between gap-2.5 rounded-none border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${
+                          isSelected
+                            ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-500 dark:border-emerald-500 ring-1 ring-emerald-500"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 hover:shadow-xs"
+                        }`}
+                      >
+                        <div className="space-y-1.5 w-full">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">
+                              {sim.name}
+                            </span>
+                            <span className={`shrink-0 text-[10px] font-medium font-mono ${statusTone}`}>
+                              {statusLabel}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                              {simulationEvidenceLabel(evidence)}
+                            </span>
+                            {isSelected && (
+                              <span className="border border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.5 text-[10px] font-medium">
+                                Activa
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5 pt-1">
+                            <div>{sim.duration_days} días · {climateSourceLabel(sim.climate_source)}</div>
+                            <div>{includesPlantPopulation ? `${sim.plant_count?.toLocaleString() ?? "—"} plantas` : "Sin modelo de planta"}</div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] w-full">
+                          <span className="text-slate-500">Lluvia: <strong className="font-mono text-slate-800 dark:text-slate-200">{precipStr}</strong></span>
+                          <span className="text-slate-500">Q: <strong className="font-mono text-slate-800 dark:text-slate-200">{dischargeStr}</strong></span>
+                          <span className="text-slate-500">CWSI: <strong className="font-mono text-slate-800 dark:text-slate-200">{cwsiStr}</strong></span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Pie del modal */}
+            <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between text-xs text-slate-500 shrink-0">
+              <span>Haz clic en cualquier simulación para seleccionarla en la consola</span>
+              <button
+                type="button"
+                onClick={() => setIsCatalogModalOpen(false)}
+                className="px-3 py-1 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-medium cursor-pointer"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
