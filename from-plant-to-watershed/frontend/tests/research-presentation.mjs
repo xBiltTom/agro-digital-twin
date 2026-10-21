@@ -53,7 +53,7 @@ try {
   const base = process.env.VISUAL_BASE_URL ?? 'http://localhost:3000';
   const noHypothesis = async () => assert.doesNotMatch(
     await page.locator('main').first().innerText(), /\bH[01]\b|hipótesis|hypothesis|H1_SUPPORTED|H1_NOT_SUPPORTED/i);
-  for (const path of ['/', '/reports', '/simulations']) {
+  for (const path of ['/', '/reports']) {
     await page.goto(`${base}${path}`, { waitUntil: 'networkidle', timeout: 90000 });
     await page.getByRole('heading', { name: 'Comparación de caudal mensual', exact: true }).waitFor().catch(async (error) => {
       console.error(path, errors, (await page.locator('body').innerText()).slice(0, 2500));
@@ -62,15 +62,16 @@ try {
     assert.ok(await page.locator('table').count() > 0, `${path} must preserve its tables`);
     assert.ok(await page.locator('.recharts-wrapper').count() > 0, `${path} must preserve its charts`);
     await noHypothesis();
-    if (path === '/simulations') {
-      for (const label of ['Validación del modelo', 'Escenarios climáticos', 'Batería estadística']) {
-        await page.getByRole('button', { name: label, exact: true }).click();
-        await noHypothesis();
-      }
-      await page.getByRole('button', { name: 'Corridas de simulación', exact: true }).click();
-      await page.getByRole('button', { name: 'Configurar corrida', exact: true }).waitFor();
-    }
   }
+  await page.goto(`${base}/simulations`, { waitUntil: 'networkidle', timeout: 90000 });
+  await page.getByRole('heading', { name: 'Consola de simulaciones ecohidrológicas', exact: true }).waitFor();
+  await noHypothesis();
+  for (const label of ['Validación del modelo', 'Escenarios climáticos', 'Batería estadística']) {
+    await page.getByRole('button', { name: label, exact: true }).click();
+    await noHypothesis();
+  }
+  await page.getByRole('button', { name: 'Corridas de simulación', exact: true }).click();
+  await page.getByRole('button', { name: 'Configurar corrida', exact: true }).waitFor();
   assert.deepEqual(errors, []);
   console.log('Research presentation passed: tables, charts, all tabs and run controls preserved; H0/H1 omitted.');
 } finally {

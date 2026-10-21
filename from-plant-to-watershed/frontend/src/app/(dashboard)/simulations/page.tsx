@@ -1,6 +1,4 @@
 "use client";
-import SouthForkResearchPanel from "../../../components/research/SouthForkResearchPanel";
-import ScientificExportsPanel from "../../../components/research/ScientificExportsPanel";
 
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
@@ -690,8 +688,6 @@ export default function SimulationsPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-6rem)] w-full max-w-full flex-col">
-      <SouthForkResearchPanel allowCreate />
-      <ScientificExportsPanel scope="simulation" />
       {/* 1. Barra de Navegación de Vistas y Acciones Principales */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div>
