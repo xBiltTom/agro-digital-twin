@@ -89,14 +89,6 @@ try {
   await partitions.getByLabel("Figura o tabla", { exact: true }).waitFor();
   assert.equal(await partitions.getByLabel("Figura o tabla", { exact: true }).locator("option").count(), 2);
   await preview(partitions, entries.find(item => item.id === "temporal-partition").title);
-
-  await page.goto(`${base}/simulations`, { waitUntil: "networkidle" });
-  const simulations = page.locator("details").filter({ has: page.locator("summary", { hasText: /^Figuras y tablas científicas$/ }) });
-  await simulations.locator("summary").click();
-  await simulations.getByLabel("Figura o tabla", { exact: true }).waitFor();
-  assert.equal(await simulations.getByLabel("Figura o tabla", { exact: true }).locator("option").count(), 6);
-  await simulations.getByLabel("Figura o tabla", { exact: true }).selectOption("plant-mapping");
-  await preview(simulations, entries.find(item => item.id === "plant-mapping").title);
   assert.deepEqual(errors, []);
   console.log("Scientific exports browser regression passed: 8 previews, 4 real downloads, sensitivity, retry, reopen, mobile and module scopes.");
 } finally {

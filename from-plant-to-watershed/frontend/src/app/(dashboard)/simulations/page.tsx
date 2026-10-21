@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "../../../context/AuthContext";
 import { api } from "../../../lib/api";
-import ScientificExportsPanel from "../../../components/research/ScientificExportsPanel";
 import {
   SimulationRun,
   SimulationResult,
@@ -1782,11 +1781,6 @@ export default function SimulationsPage() {
       {activeTab === "VALIDATION" && finalReport && <><p className="p-4 text-sm">Archivo histórico 2018–2020. Consulta la evaluación actual de South Fork en el panel superior.</p><HypothesisValidationPanel report={finalReport} /></>}
       {activeTab === "SCENARIOS" && finalReport && <ClimateScenariosPanel report={finalReport} />}
       {activeTab === "STATISTICS" && finalReport && <StatisticalBatteryPanel report={finalReport} />}
-
-      {/* Panel colapsable de exportaciones científicas para el artículo (al final de la página) */}
-      <div className="mt-8 border-t border-slate-300 dark:border-slate-800 pt-4 px-4 pb-6">
-        <ScientificExportsPanel scope="simulation" />
-      </div>
 
       {/* Modal Interactivo de Telemetría e Inspección Detallada */}
       {expandedChartModal && selectedSim && (
