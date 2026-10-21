@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import ScientificExportsPanel from "../../../components/research/ScientificExportsPanel";
 import { api } from "../../../lib/api";
 import { DatasetInfo, ExternalModelInfo } from "../../../types/simulation";
 import {
@@ -97,6 +98,8 @@ export default function DatasetsPage() {
           <span>{errorMsg}</span>
         </div>
       )}
+
+      <ScientificExportsPanel scope="partitions" />
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">

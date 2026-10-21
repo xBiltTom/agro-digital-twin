@@ -1,5 +1,6 @@
 "use client";
 import SouthForkResearchPanel from "../../../components/research/SouthForkResearchPanel";
+import ScientificExportsPanel from "../../../components/research/ScientificExportsPanel";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -473,6 +474,8 @@ export default function ReportsPage() {
           </p>
         )}
       </section>
+
+      <ScientificExportsPanel />
 
       <details className="border-t border-slate-300 pt-5 dark:border-slate-800">
         <summary className="cursor-pointer text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">Evaluaciones científicas y archivo histórico</summary>

@@ -20,6 +20,7 @@ Los documentos de esta carpeta describen lo implementado y la evidencia disponib
 | [Entrega 3: ML residual](ML_RESIDUAL_DELIVERY_3.md) | Búsqueda comparable C/D, pesos TRAIN congelados, selección de desarrollo, referencias simples y registro en pglocal. |
 | [Entrega 4: evaluación TEST](TEST_EVALUATION_DELIVERY_4.md) | Publicación 2021–2025, A/B/C/D y referencias TRAIN, bootstrap temporal pareado y sensibilidad a estimados USGS. |
 | [Entrega 5: gemelo funcional y paper](FUNCTIONAL_TWIN_DELIVERY_5.md) | Reproducción propia A/B y ML mensual, comparación TEST actual, descargas y paquete científico. |
+| [Figuras y tablas científicas](SCIENTIFIC_EXPORTS.md) | Ocho exportaciones con estilo referencial, vistas previas, formatos, procedencia y pruebas. |
 | [Reporte científico histórico](FINAL_REPORT.md) | Resultado v2, separación respecto al gemelo diario y reproducción del runner final. |
 | [Acoplamiento FSPM–SWAT+](FSPM_SWAT_PLUS_COUPLING.md) | Calendarios ejecutados, feedback hídrico aproximado y mapeo de parámetros. |
 | [Contrato de playback y representación](TWIN_PLAYBACK_CONTRACT.md) | API, PostgreSQL, evidencia, frecuencias y consumo del visor 3D. |

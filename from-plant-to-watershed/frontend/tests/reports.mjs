@@ -34,7 +34,7 @@ await page.route('**/api/v1/**', async route => {
       simulation_name: run.name, file_size_bytes: 2048, created_at: '2026-10-20 12:00' }];
     return route.fulfill({ status: 200, headers: { 'Content-Type': 'application/octet-stream',
       'Content-Disposition': `attachment; filename="reporte.${format}"`, 'Access-Control-Expose-Headers': 'Content-Disposition' }, body: `report-${format}` });
-  } else if (path.endsWith('/reports/final-scientific') || path.endsWith('/research/south-fork')) {
+  } else if (path.endsWith('/reports/final-scientific') || path.endsWith('/research/south-fork') || path.endsWith('/research/south-fork/exports')) {
     status = 503; body = { detail: 'Archivo histórico no disponible' };
   }
   return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });

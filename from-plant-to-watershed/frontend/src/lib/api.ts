@@ -21,10 +21,33 @@ import type { GeneratedReportHistoryEntry } from "../types/simulation";
 import { PlaybackPage, PlaybackQuery } from "../types/playback";
 import type { SimulationAvailability } from "../types/playback-availability";
 import { collectSimulationPages } from "./simulation-access";
+import type { ScientificExportCatalog, ScientificFormat, ScientificVariant } from "../types/scientific-exports";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 class ApiService {
+  async getScientificExports() {
+    return this.request<ScientificExportCatalog>("/research/south-fork/exports");
+  }
+
+  async getScientificPreview(identifier: string, variant: ScientificVariant, signal: AbortSignal): Promise<Blob> {
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE}/research/south-fork/exports/${encodeURIComponent(identifier)}/png?variant=${variant}`, {
+      signal,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(typeof error.detail === "string" ? error.detail : "No se pudo cargar la vista previa.");
+    }
+    return response.blob();
+  }
+
+  async downloadScientificExport(identifier: string, format: ScientificFormat, variant: ScientificVariant) {
+    return this.downloadFile(`/research/south-fork/exports/${encodeURIComponent(identifier)}/${format}?variant=${variant}`,
+      `${identifier}.${format}`);
+  }
+
   async getSouthForkResearch() {
     return this.request<import("../types/research").ResearchReport>("/research/south-fork");
   }

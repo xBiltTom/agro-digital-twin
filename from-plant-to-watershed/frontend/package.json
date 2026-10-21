@@ -11,7 +11,8 @@
     "test": "node --experimental-strip-types tests/playback.test.ts",
     "test:visual": "node tests/visual-playback.mjs",
     "test:catalog": "node tests/simulation-catalog.mjs",
-    "test:reports": "node tests/reports.mjs"
+    "test:reports": "node tests/reports.mjs",
+    "test:scientific-exports": "node tests/scientific-exports.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
