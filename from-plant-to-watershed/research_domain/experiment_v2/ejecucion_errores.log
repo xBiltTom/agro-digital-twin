@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/research_domain/experiment_v2/simular_v2.py", line 72, in <module>
+    for y in (map(int,sys.argv[1:]) if len(sys.argv)>1 else range(2013,2026)):annual(y)
+                                                                              ^^^^^^^^^
+  File "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/research_domain/experiment_v2/simular_v2.py", line 56, in annual
+    assert ah['plants.plt']==sha(PROJECT/'plants.plt')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+Traceback (most recent call last):
+  File "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/research_domain/experiment_v2/simular_v2.py", line 72, in <module>
+    for y in (map(int,sys.argv[1:]) if len(sys.argv)>1 else range(2013,2026)):annual(y)
+                                                                              ^^^^^^^^^
+  File "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/research_domain/experiment_v2/simular_v2.py", line 56, in annual
+    assert ah['plants.plt']==sha(PROJECT/'plants.plt')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+Traceback (most recent call last):
+  File "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/research_domain/experiment_v2/simular_v2.py", line 72, in <module>
+    for y in (map(int,sys.argv[1:]) if len(sys.argv)>1 else range(2013,2026)):annual(y)
+                                                                              ^^^^^^^^^
+  File "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/research_domain/experiment_v2/simular_v2.py", line 56, in annual
+    assert ah['plants.plt']==sha(PROJECT/'plants.plt')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

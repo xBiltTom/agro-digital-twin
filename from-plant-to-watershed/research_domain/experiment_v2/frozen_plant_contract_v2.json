@@ -1,0 +1,1793 @@
+{
+  "derivation_year": 2010,
+  "source": "v2-cal-02",
+  "summary": {
+    "summary_semantics": "SEASONAL_MAXIMA_FOR_COUPLING_NOT_A_DATED_FSPM_STATE",
+    "swat_lai_contract": {
+      "lai_pot": 5.028221347513036,
+      "frac_hu1": 0.15992484650481334,
+      "lai_max1": 0.16322249206523384,
+      "frac_hu2": 0.443420443382958,
+      "lai_max2": 0.8634539152551217,
+      "hu_lai_decl": 0.7278728714442473,
+      "season_count": 4,
+      "derivation": "SWAT HRU area and CDL-corn-fraction weighted mean of separately dated SWAT-executed-calendar SIMPLIFIED_FSPM seasonal LAI contracts"
+    },
+    "plant_height_mean_m": 2.6326713882236468,
+    "root_depth_mean_m": 1.200218821515496,
+    "canopy_extinction_coefficient": 0.4991389845512067,
+    "biomass_energy_ratio_kg_ha_per_mj_m2": 40.10657730611137,
+    "peak_dates": {
+      "date_of_peak_LAI": "2010-07-25",
+      "date_of_peak_height": "2010-08-16",
+      "date_of_peak_root_depth": "2010-07-26"
+    },
+    "coupling_parameter_provenance": {
+      "ext_co": {
+        "source_type": "MODEL_BASE_PARAMETER",
+        "source_value": 0.5,
+        "population_mean": 0.4991389845512067,
+        "population_std": 0.023981698140073986,
+        "assumption_status": "ASSUMED_PARAMETER_NOT_CALIBRATED",
+        "calibrated": false,
+        "intra_population_variation": "seeded truncated normal; sigma=0.025",
+        "model_clamp": {
+          "minimum": 0.05,
+          "maximum": 2.0
+        },
+        "swat_documented_range": {
+          "minimum": 0.0,
+          "maximum": 2.0
+        }
+      },
+      "bm_e": {
+        "source_type": "MODEL_BASE_PARAMETER",
+        "source_value": 40.0,
+        "population_mean": 40.10657730611137,
+        "population_std": 1.982589383884093,
+        "assumption_status": "ASSUMED_PARAMETER_NOT_CALIBRATED",
+        "calibrated": false,
+        "intra_population_variation": "seeded truncated normal; sigma=2.0 kg/ha/(MJ/m2)",
+        "model_clamp": {
+          "minimum": 10.0,
+          "maximum": 90.0
+        },
+        "swat_documented_range": {
+          "minimum": 10.0,
+          "maximum": 90.0
+        }
+      }
+    }
+  },
+  "input_plants_sha256": "5eb07cc86c74ecf20ccbd78ca16e69c5a6ec35b76cf322a6160813f63d134df0",
+  "source_executable_sha256": "56963a6475aa9014a56a6825749d7fc513fce2dd40dcbb0c0b6a5976364a3c9d",
+  "protocol_sha256": "68b9334e697f83883ba2dc432cd75f250974a5a66b2610630590b34eb7cd2fa4",
+  "convergence": [
+    {
+      "iteration": 1,
+      "input_calendar": {
+        "status": "EXECUTED_SWAT_MANAGEMENT_EVENTS",
+        "source_file": "mgt_out.txt",
+        "crop": "corn",
+        "requested_period": [
+          "2010-01-01",
+          "2010-12-31"
+        ],
+        "event_count": 64,
+        "calendar_group_count": 4,
+        "hru_count": 32,
+        "hru_calendar": {
+          "1": "corn-2010-05-04-to-2010-08-16-02",
+          "2": "corn-2010-05-04-to-2010-08-15-01",
+          "5": "corn-2010-05-04-to-2010-08-15-01",
+          "6": "corn-2010-05-04-to-2010-08-15-01",
+          "7": "corn-2010-05-05-to-2010-08-16-03",
+          "8": "corn-2010-05-05-to-2010-08-17-04",
+          "9": "corn-2010-05-04-to-2010-08-15-01",
+          "10": "corn-2010-05-04-to-2010-08-15-01",
+          "11": "corn-2010-05-05-to-2010-08-17-04",
+          "12": "corn-2010-05-04-to-2010-08-16-02",
+          "13": "corn-2010-05-04-to-2010-08-15-01",
+          "14": "corn-2010-05-04-to-2010-08-16-02",
+          "15": "corn-2010-05-04-to-2010-08-15-01",
+          "16": "corn-2010-05-04-to-2010-08-15-01",
+          "17": "corn-2010-05-04-to-2010-08-15-01",
+          "18": "corn-2010-05-04-to-2010-08-15-01",
+          "19": "corn-2010-05-04-to-2010-08-15-01",
+          "20": "corn-2010-05-04-to-2010-08-15-01",
+          "21": "corn-2010-05-04-to-2010-08-15-01",
+          "22": "corn-2010-05-04-to-2010-08-15-01",
+          "23": "corn-2010-05-04-to-2010-08-15-01",
+          "24": "corn-2010-05-04-to-2010-08-15-01",
+          "26": "corn-2010-05-04-to-2010-08-15-01",
+          "27": "corn-2010-05-04-to-2010-08-15-01",
+          "29": "corn-2010-05-04-to-2010-08-15-01",
+          "30": "corn-2010-05-04-to-2010-08-15-01",
+          "31": "corn-2010-05-04-to-2010-08-16-02",
+          "32": "corn-2010-05-04-to-2010-08-15-01",
+          "33": "corn-2010-05-04-to-2010-08-15-01",
+          "34": "corn-2010-05-04-to-2010-08-15-01",
+          "35": "corn-2010-05-04-to-2010-08-15-01",
+          "36": "corn-2010-05-04-to-2010-08-15-01"
+        },
+        "groups": [
+          {
+            "calendar_id": "corn-2010-05-04-to-2010-08-15-01",
+            "crop": "corn",
+            "planting_date": "2010-05-04",
+            "harvest_date": "2010-08-15",
+            "hru_ids": [
+              2,
+              5,
+              6,
+              9,
+              10,
+              13,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              26,
+              27,
+              29,
+              30,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "spatial_weight": 37611.72844,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-04-to-2010-08-16-02",
+            "crop": "corn",
+            "planting_date": "2010-05-04",
+            "harvest_date": "2010-08-16",
+            "hru_ids": [
+              1,
+              12,
+              14,
+              31
+            ],
+            "spatial_weight": 7288.10098,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-05-to-2010-08-16-03",
+            "crop": "corn",
+            "planting_date": "2010-05-05",
+            "harvest_date": "2010-08-16",
+            "hru_ids": [
+              7
+            ],
+            "spatial_weight": 2150.4891,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-05-to-2010-08-17-04",
+            "crop": "corn",
+            "planting_date": "2010-05-05",
+            "harvest_date": "2010-08-17",
+            "hru_ids": [
+              8,
+              11
+            ],
+            "spatial_weight": 3559.8143099999998,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          }
+        ],
+        "limitation": "Management dates are SWAT+ simulated execution events at daily resolution, not observed field operation dates. FSPM applies the date to the complete day because subdaily operation timing is unavailable."
+      },
+      "executed_calendar": {
+        "status": "EXECUTED_SWAT_MANAGEMENT_EVENTS",
+        "source_file": "mgt_out.txt",
+        "crop": "corn",
+        "requested_period": [
+          "2010-01-01",
+          "2010-12-31"
+        ],
+        "event_count": 64,
+        "calendar_group_count": 4,
+        "hru_count": 32,
+        "hru_calendar": {
+          "1": "corn-2010-05-04-to-2010-08-16-02",
+          "2": "corn-2010-05-04-to-2010-08-15-01",
+          "5": "corn-2010-05-04-to-2010-08-15-01",
+          "6": "corn-2010-05-04-to-2010-08-15-01",
+          "7": "corn-2010-05-05-to-2010-08-16-03",
+          "8": "corn-2010-05-05-to-2010-08-17-04",
+          "9": "corn-2010-05-04-to-2010-08-15-01",
+          "10": "corn-2010-05-04-to-2010-08-15-01",
+          "11": "corn-2010-05-05-to-2010-08-17-04",
+          "12": "corn-2010-05-04-to-2010-08-16-02",
+          "13": "corn-2010-05-04-to-2010-08-15-01",
+          "14": "corn-2010-05-04-to-2010-08-16-02",
+          "15": "corn-2010-05-04-to-2010-08-15-01",
+          "16": "corn-2010-05-04-to-2010-08-15-01",
+          "17": "corn-2010-05-04-to-2010-08-15-01",
+          "18": "corn-2010-05-04-to-2010-08-15-01",
+          "19": "corn-2010-05-04-to-2010-08-15-01",
+          "20": "corn-2010-05-04-to-2010-08-15-01",
+          "21": "corn-2010-05-04-to-2010-08-15-01",
+          "22": "corn-2010-05-04-to-2010-08-15-01",
+          "23": "corn-2010-05-04-to-2010-08-15-01",
+          "24": "corn-2010-05-04-to-2010-08-15-01",
+          "26": "corn-2010-05-04-to-2010-08-15-01",
+          "27": "corn-2010-05-04-to-2010-08-15-01",
+          "29": "corn-2010-05-04-to-2010-08-15-01",
+          "30": "corn-2010-05-04-to-2010-08-15-01",
+          "31": "corn-2010-05-04-to-2010-08-16-02",
+          "32": "corn-2010-05-04-to-2010-08-15-01",
+          "33": "corn-2010-05-04-to-2010-08-15-01",
+          "34": "corn-2010-05-04-to-2010-08-15-01",
+          "35": "corn-2010-05-04-to-2010-08-15-01",
+          "36": "corn-2010-05-04-to-2010-08-15-01"
+        },
+        "groups": [
+          {
+            "calendar_id": "corn-2010-05-04-to-2010-08-15-01",
+            "crop": "corn",
+            "planting_date": "2010-05-04",
+            "harvest_date": "2010-08-15",
+            "hru_ids": [
+              2,
+              5,
+              6,
+              9,
+              10,
+              13,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              26,
+              27,
+              29,
+              30,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "spatial_weight": 37611.72844,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-04-to-2010-08-16-02",
+            "crop": "corn",
+            "planting_date": "2010-05-04",
+            "harvest_date": "2010-08-16",
+            "hru_ids": [
+              1,
+              12,
+              14,
+              31
+            ],
+            "spatial_weight": 7288.10098,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-05-to-2010-08-16-03",
+            "crop": "corn",
+            "planting_date": "2010-05-05",
+            "harvest_date": "2010-08-16",
+            "hru_ids": [
+              7
+            ],
+            "spatial_weight": 2150.4891,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-05-to-2010-08-17-04",
+            "crop": "corn",
+            "planting_date": "2010-05-05",
+            "harvest_date": "2010-08-17",
+            "hru_ids": [
+              8,
+              11
+            ],
+            "spatial_weight": 3559.8143099999998,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          }
+        ],
+        "limitation": "Management dates are SWAT+ simulated execution events at daily resolution, not observed field operation dates. FSPM applies the date to the complete day because subdaily operation timing is unavailable."
+      },
+      "per_hru_calendar_match": true,
+      "max_hru_daily_average_soil_water_delta_mm": 10.293000000000006,
+      "soil_water_convergence_tolerance_mm": 0.1,
+      "input_hru_dates": {
+        "1": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "2": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "5": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "6": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "7": [
+          [
+            "2010-05-05",
+            "2010-08-16"
+          ]
+        ],
+        "8": [
+          [
+            "2010-05-05",
+            "2010-08-17"
+          ]
+        ],
+        "9": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "10": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "11": [
+          [
+            "2010-05-05",
+            "2010-08-17"
+          ]
+        ],
+        "12": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "13": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "14": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "15": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "16": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "17": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "18": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "19": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "20": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "21": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "22": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "23": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "24": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "26": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "27": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "29": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "30": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "31": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "32": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "33": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "34": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "35": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "36": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ]
+      },
+      "executed_hru_dates": {
+        "1": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "2": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "5": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "6": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "7": [
+          [
+            "2010-05-05",
+            "2010-08-16"
+          ]
+        ],
+        "8": [
+          [
+            "2010-05-05",
+            "2010-08-17"
+          ]
+        ],
+        "9": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "10": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "11": [
+          [
+            "2010-05-05",
+            "2010-08-17"
+          ]
+        ],
+        "12": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "13": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "14": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "15": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "16": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "17": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "18": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "19": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "20": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "21": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "22": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "23": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "24": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "26": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "27": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "29": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "30": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "31": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "32": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "33": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "34": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "35": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "36": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ]
+      },
+      "parameter_update_count": 10,
+      "effective_climate_match": {
+        "status": "MATCHED",
+        "date_count": 365,
+        "variables_checked": [
+          "date",
+          "temp_c",
+          "precip_mm",
+          "solar_rad_mj",
+          "rh_percent",
+          "wind_speed_ms",
+          "pet_mm"
+        ],
+        "temperature_unit": "degC",
+        "precipitation_unit": "mm/day",
+        "solar_radiation_unit": "MJ/m2/day",
+        "relative_humidity_unit": "percent",
+        "hru_station_assignment": "hru.con.wst -> weather-sta.cli",
+        "field_spatial_weighting": "HRU area",
+        "effective_forcing_provenance": {
+          "source": "SWAT+ weather-sta.cli direct station files",
+          "file_checksums_sha256": {
+            "weather-sta.cli": "126d789570b240379574b1922509e969087c83559fc3e16891c1e42639bae910",
+            "s42557n93590w.pcp": "905b0dbb9c977d8bdf6e8290736e10be46a0f5c4a380551c4ae16b37e53ecf92",
+            "s42557n93590w.tmp": "3996ad71b361b95bedf3fca82cb83e410d994332b79c6a85d31453ee0199bc2c",
+            "s42557n93590w.slr": "1efc24e660300aaf1f7bafd96fcb2792daf7e95a38ec90218ac76576fc472912",
+            "s42557n93590w.hmd": "8f5090f06f58383cb98ec441c0ee1198dde28314fdff143d4a4fbf449a5a117a",
+            "s42557n93590w.wnd": "f0d926812d5be36db39add4382fb07709a7df1a0d46ae11106b3f3c1be9c664d",
+            "s42541n93435w.pcp": "9ad0185f5a60bb27ba39290848b07e0b6069ffab917b7ea6fa6404caeef8c758",
+            "s42541n93435w.tmp": "5f88c02dbe9c424b2256c4d6a3d02b2b4a53e1bc829a1186d25a8eb119787e61",
+            "s42541n93435w.slr": "b0117aeb76aba1b8e985655f2586d22f01143ea84d751f11b8d7a96d1ee8a4d3",
+            "s42541n93435w.hmd": "765359929734ff1be1531515ca0f791f427404e9d56a20e7a1e9b9397a64ef9b",
+            "s42541n93435w.wnd": "cc40f41d5a6ea6c16c9ad4a2309db95aae80f36dd27931d2d58f6275f8440339",
+            "s42535n93509w.pcp": "2882f5c7f0be120133c78f3c5ec59ccf8af790ce08d51a090fa4f979d30826be",
+            "s42535n93509w.tmp": "efb545778b9a041247c5fd9cbe9ab7fcd44c2b183d89407010f63d4020f993fc",
+            "s42535n93509w.slr": "7fbd6a2ac92c54d5488c590498a534039431b19006159bdd06c3bf9b299eab18",
+            "s42535n93509w.hmd": "23bfe695b834a22fc71640596c30f9afa7e7be5cbab7e387aa2bf0aae20f627c",
+            "s42535n93509w.wnd": "bfaf7a012bb3e196d9d2a0813b1bdcf5b84fc78f3db77b7d2422e9eee7d333b5",
+            "s42493n93404w.pcp": "01276b78aef8cb4aa04f8bb7f56560e71e42eb92c9bfe8cff4bb02a2a4e45b03",
+            "s42493n93404w.tmp": "084a37f69e9ac83147a2a653026887d1218ecba8916d397ad935ecf1fefae129",
+            "s42493n93404w.slr": "20f9b5b5c08d53ab80486c5d78d8dc6f403d7525d7b5e54814619fd2b52e963c",
+            "s42493n93404w.hmd": "95b739824878439a4bde5f8390f7b59b80e4443742364fcba4d3603118577fcc",
+            "s42493n93404w.wnd": "7c736ee9dcfbc262bc9ea6ed1525bdf064380a73b370159d6a7875c2b858ba5d",
+            "s42508n93639w.pcp": "2a2f5f3af7397d24ee634072c346b5b73c16d6cc5ee613d73770e834cf8ce920",
+            "s42508n93639w.tmp": "eba0dec9332cd4250361bf46e3d32c52dee7db3f717ff2b1fa93bc77f45474d1",
+            "s42508n93639w.slr": "edc7e5e6a41813d4fc7e7922fa94ff338bf4d09199f53174211af77603438c5e",
+            "s42508n93639w.hmd": "574d839bc4bca10a93e95f8b2f864b9d86bee83eb3dd59787fa7e7622b55393d",
+            "s42508n93639w.wnd": "6970e152bcdb47084ebcb54e4ee52b442fe568cbcb1fb31c674521de5714d23f",
+            "s42465n93522w.pcp": "b3437bf064b588a8d9c6b85d0031e5e91d59e7bfbb011a7f793cb140f0610984",
+            "s42465n93522w.tmp": "6db103d3a7110b1a9725de4c094317d29ebc318e1c65ffad9aca87aa6b312d1f",
+            "s42465n93522w.slr": "400830efb6290c3b3fb22e68100cd5c9d2ea2d71e9d13bdcddcaf8cad0d5cfc1",
+            "s42465n93522w.hmd": "5164e0bd19094528d449830e8b271f895cc3fd14d00d2d1cfa59f11e8d448ebd",
+            "s42465n93522w.wnd": "992836d16d83af9acac9442865c9ebd2eeb3a49834384b29e7fc89e1e139797d",
+            "s42471n93363w.pcp": "8cab35050b5459f7c6be825b4a0d4a1a6c2730bd49a8d327947897195e59fd34",
+            "s42471n93363w.tmp": "6e2a325558d1c87cfd7303821068f1556f101cb3a5dd57abb498e14cbe15708f",
+            "s42471n93363w.slr": "32e54f2e0d964d9d0f783e735ffc812845ef9205a1b66322182a3e9090f99e64",
+            "s42471n93363w.hmd": "fc60b122d2be5fbc5d80490b436ec15b1f3aa7e4e47e238e8fdb51bfe0c037ee",
+            "s42471n93363w.wnd": "4075522bb7b43b0cb643108bf9357f24c423eefc9e5cd0f91ffc51aa5f5f01e8",
+            "s42427n93495w.pcp": "7058aa8a145bd0684fe6f3565b86b435120ff5f49a17db1cfcafa2527764e735",
+            "s42427n93495w.tmp": "6fe8f939e194ec69d95f05f1151e13fdc1b494963b34afd79ae10ae35cdb99e3",
+            "s42427n93495w.slr": "b73345b8bb90aabb1780f3541774869f79c932107351c33b05796e1893dcf210",
+            "s42427n93495w.hmd": "2f0f305e64dd64cbc3a60cb4f7c6b0a7b013daebabd7104a9eea2ae0a3ed27e6",
+            "s42427n93495w.wnd": "c85521876cf66ded0f5e74892354263b6cf660a5f64503d715a453e6d5c728ae",
+            "s42426n93377w.pcp": "f3fa7fd7de5a2df37263cc0c99159adc87fc59618bbc2caa34b42c078bd1399e",
+            "s42426n93377w.tmp": "91845395c98cf718265939997ab7145e0028683af221999c3f9049ffca1dbd31",
+            "s42426n93377w.slr": "541b44de6b92861b797907a71b8b954e5298a408af1fff75be11885e2641b7e5",
+            "s42426n93377w.hmd": "f787a0af74a1a73699aad35cde94510b8cee815099ac15291d4e502d4faeb78b",
+            "s42426n93377w.wnd": "47c997920de2ddca79d5d2011121376d66c6e63dd03c2b779e1ed1ce07718802",
+            "s42381n93411w.pcp": "52bdaf42e8911b0b717a5e559dc039a6993f94dd3ca77a69b45f50c0b36be013",
+            "s42381n93411w.tmp": "dc323adf3001e2fb18534fe31fc45995631eb55e00945623fa48ccaf658c4216",
+            "s42381n93411w.slr": "976977795b1a189f0f0680f7f2f7ee1cfad85a0d57275b0ce1509707b3d59f28",
+            "s42381n93411w.hmd": "c0905d456f596deb027cdc263b85292d8f9d3d1e8b1a7f661ae811cf5722765c",
+            "s42381n93411w.wnd": "1989322d2779d9582ded23cf4c3e3106aa9c0d06b8a9a4d4cb8bd685422f2740",
+            "s42400n93538w.pcp": "e973798701cdaf9958d4560e4f3725835765f748dce6939d2c61dfaf7d9ae404",
+            "s42400n93538w.tmp": "a356de768878491f6440771ddc9e4a666c431492cfd38c26660c581fb0f4a97a",
+            "s42400n93538w.slr": "a9c5bb9d2f52ac076000371fcdae1cc8f9a8c800b12b3a9a87b4e0521683012a",
+            "s42400n93538w.hmd": "19976a5d8f4f659eeb3f3f4fcc661ad8f4d1c1bbaf292364fd765ed114a92f02",
+            "s42400n93538w.wnd": "8ab6cf12fab9952035327107225244411f2a6dc7e3bb8e214de671b12b24da41",
+            "s42379n93511w.pcp": "c684bb8330c29ba12d1b2b4b3b531798eed03f8d7e50b85123af3e4838e49472",
+            "s42379n93511w.tmp": "ee5f0e7499e07b0a1f56a158624c700689b75eccc11923881f516a131a2836fa",
+            "s42379n93511w.slr": "d2c9e77cfa8b1f0bd3d199395e6538bb7922da6875d3a91b3c8757f28f31e320",
+            "s42379n93511w.hmd": "18bc1a00010b417882fe6f3292509438fc7f4ef3742e82471d0f28e6f53cab33",
+            "s42379n93511w.wnd": "c05237196ef74c5b5bde0366a6ca4e4adb48d8ee22370c6d40dc0ff22092e194",
+            "s42392n93432w.pcp": "d6feb52e470e84931413776f52a9c6b9c3a05da542f1264dea32fe1581657842",
+            "s42392n93432w.tmp": "c240785d3b57817cdf363a417c136cf72c130fe16177f2b950eed69b4eb5c8d8",
+            "s42392n93432w.slr": "851bb7dccf956ba38ae656683caac1842ed0736728d48fc4a757c1ecbb3c5761",
+            "s42392n93432w.hmd": "9afb51d78ecf5ba3aaccae34386a7807cd74edf0f035fe7365b6901897bfb302",
+            "s42392n93432w.wnd": "f496a215293f0822841485e1fa6faf4f12a20621afc22613c984b3e4d87b521d",
+            "s42363n93408w.pcp": "a8441d6168e94f85aa7f268b5c6a16b0433d413fa7f0027db63508ccba8123cf",
+            "s42363n93408w.tmp": "4f4c29f62ff709f1fc3ec8aeb62571a9352beddd077725abe51d2d1ca0fae081",
+            "s42363n93408w.slr": "24a9f468f8ab29d4996ac07ccaf0ced6eed067b27d6e995843a745439490c4e8",
+            "s42363n93408w.hmd": "3338fbf8112bcf92939820c78697b9517ae9b34bd42af49c506c9acc273f9ed0",
+            "s42363n93408w.wnd": "347677780e9307c01f40c0f3ba345cb82b00038b4e3946b67f5328fd9685ec56",
+            "s42337n93286w.pcp": "e31a85eece7de30b3c44995d04068fa9b33ea35f873dc0b4ccc4b405febc2dda",
+            "s42337n93286w.tmp": "93e40c591faa77533ffb7ef1f3d62bfec3d44d00913e88e800ef98b4a20794d0",
+            "s42337n93286w.slr": "5b2ebaf842aa0776ca0503e86a247ab601e7f8412d9aa5cf97898192ba8551dd",
+            "s42337n93286w.hmd": "229427bfd7b2d8025671414d3fd1dbd0e1b4dc10fe16f046e29df6e4e50cd831",
+            "s42337n93286w.wnd": "2161e734641f11b5421e9f7681600834ea9a943de4ca92c115383977d9cdabd9",
+            "s42382n93369w.pcp": "659116317e87aac2e3f8e263bc16af9fca3e902b6abe80276d42304baeff5cbf",
+            "s42382n93369w.tmp": "7afbfc1a66c417e442a625ba7e46c388c922b82f841678e73018cc3741c01a01",
+            "s42382n93369w.slr": "b0a18eee49e18ee037d70eb13c7af074bfecf50253592f252cdba6f78b53cb85",
+            "s42382n93369w.hmd": "d5831447959b992150c18eb5aabda99186cb5853ff2bb57572655ac7b6a50c41",
+            "s42382n93369w.wnd": "32f706fae1f7fee0a817d395bac7ce3cfba02e151dc93bc97d1604678a54726b",
+            "s42376n93272w.pcp": "2502cff2fab2d055dd30f25398642a344ededacfd5fcde26176283b4a0c09a61",
+            "s42376n93272w.tmp": "7234467c7cb0add26df0323f13b1ddf81b0858c66fa983f06774ffa621672d43",
+            "s42376n93272w.slr": "f36b03ae2d127d743935bdfe1ab39bf58a0c49e34d7461b7889e861d9f50af2a",
+            "s42376n93272w.hmd": "ad948cda98e56f6edd615ecd55b3339df1acdca49c7b620df0d5b4fcb0968836",
+            "s42376n93272w.wnd": "abc6b7bee556b93fa19db4db182bd2ee85d9c8b471bc7e7df84fe3ee6b55a742",
+            "s42458n93435w.pcp": "aad3d7629a21324e66edc971971d19933c28b16592c20921f20269363c2cbc34",
+            "s42458n93435w.tmp": "f9a1ed434f5708d15dd5ae8ebe801d5201feed4850c293df28f2fcf9f56323d5",
+            "s42458n93435w.slr": "8ffa1cba5aaf38999fcb85b60d470f182e4919eec62892bbba06fdc14d43737b",
+            "s42458n93435w.hmd": "0ba456fffbd26cf5435e8eba58335323940309abb93b6e55754bb3e275952921",
+            "s42458n93435w.wnd": "1ee00e8ef6aad69387a7d72f4ac978f5dd237fd9a16d94c6d059b4aaa8b480c3",
+            "s42486n93475w.pcp": "89a44de891b6dcc9a47aef3b0c64f7a76d1ae30d4fbfb23531b67fcd2a0911c3",
+            "s42486n93475w.tmp": "c7cc4d7a822dc2fc4580caa146d496640cb281c52fcf2de97fe42307648450bb",
+            "s42486n93475w.slr": "ba19ff927c7af6e2fdc1a2d4d8116d40dda3fa36809e2572241bc1f580cc0968",
+            "s42486n93475w.hmd": "26d077a40523561970a9a611434467e5987a4d1076239614fab402cb763e6ae1",
+            "s42486n93475w.wnd": "90328ef6e3a397e24a905f681e9a238e33d031ec8ecc860fb00fa78dd4c36faa",
+            "s42480n93450w.pcp": "07c01bc35d0618dd95873a44791fe1879068cb7598400cc448620f6629d91bc4",
+            "s42480n93450w.tmp": "e732271fe30910bb416586560094b7523f32add4850424504edf526d0045c77c",
+            "s42480n93450w.slr": "cb35c220ed8ac9375a0e2dcdf9a8a99900c41eb18d788a092e4b5640fc5f66bf",
+            "s42480n93450w.hmd": "53465e0ce8255d8ea529d85533f0435eb2d51942fb157d930e5aa7e0429ccb9e",
+            "s42480n93450w.wnd": "07b5673b44a11dbeafaf75c288a2396e6c6226bb06c8c4638fb96298f7c7c86a",
+            "s42457n93389w.pcp": "43c66a2d643695c5bba5cf117d3cc61be08895f818163560ff6c136eb00a95b7",
+            "s42457n93389w.tmp": "faacc49dccb02f50ff90a5217283e19870c495b5e8d27f196d6059a3bdf434b1",
+            "s42457n93389w.slr": "6cb3873619baefe42c2cefb9db851000b9fcbc26b2cc942ce82adc1d71febef0",
+            "s42457n93389w.hmd": "1d217e3dbacb7bb0122c8093ab618159000bfd3b156b371a38942b2033cf2914",
+            "s42457n93389w.wnd": "2b918dd8a910079dc610258ccef1dd594223601951ebbdc0c7992d56c25b5c91",
+            "s42517n93486w.pcp": "05d5f77d9196633847aa23f0c9151178542318d71c75d1f48059679bd7c7f35d",
+            "s42517n93486w.tmp": "4aed574de59d9fbbe31ee287d9f14b21b80f3a626aa999a1996fd953184fd5af",
+            "s42517n93486w.slr": "4f1ded79bb38d0366989a55a8ba4795eaa73f7dc9df75f845ba6f95574fd73ee",
+            "s42517n93486w.hmd": "f846b8f027ede2c461005ad83ca86c263a6d2625d1f1703ef4b3f497dfdd5d9a",
+            "s42517n93486w.wnd": "20770f144d7d599dc1e8d647dc1bdd885c395f63b0cbaf296d955ab06d88708e",
+            "s42525n93468w.pcp": "e821c69be3aa669b4647381a2539ff4fbc6c4ea075e77d4a4ae5ba5facf446ae",
+            "s42525n93468w.tmp": "8ec3c75e71da692e5092a30bec9443ce332103d681e93c782a2ca3a2fd56ca32",
+            "s42525n93468w.slr": "319047f07a0410f1b3da83aa53454c9a0cb43c04c16f694fdaf58bd475ab890d",
+            "s42525n93468w.hmd": "c25476cba6eb70183643ba19520bfe126b69e14d91deba26d14a245b74c8babe",
+            "s42525n93468w.wnd": "e280f86891229ec4fc854a56b42d4ad75e17beb3440f3336a245e3cebeedabaa",
+            "s42548n93555w.pcp": "b65c7a4f0fc868b8562941112c5d73de160bf9d049c112bfc8ad9df98597e6e8",
+            "s42548n93555w.tmp": "69987cac319094345a659a39d99240d05cb0680fd416f13268b6f357b88b0378",
+            "s42548n93555w.slr": "dcfb900f80329bc5d0cfd25a3779769f4e04b5f0efc2662bdeb35ab864d9ac61",
+            "s42548n93555w.hmd": "e7bac55557306ec1e443ec08dbc9c00a97bcb21b3c113351f377d791f4d25c8e",
+            "s42548n93555w.wnd": "ecfa824712801e3a56f2dca6f011aa6f38b11e13d93ec1e01489248e4ca7ba58"
+          },
+          "station_count": 24,
+          "station_weights": {
+            "s42557n93590w": 1671.03975,
+            "s42541n93435w": 1498.23942,
+            "s42535n93509w": 2073.66773,
+            "s42493n93404w": 2150.4891,
+            "s42508n93639w": 2048.20912,
+            "s42465n93522w": 3140.44729,
+            "s42471n93363w": 1511.60519,
+            "s42427n93495w": 5617.06123,
+            "s42426n93377w": 1694.33439,
+            "s42381n93411w": 2674.23642,
+            "s42400n93538w": 1652.20038,
+            "s42379n93511w": 1101.59421,
+            "s42392n93432w": 2676.4004099999997,
+            "s42363n93408w": 1497.41201,
+            "s42337n93286w": 5184.58303,
+            "s42382n93369w": 721.56076,
+            "s42376n93272w": 8002.85157,
+            "s42458n93435w": 1209.41144,
+            "s42486n93475w": 412.11131,
+            "s42480n93450w": 250.25817,
+            "s42457n93389w": 824.28626,
+            "s42517n93486w": 352.21992,
+            "s42525n93468w": 1969.79659,
+            "s42548n93555w": 676.11713
+          },
+          "station_aggregation": "area_weighted_from_hru.con",
+          "variables": [
+            "pcp",
+            "tmp",
+            "slr",
+            "hmd",
+            "wnd"
+          ],
+          "days": 365,
+          "start_date": "2010-01-01",
+          "end_date": "2010-12-31",
+          "missing_policy": "FAIL_CLOSED_PER_STATION_PRIMARY_AND_FSPM_REQUIRED; OPTIONAL_SECONDARY_NULL",
+          "limitations": "Each HRU uses its SWAT+ assigned station; cohort forcing is a basin-area and 2019 CDL crop-fraction weighted mix. The FSPM remains a single representative population for each unique management calendar.",
+          "forcing_support": "selected_management_hrus",
+          "hru_ids": [
+            1,
+            2,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            26,
+            27,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "hrus_area_weighted": true,
+          "crop_fraction_weighted": false,
+          "hru_station_source": "hru.con.wst",
+          "hru_con_sha256": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7"
+        }
+      },
+      "run_id": "sf-v2-derive-2010-coupled-01",
+      "workspace": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/backend/data/south-fork-v2-isolated/workspaces/sf-v2-derive-2010-coupled-01"
+    },
+    {
+      "iteration": 2,
+      "input_calendar": {
+        "status": "EXECUTED_SWAT_MANAGEMENT_EVENTS",
+        "source_file": "mgt_out.txt",
+        "crop": "corn",
+        "requested_period": [
+          "2010-01-01",
+          "2010-12-31"
+        ],
+        "event_count": 64,
+        "calendar_group_count": 4,
+        "hru_count": 32,
+        "hru_calendar": {
+          "1": "corn-2010-05-04-to-2010-08-16-02",
+          "2": "corn-2010-05-04-to-2010-08-15-01",
+          "5": "corn-2010-05-04-to-2010-08-15-01",
+          "6": "corn-2010-05-04-to-2010-08-15-01",
+          "7": "corn-2010-05-05-to-2010-08-16-03",
+          "8": "corn-2010-05-05-to-2010-08-17-04",
+          "9": "corn-2010-05-04-to-2010-08-15-01",
+          "10": "corn-2010-05-04-to-2010-08-15-01",
+          "11": "corn-2010-05-05-to-2010-08-17-04",
+          "12": "corn-2010-05-04-to-2010-08-16-02",
+          "13": "corn-2010-05-04-to-2010-08-15-01",
+          "14": "corn-2010-05-04-to-2010-08-16-02",
+          "15": "corn-2010-05-04-to-2010-08-15-01",
+          "16": "corn-2010-05-04-to-2010-08-15-01",
+          "17": "corn-2010-05-04-to-2010-08-15-01",
+          "18": "corn-2010-05-04-to-2010-08-15-01",
+          "19": "corn-2010-05-04-to-2010-08-15-01",
+          "20": "corn-2010-05-04-to-2010-08-15-01",
+          "21": "corn-2010-05-04-to-2010-08-15-01",
+          "22": "corn-2010-05-04-to-2010-08-15-01",
+          "23": "corn-2010-05-04-to-2010-08-15-01",
+          "24": "corn-2010-05-04-to-2010-08-15-01",
+          "26": "corn-2010-05-04-to-2010-08-15-01",
+          "27": "corn-2010-05-04-to-2010-08-15-01",
+          "29": "corn-2010-05-04-to-2010-08-15-01",
+          "30": "corn-2010-05-04-to-2010-08-15-01",
+          "31": "corn-2010-05-04-to-2010-08-16-02",
+          "32": "corn-2010-05-04-to-2010-08-15-01",
+          "33": "corn-2010-05-04-to-2010-08-15-01",
+          "34": "corn-2010-05-04-to-2010-08-15-01",
+          "35": "corn-2010-05-04-to-2010-08-15-01",
+          "36": "corn-2010-05-04-to-2010-08-15-01"
+        },
+        "groups": [
+          {
+            "calendar_id": "corn-2010-05-04-to-2010-08-15-01",
+            "crop": "corn",
+            "planting_date": "2010-05-04",
+            "harvest_date": "2010-08-15",
+            "hru_ids": [
+              2,
+              5,
+              6,
+              9,
+              10,
+              13,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              26,
+              27,
+              29,
+              30,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "spatial_weight": 37611.72844,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-04-to-2010-08-16-02",
+            "crop": "corn",
+            "planting_date": "2010-05-04",
+            "harvest_date": "2010-08-16",
+            "hru_ids": [
+              1,
+              12,
+              14,
+              31
+            ],
+            "spatial_weight": 7288.10098,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-05-to-2010-08-16-03",
+            "crop": "corn",
+            "planting_date": "2010-05-05",
+            "harvest_date": "2010-08-16",
+            "hru_ids": [
+              7
+            ],
+            "spatial_weight": 2150.4891,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-05-to-2010-08-17-04",
+            "crop": "corn",
+            "planting_date": "2010-05-05",
+            "harvest_date": "2010-08-17",
+            "hru_ids": [
+              8,
+              11
+            ],
+            "spatial_weight": 3559.8143099999998,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          }
+        ],
+        "limitation": "Management dates are SWAT+ simulated execution events at daily resolution, not observed field operation dates. FSPM applies the date to the complete day because subdaily operation timing is unavailable."
+      },
+      "executed_calendar": {
+        "status": "EXECUTED_SWAT_MANAGEMENT_EVENTS",
+        "source_file": "mgt_out.txt",
+        "crop": "corn",
+        "requested_period": [
+          "2010-01-01",
+          "2010-12-31"
+        ],
+        "event_count": 64,
+        "calendar_group_count": 4,
+        "hru_count": 32,
+        "hru_calendar": {
+          "1": "corn-2010-05-04-to-2010-08-16-02",
+          "2": "corn-2010-05-04-to-2010-08-15-01",
+          "5": "corn-2010-05-04-to-2010-08-15-01",
+          "6": "corn-2010-05-04-to-2010-08-15-01",
+          "7": "corn-2010-05-05-to-2010-08-16-03",
+          "8": "corn-2010-05-05-to-2010-08-17-04",
+          "9": "corn-2010-05-04-to-2010-08-15-01",
+          "10": "corn-2010-05-04-to-2010-08-15-01",
+          "11": "corn-2010-05-05-to-2010-08-17-04",
+          "12": "corn-2010-05-04-to-2010-08-16-02",
+          "13": "corn-2010-05-04-to-2010-08-15-01",
+          "14": "corn-2010-05-04-to-2010-08-16-02",
+          "15": "corn-2010-05-04-to-2010-08-15-01",
+          "16": "corn-2010-05-04-to-2010-08-15-01",
+          "17": "corn-2010-05-04-to-2010-08-15-01",
+          "18": "corn-2010-05-04-to-2010-08-15-01",
+          "19": "corn-2010-05-04-to-2010-08-15-01",
+          "20": "corn-2010-05-04-to-2010-08-15-01",
+          "21": "corn-2010-05-04-to-2010-08-15-01",
+          "22": "corn-2010-05-04-to-2010-08-15-01",
+          "23": "corn-2010-05-04-to-2010-08-15-01",
+          "24": "corn-2010-05-04-to-2010-08-15-01",
+          "26": "corn-2010-05-04-to-2010-08-15-01",
+          "27": "corn-2010-05-04-to-2010-08-15-01",
+          "29": "corn-2010-05-04-to-2010-08-15-01",
+          "30": "corn-2010-05-04-to-2010-08-15-01",
+          "31": "corn-2010-05-04-to-2010-08-16-02",
+          "32": "corn-2010-05-04-to-2010-08-15-01",
+          "33": "corn-2010-05-04-to-2010-08-15-01",
+          "34": "corn-2010-05-04-to-2010-08-15-01",
+          "35": "corn-2010-05-04-to-2010-08-15-01",
+          "36": "corn-2010-05-04-to-2010-08-15-01"
+        },
+        "groups": [
+          {
+            "calendar_id": "corn-2010-05-04-to-2010-08-15-01",
+            "crop": "corn",
+            "planting_date": "2010-05-04",
+            "harvest_date": "2010-08-15",
+            "hru_ids": [
+              2,
+              5,
+              6,
+              9,
+              10,
+              13,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              26,
+              27,
+              29,
+              30,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "spatial_weight": 37611.72844,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-04-to-2010-08-16-02",
+            "crop": "corn",
+            "planting_date": "2010-05-04",
+            "harvest_date": "2010-08-16",
+            "hru_ids": [
+              1,
+              12,
+              14,
+              31
+            ],
+            "spatial_weight": 7288.10098,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-05-to-2010-08-16-03",
+            "crop": "corn",
+            "planting_date": "2010-05-05",
+            "harvest_date": "2010-08-16",
+            "hru_ids": [
+              7
+            ],
+            "spatial_weight": 2150.4891,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          },
+          {
+            "calendar_id": "corn-2010-05-05-to-2010-08-17-04",
+            "crop": "corn",
+            "planting_date": "2010-05-05",
+            "harvest_date": "2010-08-17",
+            "hru_ids": [
+              8,
+              11
+            ],
+            "spatial_weight": 3559.8143099999998,
+            "spatial_weight_semantics": "SWAT HRU area multiplied by 2019 CDL corn fraction when present; otherwise SWAT HRU area"
+          }
+        ],
+        "limitation": "Management dates are SWAT+ simulated execution events at daily resolution, not observed field operation dates. FSPM applies the date to the complete day because subdaily operation timing is unavailable."
+      },
+      "per_hru_calendar_match": true,
+      "max_hru_daily_average_soil_water_delta_mm": 0.0,
+      "soil_water_convergence_tolerance_mm": 0.1,
+      "input_hru_dates": {
+        "1": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "2": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "5": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "6": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "7": [
+          [
+            "2010-05-05",
+            "2010-08-16"
+          ]
+        ],
+        "8": [
+          [
+            "2010-05-05",
+            "2010-08-17"
+          ]
+        ],
+        "9": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "10": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "11": [
+          [
+            "2010-05-05",
+            "2010-08-17"
+          ]
+        ],
+        "12": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "13": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "14": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "15": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "16": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "17": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "18": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "19": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "20": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "21": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "22": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "23": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "24": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "26": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "27": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "29": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "30": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "31": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "32": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "33": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "34": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "35": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "36": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ]
+      },
+      "executed_hru_dates": {
+        "1": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "2": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "5": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "6": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "7": [
+          [
+            "2010-05-05",
+            "2010-08-16"
+          ]
+        ],
+        "8": [
+          [
+            "2010-05-05",
+            "2010-08-17"
+          ]
+        ],
+        "9": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "10": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "11": [
+          [
+            "2010-05-05",
+            "2010-08-17"
+          ]
+        ],
+        "12": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "13": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "14": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "15": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "16": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "17": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "18": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "19": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "20": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "21": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "22": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "23": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "24": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "26": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "27": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "29": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "30": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "31": [
+          [
+            "2010-05-04",
+            "2010-08-16"
+          ]
+        ],
+        "32": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "33": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "34": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "35": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ],
+        "36": [
+          [
+            "2010-05-04",
+            "2010-08-15"
+          ]
+        ]
+      },
+      "parameter_update_count": 10,
+      "effective_climate_match": {
+        "status": "MATCHED",
+        "date_count": 365,
+        "variables_checked": [
+          "date",
+          "temp_c",
+          "precip_mm",
+          "solar_rad_mj",
+          "rh_percent",
+          "wind_speed_ms",
+          "pet_mm"
+        ],
+        "temperature_unit": "degC",
+        "precipitation_unit": "mm/day",
+        "solar_radiation_unit": "MJ/m2/day",
+        "relative_humidity_unit": "percent",
+        "hru_station_assignment": "hru.con.wst -> weather-sta.cli",
+        "field_spatial_weighting": "HRU area",
+        "effective_forcing_provenance": {
+          "source": "SWAT+ weather-sta.cli direct station files",
+          "file_checksums_sha256": {
+            "weather-sta.cli": "126d789570b240379574b1922509e969087c83559fc3e16891c1e42639bae910",
+            "s42557n93590w.pcp": "905b0dbb9c977d8bdf6e8290736e10be46a0f5c4a380551c4ae16b37e53ecf92",
+            "s42557n93590w.tmp": "3996ad71b361b95bedf3fca82cb83e410d994332b79c6a85d31453ee0199bc2c",
+            "s42557n93590w.slr": "1efc24e660300aaf1f7bafd96fcb2792daf7e95a38ec90218ac76576fc472912",
+            "s42557n93590w.hmd": "8f5090f06f58383cb98ec441c0ee1198dde28314fdff143d4a4fbf449a5a117a",
+            "s42557n93590w.wnd": "f0d926812d5be36db39add4382fb07709a7df1a0d46ae11106b3f3c1be9c664d",
+            "s42541n93435w.pcp": "9ad0185f5a60bb27ba39290848b07e0b6069ffab917b7ea6fa6404caeef8c758",
+            "s42541n93435w.tmp": "5f88c02dbe9c424b2256c4d6a3d02b2b4a53e1bc829a1186d25a8eb119787e61",
+            "s42541n93435w.slr": "b0117aeb76aba1b8e985655f2586d22f01143ea84d751f11b8d7a96d1ee8a4d3",
+            "s42541n93435w.hmd": "765359929734ff1be1531515ca0f791f427404e9d56a20e7a1e9b9397a64ef9b",
+            "s42541n93435w.wnd": "cc40f41d5a6ea6c16c9ad4a2309db95aae80f36dd27931d2d58f6275f8440339",
+            "s42535n93509w.pcp": "2882f5c7f0be120133c78f3c5ec59ccf8af790ce08d51a090fa4f979d30826be",
+            "s42535n93509w.tmp": "efb545778b9a041247c5fd9cbe9ab7fcd44c2b183d89407010f63d4020f993fc",
+            "s42535n93509w.slr": "7fbd6a2ac92c54d5488c590498a534039431b19006159bdd06c3bf9b299eab18",
+            "s42535n93509w.hmd": "23bfe695b834a22fc71640596c30f9afa7e7be5cbab7e387aa2bf0aae20f627c",
+            "s42535n93509w.wnd": "bfaf7a012bb3e196d9d2a0813b1bdcf5b84fc78f3db77b7d2422e9eee7d333b5",
+            "s42493n93404w.pcp": "01276b78aef8cb4aa04f8bb7f56560e71e42eb92c9bfe8cff4bb02a2a4e45b03",
+            "s42493n93404w.tmp": "084a37f69e9ac83147a2a653026887d1218ecba8916d397ad935ecf1fefae129",
+            "s42493n93404w.slr": "20f9b5b5c08d53ab80486c5d78d8dc6f403d7525d7b5e54814619fd2b52e963c",
+            "s42493n93404w.hmd": "95b739824878439a4bde5f8390f7b59b80e4443742364fcba4d3603118577fcc",
+            "s42493n93404w.wnd": "7c736ee9dcfbc262bc9ea6ed1525bdf064380a73b370159d6a7875c2b858ba5d",
+            "s42508n93639w.pcp": "2a2f5f3af7397d24ee634072c346b5b73c16d6cc5ee613d73770e834cf8ce920",
+            "s42508n93639w.tmp": "eba0dec9332cd4250361bf46e3d32c52dee7db3f717ff2b1fa93bc77f45474d1",
+            "s42508n93639w.slr": "edc7e5e6a41813d4fc7e7922fa94ff338bf4d09199f53174211af77603438c5e",
+            "s42508n93639w.hmd": "574d839bc4bca10a93e95f8b2f864b9d86bee83eb3dd59787fa7e7622b55393d",
+            "s42508n93639w.wnd": "6970e152bcdb47084ebcb54e4ee52b442fe568cbcb1fb31c674521de5714d23f",
+            "s42465n93522w.pcp": "b3437bf064b588a8d9c6b85d0031e5e91d59e7bfbb011a7f793cb140f0610984",
+            "s42465n93522w.tmp": "6db103d3a7110b1a9725de4c094317d29ebc318e1c65ffad9aca87aa6b312d1f",
+            "s42465n93522w.slr": "400830efb6290c3b3fb22e68100cd5c9d2ea2d71e9d13bdcddcaf8cad0d5cfc1",
+            "s42465n93522w.hmd": "5164e0bd19094528d449830e8b271f895cc3fd14d00d2d1cfa59f11e8d448ebd",
+            "s42465n93522w.wnd": "992836d16d83af9acac9442865c9ebd2eeb3a49834384b29e7fc89e1e139797d",
+            "s42471n93363w.pcp": "8cab35050b5459f7c6be825b4a0d4a1a6c2730bd49a8d327947897195e59fd34",
+            "s42471n93363w.tmp": "6e2a325558d1c87cfd7303821068f1556f101cb3a5dd57abb498e14cbe15708f",
+            "s42471n93363w.slr": "32e54f2e0d964d9d0f783e735ffc812845ef9205a1b66322182a3e9090f99e64",
+            "s42471n93363w.hmd": "fc60b122d2be5fbc5d80490b436ec15b1f3aa7e4e47e238e8fdb51bfe0c037ee",
+            "s42471n93363w.wnd": "4075522bb7b43b0cb643108bf9357f24c423eefc9e5cd0f91ffc51aa5f5f01e8",
+            "s42427n93495w.pcp": "7058aa8a145bd0684fe6f3565b86b435120ff5f49a17db1cfcafa2527764e735",
+            "s42427n93495w.tmp": "6fe8f939e194ec69d95f05f1151e13fdc1b494963b34afd79ae10ae35cdb99e3",
+            "s42427n93495w.slr": "b73345b8bb90aabb1780f3541774869f79c932107351c33b05796e1893dcf210",
+            "s42427n93495w.hmd": "2f0f305e64dd64cbc3a60cb4f7c6b0a7b013daebabd7104a9eea2ae0a3ed27e6",
+            "s42427n93495w.wnd": "c85521876cf66ded0f5e74892354263b6cf660a5f64503d715a453e6d5c728ae",
+            "s42426n93377w.pcp": "f3fa7fd7de5a2df37263cc0c99159adc87fc59618bbc2caa34b42c078bd1399e",
+            "s42426n93377w.tmp": "91845395c98cf718265939997ab7145e0028683af221999c3f9049ffca1dbd31",
+            "s42426n93377w.slr": "541b44de6b92861b797907a71b8b954e5298a408af1fff75be11885e2641b7e5",
+            "s42426n93377w.hmd": "f787a0af74a1a73699aad35cde94510b8cee815099ac15291d4e502d4faeb78b",
+            "s42426n93377w.wnd": "47c997920de2ddca79d5d2011121376d66c6e63dd03c2b779e1ed1ce07718802",
+            "s42381n93411w.pcp": "52bdaf42e8911b0b717a5e559dc039a6993f94dd3ca77a69b45f50c0b36be013",
+            "s42381n93411w.tmp": "dc323adf3001e2fb18534fe31fc45995631eb55e00945623fa48ccaf658c4216",
+            "s42381n93411w.slr": "976977795b1a189f0f0680f7f2f7ee1cfad85a0d57275b0ce1509707b3d59f28",
+            "s42381n93411w.hmd": "c0905d456f596deb027cdc263b85292d8f9d3d1e8b1a7f661ae811cf5722765c",
+            "s42381n93411w.wnd": "1989322d2779d9582ded23cf4c3e3106aa9c0d06b8a9a4d4cb8bd685422f2740",
+            "s42400n93538w.pcp": "e973798701cdaf9958d4560e4f3725835765f748dce6939d2c61dfaf7d9ae404",
+            "s42400n93538w.tmp": "a356de768878491f6440771ddc9e4a666c431492cfd38c26660c581fb0f4a97a",
+            "s42400n93538w.slr": "a9c5bb9d2f52ac076000371fcdae1cc8f9a8c800b12b3a9a87b4e0521683012a",
+            "s42400n93538w.hmd": "19976a5d8f4f659eeb3f3f4fcc661ad8f4d1c1bbaf292364fd765ed114a92f02",
+            "s42400n93538w.wnd": "8ab6cf12fab9952035327107225244411f2a6dc7e3bb8e214de671b12b24da41",
+            "s42379n93511w.pcp": "c684bb8330c29ba12d1b2b4b3b531798eed03f8d7e50b85123af3e4838e49472",
+            "s42379n93511w.tmp": "ee5f0e7499e07b0a1f56a158624c700689b75eccc11923881f516a131a2836fa",
+            "s42379n93511w.slr": "d2c9e77cfa8b1f0bd3d199395e6538bb7922da6875d3a91b3c8757f28f31e320",
+            "s42379n93511w.hmd": "18bc1a00010b417882fe6f3292509438fc7f4ef3742e82471d0f28e6f53cab33",
+            "s42379n93511w.wnd": "c05237196ef74c5b5bde0366a6ca4e4adb48d8ee22370c6d40dc0ff22092e194",
+            "s42392n93432w.pcp": "d6feb52e470e84931413776f52a9c6b9c3a05da542f1264dea32fe1581657842",
+            "s42392n93432w.tmp": "c240785d3b57817cdf363a417c136cf72c130fe16177f2b950eed69b4eb5c8d8",
+            "s42392n93432w.slr": "851bb7dccf956ba38ae656683caac1842ed0736728d48fc4a757c1ecbb3c5761",
+            "s42392n93432w.hmd": "9afb51d78ecf5ba3aaccae34386a7807cd74edf0f035fe7365b6901897bfb302",
+            "s42392n93432w.wnd": "f496a215293f0822841485e1fa6faf4f12a20621afc22613c984b3e4d87b521d",
+            "s42363n93408w.pcp": "a8441d6168e94f85aa7f268b5c6a16b0433d413fa7f0027db63508ccba8123cf",
+            "s42363n93408w.tmp": "4f4c29f62ff709f1fc3ec8aeb62571a9352beddd077725abe51d2d1ca0fae081",
+            "s42363n93408w.slr": "24a9f468f8ab29d4996ac07ccaf0ced6eed067b27d6e995843a745439490c4e8",
+            "s42363n93408w.hmd": "3338fbf8112bcf92939820c78697b9517ae9b34bd42af49c506c9acc273f9ed0",
+            "s42363n93408w.wnd": "347677780e9307c01f40c0f3ba345cb82b00038b4e3946b67f5328fd9685ec56",
+            "s42337n93286w.pcp": "e31a85eece7de30b3c44995d04068fa9b33ea35f873dc0b4ccc4b405febc2dda",
+            "s42337n93286w.tmp": "93e40c591faa77533ffb7ef1f3d62bfec3d44d00913e88e800ef98b4a20794d0",
+            "s42337n93286w.slr": "5b2ebaf842aa0776ca0503e86a247ab601e7f8412d9aa5cf97898192ba8551dd",
+            "s42337n93286w.hmd": "229427bfd7b2d8025671414d3fd1dbd0e1b4dc10fe16f046e29df6e4e50cd831",
+            "s42337n93286w.wnd": "2161e734641f11b5421e9f7681600834ea9a943de4ca92c115383977d9cdabd9",
+            "s42382n93369w.pcp": "659116317e87aac2e3f8e263bc16af9fca3e902b6abe80276d42304baeff5cbf",
+            "s42382n93369w.tmp": "7afbfc1a66c417e442a625ba7e46c388c922b82f841678e73018cc3741c01a01",
+            "s42382n93369w.slr": "b0a18eee49e18ee037d70eb13c7af074bfecf50253592f252cdba6f78b53cb85",
+            "s42382n93369w.hmd": "d5831447959b992150c18eb5aabda99186cb5853ff2bb57572655ac7b6a50c41",
+            "s42382n93369w.wnd": "32f706fae1f7fee0a817d395bac7ce3cfba02e151dc93bc97d1604678a54726b",
+            "s42376n93272w.pcp": "2502cff2fab2d055dd30f25398642a344ededacfd5fcde26176283b4a0c09a61",
+            "s42376n93272w.tmp": "7234467c7cb0add26df0323f13b1ddf81b0858c66fa983f06774ffa621672d43",
+            "s42376n93272w.slr": "f36b03ae2d127d743935bdfe1ab39bf58a0c49e34d7461b7889e861d9f50af2a",
+            "s42376n93272w.hmd": "ad948cda98e56f6edd615ecd55b3339df1acdca49c7b620df0d5b4fcb0968836",
+            "s42376n93272w.wnd": "abc6b7bee556b93fa19db4db182bd2ee85d9c8b471bc7e7df84fe3ee6b55a742",
+            "s42458n93435w.pcp": "aad3d7629a21324e66edc971971d19933c28b16592c20921f20269363c2cbc34",
+            "s42458n93435w.tmp": "f9a1ed434f5708d15dd5ae8ebe801d5201feed4850c293df28f2fcf9f56323d5",
+            "s42458n93435w.slr": "8ffa1cba5aaf38999fcb85b60d470f182e4919eec62892bbba06fdc14d43737b",
+            "s42458n93435w.hmd": "0ba456fffbd26cf5435e8eba58335323940309abb93b6e55754bb3e275952921",
+            "s42458n93435w.wnd": "1ee00e8ef6aad69387a7d72f4ac978f5dd237fd9a16d94c6d059b4aaa8b480c3",
+            "s42486n93475w.pcp": "89a44de891b6dcc9a47aef3b0c64f7a76d1ae30d4fbfb23531b67fcd2a0911c3",
+            "s42486n93475w.tmp": "c7cc4d7a822dc2fc4580caa146d496640cb281c52fcf2de97fe42307648450bb",
+            "s42486n93475w.slr": "ba19ff927c7af6e2fdc1a2d4d8116d40dda3fa36809e2572241bc1f580cc0968",
+            "s42486n93475w.hmd": "26d077a40523561970a9a611434467e5987a4d1076239614fab402cb763e6ae1",
+            "s42486n93475w.wnd": "90328ef6e3a397e24a905f681e9a238e33d031ec8ecc860fb00fa78dd4c36faa",
+            "s42480n93450w.pcp": "07c01bc35d0618dd95873a44791fe1879068cb7598400cc448620f6629d91bc4",
+            "s42480n93450w.tmp": "e732271fe30910bb416586560094b7523f32add4850424504edf526d0045c77c",
+            "s42480n93450w.slr": "cb35c220ed8ac9375a0e2dcdf9a8a99900c41eb18d788a092e4b5640fc5f66bf",
+            "s42480n93450w.hmd": "53465e0ce8255d8ea529d85533f0435eb2d51942fb157d930e5aa7e0429ccb9e",
+            "s42480n93450w.wnd": "07b5673b44a11dbeafaf75c288a2396e6c6226bb06c8c4638fb96298f7c7c86a",
+            "s42457n93389w.pcp": "43c66a2d643695c5bba5cf117d3cc61be08895f818163560ff6c136eb00a95b7",
+            "s42457n93389w.tmp": "faacc49dccb02f50ff90a5217283e19870c495b5e8d27f196d6059a3bdf434b1",
+            "s42457n93389w.slr": "6cb3873619baefe42c2cefb9db851000b9fcbc26b2cc942ce82adc1d71febef0",
+            "s42457n93389w.hmd": "1d217e3dbacb7bb0122c8093ab618159000bfd3b156b371a38942b2033cf2914",
+            "s42457n93389w.wnd": "2b918dd8a910079dc610258ccef1dd594223601951ebbdc0c7992d56c25b5c91",
+            "s42517n93486w.pcp": "05d5f77d9196633847aa23f0c9151178542318d71c75d1f48059679bd7c7f35d",
+            "s42517n93486w.tmp": "4aed574de59d9fbbe31ee287d9f14b21b80f3a626aa999a1996fd953184fd5af",
+            "s42517n93486w.slr": "4f1ded79bb38d0366989a55a8ba4795eaa73f7dc9df75f845ba6f95574fd73ee",
+            "s42517n93486w.hmd": "f846b8f027ede2c461005ad83ca86c263a6d2625d1f1703ef4b3f497dfdd5d9a",
+            "s42517n93486w.wnd": "20770f144d7d599dc1e8d647dc1bdd885c395f63b0cbaf296d955ab06d88708e",
+            "s42525n93468w.pcp": "e821c69be3aa669b4647381a2539ff4fbc6c4ea075e77d4a4ae5ba5facf446ae",
+            "s42525n93468w.tmp": "8ec3c75e71da692e5092a30bec9443ce332103d681e93c782a2ca3a2fd56ca32",
+            "s42525n93468w.slr": "319047f07a0410f1b3da83aa53454c9a0cb43c04c16f694fdaf58bd475ab890d",
+            "s42525n93468w.hmd": "c25476cba6eb70183643ba19520bfe126b69e14d91deba26d14a245b74c8babe",
+            "s42525n93468w.wnd": "e280f86891229ec4fc854a56b42d4ad75e17beb3440f3336a245e3cebeedabaa",
+            "s42548n93555w.pcp": "b65c7a4f0fc868b8562941112c5d73de160bf9d049c112bfc8ad9df98597e6e8",
+            "s42548n93555w.tmp": "69987cac319094345a659a39d99240d05cb0680fd416f13268b6f357b88b0378",
+            "s42548n93555w.slr": "dcfb900f80329bc5d0cfd25a3779769f4e04b5f0efc2662bdeb35ab864d9ac61",
+            "s42548n93555w.hmd": "e7bac55557306ec1e443ec08dbc9c00a97bcb21b3c113351f377d791f4d25c8e",
+            "s42548n93555w.wnd": "ecfa824712801e3a56f2dca6f011aa6f38b11e13d93ec1e01489248e4ca7ba58"
+          },
+          "station_count": 24,
+          "station_weights": {
+            "s42557n93590w": 1671.03975,
+            "s42541n93435w": 1498.23942,
+            "s42535n93509w": 2073.66773,
+            "s42493n93404w": 2150.4891,
+            "s42508n93639w": 2048.20912,
+            "s42465n93522w": 3140.44729,
+            "s42471n93363w": 1511.60519,
+            "s42427n93495w": 5617.06123,
+            "s42426n93377w": 1694.33439,
+            "s42381n93411w": 2674.23642,
+            "s42400n93538w": 1652.20038,
+            "s42379n93511w": 1101.59421,
+            "s42392n93432w": 2676.4004099999997,
+            "s42363n93408w": 1497.41201,
+            "s42337n93286w": 5184.58303,
+            "s42382n93369w": 721.56076,
+            "s42376n93272w": 8002.85157,
+            "s42458n93435w": 1209.41144,
+            "s42486n93475w": 412.11131,
+            "s42480n93450w": 250.25817,
+            "s42457n93389w": 824.28626,
+            "s42517n93486w": 352.21992,
+            "s42525n93468w": 1969.79659,
+            "s42548n93555w": 676.11713
+          },
+          "station_aggregation": "area_weighted_from_hru.con",
+          "variables": [
+            "pcp",
+            "tmp",
+            "slr",
+            "hmd",
+            "wnd"
+          ],
+          "days": 365,
+          "start_date": "2010-01-01",
+          "end_date": "2010-12-31",
+          "missing_policy": "FAIL_CLOSED_PER_STATION_PRIMARY_AND_FSPM_REQUIRED; OPTIONAL_SECONDARY_NULL",
+          "limitations": "Each HRU uses its SWAT+ assigned station; cohort forcing is a basin-area and 2019 CDL crop-fraction weighted mix. The FSPM remains a single representative population for each unique management calendar.",
+          "forcing_support": "selected_management_hrus",
+          "hru_ids": [
+            1,
+            2,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            26,
+            27,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "hrus_area_weighted": true,
+          "crop_fraction_weighted": false,
+          "hru_station_source": "hru.con.wst",
+          "hru_con_sha256": "2bc5829960c9c7c92936b844656878896271592166e125dc9cad61418b7102f7"
+        }
+      },
+      "run_id": "sf-v2-derive-2010-coupled-02",
+      "workspace": "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/backend/data/south-fork-v2-isolated/workspaces/sf-v2-derive-2010-coupled-02"
+    }
+  ]
+}

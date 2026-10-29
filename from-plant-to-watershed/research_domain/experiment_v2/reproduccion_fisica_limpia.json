@@ -1,0 +1,128 @@
+{
+  "plant_summary_equal": true,
+  "daily_values_exact": true,
+  "years": [
+    {
+      "year": 2013,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "e7edc80f4bfaf87e2114e94bfe030b4ed994b8381b0a1ec6c3863f8b2fbd25f1",
+      "repeat_sha256": "7ad458df61e03e339a0c8cb53253257fa92610b4bb60b30283af93d01640520d"
+    },
+    {
+      "year": 2014,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "67e2cecb45cefc82dc89b77a11463b0f23fd59b606adffb4ad5e8490f2f703a0",
+      "repeat_sha256": "f252863e0e13bc1329f5318d5e52ed560d08051e6bf78452afb8d35a8681d327"
+    },
+    {
+      "year": 2015,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "5084964a996b66ed13dd166939c0d3c803d5d52b4699692f5590f637a35baf77",
+      "repeat_sha256": "a5568166539a5acb652afc5358eacf8e7f5b919312d051ecbcee8bd6c66e3323"
+    },
+    {
+      "year": 2016,
+      "daily_pairs": 366,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "20f8a002b5806a7c0735290d7a84acf6be0d485fbec9f3b4530ebd96579c810d",
+      "repeat_sha256": "86ed175a3fdd7c5b037759b6033cdba1f80d6eb660dae63f30a12e02ffdedb12"
+    },
+    {
+      "year": 2017,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "4dfa91ab2d3e0f57d7ecfa16618c7b0e87395d09dda23b7f0fa4ac6e1281a0c8",
+      "repeat_sha256": "acf4fa262f53d18036b6998c508519d0b35f327e0be813d8c83fd7b6da2f76e8"
+    },
+    {
+      "year": 2018,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "738eecfccefc047ea93df723157414590f6bf0f60a772f12fed85e0327ddaf56",
+      "repeat_sha256": "d2556bf763b2d4b9e66b0dde6c8e984609c9a2fafa98a1250b12cad6f8d7045a"
+    },
+    {
+      "year": 2019,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "cd10176b9b951a1e879eea8269becd6ba944865347efed5fd095939b74be8804",
+      "repeat_sha256": "5e8be4058c120f69f9ba5292feffe7f899b35750103e3087e7ede074fc97cd69"
+    },
+    {
+      "year": 2020,
+      "daily_pairs": 366,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "5bedb6c572cbb4688a0a8a878fbd2cd45d761227812b37e00dbfe31e262ec29c",
+      "repeat_sha256": "52c397067d21cc0a27ab37f1a9ffa988e96c56f0c0a0f44b27043ff4264e0c1a"
+    },
+    {
+      "year": 2021,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "1409d591b042a6c5f2d5393ece0ba19071d5edbe0863aad533672b7cf68e685c",
+      "repeat_sha256": "34514f465272311750f47c76d848059057551cdca9e4fc7e6741bac2c4efb187"
+    },
+    {
+      "year": 2022,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "b7a62550f9e6e2f1bc9849ee0f6af30a833d44625f899fa4ad0040d739f98ff9",
+      "repeat_sha256": "b22cbbfab460d3523871e55c466a06124799155249ced702d37cae049161ff83"
+    },
+    {
+      "year": 2023,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "b58cd17fa109e86b8adb1eb2a9843137cc7efa5843be9bf92b4d3ca873494bc8",
+      "repeat_sha256": "da792521c7c519c7b7df7397166298c4f38f6239f38403441a66fd7e445de62a"
+    },
+    {
+      "year": 2024,
+      "daily_pairs": 366,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "d6af96c780b6f654463daca6f57ce0e646aa27235da5e5e6c5acfdc511a1cc31",
+      "repeat_sha256": "c76bafeb0365f3237f00e62c8b4fde43482c60379efb21d526a0ff2fe3a8d18d"
+    },
+    {
+      "year": 2025,
+      "daily_pairs": 365,
+      "data_equal": true,
+      "A_plants_sha256": "0373dfd1d5bcef63872c891acafe11f106eb9ef66bf11befcf6f7657d99209f8",
+      "B_plants_sha256": "eb47583e6389e3b68ed6565813831cd730b88322be1a2f6f7679bda81491ed0e",
+      "original_sha256": "08799bd670b1d612b2f1f3456d078fe852f2c95a65ec9408ecc3ccd560831801",
+      "repeat_sha256": "1a9a8e1a66d9a696158ed992207ed99dd0559359c474a05796ff40774757d3aa"
+    }
+  ],
+  "calibration_candidates_equal": 9,
+  "calibration_monthly_flows_equal": 864,
+  "calibration_csv_sha256": "c32353464a41c4f2c75d418ee793d58094f0a88d6de2468e65a820bdec7e2e93",
+  "environment": "Python y ejecutable existentes; proyecto e inputs extraídos en carpetas nuevas",
+  "installation_clean": false
+}

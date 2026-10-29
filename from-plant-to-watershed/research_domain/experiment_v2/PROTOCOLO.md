@@ -1,0 +1,15 @@
+# Protocolo v2 — exploratorio, fijado antes de las ejecuciones v2
+
+Punto de partida: 397257ebb9b12cf33f2e29e004480246d773cc90. TEST 2021–2025 ya fue examinado; toda comparación nueva allí es exploratoria. No se usa para selección. Calentamiento 2000–2004; calibración física 2005–2012; TRAIN 2013–2017; VALIDATION 2018–2020.
+
+## Búsqueda física
+
+Nueve combinaciones predefinidas: ESCO {0,01; 0,025; 0,05}, flo_min acuífero somero {8; 10; 12} m, t_fc 6 h fijo. Se amplía la frontera del mínimo previo: ESCO controla la extracción evaporativa del suelo, flo_min el retorno del acuífero; ambos son parámetros efectivos en el experimento original. Sus valores extremos son escenarios exploratorios, no mediciones locales. El drenaje y demás atributos permanecen fijos. No se ajusta perco: el motor lo sobrescribe y excluye de la calibración en HRU drenadas. Presupuesto 9, sin ampliación por resultados. Se ejecuta desde 2000, solo se puntúa 2005–2012, con datos diarios USGS aprobados A/A,e, cobertura >=90%, sin imputación; se exige soporte diario completo para comparar salida nativa mensual.
+
+Se registran RMSE, NSE, KGE′ (correlación, cociente de medias y cociente de coeficientes de variación), PBIAS = 100 Σ(sim−obs)/Σobs y errores. Un candidato es aceptable solo si todas las métricas están definidas, NSE >= 0 y |PBIAS| <= 30%. Entre aceptables gana menor RMSE, desempate mayor KGE′ y luego ID. Si ninguno cumple, se reporta el de menor |PBIAS|, desempate RMSE e ID, como exploratorio, sin declarar aceptación. No se cambia la regla tras observar resultados.
+
+## Comparación residual
+
+Dos factores: A/B físico y 14/21 variables; Ridge α=10, escaladores y ajustes solo TRAIN, recorte de Q en cero. Climatología por mes y recta no decreciente se ajustan solo TRAIN. Predictores idénticos al protocolo v1, sin Q observado, residuo observado o controles de calidad. Estructura vegetal inactiva es cero biológico; estrés ausente se codifica cero con indicador de disponibilidad y fracción activa; ausencias estructurales desconocidas se rechazan. Los estados para A deben obtenerse con su propio balance hídrico sin cambiar plants.plt de A. Los parámetros B de la nueva versión se derivan en 2010 y se congelan antes de TRAIN. La entrada del mes completo produce estimaciones retrospectivas.
+
+Métricas RMSE, MAE, NSE, KGE′ y PBIAS, soporte común y >=90%, sin imputar. ΔRMSE=RMSE(referencia)−RMSE(configuración). Contrastes factoriales prioritarios: efecto de vegetación en A y en B, efecto de parametrización con 14 y con 21 variables, e interacción (efecto de vegetación en B menos efecto en A); todos descriptivos, familia múltiple sin ajuste, no son pruebas confirmatorias. Bootstrap circular pareado de 2000 réplicas, semilla 42, bloques 3, 6, 12 y 24 meses, índices compartidos, calendario completo y máscara tras remuestreo, percentiles 2,5–97,5; indicar réplicas válidas. Repetir excluyendo A,e con medias y soporte diario recalculados. Series cortas y bloques largos limitan interpretación. Recalcular métricas independientemente desde CSV exportado.

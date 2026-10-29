@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/tmp/southfork-v2-physical-vLrTSk/from-plant-to-watershed/research_domain/experiment_v2/simular_v2.py", line 99, in <module>
+    prep();derive()
+           ^^^^^^^^
+  File "/tmp/southfork-v2-physical-vLrTSk/from-plant-to-watershed/research_domain/experiment_v2/simular_v2.py", line 39, in derive
+    c=run_coupled_swat_with_executed_calendar(SwatPlusAdapter(),cfg(2010,'sf-v2-derive-2010'),plant_count=1000,seed=42,parameter_period=(date(2010,1,1),date(2010,12,31)))
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/backend/app/services/swat_coupled_runner.py", line 157, in run_coupled_swat_with_executed_calendar
+    baseline = adapter.run(baseline_config, target_crop=target_crop)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/backend/app/services/swat_plus_adapter.py", line 560, in run
+    run_directory = workspace / input_directory.relative_to(source_root)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bilton/.pyenv/versions/3.12.3/lib/python3.12/pathlib.py", line 682, in relative_to
+    raise ValueError(f"{str(self)!r} is not in the subpath of {str(other)!r}")
+ValueError: '/tmp/southfork-v2-physical-vLrTSk/from-plant-to-watershed/backend/data/south-fork-v2-clean-derive/selected-project' is not in the subpath of '/home/bilton/Universidad/CICLO-VIII/ING-SOFTWARE-II/SESIÓN-O1/gemelos-digitales/from-plant-to-watershed/backend/data/south-fork-v2-clean-derive/selected-project'
