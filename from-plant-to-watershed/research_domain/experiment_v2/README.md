@@ -78,3 +78,16 @@ Se reutilizaron el Python y ejecutable de investigación existentes; no se ha es
 ## Archivo físico no distribuido en la rama
 
 `forcing_inputs.tar.gz` permanece solo en el equipo local porque no se han verificado íntegramente los derechos de redistribución del proyecto integrado. Para ejecutar la física desde un clon, los autores deben proporcionar esa copia exacta o completar su reconstrucción a partir de las fuentes y manifiestos descritos arriba. Su SHA-256 es `acc4fa365e6f493212f170c7b71153136dc51b903c50680136c5c44b72e33f1f`; cada uno de los 198 archivos debe coincidir además con `forcing_inputs_sha256.json`. Las recetas de descarga originales, correcciones de clima y transformación de parámetros están referenciadas arriba, pero una reconstrucción íntegra desde fuentes remotas sin la copia local no se ha probado.
+
+Antes de eliminar una instalación, conservar el archivo en un respaldo privado
+independiente. Para restaurarlo después de clonar, copiarlo a este directorio y
+comprobar su integridad desde la raíz del repositorio:
+
+```bash
+cp /ruta/al/respaldo/forcing_inputs.tar.gz from-plant-to-watershed/research_domain/experiment_v2/
+sha256sum from-plant-to-watershed/research_domain/experiment_v2/forcing_inputs.tar.gz
+```
+
+El hash debe ser el indicado arriba. Mantener una copia fuera de la computadora
+si se desea recuperar el experimento tras perderla. El respaldo de inputs no
+incluye las bases de datos locales ni las salidas voluminosas de las corridas.
